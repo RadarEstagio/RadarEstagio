@@ -111,7 +111,27 @@ class Recomendacao(BaseModel):
     token: UUID = Field(default_factory=uuid4)
 
 
+class UtilidadeSemanal(BaseModel):
+    semana: str
+    parcial: bool
+    ativados: int
+    com_utilidade: int
+
+    def percentual(self) -> float | None:
+        return 100 * self.com_utilidade / self.ativados if self.ativados else None
+
+
+class RecusasPorGrupo(BaseModel):
+    grupo: str
+    entregas: int
+    recusas: int
+    recusas_da_nota: int
+
+
 class FunilDaCoorte(BaseModel):
+    etapas: dict[str, int] = Field(default_factory=dict)
+    utilidade_semanal: list[UtilidadeSemanal] = Field(default_factory=list)
+    recusas_por_grupo: list[RecusasPorGrupo] = Field(default_factory=list)
     dias: int = Field(ge=1)
     perfis_criados: int
     perfis_vinculados: int
