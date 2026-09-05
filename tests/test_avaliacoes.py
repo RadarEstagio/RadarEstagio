@@ -48,6 +48,27 @@ def resultado_da(extracao_da_vaga: ExtracaoDaVaga, candidato: Perfil | None = No
     return pontuar(vaga(), extracao_da_vaga, candidato or perfil())
 
 
+def test_modalidade_extraida_preenche_vaga_sem_modalidade():
+    resultado = resultado_da(extracao(modalidade="presencial"))
+
+    assert resultado.vaga.modalidade is Modalidade.PRESENCIAL
+
+
+def test_modalidade_da_fonte_prevalece_sobre_a_extraida():
+    resultado = pontuar(
+        vaga(modalidade=Modalidade.HIBRIDO), extracao(modalidade="remoto"), perfil()
+    )
+
+    assert resultado.vaga.modalidade is Modalidade.HIBRIDO
+
+
+def test_modalidade_extraida_entra_na_logistica_da_nota():
+    sem_modalidade = resultado_da(extracao())
+    presencial_extraida = resultado_da(extracao(modalidade="presencial"))
+
+    assert presencial_extraida.nota > sem_modalidade.nota
+
+
 def test_stack_desejavel_sem_correspondencia_recebe_nota_baixa():
     requisitos = ["PHP", "MySQL", "SQL", "HTML5", "JavaScript", "REST", "VueJS", "AJAX", "jQuery"]
 
@@ -181,6 +202,39 @@ def test_match_total_de_habilidades_fora_do_interesse_fica_limitado_a_65():
 
     assert resultado.nota == 65
     assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
+
+
+def test_area_recusada_zera_o_interesse_e_limita_a_65_com_aviso():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_recusadas = [AreaDeInteresse.DADOS_IA]
+
+    resultado = resultado_da(
+        extracao(habilidades_obrigatorias=["Python"], areas_da_vaga=["dados_ia"]), candidato
+    )
+
+    assert resultado.nota <= 65
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+
+
+def test_area_recusada_vale_mesmo_sem_interesses_declarados():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_de_interesse = []
+    candidato.areas_recusadas = [AreaDeInteresse.SUPORTE_TECNICO]
+
+    resultado = resultado_da(extracao(areas_da_vaga=["suporte_tecnico"]), candidato)
+
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+
+
+def test_area_recusada_prevalece_sobre_o_interesse_declarado():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_de_interesse = [AreaDeInteresse.DADOS_IA]
+    candidato.areas_recusadas = [AreaDeInteresse.DADOS_IA]
+
+    resultado = resultado_da(extracao(areas_da_vaga=["dados_ia"]), candidato)
+
+    assert resultado.nota <= 65
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
 
 
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():

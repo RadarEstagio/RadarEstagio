@@ -7,7 +7,7 @@
 > não foi testada. Os documentos permanecem em revisão. As descrições de lacunas abaixo
 > registram o diagnóstico original; o estado atual e os passos externos estão no
 > [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback e métricas foram implementados e testados localmente na etapa seguinte.
-> Entrega imediata e validação remota permanecem pendentes.
+> Entrega imediata foi integrada da main; validação remota permanece pendente.
 
 **Data:** 05/09/2026 (revisto)
 

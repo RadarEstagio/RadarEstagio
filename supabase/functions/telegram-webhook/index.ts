@@ -15,6 +15,7 @@ import {
   tecladoDeFeedback,
 } from "./feedback.ts";
 import { type EnvioDoToken, processarFeedback } from "./processar_feedback.ts";
+import { dispararEntregaImediata } from "./entrega_imediata.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
 const CODIGO_DE_VALOR_DUPLICADO = "23505";
@@ -37,10 +38,15 @@ async function responderNoTelegram(
   });
 }
 
+interface VinculoRealizado {
+  resultado: ResultadoDoVinculo;
+  perfilId: string | null;
+}
+
 async function vincularChat(
   token: string,
   chatId: string,
-): Promise<ResultadoDoVinculo> {
+): Promise<VinculoRealizado> {
   const { data, error } = await supabase
     .from("perfis")
     .update({
@@ -51,10 +57,15 @@ async function vincularChat(
     .eq("token_vinculo", token)
     .is("excluida_em", null)
     .select("id");
-  if (error?.code === CODIGO_DE_VALOR_DUPLICADO) return "chat_de_outra_conta";
+  if (error?.code === CODIGO_DE_VALOR_DUPLICADO) {
+    return { resultado: "chat_de_outra_conta", perfilId: null };
+  }
   if (error) throw error;
-  if (data.length === 1) return "vinculado";
-  return (await chatJaVinculado(chatId)) ? "chat_ja_vinculado" : "token_ja_usado";
+  if (data.length === 1) return { resultado: "vinculado", perfilId: data[0].id };
+  return {
+    resultado: (await chatJaVinculado(chatId)) ? "chat_ja_vinculado" : "token_ja_usado",
+    perfilId: null,
+  };
 }
 
 async function chatJaVinculado(chatId: string): Promise<boolean> {
@@ -76,8 +87,11 @@ async function tratarAtualizacao(
     if (chatId) await responderNoTelegram(chatId, RESPOSTA_SEM_TOKEN);
     return;
   }
-  const resultado = await vincularChat(pedido.token, pedido.chatId);
+  const { resultado, perfilId } = await vincularChat(pedido.token, pedido.chatId);
   await responderNoTelegram(pedido.chatId, RESPOSTAS_DO_VINCULO[resultado]);
+  if (resultado === "vinculado" && perfilId) {
+    await dispararEntregaImediata(perfilId);
+  }
 }
 
 async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {

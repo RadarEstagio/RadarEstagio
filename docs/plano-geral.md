@@ -8,7 +8,7 @@
 > registram o diagnóstico original; o estado atual e os passos externos estão no
 > [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback individual e métricas estão implementados e testados localmente na branch
 > `feat/feedback-e-metricas`, baseada no PR #14. Falta conferir os números reais após publicação.
-> Entrega imediata permanece pendente.
+> Entrega imediata foi integrada da main; validação remota permanece pendente.
 
 **Data:** 05/09/2026
 

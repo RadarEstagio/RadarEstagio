@@ -14,8 +14,11 @@ com o Telegram, matching de compatibilidade por IA, entrega da mensagem ranquead
 agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
 na primeira recomendação entregue e funil instrumentado da landing à primeira recomendação.
 
-Ainda não disponível: feedback influenciando o ranking, painel web de métricas e novas fontes
-além de Adzuna e Gupy.
+Ainda não disponível: painel web de métricas e novas fontes além de Adzuna e Gupy. O feedback
+já molda o ranking na v1 (05/09/2026): "já vi essa" alimenta o filtro de republicação do
+usuário, e subárea com 2+ recusas por "não é da minha área" em 30 dias perde o fator de
+interesse (teto 65 e aviso próprio), tudo por usuário e sem IA; "pedem demais", "local ou
+modalidade" e o reforço positivo de "vaga útil" ficam para a v2, com dados do piloto.
 
 Pendências da Fase 2: validar o produto com estudantes. A cota do Gemini deixou de ser pendência
 em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o custo não
@@ -47,6 +50,14 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
   últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
   definições estão em `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql`.
+- **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
+  dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
+  (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
+  espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
+  (`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
+  conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
+  compartilhadas, a primeira entrega custa zero requisição de IA. Sem o token, o vínculo
+  segue normal e a primeira busca fica para o diário.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -197,6 +208,11 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   nome exato era ignorado e a variante pesava — uma vaga de dados caiu para 68 penalizada por
   Google Docs, Drive e Excel. A normalização é por alias, não por pedaço de palavra, para
   `WordPress` não virar `Word`.
+- **Modalidade extraída preenche a lacuna da fonte** (05/09/2026): a Adzuna não traz
+  modalidade estruturada, então a IA extrai o regime declarado no texto ("remoto",
+  "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
+  modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
+  no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
 - **Tecnologias comparadas por nome normalizado e exato**, de modo que `Java` não corresponde a
   `JavaScript`.
 - **Área de interesse** (01/09/2026): a IA classifica a vaga em subáreas de um catálogo fechado
@@ -277,6 +293,12 @@ modalidade e, em empate, a de descrição mais longa.
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
   tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
+- O `TELEGRAM_WEBHOOK_SECRET` vive em três lugares que precisam do MESMO valor: o
+  `setWebhook` no Telegram, os secrets do Supabase (`supabase secrets set`) e os `.env`
+  locais. Divergência vira 401 silencioso em todo update (aconteceu em 04-05/09/2026: um
+  re-registro usou o segredo de um `.env` dessincronizado e cliques/vínculos se perderam
+  por ~12 h). Ao mexer no webhook, conferir `getWebhookInfo` depois: `last_error_message`
+  vazio e `pending_update_count` zerando.
 - O `setWebhook` precisa de `allowed_updates=["message","callback_query"]` (corrigido em
   04/09/2026): o registro original só aceitava `message` e o Telegram descartava os cliques
   dos botões de feedback antes de chegarem à função. Ao re-registrar o webhook, sempre

@@ -27,6 +27,7 @@ LIMITE_CURSO_INCOMPATIVEL = 35
 AVISO_CURSO_INCOMPATIVEL = "Exige formação de outra área"
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
+AVISO_AREA_RECUSADA = "Área que você recusou nos últimos dias"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
 PESO_OBRIGATORIAS_COM_PRINCIPAIS = 0.7
@@ -112,6 +113,7 @@ def pontuar_vagas(
 
 
 def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMatch:
+    vaga = _com_modalidade_extraida(vaga, extracao)
     niveis = derivar_niveis(extracao, perfil)
     requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(extracao, perfil)
     pontos_a_favor, pontos_contra = montar_pontos(extracao, niveis)
@@ -126,6 +128,15 @@ def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMa
         pontos_contra=_juntar_sem_repetir(pontos_contra),
         alerta_pegadinha=extracao.alerta_pegadinha,
     )
+
+
+def _com_modalidade_extraida(vaga: Vaga, extracao: ExtracaoDaVaga) -> Vaga:
+    if vaga.modalidade is not None:
+        return vaga
+    extraida = extracao.modalidade_reconhecida()
+    if extraida is None:
+        return vaga
+    return vaga.model_copy(update={"modalidade": extraida})
 
 
 def _calcular_nota(
@@ -155,20 +166,29 @@ def _limite_por_curso(niveis: NiveisDeCompatibilidade) -> float:
 
 
 def _compatibilidade_de_interesse(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
+    areas_da_vaga = _areas_reconhecidas(extracao)
+    if _area_recusada(areas_da_vaga, perfil):
+        return 0.0
     if not perfil.areas_de_interesse:
         return 1.0
-    areas_da_vaga = _areas_reconhecidas(extracao)
     if not areas_da_vaga:
         return 0.5
     interesses = {area.value for area in perfil.areas_de_interesse}
     return 1.0 if areas_da_vaga & interesses else 0.0
 
 
+def _area_recusada(areas_da_vaga: set[str], perfil: Perfil) -> bool:
+    recusadas = {area.value for area in perfil.areas_recusadas}
+    return bool(areas_da_vaga & recusadas)
+
+
 def _avisos_objetivos(
     extracao: ExtracaoDaVaga, niveis: NiveisDeCompatibilidade, perfil: Perfil
 ) -> list[str]:
     avisos = []
-    if _compatibilidade_de_interesse(extracao, perfil) == 0.0:
+    if _area_recusada(_areas_reconhecidas(extracao), perfil):
+        avisos.append(AVISO_AREA_RECUSADA)
+    elif _compatibilidade_de_interesse(extracao, perfil) == 0.0:
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)

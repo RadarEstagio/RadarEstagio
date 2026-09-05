@@ -1,3 +1,4 @@
+import unicodedata
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -53,7 +54,19 @@ class ExtracaoDaVaga(BaseModel):
     habilidades_obrigatorias: list[str] = Field(default_factory=list)
     habilidades_principais: list[str] = Field(default_factory=list)
     habilidades_desejaveis: list[str] = Field(default_factory=list)
+    modalidade: str | None = None
     alerta_pegadinha: str | None = None
+
+    def modalidade_reconhecida(self) -> Modalidade | None:
+        if not self.modalidade:
+            return None
+        sem_acentos = (
+            unicodedata.normalize("NFKD", self.modalidade).encode("ascii", "ignore").decode("ascii")
+        )
+        try:
+            return Modalidade(sem_acentos.strip().casefold())
+        except ValueError:
+            return None
 
 
 class Perfil(BaseModel):
@@ -63,6 +76,7 @@ class Perfil(BaseModel):
     cidade: str
     modalidade: Modalidade
     areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
+    areas_recusadas: list[AreaDeInteresse] = Field(default_factory=list)
 
     def nome_da_cidade(self) -> str:
         return self.cidade.split(",")[0].strip()
@@ -104,6 +118,11 @@ class ResultadoMatch(BaseModel):
     pontos_contra: list[str] = Field(default_factory=list)
     avisos_objetivos: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None
+
+
+class RecusasDoUsuario(BaseModel):
+    areas: list[AreaDeInteresse] = Field(default_factory=list)
+    vagas_repetidas: list[Vaga] = Field(default_factory=list)
 
 
 class Recomendacao(BaseModel):

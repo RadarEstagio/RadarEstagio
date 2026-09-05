@@ -2,11 +2,13 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from radar.domain.models import (
+    AreaDeInteresse,
     ExtracaoDaVaga,
     Modalidade,
     NivelCompatibilidade,
     Perfil,
     PerguntaDeFeedback,
+    RecusasDoUsuario,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -118,11 +120,13 @@ class RepositorioFalso(RepositorioEmMemoria):
         enviadas: set[tuple[str, str]] = frozenset(),
         falha_ao_gravar: bool = False,
         enviadas_recentes: list[Vaga] = (),
+        recusas: RecusasDoUsuario | None = None,
     ) -> None:
         super().__init__(usuarios)
         self._guardadas = list(guardadas)
         self._enviadas = set(enviadas)
         self._enviadas_recentes = list(enviadas_recentes)
+        self._recusas = recusas or RecusasDoUsuario()
         self._falha_ao_gravar = falha_ao_gravar
         self.avaliacoes_gravadas: list[tuple[UUID, list[str], str]] = []
         self.envios_gravados: list[tuple[UUID, list[str]]] = []
@@ -156,6 +160,9 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
         return list(self._enviadas_recentes)
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
+        return self._recusas
 
     def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
         if self._falha_ao_gravar:
@@ -447,6 +454,48 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
     assert [registro[0] for registro in repositorio.envios_gravados] == [ID_OUTRO_USUARIO]
 
 
+def test_vaga_marcada_como_ja_vista_bloqueia_os_sosias():
+    descricao = (
+        "Dar apoio ao time de desenvolvimento nas rotinas do site, com estudo de "
+        "requisitos, ajustes de paginas, testes manuais, correcao de defeitos simples "
+        "e acompanhamento das entregas semanais junto ao coordenador da area."
+    )
+    recusada = vaga(1).model_copy(update={"descricao": descricao})
+    sosia = vaga(2).model_copy(
+        update={"titulo": recusada.titulo + " - Vaga", "descricao": descricao}
+    )
+    repositorio = RepositorioFalso(
+        [usuario()], recusas=RecusasDoUsuario(vagas_repetidas=[recusada])
+    )
+
+    selecionadas, _, _ = rodar([sosia], {"2": 90}, repositorio=repositorio)
+
+    assert selecionadas == []
+
+
+def test_areas_recusadas_chegam_ao_pontuador():
+    capturados = []
+
+    def pontuador_espiao(vagas, extracoes, perfil):
+        capturados.append(perfil.areas_recusadas)
+        return []
+
+    repositorio = RepositorioFalso(
+        [usuario()], recusas=RecusasDoUsuario(areas=[AreaDeInteresse.DADOS_IA])
+    )
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        pontuador_espiao,
+    )
+
+    assert capturados == [[AreaDeInteresse.DADOS_IA]]
+
+
 def test_republicacao_de_vaga_ja_enviada_em_outro_dia_nao_e_reenviada():
     descricao = (
         "Dar apoio ao time de desenvolvimento nas rotinas do site, com estudo de "
@@ -474,6 +523,46 @@ def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
     assert pontuador.pontuadas == ["2"]
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
     assert "Empresa 1" not in notificador.textos[0]
+
+
+def test_apenas_o_perfil_informado_e_atendido():
+    primeiro = usuario()
+    segundo = usuario(id_usuario=UUID(int=2), chat_id="456")
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([primeiro, segundo])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        apenas_o_perfil=segundo.id,
+    )
+
+    assert set(resumo.enviadas_por_usuario) == {segundo.id}
+    assert notificador.chats == ["456"]
+
+
+def test_perfil_inexistente_nao_atende_ninguem():
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        apenas_o_perfil=UUID(int=99),
+    )
+
+    assert resumo.enviadas_por_usuario == {}
+    assert notificador.chats == []
 
 
 def test_avaliacao_toda_bloqueada_nao_manda_mensagem_enganosa():

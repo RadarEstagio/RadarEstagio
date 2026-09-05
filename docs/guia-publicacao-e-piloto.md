@@ -13,7 +13,7 @@ Estado das configurações feitas pelo Igor durante a orientação:
 - Hospedagem e integração GitHub adiadas. Organização compartilhada será retomada depois.
 - Cadastro e privacidade implementados localmente nas migrations `0014` a `0016` e no frontend.
   Feedback individual e métricas foram implementados e testados localmente na etapa seguinte;
-  primeira entrega sob demanda e validação remota continuam pendentes.
+  a entrega sob demanda também entrou na main; a validação remota continua pendente.
 
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
@@ -158,14 +158,12 @@ feedback grava o evento correto. Links antigos de conta excluída não podem ger
 
 ## 8. Preparar a primeira entrega após vínculo
 
-O workflow atual só aceita `workflow_dispatch`. A execução sob demanda ainda precisa ser
-implementada. Depois disso, crie um token GitHub restrito ao repositório do Radar, com
-**Contents: write**, para `repository_dispatch`. Defina expiração e responsável pela renovação.
-Guarde-o em secret da Edge Function, com o nome que a implementação passar a consumir; esse
-nome ainda não existe no código. [Permissão do GitHub](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
+A execução sob demanda foi implementada usando `workflow_dispatch` com o input `perfil`.
+A Edge Function lê o secret `GITHUB_DISPATCH_TOKEN`, com permissão de Actions para
+`babue0/RadarEstagio`. Sem esse secret, o vínculo funciona e a busca fica para o diário.
+Confira sua configuração e validade antes do teste integrado.
 
-Preserve a autorização e o agendamento do cron-job.org às 07:23 de Brasília. O token do
-dispatch sob demanda é separado; não adicione um segundo agendador diário.
+Preserve o agendamento do cron-job.org às 07:23 de Brasília. Não adicione outro agendador.
 
 **Concluído quando:** vínculo dispara apenas o perfil vinculado, repetição não duplica envio,
 a janela de 06:23 a 07:23 aguarda o diário e os demais perfis continuam atendidos.
@@ -186,8 +184,8 @@ Também implementados e testados localmente:
 - Funil completo, vagas distintas, utilidade semanal e denominadores das recusas.
 - Vocabulário e métricas alinhados; candidatura continua sem emissor por decisão do plano.
 
-Ainda faltam o pipeline por perfil e o dispatch após vínculo, sem duplicar envios
-concorrentes, além da validação integrada com uma conta de teste.
+O pipeline por perfil e o dispatch após vínculo também foram integrados da main.
+Falta a validação integrada com uma conta de teste, incluindo envios concorrentes.
 
 A `0013` aplicada não será reescrita. Testar e revisar as novas migrations antes de aplicar
 no banco remoto, sempre pelo histórico de migrations. Depois da integração e revisão final,
