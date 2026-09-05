@@ -35,6 +35,15 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Fontes ativas** vêm de `FONTES` (padrão `adzuna,gupy`) e são somadas por `ColetorComposto`,
   que ignora uma fonte fora do ar e só falha se nenhuma responder. Fonte nova só entra se a
   validação comprovar cobertura insuficiente.
+- **Jooble**: coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
+  `br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
+  InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
+  33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
+  ~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
+  vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. Para ligar em produção:
+  secret `JOOBLE_API_KEY` + `FONTES: "adzuna,gupy,jooble"` no workflow. Upgrade futuro se a
+  fonte se provar: enriquecedor específico do InfoJobs (40% das vagas dela) destrava a
+  descrição completa.
 - **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
   para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
   padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele. Para
