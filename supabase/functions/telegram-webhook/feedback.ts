@@ -1,4 +1,5 @@
 export type MotivoDaRecusa =
+  | "motivo_nota"
   | "motivo_area"
   | "motivo_exigencia"
   | "motivo_logistica"
@@ -27,17 +28,19 @@ const FORMATO_DO_CLIQUE =
   /^([a-z_]+):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 export const ACAO_DE_RECUSA = "recusa";
+export const ACAO_DE_FEEDBACK = "feedback";
+export const ACAO_UTIL = "util";
 export const ACAO_SEM_RECUSA = "todas";
 
 export const ROTULOS_DE_MOTIVO: Record<MotivoDaRecusa, string> = {
+  motivo_nota: "A nota não fez sentido",
   motivo_area: "Não é da minha área",
   motivo_exigencia: "Pedem demais",
   motivo_logistica: "Local ou modalidade",
   motivo_repetida: "Já vi essa",
 };
 
-export const AVISO_DE_RECUSA_REGISTRADA =
-  "Obrigado, isso ajuda a melhorar as próximas.";
+export const AVISO_DE_RECUSA_REGISTRADA = "Obrigado, isso ajuda a melhorar as próximas.";
 export const AVISO_DE_TUDO_CERTO = "Combinado, obrigado.";
 export const AVISO_DE_CONSULTA_DESCONHECIDA = "Esta pergunta não vale mais.";
 
@@ -58,7 +61,7 @@ export function extrairClique(atualizacao: {
 }
 
 export function eMotivo(acao: string): acao is MotivoDaRecusa {
-  return acao in ROTULOS_DE_MOTIVO;
+  return Object.hasOwn(ROTULOS_DE_MOTIVO, acao);
 }
 
 export function tecladoDeMotivos(token: string): BotaoDoTeclado[][] {
@@ -72,15 +75,28 @@ export function tecladoSemONumeroRespondido(
   token: string,
 ): BotaoDoTeclado[][] {
   const restantes = linhas
-    .map((linha) =>
-      linha.filter((botao) => !botao.callback_data.endsWith(`:${token}`))
-    )
+    .map((linha) => linha.filter((botao) => !botao.callback_data.endsWith(`:${token}`)))
     .filter((linha) => linha.length > 0);
   return restantes.filter((linha) =>
-      linha.some((botao) =>
-        botao.callback_data.startsWith(`${ACAO_DE_RECUSA}:`)
-      )
+      linha.some((botao) => botao.callback_data.startsWith(`${ACAO_DE_RECUSA}:`))
     ).length > 0
     ? restantes
     : [];
+}
+
+export function tecladoDeFeedback(token: string): BotaoDoTeclado[][] {
+  return [
+    [{ text: "👍 Essa serviu", callback_data: `${ACAO_UTIL}:${token}` }],
+    ...tecladoDeMotivos(token).map((linha) =>
+      linha.map((botao) => ({ ...botao, text: `👎 ${botao.text}` }))
+    ),
+  ];
+}
+
+export function eventoDoFeedback(
+  acao: string,
+): { nome: "vaga_util" | "vaga_irrelevante"; propriedades: Record<string, string> } | null {
+  if (acao === ACAO_UTIL) return { nome: "vaga_util", propriedades: {} };
+  if (eMotivo(acao)) return { nome: "vaga_irrelevante", propriedades: { motivo: acao } };
+  return null;
 }

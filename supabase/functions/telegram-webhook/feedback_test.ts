@@ -90,3 +90,24 @@ Deno.test("responder o ultimo numero esvazia o teclado para a pergunta ser apaga
 
   assertEquals(restante, []);
 });
+
+Deno.test("feedback individual tem seis opções e separa positivo dos cinco motivos", async () => {
+  const { tecladoDeFeedback, eventoDoFeedback } = await import("./feedback.ts");
+  const token = "00000000-0000-4000-8000-000000000001";
+  const teclado = tecladoDeFeedback(token);
+  if (teclado.length !== 6) throw new Error("esperadas seis opções");
+  for (const [botao] of teclado) {
+    if (new TextEncoder().encode(botao.callback_data).length > 64) {
+      throw new Error("callback longo");
+    }
+    const acao = botao.callback_data.split(":")[0];
+    const evento = eventoDoFeedback(acao);
+    if (!evento || evento.nome !== (acao === "util" ? "vaga_util" : "vaga_irrelevante")) {
+      throw new Error("evento incorreto");
+    }
+    if (acao !== "util" && evento.propriedades.motivo !== acao) throw new Error("motivo incorreto");
+  }
+  if (eventoDoFeedback("constructor") !== null || eventoDoFeedback("todas") !== null) {
+    throw new Error("ação inválida aceita");
+  }
+});
