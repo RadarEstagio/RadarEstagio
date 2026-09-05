@@ -1,14 +1,18 @@
 # Plano geral
 
 
-> Atualização de execução — 05/09: deploy adiado pelo Igor. O bloco de cadastro e privacidade
-> está implementado localmente (migrations `0014`–`0016`, frontend e proteção das entregas),
-> ainda sem aplicação remota. Resend foi verificado e o SMTP salvo pelo Igor, mas a entrega real
-> não foi testada. Os documentos permanecem em revisão. As descrições de lacunas abaixo
-> registram o diagnóstico original; o estado atual e os passos externos estão no
-> [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback individual e métricas estão implementados e testados localmente na branch
-> `feat/feedback-e-metricas`, baseada no PR #14. Falta conferir os números reais após publicação.
-> Entrega imediata foi integrada da main; validação remota permanece pendente.
+> Atualização de execução — 05/09 à noite: migrations `0014`–`0016` **aplicadas** no projeto
+> remoto e conferidas objeto a objeto; `telegram-webhook` (feedback de seis opções) e `ir`
+> **publicadas**; `URL_DA_LANDING` provisória aponta para o repositório até a landing subir e
+> `URL_DE_RASTREIO` foi criada nos secrets do GitHub — `vaga_aberta` já registra (validado com
+> token real, 302 até a vaga e evento no funil). A **proteção contra envios concorrentes** foi
+> implementada (advisory lock por perfil, execução concorrente espera e relê o histórico) e
+> validada com duas conexões no banco real. A entrega imediata foi **validada no ambiente
+> real** em 05/09: `/start` → workflow → mensagem em ~4 minutos, com zero requisição de IA.
+> `python -m radar metricas` foi conferido com os dados reais (funil coerente; feedback zerado
+> porque os botões estrearam hoje). Falta apenas o que depende da landing publicada: hospedar o
+> frontend, Site URL/Redirect no Auth, Turnstile e o teste do fluxo de cadastro completo.
+> Resend foi verificado e o SMTP salvo pelo Igor, mas a entrega real de e-mail não foi testada.
 
 **Data:** 05/09/2026
 
@@ -49,8 +53,8 @@ A distância entre "está no `main`" e "o estudante usa" é toda de infraestrutu
 | `telegram_aberto` | site | idem à landing |
 | `telegram_vinculado` | gatilho | sim |
 | `primeira_recomendacao_enviada` | gatilho | sim |
-| `vaga_aberta` | função `ir` | **não** — falta publicar e criar `URL_DE_RASTREIO` |
-| `vaga_irrelevante` | webhook | **não** — falta republicar a função com o feedback |
+| `vaga_aberta` | função `ir` | sim — publicada em 05/09, com `URL_DE_RASTREIO` criada |
+| `vaga_irrelevante` | webhook | sim — republicada em 05/09 com o feedback |
 | `vaga_util` | ninguém | **não existe emissor** |
 | `candidatura_iniciada` | ninguém | **não existe emissor** |
 
@@ -128,8 +132,9 @@ domínio ─┬─ contato@ ───── política de privacidade completa
 1. Publicar a landing no Cloudflare Pages, no endereço provisório
 2. Registrar esse endereço em **Site URL e Redirect URLs** do Supabase Auth — sem isso o
    `emailRedirectTo` da confirmação não volta para a página publicada
-3. Criar `URL_DA_LANDING` no Supabase e `URL_DE_RASTREIO` nos secrets do GitHub
-4. Publicar a função `ir` e **republicar** a `telegram-webhook` com o feedback
+3. ~~Criar `URL_DA_LANDING` no Supabase e `URL_DE_RASTREIO` nos secrets do GitHub~~ — feito em
+   05/09 (`URL_DA_LANDING` provisória aponta para o repositório; trocar quando a landing subir)
+4. ~~Publicar a função `ir` e **republicar** a `telegram-webhook` com o feedback~~ — feito em 05/09
 5. ~~Comprar o domínio~~ — feito em 05/09. Publicar direto no domínio próprio dispensa refazer os
    passos 2 e 3 depois
 
