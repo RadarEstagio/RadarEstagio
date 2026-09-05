@@ -6,8 +6,8 @@
 > ainda sem aplicação remota. Resend foi verificado e o SMTP salvo pelo Igor, mas a entrega real
 > não foi testada. Os documentos permanecem em revisão. As descrições de lacunas abaixo
 > registram o diagnóstico original; o estado atual e os passos externos estão no
-> [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback, métricas e entrega
-> imediata permanecem pendentes.
+> [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback e métricas foram implementados e testados localmente na etapa seguinte.
+> Entrega imediata e validação remota permanecem pendentes.
 
 **Data:** 05/09/2026 (revisto)
 

@@ -12,7 +12,8 @@ Estado das configurações feitas pelo Igor durante a orientação:
 - Site URL e retornos básicos configurados. Acrescentar o retorno de recuperação descrito abaixo.
 - Hospedagem e integração GitHub adiadas. Organização compartilhada será retomada depois.
 - Cadastro e privacidade implementados localmente nas migrations `0014` a `0016` e no frontend.
-  Feedback individual, métricas e primeira entrega sob demanda ainda são próximas etapas.
+  Feedback individual e métricas foram implementados e testados localmente na etapa seguinte;
+  primeira entrega sob demanda e validação remota continuam pendentes.
 
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
@@ -180,11 +181,13 @@ Implementado e testado localmente, ainda sem publicação:
 - Revalidação do destinatário no job e nas funções, com `0016` impedindo novos eventos de vaga
   para contas pausadas, excluídas ou desvinculadas.
 
-Ainda falta implementar:
+Também implementados e testados localmente:
 - Feedback individual com seis opções, incluindo positivo e motivo da nota incorreta.
 - Funil completo, vagas distintas, utilidade semanal e denominadores das recusas.
-- Pipeline por perfil e dispatch após vínculo, sem duplicar envios concorrentes.
-- Alinhar vocabulário e métricas: candidatura continua sem emissor por decisão do plano.
+- Vocabulário e métricas alinhados; candidatura continua sem emissor por decisão do plano.
+
+Ainda faltam o pipeline por perfil e o dispatch após vínculo, sem duplicar envios
+concorrentes, além da validação integrada com uma conta de teste.
 
 A `0013` aplicada não será reescrita. Testar e revisar as novas migrations antes de aplicar
 no banco remoto, sempre pelo histórico de migrations. Depois da integração e revisão final,
