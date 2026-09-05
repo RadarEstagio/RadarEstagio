@@ -256,16 +256,17 @@ def atender_usuario(
     if not revalidacao.permite(usuario):
         return None
     try:
-        notificador.enviar(
-            usuario.chat_id,
-            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio),
+        pergunta = formatar_pergunta_de_feedback(selecionadas)
+        pergunta.texto = (
+            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio)
+            + "\n\n"
+            + pergunta.texto
         )
+        notificador.enviar_pergunta(usuario.chat_id, pergunta)
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
         return None
-    if revalidacao.permite(usuario):
-        perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
     try:
         repositorio.registrar_envios(usuario, selecionadas)
     except ErroDeArmazenamento as erro:
@@ -273,15 +274,6 @@ def atender_usuario(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )
     return selecionadas
-
-
-def perguntar_o_que_nao_serviu(
-    notificador: Notificador, usuario: Usuario, selecionadas: list[Recomendacao]
-) -> None:
-    try:
-        notificador.enviar_pergunta(usuario.chat_id, formatar_pergunta_de_feedback(selecionadas))
-    except ErroDeNotificacao as erro:
-        logger.warning("usuário %s ficou sem a pergunta de feedback: %s", usuario.id, erro)
 
 
 def gravar_avaliacoes(

@@ -1,8 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import {
-  type PerfilDoDestinatario,
-  podeProcessarInteracao,
-} from "../_shared/privacidade.ts";
+import { type PerfilDoDestinatario, podeProcessarInteracao } from "../_shared/privacidade.ts";
 import {
   type AtualizacaoDoTelegram,
   chatIdDaMensagem,
@@ -12,18 +9,12 @@ import {
   type ResultadoDoVinculo,
 } from "./vinculo.ts";
 import {
-  ACAO_DE_RECUSA,
-  ACAO_SEM_RECUSA,
-  AVISO_DE_CONSULTA_DESCONHECIDA,
-  AVISO_DE_RECUSA_REGISTRADA,
-  AVISO_DE_TUDO_CERTO,
-  type BotaoDoTeclado,
   type ConsultaDeFeedback,
-  eMotivo,
+  eventoDoFeedback,
   extrairClique,
-  tecladoDeMotivos,
-  tecladoSemONumeroRespondido,
+  tecladoDeFeedback,
 } from "./feedback.ts";
+import { type EnvioDoToken, responderConsultaDeFeedback } from "./processar_feedback.ts";
 import { dispararEntregaImediata } from "./entrega_imediata.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
@@ -103,18 +94,14 @@ async function tratarAtualizacao(
   }
 }
 
-interface EnvioDoToken {
-  perfilId: string;
-  userId: string;
-  vagaId: number;
-}
-
 async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {
-  await fetch(`https://api.telegram.org/bot${tokenDoBot}/${metodo}`, {
+  const resposta = await fetch(`https://api.telegram.org/bot${tokenDoBot}/${metodo}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(corpo),
   });
+  const resultado = await resposta.json();
+  if (!resposta.ok || !resultado.ok) throw new Error(`Telegram recusou ${metodo}`);
 }
 
 async function envioDoToken(
@@ -124,7 +111,7 @@ async function envioDoToken(
   const { data, error } = await supabase
     .from("envios")
     .select(
-      "perfil_id, vaga_id, perfis (user_id, ativo, excluida_em, telegram_chat_id)",
+      "perfil_id, vaga_id, vagas (titulo, empresa), perfis (user_id, ativo, excluida_em, telegram_chat_id)",
     )
     .eq("token", token)
     .maybeSingle();
@@ -132,33 +119,38 @@ async function envioDoToken(
   if (!data) return null;
   const perfil = data.perfis as unknown as PerfilDoDestinatario | null;
   if (!perfil || !podeProcessarInteracao(perfil, chatId)) return null;
+  const vaga = data.vagas as unknown as { titulo: string; empresa: string } | null;
+  if (!vaga) return null;
   return {
+    titulo: vaga.titulo,
+    empresa: vaga.empresa,
     perfilId: data.perfil_id,
     userId: perfil.user_id,
     vagaId: data.vaga_id,
   };
 }
 
-async function registrarRecusa(
+async function registrarFeedback(
   envio: EnvioDoToken,
-  motivo: string,
+  acao: string,
 ): Promise<void> {
+  const evento = eventoDoFeedback(acao);
+  if (!evento) return;
   const { error } = await supabase.from("eventos_produto").insert({
-    nome: "vaga_irrelevante",
+    ...evento,
     origem: "telegram",
     user_id: envio.userId,
     perfil_id: envio.perfilId,
     vaga_id: envio.vagaId,
-    propriedades: { motivo },
   });
   if (error) throw error;
 }
 
-async function perguntarOMotivo(consulta: ConsultaDeFeedback): Promise<void> {
-  await chamarTelegram("editMessageReplyMarkup", {
+async function perguntarOMotivo(consulta: ConsultaDeFeedback, envio: EnvioDoToken): Promise<void> {
+  await chamarTelegram("sendMessage", {
     chat_id: consulta.chatId,
-    message_id: consulta.mensagemId,
-    reply_markup: { inline_keyboard: tecladoDeMotivos(consulta.token) },
+    text: `${envio.titulo} — ${envio.empresa}\n\nEssa vaga serviu para você?`,
+    reply_markup: { inline_keyboard: tecladoDeFeedback(consulta.token) },
   });
 }
 
@@ -169,42 +161,6 @@ async function encerrarPergunta(consulta: ConsultaDeFeedback): Promise<void> {
   });
 }
 
-async function voltarAosNumeros(
-  consulta: ConsultaDeFeedback,
-  teclado: BotaoDoTeclado[][],
-): Promise<void> {
-  const restante = tecladoSemONumeroRespondido(teclado, consulta.token);
-  if (restante.length === 0) {
-    await encerrarPergunta(consulta);
-    return;
-  }
-  await chamarTelegram("editMessageReplyMarkup", {
-    chat_id: consulta.chatId,
-    message_id: consulta.mensagemId,
-    reply_markup: { inline_keyboard: restante },
-  });
-}
-
-async function tratarClique(
-  consulta: ConsultaDeFeedback,
-  teclado: BotaoDoTeclado[][],
-): Promise<string> {
-  const envio = await envioDoToken(consulta.token, consulta.chatId);
-  if (!envio) return AVISO_DE_CONSULTA_DESCONHECIDA;
-  if (consulta.acao === ACAO_DE_RECUSA) {
-    await perguntarOMotivo(consulta);
-    return "";
-  }
-  if (consulta.acao === ACAO_SEM_RECUSA) {
-    await encerrarPergunta(consulta);
-    return AVISO_DE_TUDO_CERTO;
-  }
-  if (!eMotivo(consulta.acao)) return AVISO_DE_CONSULTA_DESCONHECIDA;
-  await registrarRecusa(envio, consulta.acao);
-  await voltarAosNumeros(consulta, teclado);
-  return AVISO_DE_RECUSA_REGISTRADA;
-}
-
 Deno.serve(async (requisicao) => {
   if (requisicao.method !== "POST") return new Response(null, { status: 405 });
   if (requisicao.headers.get(CABECALHO_DO_SEGREDO) !== segredoDoWebhook) {
@@ -213,20 +169,19 @@ Deno.serve(async (requisicao) => {
   const atualizacao = await requisicao.json();
   const consulta = extrairClique(atualizacao);
   if (consulta) {
-    const teclado = (atualizacao.callback_query?.message?.reply_markup?.inline_keyboard ??
-      []) as BotaoDoTeclado[][];
-    try {
-      const aviso = await tratarClique(consulta, teclado);
+    return await responderConsultaDeFeedback(consulta, {
+      envioDoToken,
+      registrarFeedback,
+      perguntarOMotivo,
+      encerrarPergunta,
+    }, async (aviso) => {
       await chamarTelegram("answerCallbackQuery", {
         callback_query_id: consulta.id,
         text: aviso || undefined,
       });
-    } catch (erro) {
-      console.error("falha ao tratar clique do telegram", erro);
-      return new Response(null, { status: 500 });
-    }
-    return new Response(null, { status: 200 });
+    });
   }
+
   try {
     await tratarAtualizacao(atualizacao);
   } catch (erro) {

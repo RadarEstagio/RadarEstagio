@@ -44,9 +44,12 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
   banco, a mensagem volta a apontar direto para a vaga.
+- **Feedback individual**: o teclado numerado acompanha a mensagem diária. Cada número abre
+  título e empresa com uma opção positiva e cinco recusas, incluindo `motivo_nota`. A última
+  resposta por recomendação vale nas métricas; cliques repetidos não multiplicam vagas.
 - **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
   últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
-  consultas equivalentes estão em `docs/metricas.md`.
+  definições estão em `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql`.
 - **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
   dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
   (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília

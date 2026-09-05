@@ -39,3 +39,7 @@ _Evitar_: TTV
 **Tempo até o valor**:
 O intervalo entre a criação do perfil e a ativação de produto.
 _Evitar_: Tempo até a entrega
+
+**Utilidade semanal**:
+Proporção de estudantes com ativação operacional que declaram ao menos uma vaga útil na semana.
+_Evitar_: Taxa de abertura, taxa de candidatura

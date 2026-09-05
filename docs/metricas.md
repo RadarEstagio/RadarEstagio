@@ -1,242 +1,118 @@
 # Métricas de produto
 
-## Eventos do funil
+A leitura continua em `uv run python -m radar metricas`, com `DATABASE_URL` configurada e
+janela de 30 dias. A consulta executada está em `radar/storage/metricas.sql`; não há uma
+segunda cópia de SQL neste documento. Esta etapa foi validada com dados sintéticos em
+PostgreSQL isolado. Conferir os números reais depois da publicação das funções.
 
-A migration `0005_eventos_produto.sql` cria `eventos_produto`, o catálogo fechado dos eventos
-do plano e os gatilhos para marcos que precisam de uma fonte autoritativa. Cada evento registra
-o instante, a origem e ao menos uma identidade entre sessão anônima, usuário ou perfil.
+## Feedback por recomendação
 
-O navegador mantém um `sessao_id` aleatório no `localStorage`. Ele permite ligar a visita
-anônima ao usuário quando o perfil é salvo, sem guardar e-mail, curso, cidade ou outro dado
-pessoal nas propriedades do evento. Propriedades livres são limitadas a um objeto JSON de 4 KB.
+A mensagem diária termina com “Deixe seu feedback 👇” e um número por recomendação, na
+mesma ordem das vagas. Se exceder o tamanho do Telegram, o teclado fica na última parte.
+Não é enviada uma notificação separada só para solicitar feedback.
 
-| Origem | Eventos emitidos agora |
-|---|---|
-| Web | `landing_visualizada`, `cta_cadastro_aberto`, as três etapas concluídas, `perfil_salvo`, `telegram_aberto` |
-| Gatilhos do banco | `conta_criada`, `email_confirmado`, `perfil_salvo`, `telegram_vinculado`, `primeira_recomendacao_enviada`, `entregas_pausadas` |
-| Telegram | `vaga_aberta`, `vaga_irrelevante` — o código existe; falta publicar as funções |
-| Sem emissor | `vaga_util`, `candidatura_iniciada` — **nenhuma linha do código os grava** |
+O número abre uma mensagem com título, empresa e seis opções:
 
-Os dois últimos não são detalhe: a North Star depende deles. Vaga útil é definida como
-recomendação com feedback positivo **ou** que gera candidatura, e nenhum dos dois sinais é
-capturado hoje. Ver a seção 3 de [`plano-geral.md`](plano-geral.md).
+| Opção | Evento | Motivo |
+|---|---|---|
+| 👍 Essa serviu | `vaga_util` | — |
+| 👎 A nota não fez sentido | `vaga_irrelevante` | `motivo_nota` |
+| 👎 Não é da minha área | `vaga_irrelevante` | `motivo_area` |
+| 👎 Pedem demais | `vaga_irrelevante` | `motivo_exigencia` |
+| 👎 Local ou modalidade | `vaga_irrelevante` | `motivo_logistica` |
+| 👎 Já vi essa | `vaga_irrelevante` | `motivo_repetida` |
 
-`vaga_aberta` vem da Edge Function `ir`. Cada linha de `envios` guarda um `token` único e o link
-da mensagem aponta para `ir?t=<token>`; a função registra o evento com `user_id`, `perfil_id` e
-`vaga_id` e responde 302 para a URL da vaga. O `user_id` não é redundante: a consulta do funil
-identifica a pessoa por `user_id` ou `sessao_id` e descarta linhas sem os dois, então um evento
-gravado só com `perfil_id` entraria no banco e sumiria da métrica. Requisição `HEAD` redireciona
-sem registrar, para que verificador de link não vire abertura. Token desconhecido — link antigo, envio que não chegou a ser
-gravado — redireciona para a landing sem registrar evento. Cliques repetidos geram linhas
-repetidas de propósito: as consultas de funil usam a primeira ocorrência, e a contagem bruta mede
-reincidência.
+Responder fecha somente a pergunta aberta; a mensagem diária e seus links permanecem.
+O número pode ser aberto novamente para corrigir a resposta. Essa permanência é intencional;
+toques repetidos podem abrir várias perguntas da mesma vaga ao mesmo tempo. Não há bloqueio
+de pergunta já aberta nesta versão. Botões antigos de recusa abrem
+as novas opções; “Todas serviram” antigo não vira feedback positivo retroativamente.
 
-`perfil_salvo` pode aparecer duas vezes: o gatilho garante o marco autoritativo e o evento web
-liga a sessão anônima ao usuário. Consultas de funil devem usar o primeiro instante por evento,
-não contar linhas brutas.
+O webhook exige conta ativa, não excluída, com o chat da interação ainda vinculado. A função
+`ir` mantém a navegação para contas pausadas ou desvinculadas sem registrar abertura; exclusão
+bloqueia navegação e registro. `HEAD` não registra abertura. Nenhuma destas regras foi relaxada.
 
-Esta consulta reconstrói a primeira ocorrência de cada etapa por usuário, incluindo os eventos
-anônimos da sessão que posteriormente salvou um perfil:
+Depois de gravar a resposta, falhas ao apagar a pergunta ou confirmar o clique são registradas
+no log, mas o webhook retorna 200. Falha de persistência retorna 500 para permitir nova tentativa.
+Isso evita retries causados por operações cosméticas; não garante processamento único diante
+de reentrega independente ou perda da resposta HTTP após o insert.
 
-```sql
-with sessoes_identificadas as (
-  select sessao_id, min(user_id::text)::uuid as user_id
-  from public.eventos_produto
-  where sessao_id is not null and user_id is not null
-  group by sessao_id
-  having count(distinct user_id) = 1
-), eventos_identificados as (
-  select
-    coalesce(evento.user_id, sessao.user_id) as user_id,
-    evento.nome,
-    evento.ocorrido_em
-  from public.eventos_produto as evento
-  left join sessoes_identificadas as sessao using (sessao_id)
-), funil as (
-  select
-    user_id,
-    min(ocorrido_em) filter (where nome = 'landing_visualizada') as landing_visualizada_em,
-    min(ocorrido_em) filter (where nome = 'cta_cadastro_aberto') as cadastro_aberto_em,
-    min(ocorrido_em) filter (where nome = 'etapa_perfil_concluida') as perfil_concluido_em,
-    min(ocorrido_em) filter (where nome = 'etapa_habilidades_concluida') as habilidades_concluidas_em,
-    min(ocorrido_em) filter (where nome = 'etapa_preferencias_concluida') as preferencias_concluidas_em,
-    min(ocorrido_em) filter (where nome = 'conta_criada') as conta_criada_em,
-    min(ocorrido_em) filter (where nome = 'email_confirmado') as email_confirmado_em,
-    min(ocorrido_em) filter (where nome = 'perfil_salvo') as perfil_salvo_em,
-    min(ocorrido_em) filter (where nome = 'telegram_aberto') as telegram_aberto_em,
-    min(ocorrido_em) filter (where nome = 'telegram_vinculado') as telegram_vinculado_em,
-    min(ocorrido_em) filter (
-      where nome = 'primeira_recomendacao_enviada'
-    ) as primeira_recomendacao_em,
-    min(ocorrido_em) filter (where nome = 'vaga_aberta') as primeira_vaga_aberta_em,
-    min(ocorrido_em) filter (where nome = 'vaga_util') as primeira_vaga_util_em,
-    min(ocorrido_em) filter (where nome = 'candidatura_iniciada') as primeira_candidatura_em
-  from eventos_identificados
-  where user_id is not null
-  group by user_id
-)
-select *
-from funil
-order by conta_criada_em desc nulls last;
-```
+Não foi necessário mudar o catálogo de eventos. Repetições de entrega do webhook ou do clique
+podem produzir mais de uma linha bruta; as métricas não contam essas linhas como recomendações
+adicionais. Eventos não são apagados ao mudar a resposta.
 
-## Ativação operacional e ativação de produto
+## Aquisição: da visita à primeira recomendação
 
-O vocabulário canônico está em [`CONTEXT.md`](../CONTEXT.md). O Radar separa dois marcos:
+Inclui visita, CTA, três etapas, conta criada, e-mail confirmado, perfil salvo, abertura do
+Telegram, vínculo e primeira recomendação. Cada etapa conta identidades distintas cuja
+**primeira aparição em qualquer evento** ocorreu nos últimos 30 dias.
 
-- **Ativação operacional:** primeira entrega bem-sucedida no Telegram contendo ao menos uma
-  recomendação. Confirma que o fluxo técnico funcionou, mas não que o estudante percebeu valor.
-- **Ativação de produto:** primeira abertura de uma vaga recomendada. É o primeiro sinal
-  observável de interesse e será reforçado depois por feedback positivo ou candidatura.
+A identidade é o usuário explícito, o dono do perfil ou, se ainda anônimo, a sessão. Uma sessão
+anônima só é associada a um usuário quando o histórico contém exatamente um dono para ela.
+Sessões compartilhadas por duas contas não são atribuídas arbitrariamente à primeira conta.
+O cadastro do PR #14 conserva a sessão de origem mesmo com confirmação em outro aparelho.
 
-Criar a conta, preencher o perfil, confirmar o e-mail e vincular o Telegram são etapas do funil,
-mas ainda não são ativação. Uma mensagem informando que nenhuma vaga foi encontrada também não
-conta como ativação operacional.
+Visitantes que abandonam antes de criar conta continuam contados. Uma pessoa em aparelhos
+anônimos diferentes pode contar como duas sessões; isso não é identificação individual perfeita.
+As etapas são contagens de alcance, não um funil estrito que descarte quem pulou uma etapa.
+Contas criadas sem perfil ou sem confirmação aparecem em suas respectivas etapas.
 
-A fonte de verdade da ativação operacional é `perfis.ativado_em`. O nome do campo é mantido por
-compatibilidade com o schema atual. O pipeline o preenche somente depois de o Telegram aceitar a
-entrega e na mesma transação que grava os respectivos registros em `envios`. O valor nunca é
-sobrescrito; reprocessamentos não geram uma segunda ativação operacional.
+## Resultado dos perfis novos
 
-A fonte de verdade da ativação de produto é a primeira ocorrência de `vaga_aberta` por usuário.
-Ela depende do link rastreável: sem `URL_DE_RASTREIO` configurado, a mensagem volta a apontar
-direto para a fonte e nenhuma abertura é registrada.
+Este bloco usa **perfis criados nos últimos 30 dias**, distinto da aquisição acima. Inclui
+as recomendações entregues a esses perfis e interações posteriores às entregas, até agora.
+Vínculo histórico não desaparece porque alguém desvinculou o Telegram depois.
 
-A migration `0003_evento_ativacao.sql` também preenche o campo de perfis antigos a partir do
-primeiro `envios.enviada_em` já registrado.
+Uma recomendação é o par `(perfil_id, vaga_id)`. Três cliques na mesma vaga contam como uma
+abertura. Para feedback, vale a última resposta do par por instante e, em empate, ID do evento.
+Uma resposta negativa corrigida para positiva deixa de contar como recusa, e vice-versa.
 
-## Métricas derivadas atuais
+Vagas úteis formam a união de feedback positivo vigente e candidatura atribuída histórica,
+sem duplicar quem tem os dois sinais. **Candidatura não tem emissor no piloto**; o relatório
+explicita essa limitação. A definição conceitual de vaga útil permanece no `CONTEXT.md`.
 
-### Taxa de ativação operacional em 7 dias
+## Utilidade semanal — North Star
 
-Percentual dos perfis criados em uma coorte que receberam a primeira recomendação em até
-7 dias. Perfis com menos de 7 dias devem ficar fora do denominador até completarem a janela.
+Cada linha cobre uma semana civil de segunda a segunda no fuso `America/Sao_Paulo`.
+As semanas que intersectam os 30 dias são mostradas completas; a atual é identificada como
+“em andamento”. Eventos futuros são ignorados.
 
-### Tempo até a primeira entrega
+- Denominador: todos os perfis com ativação operacional até o fim da semana (ou até agora,
+  na semana atual), inclusive perfis antigos, pausados ou desvinculados. Não restringir a
+  quem recebeu mensagem naquela semana, o que esconderia perda de cobertura e retenção.
+- Numerador: perfis desse denominador com ao menos uma recomendação útil sinalizada na semana.
+  Para respostas contraditórias dentro da semana vale a última; candidatura histórica também
+  compõe a união. Recomendação enviada antes da semana pode receber feedback nela.
+- A utilidade não é carregada automaticamente para a semana seguinte. Uma correção na semana
+  seguinte não reescreve o resultado fechado da anterior.
+- Sem ativados, o relatório mostra “sem denominador”, em vez de interpretar como 0%.
 
-Mediana, em horas, entre `criado_em` e `ativado_em` para os perfis ativados dentro da janela de
-7 dias. Essa métrica mede velocidade operacional, não valor percebido. A mediana evita que poucos
-casos muito atrasados distorçam a leitura.
+Ativação operacional é a primeira recomendação entregue (`perfis.ativado_em`). Ativação de
+produto é a primeira abertura observada; criar conta ou receber aviso sem vaga não ativa.
+O apagamento definitivo pode remover dados históricos e mudar agregados; não há arquivo
+permanente de métricas individuais fora da retenção declarada. O denominador semanal lê os
+perfis que ainda existem: apagar um perfil ativado pode mudar o percentual de uma semana
+passada. Comparações em reuniões devem registrar a data da consulta; semanas anteriores
+não são snapshots imutáveis.
 
-Esta consulta calcula as duas métricas para a coorte madura dos últimos 30 dias:
+## Recusas com denominador
 
-```sql
-with coorte as (
-  select criado_em, ativado_em
-  from public.perfis
-  where criado_em >= now() - interval '37 days'
-    and criado_em < now() - interval '7 days'
-), ativados as (
-  select criado_em, ativado_em
-  from coorte
-  where ativado_em <= criado_em + interval '7 days'
-)
-select
-  round(
-    100.0 * (select count(*) from ativados) / nullif((select count(*) from coorte), 0),
-    1
-  ) as taxa_ativacao_operacional_7d_percentual,
-  round(
-    (
-      percentile_cont(0.5) within group (
-        order by extract(epoch from (ativado_em - criado_em)) / 3600
-      )
-    )::numeric,
-    1
-  ) as tempo_ate_primeira_entrega_mediano_horas
-from ativados;
-```
+Outro bloco considera **todas as recomendações entregues nos últimos 30 dias**, inclusive a
+perfis antigos. Separa anúncios sem extração, sem tecnologias obrigatórias, com uma ou duas,
+e com três ou mais. O grupo vem da extração guardada, não da nota do ranking.
 
-## Funil de valor da coorte
+Cada grupo mostra entregas, recusas/entregas e recusas por `motivo_nota`/entregas. Usa a última
+resposta de cada par depois da entrega, até agora. Ausência de feedback permanece no denominador;
+ela não é classificada como aprovação. Esses números permitem comparar grupos sem confundir
+maior volume entregue com maior rejeição. Não ajustar pesos só por uma contagem bruta.
 
-Da entrega ao resultado: quantos perfis chegaram a cada etapa e quantas recomendações viraram
-abertura, feedback e candidatura. `python -m radar metricas` imprime exatamente este funil para os
-perfis criados nos últimos 30 dias, junto do custo de extração do período.
+## Custo e limites
 
-```sql
-with coorte as (
-  select id, telegram_chat_id, ativado_em
-  from public.perfis
-  where criado_em >= now() - interval '30 days'
-), eventos as (
-  select evento.perfil_id, evento.nome
-  from public.eventos_produto as evento
-  join coorte on coorte.id = evento.perfil_id
-)
-select
-  (select count(*) from coorte) as perfis_criados,
-  (select count(*) from coorte where telegram_chat_id is not null) as perfis_vinculados,
-  (select count(*) from coorte where ativado_em is not null) as perfis_ativados,
-  (select count(distinct perfil_id) from eventos where nome = 'vaga_aberta')
-    as perfis_com_vaga_aberta,
-  (select count(distinct perfil_id) from eventos where nome = 'vaga_util')
-    as perfis_com_vaga_util,
-  (select count(distinct perfil_id) from eventos where nome = 'candidatura_iniciada')
-    as perfis_com_candidatura,
-  (select count(*) from public.envios e join coorte on coorte.id = e.perfil_id) as vagas_enviadas,
-  (select count(*) from eventos where nome = 'vaga_aberta') as vagas_abertas,
-  (select count(*) from eventos where nome = 'vaga_util') as vagas_uteis,
-  (select count(*) from eventos where nome = 'vaga_irrelevante') as vagas_irrelevantes,
-  (select count(*) from eventos where nome = 'candidatura_iniciada') as candidaturas;
-```
+O custo mostrado é um indicador de uso: vagas extraídas no período por perfil novo com ativação
+operacional na coorte. Não é valor monetário nem número de requisições ao Gemini; o resumo de
+execução informa requisições separadamente. Extrações compartilhadas também atendem perfis
+antigos, portanto o indicador não atribui custo individual.
 
-## Custo por usuário ativado
-
-Cada vaga é extraída uma vez e a extração serve todos os perfis, então o custo do período é o
-número de vagas extraídas, não o número de usuários. As requisições ao Gemini são menos do que as
-vagas extraídas, porque a extração vai em lotes de `GEMINI_VAGAS_POR_LOTE` — o número exato de
-requisições da execução do dia sai no resumo enviado ao chat de operação.
-
-```sql
-select
-  (select count(*) from public.vagas where extraida_em >= now() - interval '30 days')
-    as vagas_extraidas,
-  (select count(*) from public.perfis
-    where criado_em >= now() - interval '30 days' and ativado_em is not null)
-    as usuarios_ativados,
-  round(
-    (select count(*) from public.vagas where extraida_em >= now() - interval '30 days')::numeric
-    / nullif(
-      (select count(*) from public.perfis
-        where criado_em >= now() - interval '30 days' and ativado_em is not null),
-      0
-    ),
-    1
-  ) as vagas_extraidas_por_ativado;
-```
-
-## Recusa por motivo
-
-Fecha o laço com o viés registrado na seção 7 de [`auditoria-rcd.md`](auditoria-rcd.md): se a
-recusa se concentrar em vagas que declaram uma ou duas tecnologias, o teto para anúncio raso
-deixa de ser intuição e vira correção com dado. `motivo` nulo é recusa sem segunda resposta.
-
-```sql
-select
-  coalesce(evento.propriedades->>'motivo', 'sem_motivo') as motivo,
-  count(*) as recusas,
-  count(*) filter (
-    where jsonb_array_length(
-      coalesce(vaga.extracao->'habilidades_obrigatorias', '[]'::jsonb)
-    ) <= 2
-  ) as recusas_de_anuncio_raso
-from public.eventos_produto as evento
-join public.vagas as vaga on vaga.id = evento.vaga_id
-where evento.nome = 'vaga_irrelevante'
-  and evento.ocorrido_em >= now() - interval '30 days'
-group by 1
-order by recusas desc, motivo;
-```
-
-## Métricas derivadas de interação
-
-- **Taxa de ativação de produto em 7 dias:** percentual dos perfis criados que abrem ao menos uma
-  recomendação em até 7 dias.
-- **Tempo até o valor:** mediana entre `perfis.criado_em` e o primeiro `vaga_aberta`.
-- **Taxa de vagas úteis:** recomendações com feedback positivo ou candidatura atribuída sobre o
-  total entregue.
-- **Candidaturas atribuídas por usuário com ativação operacional por semana:** resultado final de
-  negócio.
-
-Essas métricas devem ser segmentadas por modalidade, cidade ou período do curso apenas quando
-houver volume suficiente para não expor indivíduos nem tirar conclusões de amostras pequenas.
+Os testes cobrem banco vazio, abandono, confirmação, sessão compartilhada, cliques repetidos,
+feedback corrigido, união com candidatura, perfis antigos, limite semanal de Brasília e
+entregas sem resposta. O piloto e a validação remota ainda dependem de publicação.
