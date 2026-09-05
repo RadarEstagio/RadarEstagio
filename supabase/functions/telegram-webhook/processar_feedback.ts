@@ -40,6 +40,30 @@ export async function processarFeedback(
   }
   if (!eventoDoFeedback(consulta.acao)) return AVISO_DE_CONSULTA_DESCONHECIDA;
   await operacoes.registrarFeedback(envio, consulta.acao);
-  await operacoes.encerrarPergunta(consulta);
+  try {
+    await operacoes.encerrarPergunta(consulta);
+  } catch (erro) {
+    console.error("feedback gravado, mas pergunta não pôde ser fechada", erro);
+  }
   return AVISO_DE_RECUSA_REGISTRADA;
+}
+
+export async function responderConsultaDeFeedback(
+  consulta: ConsultaDeFeedback,
+  operacoes: OperacoesDeFeedback,
+  confirmarConsulta: (aviso: string) => Promise<void>,
+): Promise<Response> {
+  let aviso: string;
+  try {
+    aviso = await processarFeedback(consulta, operacoes);
+  } catch (erro) {
+    console.error("falha ao tratar clique do telegram", erro);
+    return new Response(null, { status: 500 });
+  }
+  try {
+    await confirmarConsulta(aviso);
+  } catch (erro) {
+    console.error("consulta processada, mas confirmação do telegram falhou", erro);
+  }
+  return new Response(null, { status: 200 });
 }

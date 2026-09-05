@@ -1,5 +1,9 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1";
-import { type OperacoesDeFeedback, processarFeedback } from "./processar_feedback.ts";
+import {
+  type OperacoesDeFeedback,
+  processarFeedback,
+  responderConsultaDeFeedback,
+} from "./processar_feedback.ts";
 
 const consulta = {
   id: "callback",
@@ -52,5 +56,41 @@ Deno.test("falha ao registrar mantém a pergunta para tentar novamente", async (
     throw new Error("banco");
   };
   await assertRejects(() => processarFeedback({ ...consulta, acao: "motivo_nota" }, api));
+  assertEquals(chamadas, []);
+});
+
+Deno.test("falhas cosméticas após gravar não solicitam reentrega do webhook", async () => {
+  for (const falha of ["fechar", "confirmar", "ambas"]) {
+    const { api, chamadas } = operacoes();
+    api.encerrarPergunta = async () => {
+      chamadas.push("fechar");
+      if (falha !== "confirmar") throw new Error("message can't be deleted");
+    };
+    const resposta = await responderConsultaDeFeedback(
+      { ...consulta, acao: "util" },
+      api,
+      async () => {
+        chamadas.push("confirmar");
+        if (falha !== "fechar") throw new Error("query is too old");
+      },
+    );
+    assertEquals(resposta.status, 200);
+    assertEquals(chamadas, ["util", "fechar", "confirmar"]);
+  }
+});
+
+Deno.test("falha de persistência solicita retry sem fechar nem confirmar", async () => {
+  const { api, chamadas } = operacoes();
+  api.registrarFeedback = async () => {
+    throw new Error("banco indisponível");
+  };
+  const resposta = await responderConsultaDeFeedback(
+    { ...consulta, acao: "util" },
+    api,
+    async () => {
+      chamadas.push("confirmar");
+    },
+  );
+  assertEquals(resposta.status, 500);
   assertEquals(chamadas, []);
 });

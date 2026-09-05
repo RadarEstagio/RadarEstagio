@@ -14,7 +14,7 @@ import {
   extrairClique,
   tecladoDeFeedback,
 } from "./feedback.ts";
-import { type EnvioDoToken, processarFeedback } from "./processar_feedback.ts";
+import { type EnvioDoToken, responderConsultaDeFeedback } from "./processar_feedback.ts";
 import { dispararEntregaImediata } from "./entrega_imediata.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
@@ -169,23 +169,19 @@ Deno.serve(async (requisicao) => {
   const atualizacao = await requisicao.json();
   const consulta = extrairClique(atualizacao);
   if (consulta) {
-    try {
-      const aviso = await processarFeedback(consulta, {
-        envioDoToken,
-        registrarFeedback,
-        perguntarOMotivo,
-        encerrarPergunta,
-      });
+    return await responderConsultaDeFeedback(consulta, {
+      envioDoToken,
+      registrarFeedback,
+      perguntarOMotivo,
+      encerrarPergunta,
+    }, async (aviso) => {
       await chamarTelegram("answerCallbackQuery", {
         callback_query_id: consulta.id,
         text: aviso || undefined,
       });
-    } catch (erro) {
-      console.error("falha ao tratar clique do telegram", erro);
-      return new Response(null, { status: 500 });
-    }
-    return new Response(null, { status: 200 });
+    });
   }
+
   try {
     await tratarAtualizacao(atualizacao);
   } catch (erro) {
