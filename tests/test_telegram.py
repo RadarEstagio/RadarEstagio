@@ -69,3 +69,25 @@ def test_falha_de_rede_levanta_erro_de_notificacao(
 
     with pytest.raises(ErroDeNotificacao, match="ConnectError"):
         notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+
+def test_feedback_fica_na_ultima_parte_sem_mensagem_extra(httpx_mock, notificador):
+    from radar.domain.models import BotaoDeFeedback, PerguntaDeFeedback
+
+    httpx_mock.add_response(json={"ok": True}, is_reusable=True)
+    texto = "\n\n───────────────\n\n".join("vaga " + "x" * 1000 for _ in range(6))
+    texto += "\n\nDeixe seu feedback 👇"
+    notificador.enviar_pergunta(
+        CHAT_ID_DE_TESTE,
+        PerguntaDeFeedback(
+            texto=texto,
+            linhas_de_botoes=[[BotaoDeFeedback(rotulo="1", dados="feedback:token")]],
+        ),
+    )
+    corpos = [json.loads(r.content) for r in httpx_mock.get_requests()]
+    assert len(corpos) == 2
+    assert all(len(c["text"]) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for c in corpos)
+    assert all(c["parse_mode"] == "HTML" for c in corpos)
+    assert "reply_markup" not in corpos[0]
+    assert corpos[-1]["text"].endswith("Deixe seu feedback 👇")
+    assert corpos[-1]["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "feedback:token"

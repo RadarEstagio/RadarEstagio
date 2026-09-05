@@ -20,14 +20,17 @@ class NotificadorTelegram:
             self._enviar_mensagem(chat_id, mensagem)
 
     def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
-        self._postar(
-            {
+        partes = dividir_em_mensagens(pergunta.texto)
+        for indice, parte in enumerate(partes):
+            corpo = {
                 "chat_id": chat_id,
-                "text": pergunta.texto,
-                "disable_notification": True,
-                "reply_markup": {"inline_keyboard": teclado(pergunta.linhas_de_botoes)},
+                "text": parte,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
             }
-        )
+            if indice == len(partes) - 1:
+                corpo["reply_markup"] = {"inline_keyboard": teclado(pergunta.linhas_de_botoes)}
+            self._postar(corpo)
 
     def _enviar_mensagem(self, chat_id: str, mensagem: str) -> None:
         self._postar(

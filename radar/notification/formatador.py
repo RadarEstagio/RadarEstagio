@@ -16,11 +16,12 @@ SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 NUMEROS_POR_LINHA = 5
-ACAO_DE_RECUSA = "recusa"
+ACAO_DE_RECUSA = "feedback"
 ACAO_SEM_RECUSA = "todas"
-TEXTO_DA_PERGUNTA = "Alguma não serviu? Toque no número para dizer por quê."
+TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
 ROTULO_SEM_RECUSA = "Todas serviram"
 ROTULOS_DE_MOTIVO = {
+    MotivoDeRecusa.NOTA: "A nota não fez sentido",
     MotivoDeRecusa.AREA: "Não é da minha área",
     MotivoDeRecusa.EXIGENCIA: "Pedem demais",
     MotivoDeRecusa.LOGISTICA: "Local ou modalidade",
@@ -59,13 +60,6 @@ def formatar_pergunta_de_feedback(recomendacoes: list[Recomendacao]) -> Pergunta
         numeros[inicio : inicio + NUMEROS_POR_LINHA]
         for inicio in range(0, len(numeros), NUMEROS_POR_LINHA)
     ]
-    linhas.append(
-        [
-            BotaoDeFeedback(
-                rotulo=ROTULO_SEM_RECUSA, dados=f"{ACAO_SEM_RECUSA}:{ranqueadas[0].token}"
-            )
-        ]
-    )
     return PerguntaDeFeedback(texto=TEXTO_DA_PERGUNTA, linhas_de_botoes=linhas)
 
 

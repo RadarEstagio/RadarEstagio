@@ -69,6 +69,7 @@ class Perfil(BaseModel):
 
 
 class MotivoDeRecusa(StrEnum):
+    NOTA = "motivo_nota"
     AREA = "motivo_area"
     EXIGENCIA = "motivo_exigencia"
     LOGISTICA = "motivo_logistica"
