@@ -107,6 +107,7 @@ class NotificadorFalso:
         if chat_id in self._chats_com_erro:
             raise ErroDeNotificacao("chat not found")
         self.perguntas.append(pergunta)
+        self.enviar(chat_id, pergunta.texto)
 
 
 class RepositorioFalso(RepositorioEmMemoria):
@@ -713,27 +714,9 @@ def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():
     assert ID_OUTRO_USUARIO in resumo.enviadas_por_usuario
 
 
-def test_falha_apos_entrega_nao_apaga_sucesso_do_resumo():
-    class RepositorioComFalhaNoFeedback(RepositorioFalso):
-        consultas = 0
-
-        def pode_entregar(self, destinatario):
-            self.consultas += 1
-            if self.consultas == 3:
-                raise ErroDeArmazenamento("indisponível")
-            return True
-
-    notificador = NotificadorFalso()
-    resumo = executar(
-        ColetorFalso([vaga(1)]),
-        ExtratorFalso({"1": 90}),
-        notificador,
-        RepositorioComFalhaNoFeedback([usuario()]),
-        parametros(),
-        AGORA_DE_TESTE,
-        PontuadorFalso({"1": 90}),
-    )
-    assert resumo.usuarios_com_falha_de_revalidacao == 1
-    assert resumo.usuarios_sem_entrega_por_falha_de_revalidacao == 0
-    assert resumo.atendidos() == 1
-    assert not notificador.perguntas
+def test_feedback_chega_na_propria_mensagem_das_vagas():
+    _, notificador, _ = rodar([vaga(1)], {"1": 90})
+    assert len(notificador.textos) == 1
+    assert "Empresa 1" in notificador.perguntas[0].texto
+    assert notificador.perguntas[0].texto.endswith("Deixe seu feedback 👇")
+    assert notificador.perguntas[0].linhas_de_botoes[0][0].dados.startswith("feedback:")
