@@ -211,6 +211,38 @@ def atender_usuario(
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
 ) -> list[Recomendacao] | None:
+    try:
+        repositorio.travar_atendimento(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        return None
+    try:
+        return atender_usuario_travado(
+            usuario,
+            vagas,
+            extracoes,
+            notificador,
+            repositorio,
+            parametros,
+            agora,
+            pontuador,
+            revalidacao,
+        )
+    finally:
+        repositorio.liberar_atendimento(usuario)
+
+
+def atender_usuario_travado(
+    usuario: Usuario,
+    vagas: list[Vaga],
+    extracoes: dict[str, ExtracaoDaVaga],
+    notificador: Notificador,
+    repositorio: Repositorio,
+    parametros: ParametrosDaExecucao,
+    agora: datetime,
+    pontuador: Pontuador,
+    revalidacao: RevalidacaoDeDestinatarios,
+) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     recusas = repositorio.recusas_do_usuario(usuario)
     usuario = com_areas_recusadas(usuario, recusas)

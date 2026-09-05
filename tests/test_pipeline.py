@@ -133,6 +133,7 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario: dict[UUID, int] = {}
         self.pausados: list[UUID] = []
         self.avisos_de_silencio: list[UUID] = []
+        self.travas: list[tuple[str, UUID]] = []
         self.carencias_aplicadas: list[int] = []
         self.extracoes_guardadas: dict[str, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
@@ -163,6 +164,12 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
         return self._recusas
+
+    def travar_atendimento(self, usuario: Usuario) -> None:
+        self.travas.append(("travar", usuario.id))
+
+    def liberar_atendimento(self, usuario: Usuario) -> None:
+        self.travas.append(("liberar", usuario.id))
 
     def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
         if self._falha_ao_gravar:
@@ -523,6 +530,23 @@ def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
     assert pontuador.pontuadas == ["2"]
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
     assert "Empresa 1" not in notificador.textos[0]
+
+
+def test_atendimento_trava_o_perfil_e_libera_mesmo_com_falha_no_envio():
+    notificador = NotificadorFalso(chats_com_erro={"123"})
+    repositorio = RepositorioFalso([usuario()])
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert repositorio.travas == [("travar", ID_USUARIO), ("liberar", ID_USUARIO)]
 
 
 def test_apenas_o_perfil_informado_e_atendido():
