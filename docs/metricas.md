@@ -23,12 +23,19 @@ O número abre uma mensagem com título, empresa e seis opções:
 | 👎 Já vi essa | `vaga_irrelevante` | `motivo_repetida` |
 
 Responder fecha somente a pergunta aberta; a mensagem diária e seus links permanecem.
-O número pode ser aberto novamente para corrigir a resposta. Botões antigos de recusa abrem
+O número pode ser aberto novamente para corrigir a resposta. Essa permanência é intencional;
+toques repetidos podem abrir várias perguntas da mesma vaga ao mesmo tempo. Não há bloqueio
+de pergunta já aberta nesta versão. Botões antigos de recusa abrem
 as novas opções; “Todas serviram” antigo não vira feedback positivo retroativamente.
 
 O webhook exige conta ativa, não excluída, com o chat da interação ainda vinculado. A função
 `ir` mantém a navegação para contas pausadas ou desvinculadas sem registrar abertura; exclusão
 bloqueia navegação e registro. `HEAD` não registra abertura. Nenhuma destas regras foi relaxada.
+
+Depois de gravar a resposta, falhas ao apagar a pergunta ou confirmar o clique são registradas
+no log, mas o webhook retorna 200. Falha de persistência retorna 500 para permitir nova tentativa.
+Isso evita retries causados por operações cosméticas; não garante processamento único diante
+de reentrega independente ou perda da resposta HTTP após o insert.
 
 Não foi necessário mudar o catálogo de eventos. Repetições de entrega do webhook ou do clique
 podem produzir mais de uma linha bruta; as métricas não contam essas linhas como recomendações
@@ -83,7 +90,10 @@ As semanas que intersectam os 30 dias são mostradas completas; a atual é ident
 Ativação operacional é a primeira recomendação entregue (`perfis.ativado_em`). Ativação de
 produto é a primeira abertura observada; criar conta ou receber aviso sem vaga não ativa.
 O apagamento definitivo pode remover dados históricos e mudar agregados; não há arquivo
-permanente de métricas individuais fora da retenção declarada.
+permanente de métricas individuais fora da retenção declarada. O denominador semanal lê os
+perfis que ainda existem: apagar um perfil ativado pode mudar o percentual de uma semana
+passada. Comparações em reuniões devem registrar a data da consulta; semanas anteriores
+não são snapshots imutáveis.
 
 ## Recusas com denominador
 
