@@ -49,9 +49,12 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         )
     linhas.extend(["", "Recusas por tecnologias declaradas — entregas no período:"])
     for grupo in funil.recusas_por_grupo:
+        taxa = (
+            f"{100 * grupo.recusas / grupo.entregas:.1f}%" if grupo.entregas else "sem denominador"
+        )
         linhas.append(
             f"  {grupo.grupo}: {grupo.recusas}/{grupo.entregas} recusas "
-            f"({100 * grupo.recusas / grupo.entregas:.1f}%); "
+            f"({taxa}); "
             f"nota: {grupo.recusas_da_nota}/{grupo.entregas}"
         )
     linhas.append("Candidatura: sem captura no piloto; contagem apenas de registros históricos.")

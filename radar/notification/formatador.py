@@ -17,9 +17,7 @@ PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 NUMEROS_POR_LINHA = 5
 ACAO_DE_RECUSA = "feedback"
-ACAO_SEM_RECUSA = "todas"
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
-ROTULO_SEM_RECUSA = "Todas serviram"
 ROTULOS_DE_MOTIVO = {
     MotivoDeRecusa.NOTA: "A nota não fez sentido",
     MotivoDeRecusa.AREA: "Não é da minha área",

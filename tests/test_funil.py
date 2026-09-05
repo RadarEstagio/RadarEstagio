@@ -102,3 +102,19 @@ def test_utilidade_semanal_exibe_denominador_e_semana_incompleta():
     assert "2026-09-07 (em andamento): 1/4 — 25.0%" in texto
     assert "2026-08-31: 0/0 — sem denominador" in texto
     assert "sem captura no piloto" in texto
+
+
+def test_recusas_sem_entregas_exibem_ausencia_de_denominador():
+    texto = formatar_funil(
+        funil(
+            recusas_por_grupo=[
+                {
+                    "grupo": "sem_extracao",
+                    "entregas": 0,
+                    "recusas": 0,
+                    "recusas_da_nota": 0,
+                }
+            ]
+        )
+    )
+    assert "0/0 recusas (sem denominador)" in texto
