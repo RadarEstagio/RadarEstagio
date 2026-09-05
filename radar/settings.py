@@ -3,7 +3,8 @@ from typing import Literal, Self
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-FONTES_DISPONIVEIS = ("adzuna", "gupy")
+FONTES_DISPONIVEIS = ("adzuna", "gupy", "jooble")
+FONTES_PADRAO = ("adzuna", "gupy")
 SEPARADOR_DE_FONTES = ","
 
 
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     adzuna_app_key: str = Field(min_length=1)
     avaliador: Literal["gemini_api", "agy"] = "gemini_api"
     gemini_api_key: str = ""
+    jooble_api_key: str = ""
     gemini_modelo: str = "gemini-3.6-flash"
     gemini_vagas_por_lote: int = Field(default=10, ge=1)
     agy_modelo: str = "gemini-3.6-flash-low"
@@ -26,7 +28,7 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     database_url: str = ""
     url_de_rastreio: str = ""
-    fontes: str = SEPARADOR_DE_FONTES.join(FONTES_DISPONIVEIS)
+    fontes: str = SEPARADOR_DE_FONTES.join(FONTES_PADRAO)
     dias_recentes: int = Field(default=3, ge=1)
     quantidade_vagas_enviadas: int = 5
     nota_minima: int = Field(default=40, ge=0, le=100)
@@ -50,6 +52,12 @@ class Settings(BaseSettings):
 
     def usa_banco(self) -> bool:
         return bool(self.database_url.strip())
+
+    @model_validator(mode="after")
+    def exigir_chave_da_fonte_jooble(self) -> Self:
+        if "jooble" in self.fontes_selecionadas() and not self.jooble_api_key.strip():
+            raise ValueError("JOOBLE_API_KEY é obrigatória quando a fonte jooble está ativa")
+        return self
 
     @model_validator(mode="after")
     def exigir_chave_no_modo_gemini_api(self) -> Self:

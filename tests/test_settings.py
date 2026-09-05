@@ -34,6 +34,20 @@ def test_fontes_padrao_sao_adzuna_e_gupy():
     assert settings.fontes_selecionadas() == ["adzuna", "gupy"]
 
 
+def test_jooble_nao_entra_nas_fontes_padrao_e_exige_chave():
+    padrao = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
+    assert "jooble" not in padrao.fontes_selecionadas()
+
+    com_chave = Settings(
+        _env_file=None,
+        **configuracao_base(avaliador="agy", fontes="adzuna,jooble", jooble_api_key="chave"),
+    )
+    assert com_chave.fontes_selecionadas() == ["adzuna", "jooble"]
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes="jooble"))
+
+
 def test_fontes_aceitam_espacos_e_maiusculas():
     settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Gupy "))
 
