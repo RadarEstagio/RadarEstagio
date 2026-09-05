@@ -6,6 +6,7 @@ import httpx
 from radar.collectors.adzuna import ColetorAdzuna
 from radar.collectors.composto import ColetorComposto
 from radar.collectors.gupy import ColetorGupy
+from radar.collectors.jooble import ColetorJooble
 from radar.domain.models import Modalidade, Usuario
 from radar.domain.ports import ColetorDeVagas
 from radar.settings import Settings
@@ -24,6 +25,9 @@ def criar_coletor(
     coletores_disponiveis: dict[str, ColetorDeVagas] = {
         "adzuna": ColetorAdzuna(settings, cliente_http, cidades_de_busca),
         "gupy": ColetorGupy(cliente_http, publicadas_desde, cidades_de_busca),
+        "jooble": ColetorJooble(
+            settings.jooble_api_key, cliente_http, publicadas_desde, cidades_de_busca
+        ),
     }
     return ColetorComposto(
         {fonte: coletores_disponiveis[fonte] for fonte in settings.fontes_selecionadas()}

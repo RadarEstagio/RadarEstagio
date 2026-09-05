@@ -8,6 +8,7 @@ from pytest_httpx import HTTPXMock
 from radar.collectors.adzuna import URL_BUSCA as URL_ADZUNA
 from radar.collectors.factory import cidades_de_interesse, criar_coletor
 from radar.collectors.gupy import URL_BUSCA as URL_GUPY
+from radar.collectors.jooble import URL_BUSCA as URL_JOOBLE
 from radar.domain.models import Modalidade, Perfil, Usuario
 from radar.settings import Settings
 
@@ -47,6 +48,19 @@ def test_consulta_somente_as_fontes_selecionadas(httpx_mock: HTTPXMock):
         criar_coletor(settings_de_teste("adzuna"), cliente_http, AGORA).coletar()
 
     assert hosts_consultados(httpx_mock) == {httpx.URL(URL_ADZUNA).host}
+
+
+def test_jooble_selecionado_consulta_o_endpoint_do_jooble(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []}, is_reusable=True
+    )
+    settings = settings_de_teste("adzuna").model_copy(
+        update={"fontes": "jooble", "jooble_api_key": "chave-jooble"}
+    )
+    with httpx.Client() as cliente_http:
+        criar_coletor(settings, cliente_http, AGORA).coletar()
+
+    assert hosts_consultados(httpx_mock) == {httpx.URL(URL_JOOBLE).host}
 
 
 def test_consulta_todas_as_fontes_por_padrao(httpx_mock: HTTPXMock):
