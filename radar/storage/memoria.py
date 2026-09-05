@@ -36,6 +36,12 @@ class RepositorioEmMemoria:
     def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
         return RecusasDoUsuario()
 
+    def travar_atendimento(self, usuario: Usuario) -> None:
+        return None
+
+    def liberar_atendimento(self, usuario: Usuario) -> None:
+        return None
+
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None:

@@ -23,6 +23,7 @@ from radar.storage.errors import ErroDeArmazenamento
 logger = logging.getLogger(__name__)
 
 RECUSAS_POR_AREA_PARA_DESCONTAR = 2
+ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
@@ -311,6 +312,24 @@ class RepositorioPostgres:
                 f"Falha ao ler as vagas enviadas: {descrever(erro)}"
             ) from erro
         return [converter_em_vaga_enviada(linha) for linha in linhas]
+
+    def travar_atendimento(self, usuario: Usuario) -> None:
+        try:
+            self._conexao.execute(
+                "select pg_advisory_lock(%(espaco)s, hashtext(%(perfil)s))",
+                {"espaco": ESPACO_DA_TRAVA_DE_ATENDIMENTO, "perfil": str(usuario.id)},
+            )
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao travar o atendimento: {descrever(erro)}") from erro
+
+    def liberar_atendimento(self, usuario: Usuario) -> None:
+        try:
+            self._conexao.execute(
+                "select pg_advisory_unlock(%(espaco)s, hashtext(%(perfil)s))",
+                {"espaco": ESPACO_DA_TRAVA_DE_ATENDIMENTO, "perfil": str(usuario.id)},
+            )
+        except psycopg.Error as erro:
+            logger.warning("trava do perfil %s não foi liberada: %s", usuario.id, descrever(erro))
 
     def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
         try:
