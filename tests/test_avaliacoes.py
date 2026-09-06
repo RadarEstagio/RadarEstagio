@@ -141,6 +141,19 @@ def test_wordpress_nao_e_confundido_com_word():
     assert resultado.nota == 68
 
 
+def test_desejavel_nao_atendida_fica_fora_da_lista_de_cobranca():
+    resultado = resultado_da(
+        extracao(
+            habilidades_obrigatorias=["Python", "C#"],
+            habilidades_desejaveis=["Docker", "AWS", "Java"],
+        )
+    )
+
+    assert resultado.requisitos_nao_atendidos == ["C#"]
+    assert "Docker" not in resultado.requisitos_nao_atendidos
+    assert set(resultado.requisitos_atendidos) == {"Python", "Java"}
+
+
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(extracao())
 

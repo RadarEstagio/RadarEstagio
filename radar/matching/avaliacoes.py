@@ -262,18 +262,25 @@ def _classificar_habilidades(
     habilidades_do_perfil = {
         _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
     }
-    requisitos = _juntar_habilidades_da_vaga(extracao)
     requisitos_atendidos = [
         habilidade
-        for habilidade in requisitos
+        for habilidade in _juntar_habilidades_da_vaga(extracao)
         if _normalizar_habilidade(habilidade) in habilidades_do_perfil
     ]
     requisitos_nao_atendidos = [
         habilidade
-        for habilidade in requisitos
+        for habilidade in _exigidas_pela_vaga(extracao)
         if _normalizar_habilidade(habilidade) not in habilidades_do_perfil
     ]
     return requisitos_atendidos, requisitos_nao_atendidos
+
+
+def _exigidas_pela_vaga(extracao: ExtracaoDaVaga) -> list[str]:
+    unicas: dict[str, str] = {}
+    for habilidade in extracao.habilidades_obrigatorias + extracao.habilidades_principais:
+        if habilidade.strip():
+            unicas.setdefault(_normalizar_habilidade(habilidade), habilidade.strip())
+    return list(unicas.values())
 
 
 def _juntar_habilidades_da_vaga(extracao: ExtracaoDaVaga) -> list[str]:
