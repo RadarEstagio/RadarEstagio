@@ -2,16 +2,15 @@
 
 **Estado: rascunhos e páginas HTML preparados; revisão final de Igor e Ian pendente.**
 
-Em 05/09, Igor autorizou continuar localmente sem deploy. Cadastro, consentimento, reenvio,
-recuperação, exportação e proteção das interações foram implementados e testados com mocks
-de autenticação e PostgreSQL isolado. As migrations `0014`–`0016` não foram aplicadas no
-projeto remoto; os avisos de revisão permanecem nas páginas. A sequência abaixo registra o
-plano original, com os passos 1 a 4 preparados localmente e os passos 5 a 7 ainda pendentes.
+**Atualizado em 06/09/2026.** Cadastro, consentimento, recuperação, exportação e proteção das
+interações estão na `main`. As migrations `0014`–`0016` foram aplicadas e as funções publicadas,
+conforme o registro de 05/09 à noite. Feedback e métricas estão implementados; primeira entrega
+e trava por perfil foram validadas remotamente. A consulta do funil foi conferida com dados reais.
 
-O usuário autorizou criar as páginas para prosseguir com a preparação. Elas estão em
-`web/termos.html` e `web/privacidade.html`, com aviso de revisão, sem vigência e ainda sem
-publicação remota. O [guia de publicação e piloto](guia-publicacao-e-piloto.md) reúne as ações
-externas e as dependências de implementação.
+O frontend ainda não foi hospedado. As páginas de Termos e Privacidade permanecem sem vigência,
+com revisão final pendente. Falta testar o fluxo completo pelo site publicado, incluindo e-mails
+de confirmação e recuperação. Esta revisão documental não repetiu verificações no banco remoto.
+O [guia de publicação e piloto](guia-publicacao-e-piloto.md) reúne os passos restantes.
 
 O passo 1 da seção 4 do [plano de cadastro](plano-cadastro-e-privacidade.md) determina:
 “Escrever os dois documentos; Igor e Ian revisam antes de qualquer código”. Os textos para
@@ -31,37 +30,30 @@ em vigor. O usuário confirmou o domínio `radarestagio.com` e os responsáveis 
 - Confirmar condições de transferência internacional, logs e backups dos fornecedores e
   preencher as passagens de revisão antes de publicar.
 
-## Promessas que dependem de implementação
+## Promessas e validações restantes
 
 | Trecho dos rascunhos | Condição para publicar |
 |---|---|
-| Feedback positivo e sobre a nota | Trocar o teclado diário por feedback individual com as seis opções do plano geral |
-| Primeira busca após o vínculo | Dispatch autenticado, pipeline por perfil e janela de 06:23 a 07:23 de Brasília |
-| Preferência por e-mails e versão aceita | Implementadas localmente; aplicar `0014` com o frontend atualizado e a versão final dos documentos |
+| Feedback positivo e sobre a nota | Implementado e publicado; validar respostas reais às seis opções |
+| Primeira busca após o vínculo | Implementada e validada em cerca de quatro minutos; preservar configuração e janela do diário |
+| Preferência por e-mails e versão aceita | `0014` aplicada; publicar frontend e finalizar versão dos documentos |
 | Download dos dados | RPC `0015` e botão implementados; testar no ambiente integrado |
 | Recuperação de senha | Implementada localmente; testar o e-mail real e o retorno autorizado |
 | Cloudflare, Turnstile e Resend | Configurar e verificar os serviços antes de apresentá-los como ativos |
-| Interrupção após exclusão | Implementada no job, nas funções e na `0016`; disponibilizar as três partes e validar a integração |
+| Interrupção após exclusão | Implementada e disponibilizada; testar exclusão pelo fluxo integrado |
 
-O banco e a rotina de exclusão foram conferidos no código, não no ambiente remoto. A migration
-`0013` permanece intacta. O prazo de apagamento depende da execução diária; não se deve prometer
+As migrations `0014`–`0016` foram registradas como conferidas objeto a objeto no banco remoto.
+Isso não substitui o teste integrado de exclusão e arrependimento. A `0013` permanece intacta. O prazo de apagamento depende da execução diária; não se deve prometer
 apagamento em um horário exato nem extensão desse apagamento a mensagens já no Telegram.
 
-## Sequência após a revisão
+## Sequência restante
 
-1. Concluir os textos e criar `web/termos.html` e `web/privacidade.html`, com links no rodapé.
-2. Criar a migration `0014` para consentimento e criação de perfil após confirmação, preservando
-   a sessão de origem do funil. Validar dados de metadata no banco e impedir alteração do aceite
-   histórico por update direto do cliente.
-3. Integrar cadastro, confirmação entre aparelhos, reenvio com espera de um minuto, revelação
-   de senha e Turnstile; depois recuperação de senha, exportação e revogação no painel.
-4. Fechar as três lacunas de processamento após exclusão, com verificação do vínculo atual.
-5. Implementar feedback por vaga e corrigir métricas: funil desde a visita, vagas distintas,
-   recorte semanal e denominador das recusas por grupo de recomendações entregues.
-6. Implementar primeira entrega por perfil. Verificar autenticação do dispatch, repetição do
-   webhook e concorrência com a execução diária para evitar entregas duplicadas.
-7. Publicar a landing, configurar Auth, DNS, SMTP e secrets, aplicar a nova migration e publicar
-   as funções. Verificar os fluxos com uma conta de teste antes de recrutar o piloto.
+1. Revisar os textos com os responsáveis e definir versão e vigência antes de abrir cadastros.
+2. Resolver a integração do repositório com Cloudflare Pages e hospedar o frontend.
+3. Ajustar Auth e `URL_DA_LANDING` para o site; configurar Turnstile na ordem do guia.
+4. Validar confirmação, reenvio e recuperação com e-mail real.
+5. Testar cadastro entre aparelhos, vínculo, feedback, exportação, pausa, exclusão e cancelamento.
+6. Conferir as métricas com respostas reais e registrar resultados antes de recrutar o piloto.
 
-Cada decisão de código segue uma fatia própria com a suíte executada separadamente, conforme
-`CLAUDE.md`. A publicação e a aplicação remota ainda não foram feitas nesta preparação.
+Não reaplicar nem reescrever migrations já aplicadas para executar esses passos. A publicação
+parcial do backend não torna os documentos vigentes nem encerra a validação do produto.

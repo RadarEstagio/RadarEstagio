@@ -115,4 +115,7 @@ antigos, portanto o indicador não atribui custo individual.
 
 Os testes cobrem banco vazio, abandono, confirmação, sessão compartilhada, cliques repetidos,
 feedback corrigido, união com candidatura, perfis antigos, limite semanal de Brasília e
-entregas sem resposta. O piloto e a validação remota ainda dependem de publicação.
+entregas sem resposta. Segundo o registro de 05/09 à noite, o relatório foi conferido com
+os dados reais e a abertura foi validada com token real. O feedback estava zerado nessa
+conferência; falta validar respostas positivas e negativas reais e o funil completo após
+publicar a landing. Essa conferência inicial não substitui a medição durante o piloto.
