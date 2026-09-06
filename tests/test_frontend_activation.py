@@ -148,9 +148,7 @@ def test_perfil_marcado_para_exclusao_nao_aceita_update_do_site():
 
 def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
     js = (RAIZ / "web/assets/app.js").read_text()
-    handler = js.split(
-        'querySelector("#cancel-deletion").addEventListener'
-    )[1].split("});")[0]
+    handler = js.split('querySelector("#cancel-deletion").addEventListener')[1].split("});")[0]
 
     assert "mostrarEstadoDoPerfil(profile)" in handler
     assert "showAccount(profile)" not in handler

@@ -279,9 +279,7 @@ def test_funil_da_coorte_conta_perfis_envios_e_eventos(
 
 
 def como_dono(conexao: psycopg.Connection, usuario: Usuario) -> None:
-    dono = conexao.execute(
-        "select user_id from perfis where id = %s", (usuario.id,)
-    ).fetchone()[0]
+    dono = conexao.execute("select user_id from perfis where id = %s", (usuario.id,)).fetchone()[0]
     conexao.execute("select set_config('role', 'authenticated', true)")
     conexao.execute(
         "select set_config('request.jwt.claims', %s, true)",
@@ -350,9 +348,7 @@ def test_excluir_marca_e_para_de_entregar_sem_apagar_ainda(
 def test_a_marca_de_exclusao_sozinha_tira_o_perfil_da_entrega(
     conexao: psycopg.Connection, usuario: Usuario
 ):
-    conexao.execute(
-        "update perfis set excluida_em = now() where id = %s", (usuario.id,)
-    )
+    conexao.execute("update perfis set excluida_em = now() where id = %s", (usuario.id,))
 
     assert RepositorioPostgres(conexao).listar_ativos() == []
 
@@ -367,9 +363,7 @@ def test_perfil_marcado_nao_aceita_mais_edicao_pelo_site(
 
     conexao.execute("select set_config('role', 'postgres', true)")
     assert (
-        conexao.execute(
-            "select ativo from perfis where id = %s", (usuario.id,)
-        ).fetchone()[0]
+        conexao.execute("select ativo from perfis where id = %s", (usuario.id,)).fetchone()[0]
         is True
     )
 
@@ -382,9 +376,7 @@ def test_cancelar_devolve_o_perfil_ao_ar(conexao: psycopg.Connection, usuario: U
 
     conexao.execute("select set_config('role', 'postgres', true)")
     assert (
-        conexao.execute(
-            "select excluida_em from perfis where id = %s", (usuario.id,)
-        ).fetchone()[0]
+        conexao.execute("select excluida_em from perfis where id = %s", (usuario.id,)).fetchone()[0]
         is None
     )
     assert [u.id for u in RepositorioPostgres(conexao).listar_ativos()] == [usuario.id]
@@ -419,16 +411,12 @@ def test_cancelar_a_exclusao_nao_retoma_entregas_que_o_dono_tinha_pausado(
 
     conexao.execute("select set_config('role', 'postgres', true)")
     assert (
-        conexao.execute(
-            "select ativo from perfis where id = %s", (usuario.id,)
-        ).fetchone()[0]
+        conexao.execute("select ativo from perfis where id = %s", (usuario.id,)).fetchone()[0]
         is False
     )
 
 
-def test_a_carencia_protege_a_conta_recem_excluida(
-    conexao: psycopg.Connection, usuario: Usuario
-):
+def test_a_carencia_protege_a_conta_recem_excluida(conexao: psycopg.Connection, usuario: Usuario):
     repositorio = RepositorioPostgres(conexao)
     como_dono(conexao, usuario)
     conexao.execute("select public.excluir_minha_conta()")
@@ -470,9 +458,7 @@ def test_apagar_conta_nao_leva_junto_o_evento_de_quem_dividiu_o_navegador(
         "values (%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
         (outro, f"{outro}@teste.local"),
     )
-    dono = conexao.execute(
-        "select user_id from perfis where id = %s", (usuario.id,)
-    ).fetchone()[0]
+    dono = conexao.execute("select user_id from perfis where id = %s", (usuario.id,)).fetchone()[0]
     conexao.execute(
         "insert into eventos_produto (nome, origem, sessao_id, user_id) values "
         "('landing_vista', 'site', %s, null), "
