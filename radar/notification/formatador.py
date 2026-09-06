@@ -12,6 +12,7 @@ from radar.domain.models import (
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
+MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
@@ -179,7 +180,13 @@ def formatar_pontos(pontos: list[str]) -> str:
 
 
 def formatar_requisitos(requisitos: list[str]) -> str:
-    return " · ".join(escape(requisito) for requisito in requisitos)
+    exibidos = " · ".join(
+        escape(requisito) for requisito in requisitos[:MAXIMO_DE_REQUISITOS_EXIBIDOS]
+    )
+    ocultos = len(requisitos) - MAXIMO_DE_REQUISITOS_EXIBIDOS
+    if ocultos <= 0:
+        return exibidos
+    return f"{exibidos} · e mais {ocultos}"
 
 
 def dividir_em_mensagens(texto: str) -> list[str]:

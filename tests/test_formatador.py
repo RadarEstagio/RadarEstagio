@@ -184,6 +184,28 @@ def test_descricao_incompleta_nao_afirma_que_requisitos_nao_foram_informados():
     assert "não informados na descrição" not in texto
 
 
+def test_lista_longa_de_requisitos_e_resumida_na_mensagem():
+    nao_atendidos = [f"Tecnologia{numero}" for numero in range(1, 21)]
+    com_paredao = resultado(70, contra=[], requisitos_analisados=True)
+    com_paredao = com_paredao.model_copy(update={"requisitos_nao_atendidos": nao_atendidos})
+
+    texto = formatar_mensagem([Recomendacao(resultado=com_paredao)], DATA_DE_TESTE)
+
+    assert "Tecnologia8" in texto
+    assert "Tecnologia9" not in texto
+    assert "e mais 12" in texto
+
+
+def test_lista_curta_de_requisitos_nao_ganha_resumo():
+    com_poucos = resultado(70, contra=[], requisitos_analisados=True)
+    com_poucos = com_poucos.model_copy(update={"requisitos_nao_atendidos": ["Python", "SQL"]})
+
+    texto = formatar_mensagem([Recomendacao(resultado=com_poucos)], DATA_DE_TESTE)
+
+    assert "Python · SQL" in texto
+    assert "e mais" not in texto
+
+
 def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     oportunidade = vaga().model_copy(update={"modalidade": Modalidade.HIBRIDO})
     texto = mensagem([resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE)
