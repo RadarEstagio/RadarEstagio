@@ -3,7 +3,7 @@
 > Histórico dos passos iniciais. Números e pendências abaixo são da época de cada registro; não constituem checklist atual.
 > Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
 
-Registro do MVP (Fase 1), passo a passo, seguindo o [plano](plano-mvp.md). Para cada passo:
+Registro do MVP (Fase 1), passo a passo. O plano original foi retirado após a conclusão da fase e permanece no histórico do Git. Para cada passo:
 o que foi construído, por que daquele jeito, como foi testado e o que aprendemos no caminho.
 
 Leia junto com [`arquitetura.md`](arquitetura.md), que explica como as peças se encaixam.

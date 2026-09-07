@@ -6,7 +6,6 @@ Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra 
 usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
 
 - Proposta completa: [`docs/proposta.md`](docs/proposta.md)
-- Plano do MVP, passo a passo: [`docs/plano-mvp.md`](docs/plano-mvp.md)
 - O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)

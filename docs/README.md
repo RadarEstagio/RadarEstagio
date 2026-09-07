@@ -29,7 +29,6 @@ como equivalentes.
 | `plano-cadastro-e-privacidade.md` | Manter como decisões da frente | Explica consentimento, exclusão e escolhas; execução pertence ao plano geral e ao guia |
 | `passos-realizados.md` | Preservar como histórico | Relato dos passos iniciais; números e pendências retratam a época, não o estado atual |
 | `proposta.md` | Preservar como proposta original | Contexto acadêmico e intenção; custos, stack e roadmap originais não são contrato vigente |
-| `plano-mvp.md` | Preservar como histórico | Plano da Fase 1 concluída; não executar novamente |
 | `pre-prd.md` | Preservar como análise de 02/09 | Hipóteses e viabilidade daquela revisão; não manter um segundo catálogo atual |
 | `plano-melhorias-rcd.md` | Preservar como estratégia | Hipóteses, critérios e portões; não transformar toda sugestão em requisito aprovado |
 | `auditoria-rcd.md` | Preservar como diagnóstico datado | Evidência dos achados e do viés de ranking; sprints antigos não substituem o plano geral |
