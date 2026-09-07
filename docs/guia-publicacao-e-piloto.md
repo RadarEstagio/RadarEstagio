@@ -7,8 +7,10 @@ continua sem hospedagem e os documentos continuam como rascunhos, sem vigência.
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
 - `supabase functions list`: `ir` e `telegram-webhook` **ativas**, publicadas em 05/09 às 21:13 e
-  21:15 UTC — depois do merge do feedback de seis opções, às 18:35 UTC, então a versão no ar
-  já o contém.
+  21:15 UTC. O código no ar foi baixado com `supabase functions download` e comparado arquivo a
+  arquivo com o do repositório: **idêntico** nas duas. Confirma que a versão publicada carrega o
+  feedback de seis opções, a resposta que não devolve 500 depois de gravar e a `navegacao.ts` que
+  preserva o link de conta pausada.
 - Objetos das `0014`–`0016` presentes: as três colunas de consentimento, `cadastros_pendentes`,
   as quatro funções da `0014`, `baixar_meus_dados` e `verificar_perfil_da_interacao`.
 - `validar_cadastro_radar` no ar é a versão que valida o **formato** da data, não a que tinha
