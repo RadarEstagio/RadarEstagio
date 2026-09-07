@@ -2,7 +2,8 @@
 
 
 > Atualização de execução — 05/09 à noite: migrations `0014`–`0016` **aplicadas** no projeto
-> remoto e conferidas objeto a objeto; `telegram-webhook` (feedback de seis opções) e `ir`
+> remoto e conferidas objeto a objeto — mas **fora do histórico de migrations**, pendência aberta
+> em 06/09 e detalhada na seção 9 do [guia](guia-publicacao-e-piloto.md); `telegram-webhook` (feedback de seis opções) e `ir`
 > **publicadas**; `URL_DA_LANDING` provisória aponta para o repositório até a landing subir e
 > `URL_DE_RASTREIO` foi criada nos secrets do GitHub — `vaga_aberta` já registra (validado com
 > token real, 302 até a vaga e evento no funil). A **proteção contra envios concorrentes** foi

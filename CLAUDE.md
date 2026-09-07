@@ -298,6 +298,13 @@ modalidade e, em empate, a de descrição mais longa.
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
   tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
+- **`supabase db push` não garante registro no histórico** (06/09/2026): as `0014`–`0016` foram
+  aplicadas com todos os objetos no banco, mas nenhuma das três ficou em
+  `supabase_migrations.schema_migrations`. Com a coluna `remote` vazia, o push seguinte tenta
+  reaplicá-las e quebra no primeiro `add column` de coluna existente, deixando a migration nova
+  pela metade. Conferir `supabase migration list --linked` depois de aplicar e antes do próximo
+  push; reconciliar com `supabase migration repair --status applied <versões>`, que só grava o
+  registro e não reexecuta SQL.
 - **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
   tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.

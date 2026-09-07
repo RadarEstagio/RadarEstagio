@@ -1,8 +1,23 @@
 # Guia de publicação e piloto
 
-**Atualizado em 06/09/2026.** O deploy foi parcial: migrations `0014`–`0016` aplicadas,
-`ir` e `telegram-webhook` publicadas. O frontend continua sem hospedagem e os documentos
-continuam como rascunhos, sem vigência.
+**Atualizado em 06/09/2026.** O deploy foi parcial: os objetos das migrations `0014`–`0016`
+estão no banco — mas **fora do histórico de migrations**, o que precisa ser reconciliado antes do
+próximo push (seção 9) — e `ir` e `telegram-webhook` estão publicadas. O frontend continua sem
+hospedagem e os documentos continuam como rascunhos, sem vigência.
+
+Conferido no ambiente remoto em 06/09, nesta revisão:
+
+- `supabase functions list`: `ir` e `telegram-webhook` **ativas**, publicadas em 05/09 às 21:13 e
+  21:15 UTC — depois do merge do feedback de seis opções, às 18:35 UTC, então a versão no ar
+  já o contém.
+- Objetos das `0014`–`0016` presentes: as três colunas de consentimento, `cadastros_pendentes`,
+  as quatro funções da `0014`, `baixar_meus_dados` e `verificar_perfil_da_interacao`.
+- `validar_cadastro_radar` no ar é a versão que valida o **formato** da data, não a que tinha
+  `2026-09-05` cravado: o deploy pegou o commit posterior à correção.
+- `getWebhookInfo`: `allowed_updates` com `message` e `callback_query`, sem fila pendente e sem
+  último erro.
+- `supabase migration list --linked`: as `0014`–`0016` **não constam** como aplicadas. É a
+  pendência da seção 9.
 
 Estado registrado na atualização de 05/09 à noite, sem repetir os testes remotos nesta revisão:
 
@@ -194,6 +209,17 @@ registrar respostas positivas e negativas reais no feedback.
 As migrations `0013`–`0016` já aplicadas não serão reescritas. Correções futuras devem
 entrar em novas migrations pelo histórico do projeto. Depois da integração e revisão final,
 retirar os avisos de rascunho das páginas e registrar versão/data coerentes com o aceite.
+
+**As `0014`–`0016` foram aplicadas fora do histórico de migrations.** A conferência de 06/09
+encontrou todos os objetos das três no banco — as colunas de consentimento, `cadastros_pendentes`,
+as quatro funções da `0014`, `baixar_meus_dados` e `verificar_perfil_da_interacao` — mas nenhuma
+das três registrada em `supabase_migrations.schema_migrations`. Para o Supabase elas nunca rodaram,
+então o próximo `supabase db push` tentaria aplicá-las de novo e quebraria no primeiro `add column`
+de coluna existente, deixando a migration seguinte pela metade.
+
+O conserto é `supabase migration repair --status applied 0014 0015 0016`, que só grava as três como
+aplicadas, sem reexecutar nada. **Conferir `supabase migration list --linked` antes do próximo
+push**: enquanto a coluna `remote` das três estiver vazia, o histórico não descreve o banco.
 
 ## 10. Conferência final com conta de teste
 
