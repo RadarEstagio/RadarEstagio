@@ -6,13 +6,13 @@
 **Data:** 03/09/2026
 
 **Escopo auditado:** `radar/`, `web/`, `supabase/migrations/`, `supabase/functions/`,
-`.github/workflows/`, `docs/metricas.md` e `docs/plano-validacao-piloto.md`.
+`.github/workflows/`, `docs/metricas.md` e o antigo plano RCD (disponível no histórico do Git).
 
 **Framework:** Revenue-Centric Design, na ordem
 _corrigir → medir → ativar → reter → provar → monetizar → diferenciar_.
 
-Esta auditoria preserva o diagnóstico original. O antigo plano RCD foi substituído pelo
-[plano de validação do piloto](plano-validacao-piloto.md); prazos e prioridades abaixo são históricos.
+Esta auditoria preserva o diagnóstico original. O plano formal de piloto foi retirado; a checklist atual está no
+[plano geral](plano-geral.md). Prazos, entrevistas e metas abaixo são históricos.
 
 ## 1. Veredito
 
@@ -346,7 +346,7 @@ mensurável de qualidade.
 - Coorte fechada de 10 a 20 universitários de tecnologia buscando o primeiro estágio, duas
   semanas de uso.
 - Cada canal com origem identificada — turma, comunidade, coordenação.
-- Cinco entrevistas com o roteiro de entrevistas do [plano do piloto](plano-validacao-piloto.md#4-fazer-cinco-entrevistas).
+- Cinco entrevistas eram previstas no plano original; não são compromisso atual.
 - **Acompanhar o viés de anúncio raso** descrito na seção 7, comparando as recomendações
   marcadas como irrelevantes com quantas tecnologias a vaga declarava.
 - Ao fim: substituir a faixa de tecnologias da landing por evidência real; a promessa comercial só

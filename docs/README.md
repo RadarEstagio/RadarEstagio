@@ -30,7 +30,6 @@ como equivalentes.
 | `passos-realizados.md` | Preservar como histórico | Relato dos passos iniciais; números e pendências retratam a época, não o estado atual |
 | `proposta.md` | Preservar como proposta original | Contexto acadêmico e intenção; custos, stack e roadmap originais não são contrato vigente |
 | `pre-prd.md` | Preservar como análise de 02/09 | Hipóteses e viabilidade daquela revisão; não manter um segundo catálogo atual |
-| `plano-validacao-piloto.md` | Manter ativo | Ações, métricas e critérios da preparação, acompanhamento e avaliação do piloto |
 | `auditoria-rcd.md` | Preservar como diagnóstico datado | Evidência dos achados e do viés de ranking; sprints antigos não substituem o plano geral |
 
 Não faz mais sentido manter proposta, pré-PRD, auditoria e dois planos de execução como
@@ -49,6 +48,9 @@ foram sinalizados nos próprios arquivos, sem apagar conteúdo nem quebrar links
   permanecem datadas no guia; publicação da landing ainda precisa ser confirmada pela equipe.
 - Textos legais não foram aprovados nem tiveram vigência alterada. A revisão dos responsáveis
   continua no documento próprio.
+
+O plano formal de piloto foi retirado em 07/09 por decisão do Igor. A checklist simples antes
+de divulgar está no plano geral; metas, entrevistas e D7 não são obrigações atuais.
 
 ## Como manter
 
