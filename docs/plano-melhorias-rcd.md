@@ -5,7 +5,7 @@
 
 **Projeto:** Radar de Estágio
 
-**Data:** 30/08/2026; revisado em 02/09/2026
+**Data:** 30/08/2026; execução revisada em 07/09/2026
 
 **Horizonte inicial:** seis semanas
 
@@ -13,9 +13,30 @@
 
 **Fase atual do produto:** Fase 2 — MVP de validação com usuários, parcialmente implementada
 
-**Estado atual:** banco, cadastro web, múltiplos usuários, vínculo com o Telegram e ativação
-operacional já estão implementados; a ativação de produto, a validação com usuários e os recursos
-de retenção continuam pendentes.
+**Estado atual:** cadastro, controles da conta, feedback individual, rastreamento, consulta
+semanal e entrega após vínculo estão implementados. O piloto, a comprovação de retenção e
+monetização continuam pendentes. Nem todas as métricas originalmente propostas têm consulta.
+
+### Legenda da revisão
+
+- ✅ **Implementado/concluído:** existe no código ou há conclusão registrada.
+- 🟡 **Parcial:** parte entregue; a pendência vem indicada.
+- ⬜ **Não implementado/não validado:** falta código ou evidência da atividade.
+- ➖ **Substituído/fora do escopo:** decisão posterior mudou a proposta original.
+
+Implementação não significa publicação nem prova de valor com estudantes. Esta revisão foi
+feita contra código e documentos; não repetiu testes remotos. Evidências datadas estão no
+[guia](guia-publicacao-e-piloto.md). Os prazos semanais abaixo são do plano original.
+
+### Resumo por fase
+
+- ✅ **Fase 0:** base de cadastro e mensagem entregue; apresentação realizada.
+- 🟡 **Fase 1:** eventos e relatório principal prontos; faltam taxas por janela, medianas e retenção D7.
+- 🟡 **Fase 2:** dispatch e primeira entrega testados; falta experiência de progresso/celebração e medir a coorte.
+- 🟡 **Fase 3:** perfil, segurança e seis respostas entregues; cadência alternativa não implementada e documentos em revisão.
+- ⬜ **Fase 4:** piloto, entrevistas e prova social ainda sem conclusão registrada.
+- ⬜ **Fase 5:** pagamento, modelo comercial e unit economics completos não validados.
+- 🟡 **Fase 6:** histórico e personalização v1 existem; diferenciação sustentada por resultados não foi comprovada.
 
 ## 1. Objetivo
 
@@ -40,14 +61,20 @@ encurtar o caminho até o valor; depois ativar, converter, expandir e sistematiz
 
 ### 2.1 North Star inicial
 
+**Situação em 07/09:** ✅ Consulta semanal implementada em `radar/storage/metricas.sql`; validação com feedback de uma coorte ainda pendente.
+
 > **Percentual de estudantes com ativação operacional que encontram pelo menos uma vaga útil por
 > semana.**
 
 ### 2.2 Resultado final de negócio
 
+**Situação em 07/09:** ➖ Sem emissor de candidatura por decisão posterior. O relatório aceita registros históricos, mas não mede novas candidaturas pelo produto atual.
+
 > **Candidaturas qualificadas iniciadas por usuário com ativação operacional por semana.**
 
 ### 2.3 Definições
+
+**Situação em 07/09:** 🟡 Conceitos definidos; tempo mediano, TTV e retenção D7 ainda não têm cálculo no relatório atual. Utilidade semanal não equivale a retenção D7.
 
 - **Ativação operacional:** primeira entrega aceita pelo Telegram contendo ao menos uma recomendação.
 - **Ativação de produto:** primeira abertura de uma vaga recomendada.
@@ -66,7 +93,9 @@ encurtar o caminho até o valor; depois ativar, converter, expandir e sistematiz
 
 ### 3.1 Corrigir o cadastro
 
-**Status:** concluída em 30/08/2026.
+**Situação em 07/09:** ✅ Validações, tratamento de erros e testes implementados, incluindo confirmação entre aparelhos e recuperação. Falta concluir teste integrado pela landing publicada; “cada falha possível” não é garantia de cobertura exaustiva.
+
+**Registro inicial:** ajustes entregues em 30/08/2026; situação atual detalhada acima.
 
 - Validar a etapa 3 antes do envio.
 - Impedir cidade, modalidade, e-mail ou senha inválidos.
@@ -79,7 +108,9 @@ usuário pode continuar.
 
 ### 3.2 Alinhar promessa e produto
 
-**Status:** concluída em 30/08/2026.
+**Situação em 07/09:** 🟡 Mensagem, edição de perfil e catálogo atualizados; documentos históricos identificados. A revisão final dos textos públicos e legais segue pendente. Hoje há personalização por feedback, limitada à v1.
+
+**Registro inicial:** ajustes entregues em 30/08/2026; situação atual detalhada acima.
 
 - Remover dos documentos a afirmação de que o Radar aprende com feedback enquanto isso não existir.
 - Não prometer edição do perfil sem oferecer a interface correspondente.
@@ -90,7 +121,9 @@ usuário pode continuar.
 
 ### 3.3 Tornar a mensagem real igual à demonstração
 
-**Status:** concluída em 30/08/2026.
+**Situação em 07/09:** ✅ Conteúdo implementado; o link pode passar por `ir` antes da fonte. Listas longas são resumidas e desejáveis ausentes não são cobrados.
+
+**Registro inicial:** ajustes entregues em 30/08/2026; situação atual detalhada acima.
 
 A mensagem do Telegram agora inclui:
 
@@ -104,6 +137,8 @@ A mensagem do Telegram agora inclui:
 **Critério de conclusão:** tudo que aparece na demonstração da landing existe na entrega real.
 
 ### 3.4 Preparar a apresentação
+
+**Situação em 07/09:** ✅ Apresentação já realizada; roteiro removido da documentação ativa.
 
 **Status:** preparação concluída em 30/08/2026; apresentação já realizada. O roteiro foi retirado da documentação ativa e permanece recuperável pelo histórico do Git.
 
@@ -123,7 +158,9 @@ Apresentar separadamente:
 
 ### 4.1 Eventos mínimos
 
-**Status:** instrumentação da jornada existente concluída em 30/08/2026.
+**Situação em 07/09:** 🟡 Emissores da jornada, abertura e feedback implementados. Apenas candidatura ficou deliberadamente sem emissor; testar o cadastro público completo permanece pendente.
+
+**Registro inicial:** instrumentação parcial da jornada em 30/08; abertura e feedback foram acrescentados depois.
 
 - `landing_visualizada`
 - `cta_cadastro_aberto`
@@ -142,25 +179,26 @@ Apresentar separadamente:
 - `candidatura_iniciada`
 - `entregas_pausadas`
 
-Os eventos da landing à ativação operacional são registrados no Supabase. Eventos que dependem de
-interações ainda inexistentes — `vaga_aberta`, `vaga_util`, `vaga_irrelevante` e
-`candidatura_iniciada` — já pertencem ao contrato, mas só serão emitidos quando o link rastreável
-e os botões de feedback forem implementados. Isso evita registrar intenção sem ação real.
+Todos os eventos listados têm emissor no código, exceto `candidatura_iniciada`,
+retirado do escopo de captura. `vaga_aberta` vem de `ir`; `vaga_util` e `vaga_irrelevante`
+vêm do feedback individual no webhook. A existência no catálogo SQL sozinha não é emissor.
 
 ### 4.2 Métricas do funil
 
-- Landing → abertura do cadastro.
-- Cadastro aberto → perfil salvo.
-- Perfil salvo → Telegram vinculado.
-- Telegram vinculado → primeira recomendação.
-- Taxa de ativação operacional em 24 horas e em 7 dias.
-- Tempo mediano até a primeira entrega.
-- Taxa de ativação de produto em 7 dias e TTV mediano, depois de `vaga_aberta` existir.
-- Recomendação → clique.
-- Recomendação → vaga útil.
-- Recomendação → candidatura.
-- Retenção D7 por interação real.
-- Custo de IA por usuário com ativação operacional.
+**Situação em 07/09:** 🟡 Ver marcação por métrica abaixo. Os dados e as contagens existem para parte do funil; isso não implica que todas as taxas e janelas estejam calculadas.
+
+- Landing → abertura do cadastro. **✅ Contagens das etapas no relatório.**
+- Cadastro aberto → perfil salvo. **✅ Contagens das etapas no relatório.**
+- Perfil salvo → Telegram vinculado. **✅ Contagens das etapas no relatório.**
+- Telegram vinculado → primeira recomendação. **✅ Contagens das etapas no relatório.**
+- Taxa de ativação operacional em 24 horas e em 7 dias. **⬜ Janelas não calculadas no relatório.**
+- Tempo mediano até a primeira entrega. **⬜ Mediana não calculada.**
+- Taxa de ativação de produto em 7 dias e TTV mediano, depois de `vaga_aberta` existir. **⬜ Abertura existe; taxa em sete dias e TTV mediano ainda não.**
+- Recomendação → clique. **✅ Vagas abertas distintas e entregas contabilizadas.**
+- Recomendação → vaga útil. **✅ Utilidade por recomendação e por semana calculadas.**
+- Recomendação → candidatura. **➖ Sem captura nova; somente compatibilidade com registros históricos.**
+- Retenção D7 por interação real. **⬜ Não calculada.**
+- Custo de IA por usuário com ativação operacional. **🟡 Indicador de extrações por ativado; não custo monetário completo.**
 
 Com baixo volume, não serão usados testes A/B. Cinco boas entrevistas e observação de sessões
 produzem mais sinal que um experimento sem amostra suficiente
@@ -177,6 +215,8 @@ primeira abertura.
 
 ### 5.1 Jornada desejada
 
+**Situação em 07/09:** 🟡 Busca por perfil, trava, janela do diário e registros implementados. Teste real de vínculo até mensagem em cerca de quatro minutos está registrado; não comprova mediana da coorte.
+
 ```text
 Perfil → conta → Telegram → busca imediata → recomendação entregue → vaga aberta
 ```
@@ -184,10 +224,10 @@ Perfil → conta → Telegram → busca imediata → recomendação entregue →
 Depois do vínculo:
 
 1. mostrar “Telegram vinculado”;
-2. informar que o Radar está procurando a primeira oportunidade;
+2. informar que o Radar está procurando a primeira oportunidade — 🟡 painel informa próximas execuções, sem progresso ao vivo;
 3. executar uma busca específica para o novo perfil;
 4. entregar uma recomendação real imediatamente;
-5. celebrar o primeiro resultado;
+5. celebrar o primeiro resultado — ⬜ experiência específica não implementada;
 6. registrar `ativado_em` como ativação operacional;
 7. registrar a primeira `vaga_aberta` como ativação de produto.
 
@@ -197,6 +237,8 @@ reduzir o tempo até a entrega e depois o TTV, não adicionar mais explicações
 
 ### 5.2 Quando não houver vaga adequada
 
+**Situação em 07/09:** ✅ Não ativa sem recomendação, explica ausência e próxima busca. Ajustes existem no painel; sugestão proativa de ampliar preferências aparece após silêncio prolongado, não necessariamente no primeiro dia.
+
 - Não marcar o perfil como ativado.
 - Explicar que nenhuma oportunidade segura foi encontrada.
 - Informar quando ocorrerá a próxima busca.
@@ -204,6 +246,8 @@ reduzir o tempo até a entrega e depois o TTV, não adicionar mais explicações
 - Não pressionar o usuário a aceitar vagas ruins apenas para gerar uma entrega.
 
 ### 5.3 Metas iniciais
+
+**Situação em 07/09:** ⬜ Metas ainda não comprovadas no piloto. Um teste em quatro minutos não comprova 80% em 24 horas nem mediana abaixo de 15 minutos.
 
 - tempo mediano até a primeira entrega abaixo de 15 minutos.
 - Evolução posterior do tempo até a primeira entrega para menos de 5 minutos.
@@ -220,17 +264,22 @@ os resultados observados.
 
 ### 6.1 Feedback no Telegram
 
+**Situação em 07/09:** ✅ Feedback por vaga implementado com seis respostas. A lista original abaixo foi substituída: positivo e cinco recusas, incluindo nota, área, exigência, logística e repetição. Candidatura e denúncia de vaga encerrada não foram implementadas.
+
 Cada vaga deve permitir:
 
-- `👍 Faz sentido`
-- `👎 Não serve para mim`
-- `Candidatei-me`
-- `Vaga encerrada ou problemática`
+- ✅ Positivo: entregue como `👍 Essa serviu`.
+- ✅ Negativo: entregue como cinco motivos específicos.
+- ➖ `Candidatei-me`: sem emissor por decisão do piloto.
+- ⬜ `Vaga encerrada ou problemática`: sem opção específica.
 
-Inicialmente, o feedback deve apenas ser registrado. O ranking não deve ser alterado
-automaticamente com poucos dados.
+A regra inicial de apenas registrar foi substituída pela personalização v1: repetição alimenta
+o filtro; subárea com duas ou mais recusas em 30 dias perde o fator de interesse. Os demais
+motivos e o positivo não alteram automaticamente os pesos. Eficácia no piloto ainda não comprovada.
 
 ### 6.2 Gestão do perfil
+
+**Situação em 07/09:** ✅ Edição, pausa, retomada, desvínculo e exclusão com cancelamento implementados. Também há exportação e revogação de e-mails. 🟡 Informação de próxima busca é geral; não há acompanhamento em tempo real do job no painel.
 
 Criar uma página simples, sem transformá-la em um dashboard completo:
 
@@ -243,12 +292,16 @@ Criar uma página simples, sem transformá-la em um dashboard completo:
 
 ### 6.3 Cadência de comunicação
 
+**Situação em 07/09:** ➖ Silêncio com resumo semanal não foi adotado. O produto envia aviso diário sem vagas e sugestão após silêncio prolongado. ⬜ Preferência de cadência ainda precisa ser observada; alertas contínuos por nova vaga não existem.
+
 - Evitar mensagens vazias diárias que possam gerar fadiga.
 - Avaliar silêncio nos dias sem vagas, acompanhado por um resumo semanal.
 - Manter alertas imediatos somente para oportunidades realmente relevantes.
 - Observar se o usuário prefere confirmação diária ou apenas novidades.
 
 ### 6.4 Segurança e confiança
+
+**Situação em 07/09:** 🟡 Rotação de token e exclusão implementadas, com revalidação das interações. Textos de privacidade existem, mas revisão final/vigência continuam pendentes.
 
 - Invalidar ou rotacionar o token após o vínculo.
 - Impedir que um link antigo redirecione entregas para outro Telegram.
@@ -266,6 +319,8 @@ um sinal mensurável de qualidade.
 
 ### 7.1 Piloto
 
+**Situação em 07/09:** ⬜ Sem execução concluída registrada. Acompanhar até candidatura exigiria entrevista/manual, pois não há emissor desse evento.
+
 Recrutar de 10 a 20 estudantes que atendam aos critérios:
 
 - universitários de tecnologia;
@@ -275,6 +330,8 @@ Recrutar de 10 a 20 estudantes que atendam aos critérios:
 Cada pessoa deve ser acompanhada desde a landing até a primeira candidatura.
 
 ### 7.2 Entrevistas
+
+**Situação em 07/09:** ⬜ Cinco entrevistas ainda não registradas como realizadas.
 
 Realizar pelo menos cinco entrevistas aprofundadas:
 
@@ -288,6 +345,8 @@ Realizar pelo menos cinco entrevistas aprofundadas:
 - O que precisaria acontecer para a pessoa pagar pelo Radar agora?
 
 ### 7.3 Landing baseada em prova
+
+**Situação em 07/09:** ⬜ Prova social de resultados do piloto ainda não disponível. Não publicar metas ou testes isolados como resultado de usuários.
 
 Depois do piloto, substituir a faixa de tecnologias por evidências como:
 
@@ -303,6 +362,8 @@ produto divergem, cria-se dívida de expectativa e churn futuro
 ([referência RCD](https://x.com/richardrx/status/2049568514311172355)).
 
 ### 7.4 Copy inicial recomendada
+
+**Situação em 07/09:** 🟡 A landing tem mensagem e CTA próprios; o texto abaixo é sugestão original, não reprodução integral implementada nem experimento validado.
 
 **Headline:**
 
@@ -333,6 +394,8 @@ prematuramente.
 
 ### 8.1 Calcular os unit economics
 
+**Situação em 07/09:** 🟡 Há contagem de extrações e indicador por ativado. ⬜ Custo monetário completo, suporte, vida útil e subsídio entre planos não calculados.
+
 - Custo de IA por usuário.
 - Custo por busca.
 - Custo por usuário com ativação operacional.
@@ -346,6 +409,8 @@ continua consumindo recursos variáveis
 
 ### 8.2 Hipóteses de modelo
 
+**Situação em 07/09:** ⬜ Modelos comerciais não testados nem implementados.
+
 Testar uma hipótese por vez:
 
 1. passe de busca ativa por 30 ou 60 dias;
@@ -358,6 +423,8 @@ trabalho para o qual contratou o produto termina.
 
 ### 8.3 Teste de transação
 
+**Situação em 07/09:** ⬜ Piloto pago e aceitação de pagamento não realizados; nenhum checkout implementado.
+
 - Oferecer um piloto pago aos primeiros dez usuários.
 - Entregar uma primeira prova de valor antes de cobrar.
 - Pedir pagamento real, não apenas perguntar “você pagaria?”.
@@ -369,6 +436,8 @@ Ainda não criar uma estrutura Good–Better–Best, decoy ou página com três 
 só fazem sentido depois de validar o produto e o eixo de valor.
 
 ## 9. Fase 6 — Diferenciação e moat
+
+**Situação em 07/09:** 🟡 Histórico, feedback individual, dedupe e personalização v1 implementados. ⬜ Padrões de candidatura, confiança e vantagem sustentada ainda sem prova com usuários.
 
 **Prazo:** semana 6 em diante
 
@@ -384,10 +453,12 @@ O diferencial defensável não será Gemini, Telegram ou coleta de vagas isolada
 - cobertura e deduplicação comprovadas;
 - dados sobre quais oportunidades geram ação.
 
-O feedback só deve influenciar automaticamente o ranking quando houver volume suficiente para
-identificar padrões estáveis e evitar que poucos eventos distorçam a recomendação.
+A intenção original era aguardar volume suficiente. A decisão posterior introduziu regras
+limitadas de personalização v1; medir seu efeito antes de ampliar essa influência.
 
 ## 10. Estratégia inicial de distribuição
+
+**Situação em 07/09:** ⬜ Testes comparativos de canais, atribuição de aquisição por canal e CAC não concluídos. O campo de origem de clique do frontend não substitui atribuição de campanha.
 
 A distribuição só deve ser ampliada depois de corrigidos os vazamentos de cadastro e ativação
 operacional.
@@ -410,6 +481,8 @@ O canal não deve ser avaliado apenas pelo volume de cadastros, mas pela qualida
 usuários que traz ([referência RCD](https://x.com/richardrx/status/2036035304868434115)).
 
 ## 11. O que não construir agora
+
+**Situação em 07/09:** ➖ Exclusões de escopo, não tarefas atrasadas. Jooble foi implementado como opção após sondagem de cobertura, mas continua desligado por padrão.
 
 Pelo filtro **Swiss Knife**, ficam fora do roadmap imediato:
 
@@ -437,27 +510,27 @@ Se não passar por esses critérios, não entra no produto
 
 ## 12. Backlog priorizado
 
-| Prioridade | Entrega | Fase |
-| --- | --- | --- |
-| P0 | Validar corretamente a etapa 3 | 0 |
-| P0 | Alinhar landing, documentação e entrega real | 0 |
-| P0 | Adicionar fonte, data, localização e modalidade à mensagem | 0 |
-| P0 | Instrumentar o funil até a ativação operacional | 1 |
-| P0 | Entregar a primeira recomendação imediatamente após o vínculo | 2 |
-| P1 | Instrumentar ativação de produto, utilidade e candidatura | 3 |
-| P1 | Permitir editar, pausar e excluir o perfil | 3 |
-| P1 | Adicionar feedback e candidatura no Telegram | 3 |
-| P1 | Transformar o token de vínculo em uso único | 3 |
-| P1 | Executar piloto com 10–20 estudantes | 4 |
-| P1 | Construir prova social baseada em resultados | 4 |
-| P2 | Testar pagamento com os primeiros dez usuários | 5 |
-| P2 | Validar passe ou assinatura | 5 |
-| P2 | Personalizar recomendações com feedback suficiente | 6 |
-| P3 | Avaliar novas fontes, tendências e expansão de ICP | Posterior |
+| Prioridade | Entrega | Situação em 07/09 |
+|---|---|---|
+| P0 | Validação da etapa 3 | ✅ Implementada |
+| P0 | Alinhar promessa e entrega | 🟡 Revisão pública/legal pendente |
+| P0 | Fonte, data, localização e modalidade | ✅ Implementadas |
+| P0 | Funil até ativação operacional | ✅ Emissores e contagens; teste público pendente |
+| P0 | Primeira entrega após vínculo | ✅ Implementada, com janela do diário |
+| P1 | Abertura, utilidade e candidatura | 🟡 Duas primeiras prontas; candidatura fora da captura |
+| P1 | Editar, pausar e excluir perfil | ✅ Implementado |
+| P1 | Feedback no Telegram | ✅ Seis opções; sem candidatura |
+| P1 | Token de uso único | ✅ Implementado |
+| P1 | Piloto e prova social | ⬜ Não concluídos |
+| P2 | Pagamento e modelo comercial | ⬜ Não testados |
+| P2 | Personalização por feedback | 🟡 V1 implementada; eficácia não validada |
+| P3 | Novas fontes e expansão | 🟡 Jooble opcional pronto; demais expansões não implementadas |
 
 ## 13. Portões de decisão
 
 ### Portão A — Funil íntegro
+
+**Situação em 07/09:** 🟡 Ainda não encerrado: falta teste integrado do cadastro público e revisão final; candidatura não faz parte do funil capturado.
 
 Avançar quando:
 
@@ -467,6 +540,8 @@ Avançar quando:
 
 ### Portão B — Ativação operacional comprovada
 
+**Situação em 07/09:** 🟡 Teste técnico registrado, mas metas da coorte não medidas.
+
 Avançar quando:
 
 - a maioria dos usuários vinculados receber uma recomendação em até 24 horas;
@@ -475,6 +550,8 @@ Avançar quando:
 
 ### Portão C — Ativação de produto e retenção comprovadas
 
+**Situação em 07/09:** 🟡 Controles e instrumentação prontos; retenção D7 e utilidade da coorte não comprovadas.
+
 Avançar quando:
 
 - houver abertura e interação útil em D7;
@@ -482,6 +559,8 @@ Avançar quando:
 - o usuário conseguir editar, pausar e excluir seus dados.
 
 ### Portão D — Monetização validada
+
+**Situação em 07/09:** ⬜ Não atingido: sem pagamento validado nem unit economics completos.
 
 Avançar quando:
 
