@@ -63,7 +63,7 @@ Miguel também está identificado como responsável pelos dados. Registrem:
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
 
 Não retire o aviso de revisão antes de resolver as passagens pendentes e implementar as
-promessas. Use a [lista de revisão](revisao-cadastro-e-privacidade.md).
+promessas. Confiram também os controles reais descritos no [contrato frontend](contrato-front.md).
 
 **Concluído quando:** texto final revisado, contato ativo e responsabilidades registradas.
 

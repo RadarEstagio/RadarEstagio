@@ -3,8 +3,8 @@
 Agente de IA que garimpa sites de vagas de estágio todos os dias e entrega, via Telegram,
 apenas as oportunidades compatíveis com o perfil do usuário — ranqueadas e explicadas.
 
-Resumo do produto em `docs/proposta.md`, arquitetura detalhada em `docs/arquitetura.md`,
-histórico passo a passo em `docs/passos-realizados.md`.
+Resumo do produto em `docs/funcionalidades.md`, arquitetura detalhada em `docs/arquitetura.md`,
+próximos passos em `docs/plano-geral.md`.
 
 ## Fase atual: MVP de validação com usuários (Fase 2, em andamento)
 
@@ -181,7 +181,7 @@ contrato completo para o front está em `docs/contrato-front.md`.
 
 ## Estado do projeto
 
-Passos 0 a 14 concluídos — o que cada um entregou está em `docs/passos-realizados.md`. Abaixo
+O catálogo atual está em `docs/funcionalidades.md`. Abaixo
 só o conhecimento operacional que não dá para reconstituir lendo o código.
 
 ### Cota e modelo do Gemini
@@ -241,11 +241,11 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   Sobraram "Curso compatível", "Período mínimo incompatível" e "Exige experiência prévia", porque
   as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
   vindo do modelo.
-- **Viés conhecido, decidido em 03/09/2026 a não corrigir antes do piloto**: anúncio que declara
+- **Viés conhecido, registrado em 03/09/2026**: anúncio que declara
   uma tecnologia só e é atendido tira 100, enquanto um que declara cinco e atende três tira 85 —
   a suavização dá 1.0 cravado com 1 de 1. Quanto mais honesto o anúncio, pior a nota. As duas
-  correções possíveis e o sinal que reverte a decisão estão na seção 7 de
-  `docs/auditoria-rcd.md`. **Não ajustar peso sem `vaga_irrelevante` real.**
+  correções possíveis e o sinal que reverte a decisão estão na seção de viés do ranking de
+  `docs/arquitetura.md`. **Não ajustar peso sem `vaga_irrelevante` real.**
 
 ### Qualidade da mensagem e do pré-filtro
 

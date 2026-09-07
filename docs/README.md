@@ -25,16 +25,10 @@ como equivalentes.
 | `metricas.md` | Manter | Definições, denominadores, deduplicação e limites históricos |
 | `termos-de-uso.md` | Manter em revisão | Texto para revisão; sincronizar com `web/termos.html` antes de publicar |
 | `politica-de-privacidade.md` | Manter em revisão | Texto para revisão; sincronizar com `web/privacidade.html` antes de publicar |
-| `revisao-cadastro-e-privacidade.md` | Manter até concluir revisão | Checklist de responsáveis e promessas; depois registrar conclusão, sem virar outro backlog |
-| `plano-cadastro-e-privacidade.md` | Manter como decisões da frente | Explica consentimento, exclusão e escolhas; execução pertence ao plano geral e ao guia |
-| `passos-realizados.md` | Preservar como histórico | Relato dos passos iniciais; números e pendências retratam a época, não o estado atual |
-| `proposta.md` | Preservar como proposta original | Contexto acadêmico e intenção; custos, stack e roadmap originais não são contrato vigente |
-| `pre-prd.md` | Preservar como análise de 02/09 | Hipóteses e viabilidade daquela revisão; não manter um segundo catálogo atual |
-| `auditoria-rcd.md` | Preservar como diagnóstico datado | Evidência dos achados e do viés de ranking; sprints antigos não substituem o plano geral |
 
-Não faz mais sentido manter proposta, pré-PRD, auditoria e dois planos de execução como
-fontes concorrentes de status. Eles continuam úteis para explicar decisões. Nesta revisão,
-foram sinalizados nos próprios arquivos, sem apagar conteúdo nem quebrar links existentes.
+Os documentos antigos foram removidos em 07/09/2026. As decisões de privacidade ficam no
+contrato frontend, a revisão dos responsáveis no guia e o viés do ranking na arquitetura.
+O histórico permanece no Git.
 
 ## Correções e pendências documentais
 
@@ -47,7 +41,7 @@ foram sinalizados nos próprios arquivos, sem apagar conteúdo nem quebrar links
 - Estado externo não foi consultado novamente nesta revisão. As evidências de 05–06/09
   permanecem datadas no guia; publicação da landing ainda precisa ser confirmada pela equipe.
 - Textos legais não foram aprovados nem tiveram vigência alterada. A revisão dos responsáveis
-  continua no documento próprio.
+  continua na seção 2 do guia de publicação.
 
 O plano formal de piloto foi retirado em 07/09 por decisão do Igor. A checklist simples antes
 de divulgar está no plano geral; metas, entrevistas e D7 não são obrigações atuais.

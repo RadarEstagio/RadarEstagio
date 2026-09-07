@@ -92,3 +92,17 @@ primeira entrega têm fontes próprias no banco. A sessão de origem não substi
 
 Não alterar schema pelo painel nem ampliar grants para contornar um erro do frontend.
 Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
+
+## Decisões de cadastro e privacidade
+
+- A confirmação de e-mail mantém um canal verificado para acesso e recuperação. O reenvio
+  permite corrigir o endereço e respeita o intervalo entre tentativas.
+- Aceite dos termos e autorização opcional de e-mails são controles separados. A autorização
+  opcional pode ser revogada e não representa consentimento geral para todas as finalidades.
+- Pausa usa `ativo`; exclusão usa `excluida_em`. Pausar não inicia apagamento nem bloqueia
+  a navegação das vagas antigas, embora interrompa novos registros de interação.
+- A exclusão interrompe entregas, libera o vínculo do Telegram e permite arrependimento
+  durante 60 dias. Cancelar exige vincular o Telegram novamente. O atendimento de pedidos
+  de eliminação imediata precisa ser definido pelos responsáveis no guia de publicação.
+- Não há limpeza automática de contas abandonadas. A limpeza de sessão anônima deve atingir
+  somente dados sem proprietário, preservando outras contas do mesmo navegador.

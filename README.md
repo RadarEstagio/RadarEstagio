@@ -5,8 +5,7 @@ Documentação: [índice e revisão](docs/README.md) · [funcionalidades para us
 Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
 usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
 
-- Proposta completa: [`docs/proposta.md`](docs/proposta.md)
-- O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
+- Funcionalidades: [`docs/funcionalidades.md`](docs/funcionalidades.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
 - Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)

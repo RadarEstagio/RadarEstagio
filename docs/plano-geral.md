@@ -102,9 +102,8 @@ um dashboard ou novas consultas para começar essa conversa.
 
 - [Funcionalidades](funcionalidades.md): o que usuários e desenvolvedores podem fazer.
 - [Guia de publicação](guia-publicacao-e-piloto.md): configuração e evidências datadas.
-- [Cadastro e privacidade](plano-cadastro-e-privacidade.md): decisões dessa frente.
-- [Revisão dos textos](revisao-cadastro-e-privacidade.md): pendências dos responsáveis.
+- [Cadastro e privacidade](contrato-front.md): decisões dessa frente.
+- [Revisão dos textos](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção): pendências dos responsáveis.
 - [Métricas](metricas.md): definições e limites das consultas existentes.
 - [Arquitetura](arquitetura.md) e [contrato frontend](contrato-front.md): implementação.
-- [Índice](README.md): documentos atuais e históricos. A auditoria RCD preserva o diagnóstico
-  antigo; não impõe suas etapas formais ao trabalho atual.
+- [Índice](README.md): documentos mantidos. O histórico dos planos antigos está no Git.

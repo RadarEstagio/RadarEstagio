@@ -1,7 +1,7 @@
 # Arquitetura do Radar de Estágio
 
 Como o sistema é organizado, por que foi organizado assim e quais decisões foram tomadas no
-caminho. O histórico passo a passo está em [`passos-realizados.md`](passos-realizados.md).
+caminho. O histórico das mudanças está nos commits e nas PRs do repositório.
 
 ## Em uma frase
 
@@ -294,3 +294,15 @@ O [catálogo](funcionalidades.md) detalha as capacidades. Publicação e valida�
 [guia](guia-publicacao-e-piloto.md), e as pendências no [plano geral](plano-geral.md).
 Novos adapters devem cumprir os contratos do domínio; medir cobertura, custo e comportamento
 antes de ativá-los no piloto.
+
+## Viés conhecido do ranking
+
+Em 03/09/2026, um anúncio com uma tecnologia declarada e atendida recebia 100, enquanto
+outro com cinco e três atendidas recebia 85. A cobertura suavizada
+`(1 + atendidas) / (1 + exigidas)` pode favorecer anúncios pouco detalhados.
+Isso é calibração, distinto dos bugs de normalização de habilidades já corrigidos.
+
+Antes de mudar pesos, investigar exemplos reais de `vaga_irrelevante`, especialmente
+`motivo_nota`, comparando recusas com entregas por grupo. As habilidades declaradas estão
+em `vagas.extracao`. Limitar a nota de anúncios com poucos requisitos ou considerar a
+densidade de requisitos na cobertura são alternativas ainda não implementadas.
