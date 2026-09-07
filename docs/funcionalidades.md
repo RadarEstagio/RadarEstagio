@@ -5,145 +5,165 @@ estudantes e desenvolvedores. “Implementado” significa que existe código; a
 pública depende da configuração e publicação descritas no [guia](guia-publicacao-e-piloto.md).
 O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de todos os portais.
 
+## Navegação
+
+- [Para quem usa](#para-quem-usa) — conta, recomendações e controle dos dados.
+- [Respostas de feedback](#as-seis-respostas-de-feedback) — opções e efeito no ranking.
+- [Para desenvolvedores e operação](#para-desenvolvedores-e-operação) — coleta, IA, entrega e segurança.
+- [Comandos](#comandos) — execução e testes locais.
+- [Configuração e manutenção](#configuração-e-manutenção).
+- [Fora do escopo](#o-que-não-está-incluído).
+- [Estado de disponibilização](#estado-de-disponibilização).
+
+---
+
 ## Para quem usa
 
-### Cadastro por e-mail e senha
+### Conta e acesso
+
+#### 01. Cadastro por e-mail e senha
 
 Informar curso, período, habilidades, áreas, cidade e modalidade em etapas.
 
-Confirmação de e-mail mantida; interface pública depende da hospedagem.
+**Condições e limites:** Confirmação de e-mail mantida; interface pública depende da hospedagem.
 
-### Preferências
+#### 02. Preferências
 
 Selecionar uma cidade e uma modalidade; várias habilidades e áreas.
 
-Modalidades: remoto, presencial, híbrido ou indiferente.
+**Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente.
 
-### Aceite e e-mails opcionais
+#### 03. Aceite e e-mails opcionais
 
 Aceitar documentos e escolher separadamente comunicações opcionais.
 
-Opção de e-mails começa desmarcada; versão e data do aceite ficam registradas.
+**Condições e limites:** Opção de e-mails começa desmarcada; versão e data do aceite ficam registradas.
 
-### Revelar senha
+#### 04. Revelar senha
 
 Conferir o que foi digitado.
 
-Controle visual do formulário.
+**Condições e limites:** Controle visual do formulário.
 
-### Confirmação entre aparelhos
+#### 05. Confirmação entre aparelhos
 
 Retomar com o perfil salvo no cadastro.
 
-Perfil preservado no banco; testar jornada real após publicação.
+**Condições e limites:** Perfil preservado no banco; testar jornada real após publicação.
 
-### Reenvio de confirmação
+#### 06. Reenvio de confirmação
 
 Corrigir o e-mail informado para a tentativa de reenvio e solicitar outro link.
 
-Espera de um minuto; não altera automaticamente o endereço da conta original.
+**Condições e limites:** Espera de um minuto; não altera automaticamente o endereço da conta original.
 
-### Recuperação de senha
+#### 07. Recuperação de senha
 
 Pedir e-mail de recuperação e definir senha nova.
 
-Depende do SMTP e retorno autorizado do Auth.
+**Condições e limites:** Depende do SMTP e retorno autorizado do Auth.
 
-### Login e saída
+#### 08. Login e saída
 
 Acessar e encerrar sessão no painel.
 
-Login social não está implementado na interface.
+**Condições e limites:** Login social não está implementado na interface.
 
-### Vincular Telegram
+### Telegram e recomendações
+
+#### 09. Vincular Telegram
 
 Abrir o bot pelo link pessoal e confirmar Start.
 
-Token de uso único; um chat não pode pertencer a duas contas.
+**Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas.
 
-### Primeira busca após vínculo
+#### 10. Primeira busca após vínculo
 
 Solicitar uma execução apenas para o perfil recém-vinculado.
 
-Entre 06:23 e 07:23 de Brasília aguarda o diário; depende do dispatch.
+**Condições e limites:** Entre 06:23 e 07:23 de Brasília aguarda o diário; depende do dispatch.
 
-### Recomendações diárias
+#### 11. Recomendações diárias
 
 Receber as melhores vagas novas compatíveis encontradas.
 
-Horário operacional registrado: 07:23; quantidade configurável, não garantida.
+**Condições e limites:** Horário operacional registrado: 07:23; quantidade configurável, não garantida.
 
-### Explicação da recomendação
+#### 12. Explicação da recomendação
 
 Ver nota, requisitos atendidos/não informados, pontos e alertas disponíveis.
 
-Desejáveis ausentes não são cobrados; listas longas mostram até oito itens e “e mais N”.
+**Condições e limites:** Desejáveis ausentes não são cobrados; listas longas mostram até oito itens e “e mais N”.
 
-### Abrir vaga
+#### 13. Abrir vaga
 
 Ir à página de origem para ler e se candidatar.
 
-Candidatura acontece fora do Radar; a fonte pode encerrar ou alterar a vaga.
+**Condições e limites:** Candidatura acontece fora do Radar; a fonte pode encerrar ou alterar a vaga.
 
-### Feedback individual
+#### 14. Feedback individual
 
 Tocar no número e responder sobre aquela vaga.
 
-Abre título, empresa e seis opções; exige envio persistido e conta/chat válidos.
+**Condições e limites:** Abre título, empresa e seis opções; exige envio persistido e conta/chat válidos.
 
-### Corrigir feedback
+#### 15. Corrigir feedback
 
 Reabrir o número e escolher outra resposta.
 
-Pode abrir perguntas simultâneas; métricas usam a última resposta por recomendação.
+**Condições e limites:** Pode abrir perguntas simultâneas; métricas usam a última resposta por recomendação.
 
-### Editar perfil
+### Controle dos seus dados e entregas
+
+#### 16. Editar perfil
 
 Atualizar informações e preferências para novas recomendações.
 
-Não muda mensagens já entregues.
+**Condições e limites:** Não muda mensagens já entregues.
 
-### Pausar e retomar
+#### 17. Pausar e retomar
 
 Controlar futuras entregas.
 
-Links antigos continuam navegáveis sem registrar eventos enquanto pausado.
+**Condições e limites:** Links antigos continuam navegáveis sem registrar eventos enquanto pausado.
 
-### Desvincular Telegram
+#### 18. Desvincular Telegram
 
 Soltar o chat e invalidar o link antigo de vínculo.
 
-Precisa vincular novamente para voltar a receber.
+**Condições e limites:** Precisa vincular novamente para voltar a receber.
 
-### Revogar e-mails opcionais
+#### 19. Revogar e-mails opcionais
 
 Alterar a preferência no painel.
 
-Não há campanha de e-mails opcionais implementada.
+**Condições e limites:** Não há campanha de e-mails opcionais implementada.
 
-### Baixar dados
+#### 20. Baixar dados
 
 Exportar os próprios dados em JSON.
 
-RPC autenticada, sem credenciais de acesso.
+**Condições e limites:** RPC autenticada, sem credenciais de acesso.
 
-### Excluir conta com arrependimento
+#### 21. Excluir conta com arrependimento
 
 Parar entregas, soltar o chat e agendar apagamento.
 
-Prazo configurado de 60 dias; limpeza depende do job.
+**Condições e limites:** Prazo configurado de 60 dias; limpeza depende do job.
 
-### Cancelar exclusão
+#### 22. Cancelar exclusão
 
 Desfazer a solicitação dentro da carência.
 
-Preserva pausa anterior e exige novo vínculo do Telegram.
+**Condições e limites:** Preserva pausa anterior e exige novo vínculo do Telegram.
 
-### Aviso sem vagas
+#### 23. Aviso sem vagas
 
 Saber que a busca ocorreu sem recomendação adequada.
 
-Após silêncio prolongado, sugere ampliar preferências na própria mensagem.
+**Condições e limites:** Após silêncio prolongado, sugere ampliar preferências na própria mensagem.
+
+---
 
 ## As seis respostas de feedback
 
@@ -159,139 +179,151 @@ Na personalização atual, “Já vi essa” ajuda a filtrar republicações. Du
 teto e aviso específicos. Os demais motivos alimentam análise; positivo não reajusta o
 ranking automaticamente. Regras e métricas têm finalidades diferentes.
 
+---
+
 ## Para desenvolvedores e operação
 
-### Coleta por múltiplas fontes
+### Coleta e qualidade das vagas
+
+#### 01. Coleta por múltiplas fontes
 
 Adzuna e Gupy por padrão; buscas consideram cidades dos perfis.
 
-`radar/collectors/`.
+**Código de referência:** `radar/collectors/`.
 
-### Jooble opcional
+#### 02. Jooble opcional
 
 Coletor pronto; exige chave e inclusão em `FONTES`.
 
-`radar/collectors/jooble.py`, `radar/settings.py`.
+**Código de referência:** `radar/collectors/jooble.py`, `radar/settings.py`.
 
-### Tolerância a fonte indisponível
+#### 03. Tolerância a fonte indisponível
 
 Composto continua com fontes que responderam; falha se nenhuma responder.
 
-`radar/collectors/composto.py`.
+**Código de referência:** `radar/collectors/composto.py`.
 
-### Deduplicação
+#### 04. Deduplicação
 
 Une duplicatas e filtra republicações, incluindo histórico recente do usuário.
 
-`radar/filtering/duplicatas.py`.
+**Código de referência:** `radar/filtering/duplicatas.py`.
 
-### Pré-filtro
+#### 05. Pré-filtro
 
 Regras de estágio, computação, localização e elegibilidade reduzem candidatos à IA.
 
-`radar/filtering/prefiltro.py`.
+**Código de referência:** `radar/filtering/prefiltro.py`.
 
-### Enriquecimento
+#### 06. Enriquecimento
 
 Tenta obter descrição mais completa antes da extração.
 
-`radar/matching/enriquecimento.py`.
+**Código de referência:** `radar/matching/enriquecimento.py`.
 
-### Extração de fatos por IA
+### Extração e personalização
+
+#### 07. Extração de fatos por IA
 
 Gemini API ou adapter local AGY; lotes, tentativas e recuperação parcial.
 
-`radar/matching/`.
+**Código de referência:** `radar/matching/`.
 
-### Reuso de extração
+#### 08. Reuso de extração
 
 Uma extração por vaga compartilhada entre perfis.
 
-Novas vagas elegíveis ainda podem consumir IA.
+**Condições e limites:** Novas vagas elegíveis ainda podem consumir IA.
 
-### Nota determinística
+#### 09. Nota determinística
 
 Python compara curso, período, tecnologias, interesses e logística.
 
-`radar/matching/avaliacoes.py`, `compatibilidade.py`.
+**Código de referência:** `radar/matching/avaliacoes.py`, `compatibilidade.py`.
 
-### Histórico por perfil
+#### 10. Histórico por perfil
 
 Persistência de avaliações, envios e recusas no PostgreSQL.
 
-`radar/storage/postgres.py`.
+**Código de referência:** `radar/storage/postgres.py`.
 
-### Atendimento concorrente
+### Entrega e interações
+
+#### 11. Atendimento concorrente
 
 Advisory lock por perfil, seguido de releitura do histórico.
 
-Não torna Telegram e banco uma transação atômica.
+**Condições e limites:** Não torna Telegram e banco uma transação atômica.
 
-### Revalidação de privacidade
+#### 12. Revalidação de privacidade
 
 Confere destinatário antes do envio; falha de leitura bloqueia e aparece no resumo.
 
-`radar/pipeline.py`.
+**Código de referência:** `radar/pipeline.py`.
 
-### Entrega Telegram
+#### 13. Entrega Telegram
 
 HTML escapado, divisão de mensagem e teclado na última parte.
 
-`radar/notification/`.
+**Código de referência:** `radar/notification/`.
 
-### Feedback via webhook
+#### 14. Feedback via webhook
 
 Valida token/chat/perfil e grava antes de tentar apagar a pergunta.
 
-Falhas cosméticas após insert não provocam HTTP 500.
+**Condições e limites:** Falhas cosméticas após insert não provocam HTTP 500.
 
-### Rastreamento
+#### 15. Rastreamento
 
 Token em `ir`, redirecionamento 302 sem cache e evento de abertura.
 
-`HEAD` não registra; exclusão bloqueia navegação.
+**Código de referência:** `HEAD` não registra; exclusão bloqueia navegação.
 
-### Auth e isolamento
+### Segurança e operação
+
+#### 16. Auth e isolamento
 
 Supabase Auth, RLS, grants e RPCs limitadas ao dono.
 
-`supabase/migrations/`, `web/assets/app.js`.
+**Código de referência:** `supabase/migrations/`, `web/assets/app.js`.
 
-### Antiabuso
+#### 17. Antiabuso
 
 Integração Turnstile pronta.
 
-Inerte enquanto chave/configuração não forem ativadas.
+**Condições e limites:** Inerte enquanto chave/configuração não forem ativadas.
 
-### Limpeza de contas
+#### 18. Limpeza de contas
 
 Job remove contas após carência e dados associados, incluindo sessões anônimas elegíveis.
 
-Não apaga mensagens já entregues no Telegram.
+**Condições e limites:** Não apaga mensagens já entregues no Telegram.
 
-### Falhas de entrega
+#### 19. Falhas de entrega
 
 Contagem e pausa após falhas seguidas; resumo de operação.
 
-Limiar configurável.
+**Condições e limites:** Limiar configurável.
 
-### Agendamento
+#### 20. Agendamento
 
 Workflow manual disparado pelo cron-job.org ou pelo vínculo.
 
-Não há cron nativo ativo no workflow.
+**Condições e limites:** Não há cron nativo ativo no workflow.
 
-### Relatório CLI
+#### 21. Relatório CLI
 
 Aquisição, coorte, utilidade semanal e recusas com denominadores.
 
-`radar/reporting/funil.py`, `radar/storage/metricas.sql`.
+**Código de referência:** `radar/reporting/funil.py`, `radar/storage/metricas.sql`.
 
-### Testes
+#### 22. Testes
 
 Python, Deno, DOM simulado e PostgreSQL isolado via PGlite.
 
-`tests/`, testes nas Edge Functions.
+**Código de referência:** `tests/`, testes nas Edge Functions.
+
+---
 
 ## Comandos
 
