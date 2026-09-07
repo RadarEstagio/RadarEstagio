@@ -6,14 +6,13 @@
 **Data:** 03/09/2026
 
 **Escopo auditado:** `radar/`, `web/`, `supabase/migrations/`, `supabase/functions/`,
-`.github/workflows/`, `docs/metricas.md` e `docs/plano-melhorias-rcd.md`.
+`.github/workflows/`, `docs/metricas.md` e `docs/plano-validacao-piloto.md`.
 
 **Framework:** Revenue-Centric Design, na ordem
 _corrigir → medir → ativar → reter → provar → monetizar → diferenciar_.
 
-Este documento não substitui [`plano-melhorias-rcd.md`](plano-melhorias-rcd.md), que continua
-sendo a estratégia. Ele audita o que existe hoje no código, corrige o backlog priorizado à luz
-do que foi encontrado e define o que fazer nas próximas seis semanas.
+Esta auditoria preserva o diagnóstico original. O antigo plano RCD foi substituído pelo
+[plano de validação do piloto](plano-validacao-piloto.md); prazos e prioridades abaixo são históricos.
 
 ## 1. Veredito
 
@@ -347,7 +346,7 @@ mensurável de qualidade.
 - Coorte fechada de 10 a 20 universitários de tecnologia buscando o primeiro estágio, duas
   semanas de uso.
 - Cada canal com origem identificada — turma, comunidade, coordenação.
-- Cinco entrevistas com o roteiro da seção 7.2 de `plano-melhorias-rcd.md`.
+- Cinco entrevistas com o roteiro de entrevistas do [plano do piloto](plano-validacao-piloto.md#4-fazer-cinco-entrevistas).
 - **Acompanhar o viés de anúncio raso** descrito na seção 7, comparando as recomendações
   marcadas como irrelevantes com quantas tecnologias a vaga declarava.
 - Ao fim: substituir a faixa de tecnologias da landing por evidência real; a promessa comercial só
@@ -363,7 +362,7 @@ planos.
 
 ## 6. O que não construir agora
 
-Além da lista da seção 11 de `plano-melhorias-rcd.md`, ficam explicitamente fora:
+No diagnóstico original, além das exclusões do antigo plano RCD, ficavam fora:
 
 - **Nova fonte de vagas.** Nada indica insuficiência de cobertura; indica falta de medição de
   utilidade.
@@ -410,6 +409,6 @@ ignorados. Aquilo era defeito e foi consertado; isto é calibração e espera da
 
 ## 8. Regra de execução
 
-Mantida da seção 14 de `plano-melhorias-rcd.md`: cada entrega declara hipótese, métrica afetada,
+Regra preservada do antigo plano RCD: cada entrega declara hipótese, métrica afetada,
 implementação mínima, teste proporcional ao risco, verificação manual de ponta a ponta, evento de
 produto correspondente e decisão de manter, ajustar ou remover.

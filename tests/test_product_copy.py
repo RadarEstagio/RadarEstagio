@@ -35,11 +35,11 @@ def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
 
 
 def test_documentacao_reflete_a_fase_atual_e_as_evidencias_recentes():
-    plano = (RAIZ / "docs/plano-melhorias-rcd.md").read_text()
+    plano = (RAIZ / "docs/plano-validacao-piloto.md").read_text()
     pre_prd = (RAIZ / "docs/pre-prd.md").read_text()
     proposta = (RAIZ / "docs/proposta.md").read_text()
 
-    assert "Fase 2 — MVP de validação com usuários, parcialmente implementada" in plano
+    assert "Estado: preparação" in plano
     assert "703 vagas únicas e 55 candidatas" in pre_prd
     assert "703 vagas únicas" in pre_prd
     assert "aprende com o feedback" not in proposta

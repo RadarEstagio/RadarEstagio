@@ -191,7 +191,7 @@ ativação é opcional e exige chave e configuração no workflow; não bloqueia
 |---|---|
 | `auditoria-rcd.md` | os catorze achados com situação, os sprints e o viés do ranking |
 | `plano-cadastro-e-privacidade.md` | as sete decisões de cadastro, consentimento e LGPD |
-| `plano-melhorias-rcd.md` | a estratégia RCD original, de onde tudo saiu |
+| `plano-validacao-piloto.md` | ações, métricas e critérios para validar o piloto |
 | `metricas.md` | as consultas do funil e as definições |
 | `arquitetura.md` | as camadas e as decisões técnicas |
 | `CONTEXT.md` | o vocabulário: o que conta como ativação, vaga útil, candidatura |
