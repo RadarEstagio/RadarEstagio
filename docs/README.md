@@ -33,7 +33,6 @@ como equivalentes.
 | `pre-prd.md` | Preservar como análise de 02/09 | Hipóteses e viabilidade daquela revisão; não manter um segundo catálogo atual |
 | `plano-melhorias-rcd.md` | Preservar como estratégia | Hipóteses, critérios e portões; não transformar toda sugestão em requisito aprovado |
 | `auditoria-rcd.md` | Preservar como diagnóstico datado | Evidência dos achados e do viés de ranking; sprints antigos não substituem o plano geral |
-| `apresentacao.md` | Preservar como roteiro datado | Preparação de apresentação; revisar afirmações e evidências antes de usar novamente |
 
 Não faz mais sentido manter proposta, pré-PRD, auditoria e dois planos de execução como
 fontes concorrentes de status. Eles continuam úteis para explicar decisões. Nesta revisão,

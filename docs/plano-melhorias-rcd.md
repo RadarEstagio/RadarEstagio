@@ -105,7 +105,7 @@ A mensagem do Telegram agora inclui:
 
 ### 3.4 Preparar a apresentação
 
-**Status:** concluída em 30/08/2026. O roteiro está em [`docs/apresentacao.md`](apresentacao.md).
+**Status:** preparação concluída em 30/08/2026; apresentação já realizada. O roteiro foi retirado da documentação ativa e permanece recuperável pelo histórico do Git.
 
 Apresentar separadamente:
 

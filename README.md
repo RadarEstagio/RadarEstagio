@@ -11,7 +11,6 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
 - Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
-- Roteiro da apresentação: [`docs/apresentacao.md`](docs/apresentacao.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
 - Landing page e decisões de frontend: [`web/README.md`](web/README.md)
 
