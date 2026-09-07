@@ -1,15 +1,11 @@
 # Plano — cadastro, consentimento e privacidade
 
 
-> Atualização de execução — 05/09: deploy adiado pelo Igor. O bloco de cadastro e privacidade
-> está implementado localmente (migrations `0014`–`0016`, frontend e proteção das entregas),
-> ainda sem aplicação remota. Resend foi verificado e o SMTP salvo pelo Igor, mas a entrega real
-> não foi testada. Os documentos permanecem em revisão. As descrições de lacunas abaixo
-> registram o diagnóstico original; o estado atual e os passos externos estão no
-> [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback e métricas foram implementados e testados localmente na etapa seguinte.
-> Entrega imediata foi integrada da main; validação remota permanece pendente.
-
-**Data:** 05/09/2026 (revisto)
+**Atualizado em 06/09/2026.** Código na `main`; migrations `0014`–`0016` aplicadas e
+Edge Functions publicadas, conforme registro remoto de 05/09 à noite. As três foram aplicadas
+fora do histórico de migrations e reconciliadas com `migration repair` em 06/09. Frontend ainda não
+hospedado. Termos e Política continuam em revisão. Confirmação e recuperação reais, Turnstile
+e o fluxo completo de cadastro ainda precisam ser validados após a publicação.
 
 **Escopo:** o cadastro de ponta a ponta, os dois documentos legais e o que a LGPD exige do
 produto. Nasceu da conversa sobre o e-mail de confirmação parecer amador e cresceu para cobrir
@@ -20,7 +16,7 @@ tudo que fica entre a landing e a primeira vaga entregue.
 | # | Assunto | Decisão |
 |---|---|---|
 | 1 | Controlador dos dados | Os três integrantes do projeto |
-| 2 | Canal de contato | Domínio comprado em 05/09; falta criar o endereço e preencher o espaço reservado |
+| 2 | Canal de contato | `contato@radarestagio.com` criado e recebimento confirmado por Igor |
 | 3 | Retenção | Enquanto a conta existir. Excluir apaga em cascata o que está ligado à conta |
 | 4 | Portabilidade | Botão de baixar os próprios dados, por função no banco |
 | 5 | Menor de idade | Fora do escopo; o documento não trata |
@@ -50,16 +46,11 @@ seguir; consentir e-mail é opcional, começa desmarcado e tem que ser reversív
 
 ### Confirmação em qualquer aparelho
 
-Hoje, entre criar a conta e confirmar o e-mail, o perfil vive só no `localStorage`. Quem se
-cadastra no notebook e confirma no celular volta para um site que não sabe quem é — e o código
-retorna calado, sem dizer nada.
+O perfil é enviado no cadastro e preservado no banco para criação após confirmação.
+O frontend consulta sessão e banco ao retornar, inclusive em outro aparelho; a sessão de
+origem acompanha o cadastro para manter a associação do funil. Implementado e testado
+localmente, com validação completa no site publicado ainda pendente.
 
-O perfil passa a viajar com a conta: vai em `options.data` do `signUp`, chega em
-`auth.users.raw_user_meta_data` sem passar por RLS, e um gatilho cria a linha em `perfis` quando
-`email_confirmed_at` deixa de ser nulo. Mesmo padrão dos gatilhos que a `0005` já usa.
-
-Ganho lateral: confirmar no celular vira o **melhor** caminho, porque o passo seguinte é vincular
-o Telegram, que está no celular.
 
 ### Tela de reenvio
 
@@ -100,21 +91,13 @@ não é o que garante a regra.
 A primeira etapa é o que a pessoa pediu: parar de processar. A segunda é o apagamento definitivo.
 Entre as duas ela pode entrar e cancelar.
 
-**O que "parar na hora" ainda não cobre.** A quarta já foi resolvida; as três primeiras seguem
-abertas e foram reconfirmadas pela revisão de 05/09:
+**Proteções implementadas:** o pipeline revalida antes de enviar; `ir` e o webhook verificam
+exclusão e vínculo atual. Contas pausadas ou desvinculadas podem navegar por links antigos
+sem gerar eventos; exclusão bloqueia ambos. A `0016` também impede novos eventos de vaga
+para contas inativas. A limpeza alcança eventos anônimos das sessões sem apagar eventos
+atribuídos a outras contas do mesmo navegador.
 
-- O pipeline lê os usuários **antes** de coletar e guarda o `chat_id` em memória. Quem exclui
-  durante a execução ainda recebe a mensagem daquele dia. Revalidar antes de enviar.
-- A função `ir` registra clique de link antigo sem consultar `ativo` nem `excluida_em`. Durante os
-  60 dias ela continuaria gravando `vaga_aberta` de quem pediu para sair.
-- O mesmo vale para o `telegram-webhook`: `envioDoToken` e `registrarRecusa` gravam
-  `vaga_irrelevante` e respondem no Telegram sem verificar exclusão, `ativo` ou se o `chat_id`
-  ainda está vinculado. Clicar num botão antigo continuaria processando dado de quem pediu para
-  sair.
-- ~~Os eventos anteriores ao login têm só `sessao_id` e nenhuma cascata os alcança.~~ **Resolvido
-  em 05/09.** A rotina apaga por `sessao_id`, mas **só os que estão sem dono**: o `sessao_id` mora
-  no `localStorage` e sobrevive a logout, então duas contas no mesmo navegador dividem sessão, e a
-  primeira versão levava junto o funil de quem emprestou o computador.
+A revalidação e o envio externo são etapas distintas; não constituem uma transação única.
 
 Os 60 dias precisam de justificativa perante a LGPD — guardar dado "por precaução" não basta.
 Permitir o arrependimento é a justificativa, e vai escrita na política.
@@ -153,54 +136,34 @@ lê só o anúncio.
 **Direitos** — correção e exclusão já existem no painel. Portabilidade entra com o botão de baixar
 os dados. O documento não promete nada além disso.
 
-## 4. Ordem de implementação
+## 4. Implementação e validação
 
-**A ordem foi quebrada na prática**: o bloco da exclusão saiu primeiro, porque era o que já tinha
-migration escrita, e o bloco do consentimento não começou. O que está feito, feito, e o resto segue
-a ordem original.
+| Entrega | Estado |
+|---|---|
+| Termos e Política, HTML e links | Preparados; revisão final e publicação pendentes |
+| Exclusão e cancelamento, limpeza após 60 dias | Implementados; `0013` aplicada |
+| Consentimento e perfil após confirmação | Implementados; `0014` aplicada |
+| Exportação dos próprios dados | RPC `0015` aplicada e botão pronto; testar pela interface publicada |
+| Proteção dos eventos e revalidação | Implementadas; `0016` aplicada e funções publicadas |
+| Checkboxes, senha visível e revogação de e-mails | Implementados no frontend |
+| Confirmação entre aparelhos e reenvio | Testados localmente; testar com Auth real |
+| Recuperação de senha | Implementada; testar envio e retorno reais |
+| Turnstile | Integração pronta e inerte até configurar as chaves |
 
-1. Escrever os dois documentos; Igor e Ian revisam antes de qualquer código
-2. `web/termos.html` e `web/privacidade.html`, linkados no rodapé
-3. Migration: `aceita_emails`, `termos_aceitos_em`, versão dos termos, `excluida_em`; a
-   `excluir_minha_conta()` deixa de apagar e passa a marcar; função para cancelar a exclusão
-   — **metade feita em 05/09**: `excluida_em`, marcar e cancelar estão na `0013`, aplicada. As três
-   colunas de consentimento não existem
-4. ~~Passo diário que apaga o que passou dos 60 dias~~ — **feito**
-5. Cadastro: os dois checkboxes, o olho na senha, o perfil em `options.data`
-6. Gatilho que cria o perfil na confirmação
-7. Tela de reenvio
-8. Turnstile
-9. Botão de baixar os dados
-10. **Recuperação de senha** — não existe hoje, nem tela nem chamada. Configurar o Resend não
-    entrega isso sozinho: falta o link "esqueci minha senha", a chamada
-    `resetPasswordForEmail`, e a tela que recebe a volta e define a senha nova
-11. **Textos e controles do painel** — **metade feita em 05/09**: as frases "Não dá para desfazer"
-    e "Seus dados foram apagados" saíram, entraram a data do apagamento definitivo e o botão de
-    cancelar. Falta o **controle para revogar o consentimento de e-mail**, que depende da coluna do
-    passo 3
-12. **Retorno da confirmação** — o `resumeConfirmedSignup` desiste quando não acha perfil no
-    navegador, antes de consultar sessão e banco. Com o gatilho criando o perfil, ele precisa
-    consultar primeiro. E o `sessao_id` do aparelho onde a pessoa se cadastrou não viaja para o
-    gatilho: confirmar no celular cria o perfil e deixa o começo do funil do notebook
-    desconectado
+As migrations aplicadas não devem ser reescritas. Mudanças posteriores devem entrar em novas
+migrations. O checklist de publicação e teste está em `guia-publicacao-e-piloto.md`.
 
-Do 3 em diante, um commit por decisão e suíte verde em comando separado, como manda o `CLAUDE.md`.
-
-A migration `0013` **foi aplicada em 05/09** e não pode mais ser editada no lugar: o que faltar do
-passo 3 entra numa `0014`. Ela passou por duas revisões antes de subir; a segunda achou três
-defeitos reais que a primeira não viu, o que vale repetir nas próximas.
 
 ## 5. Dependências externas
 
 | O quê | Trava o quê |
 |---|---|
-| ~~Domínio~~ | **comprado em 05/09.** Falta criar o endereço de contato e apontar o DNS |
+| ~~Domínio~~ | **comprado em 05/09.** Contato funcionando; falta associar à hospedagem |
 | Resend | **decidido em 05/09: entra antes do piloto.** Com o domínio na mão, o remetente compartilhado do Supabase é o que impede o cadastro de sustentar 10 a 20 pessoas na mesma tarde: são poucos e-mails por hora e caem em spam. Entrar não depende de e-mail; cadastrar sim |
 | Chaves do Turnstile | pública no `web/config.js`, secreta no Supabase |
 
-O passo 8 fica pronto e inerte até as chaves do Turnstile existirem — mesma situação da Edge
-Function `ir` hoje. O passo 9 não depende de chave nenhuma: é função no banco mais botão, e pode
-ir junto com o resto.
+Turnstile continua inerte até configurar as chaves e disponibilizar o frontend atualizado.
+A exportação já existe no banco e na interface; falta validar o fluxo integrado.
 
 Sobre o limite de envio: trocar para o Resend **não remove** a limitação por hora. O Supabase
 mantém um limite próprio mesmo com SMTP personalizado — mais alto que o do servidor compartilhado

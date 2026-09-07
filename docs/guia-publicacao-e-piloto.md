@@ -1,19 +1,36 @@
 # Guia de publicação e piloto
 
-Deploy adiado por decisão do Igor em 05/09. O trabalho atual fica local; não houve aplicação
-remota das migrations nem publicação das funções nesta etapa. Os documentos continuam como
-rascunhos, sem vigência.
+**Atualizado em 06/09/2026.** O deploy foi parcial: migrations `0014`–`0016` aplicadas e
+reconciliadas com o histórico em 06/09 (seção 9), `ir` e `telegram-webhook` publicadas. O frontend
+continua sem hospedagem e os documentos continuam como rascunhos, sem vigência.
 
-Estado das configurações feitas pelo Igor durante a orientação:
+Conferido no ambiente remoto em 06/09, nesta revisão:
 
-- Domínio comprado e Email Routing habilitado. Igor confirmou o teste do contato funcionando
-  em 05/09; falta combinar a rotina de resposta com Ian e Miguel.
-- Domínio verificado no Resend e SMTP personalizado salvo no Supabase. Falta testar entrega real.
-- Site URL e retornos básicos configurados. Acrescentar o retorno de recuperação descrito abaixo.
-- Hospedagem e integração GitHub adiadas. Organização compartilhada será retomada depois.
-- Cadastro e privacidade implementados localmente nas migrations `0014` a `0016` e no frontend.
-  Feedback individual e métricas foram implementados e testados localmente na etapa seguinte;
-  a entrega sob demanda também entrou na main; a validação remota continua pendente.
+- `supabase functions list`: `ir` e `telegram-webhook` **ativas**, publicadas em 05/09 às 21:13 e
+  21:15 UTC. O código no ar foi baixado com `supabase functions download` e comparado arquivo a
+  arquivo com o do repositório: **idêntico** nas duas. Confirma que a versão publicada carrega o
+  feedback de seis opções, a resposta que não devolve 500 depois de gravar e a `navegacao.ts` que
+  preserva o link de conta pausada.
+- Objetos das `0014`–`0016` presentes: as três colunas de consentimento, `cadastros_pendentes`,
+  as quatro funções da `0014`, `baixar_meus_dados` e `verificar_perfil_da_interacao`.
+- `validar_cadastro_radar` no ar é a versão que valida o **formato** da data, não a que tinha
+  `2026-09-05` cravado: o deploy pegou o commit posterior à correção.
+- `getWebhookInfo`: `allowed_updates` com `message` e `callback_query`, sem fila pendente e sem
+  último erro.
+- `supabase migration list --linked`: as `0014`–`0016` não constavam como aplicadas. Corrigido no
+  mesmo dia com `migration repair`; a coluna `remote` das três agora traz a própria versão.
+
+Estado registrado na atualização de 05/09 à noite, sem repetir os testes remotos nesta revisão:
+
+- Contato funcionando; combinar a rotina de resposta com Ian e Miguel.
+- Resend verificado e SMTP salvo; falta validar confirmação e recuperação reais.
+- `URL_DE_RASTREIO` criada no GitHub; `URL_DA_LANDING` provisória aponta para o repositório.
+- Token real validou redirecionamento 302 e registro de `vaga_aberta`.
+- Primeira entrega real após `/start` em cerca de quatro minutos, sem requisições de IA.
+- Trava por perfil implementada e validada com duas conexões no banco real.
+- Relatório conferido com dados reais; feedback ainda zerado naquele teste.
+- Hospedagem, retornos finais do Auth, Turnstile e cadastro completo continuam pendentes.
+- Organização compartilhada no GitHub foi proposta; transferência ainda não confirmada.
 
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
@@ -134,7 +151,7 @@ login, reenvio e recuperação, incluindo expiração do desafio.
 
 **Concluído quando:** os fluxos passam com token válido e o servidor recusa token inválido.
 
-## 7. Configurar rastreamento e publicar funções
+## 7. Rastreamento publicado — concluir o endereço da landing
 
 | Onde | Nome | Valor |
 |---|---|---|
@@ -145,8 +162,8 @@ Preserve os secrets existentes `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` 
 As credenciais de banco das funções são fornecidas pelo ambiente Supabase. Nenhum segredo
 entra em `web/config.js`; ali só cabe a chave publicável do projeto.
 
-Após as correções e testes de privacidade e feedback, publique `ir` e republique
-`telegram-webhook` no projeto correto. `supabase/config.toml` já define `verify_jwt = false`
+`ir` e `telegram-webhook` foram publicadas em 05/09. A tabela acima mostra os valores finais:
+troque `URL_DA_LANDING`, hoje apontada provisoriamente para o repositório, quando o site subir. `supabase/config.toml` já define `verify_jwt = false`
 para ambas: o webhook verifica o segredo do Telegram, e `ir` atende os links do navegador.
 
 Confira a configuração do webhook: URL da função, mesmo segredo e `allowed_updates` contendo
@@ -156,12 +173,14 @@ o segredo apenas para republicar.
 **Concluído quando:** abrir vaga grava `vaga_aberta`, token inválido volta à landing e cada
 feedback grava o evento correto. Links antigos de conta excluída não podem gerar novos eventos.
 
-## 8. Preparar a primeira entrega após vínculo
+## 8. Primeira entrega — implementada e validada
 
 A execução sob demanda foi implementada usando `workflow_dispatch` com o input `perfil`.
 A Edge Function lê o secret `GITHUB_DISPATCH_TOKEN`, com permissão de Actions para
 `babue0/RadarEstagio`. Sem esse secret, o vínculo funciona e a busca fica para o diário.
-Confira sua configuração e validade antes do teste integrado.
+O fluxo real levou cerca de quatro minutos no teste registrado. A trava por perfil foi
+validada com duas conexões; execuções concorrentes aguardam e releem o histórico.
+Confira a validade do token e reconfigure o acesso se o repositório mudar de organização.
 
 Preserve o agendamento do cron-job.org às 07:23 de Brasília. Não adicione outro agendador.
 
@@ -170,7 +189,7 @@ a janela de 06:23 a 07:23 aguarda o diário e os demais perfis continuam atendid
 
 ## 9. Código e validação antes do piloto
 
-Implementado e testado localmente, ainda sem publicação:
+Implementado na `main`; migrations aplicadas e funções publicadas, frontend ainda não hospedado:
 
 - `0014`: consentimento, versão aceita e perfil criado na confirmação a partir de cópia protegida.
 - Cadastro com checkboxes separados, revelar senha e sessão de origem preservada.
@@ -184,12 +203,28 @@ Também implementados e testados localmente:
 - Funil completo, vagas distintas, utilidade semanal e denominadores das recusas.
 - Vocabulário e métricas alinhados; candidatura continua sem emissor por decisão do plano.
 
-O pipeline por perfil e o dispatch após vínculo também foram integrados da main.
-Falta a validação integrada com uma conta de teste, incluindo envios concorrentes.
+O pipeline por perfil, o dispatch e a trava de concorrência foram implementados e validados
+conforme o registro acima. Falta testar o cadastro completo pela interface publicada e
+registrar respostas positivas e negativas reais no feedback.
 
-A `0013` aplicada não será reescrita. Testar e revisar as novas migrations antes de aplicar
-no banco remoto, sempre pelo histórico de migrations. Depois da integração e revisão final,
+As migrations `0013`–`0016` já aplicadas não serão reescritas. Correções futuras devem
+entrar em novas migrations pelo histórico do projeto. Depois da integração e revisão final,
 retirar os avisos de rascunho das páginas e registrar versão/data coerentes com o aceite.
+
+**As `0014`–`0016` foram aplicadas fora do histórico de migrations, e isso foi corrigido em
+06/09.** A conferência encontrou todos os objetos das três no banco — as colunas de consentimento,
+`cadastros_pendentes`, as quatro funções da `0014`, `baixar_meus_dados` e
+`verificar_perfil_da_interacao` — mas nenhuma registrada em `supabase_migrations.schema_migrations`.
+Como o `db push` grava o registro na mesma transação em que aplica, as três aplicadas e nenhuma
+registrada indicam que o SQL foi executado direto no banco, sem passar pelo CLI. Os OIDs dos objetos
+são sequenciais, então as três rodaram na ordem certa e de uma vez só.
+
+Sem conserto, o `db push` seguinte tentaria reaplicá-las e quebraria no primeiro `add column` de
+coluna existente, deixando a migration nova pela metade. `supabase migration repair --status
+applied 0014 0015 0016` resolveu, gravando só o registro, sem reexecutar SQL. O histórico foi
+conferido depois: as três constam com nome e contagem de comandos, como em qualquer push.
+
+**Conferir `supabase migration list --linked` depois de aplicar e antes do próximo push.**
 
 ## 10. Conferência final com conta de teste
 
