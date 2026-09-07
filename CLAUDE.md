@@ -10,11 +10,11 @@ histórico passo a passo em `docs/passos-realizados.md`.
 
 Funcionando hoje: duas fontes de vagas somadas (Adzuna e Gupy), banco Supabase com perfis,
 vagas, avaliações, envios e eventos de produto por usuário, cadastro web com conta e vínculo
-com o Telegram, matching de compatibilidade por IA, entrega da mensagem ranqueada no Telegram,
+com o Telegram, extração de fatos por IA e pontuação determinística de compatibilidade, entrega da mensagem ranqueada no Telegram,
 agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
 na primeira recomendação entregue e funil instrumentado da landing à primeira recomendação.
 
-Ainda não disponível: painel web de métricas e novas fontes além de Adzuna e Gupy. O feedback
+Ainda não disponível: painel web de métricas. Jooble está implementado, mas desligado por padrão. O feedback
 já molda o ranking na v1 (05/09/2026): "já vi essa" alimenta o filtro de republicação do
 usuário, e subárea com 2+ recusas por "não é da minha área" em 30 dias perde o fator de
 interesse (teto 65 e aviso próprio), tudo por usuário e sem IA; "pedem demais", "local ou
@@ -65,7 +65,7 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
   (`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
   conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
-  compartilhadas, a primeira entrega custa zero requisição de IA. Sem o token, o vínculo
+  compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
   segue normal e a primeira busca fica para o diário.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
@@ -125,7 +125,7 @@ Sem framework web: a aplicação é um script disparado por cron, não um servi�
 `psycopg` 3 acessa o PostgreSQL com SQL puro, sem ORM.
 
 `python-telegram-bot` não entra em fase alguma: o bot só envia mensagens (uma requisição
-HTTP simples). O único evento recebido, o `/start` do vínculo, chega por webhook a uma Edge
+HTTP simples). O `/start` do vínculo e os callbacks de feedback chegam por webhook a uma Edge
 Function do Supabase, fora do `radar/`.
 
 ### Cadastro no site, não no bot

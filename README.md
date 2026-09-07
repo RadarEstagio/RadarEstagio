@@ -1,5 +1,7 @@
 # Radar de Estágio
 
+Documentação: [índice e revisão](docs/README.md) · [funcionalidades para usuários e devs](docs/funcionalidades.md).
+
 Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
 usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
 
@@ -296,7 +298,7 @@ passos servem para configurar outro ambiente:
 3. Registre o webhook (troque `<TOKEN>`, `<REF>` e `<SEGREDO>`):
 
    ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>
+   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D
    ```
 
    `getWebhookInfo` no lugar de `setWebhook` mostra se ficou registrado.

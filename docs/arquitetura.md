@@ -5,23 +5,21 @@ caminho. O histórico passo a passo está em [`passos-realizados.md`](passos-rea
 
 ## Em uma frase
 
-Um script Python, disparado uma vez por dia pelo GitHub Actions, que coleta vagas, filtra,
-avalia com IA e envia uma mensagem no Telegram para cada usuário — **sem servidor**; o banco
-Supabase é acessado pelo job e pelo cadastro web.
+Um script Python executado no GitHub Actions, diariamente ou após vínculo, coleta vagas,
+extrai fatos com IA e pontua por perfil em Python. O frontend usa Supabase Auth e banco;
+Edge Functions recebem vínculo/feedback e redirecionam links de vagas. Não há servidor Python permanente.
 
 ## O fluxo
 
-```
-┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
-│  coletar   │ → │  dedupe    │ → │ pré-filtrar│ → │  avaliar   │ → │  ranquear  │ → │   enviar   │
-│Adzuna+Gupy │   │título+emp. │   │  (regras)  │   │  (Gemini)  │   │  (top N)   │   │ (Telegram) │
-└────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘
-   volume variável   volume variável  volume variável  lotes configuráveis  até N vagas   1+ mensagem
+```text
+fontes → dedupe/pré-filtro → enriquecimento → extração compartilhada
+  → trava e histórico por perfil → pontuação → revalidação → Telegram → registro de envio
 ```
 
-Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra. Com banco, as
-três últimas caixas rodam uma vez por usuário, e o `storage/` entra antes de avaliar (o que
-já tem nota e o que já foi enviado) e depois de enviar (grava vagas, notas e envios).
+A extração é reaproveitada entre usuários; pontuação e seleção são individuais. A trava
+serializa atendimento do mesmo perfil. Banco e envio ao Telegram não são transação única.
+O [catálogo](funcionalidades.md) detalha recursos e limites; o [contrato](contrato-front.md)
+descreve o cadastro e as RPCs atuais.
 
 ## As camadas
 
@@ -41,7 +39,7 @@ radar/
 
 ### `domain/` — o que o sistema *é*
 
-Quatro entidades (`Vaga`, `Perfil`, `Usuario`, `ResultadoMatch`) e os contratos
+Entidades como `Vaga`, `Perfil`, `Usuario`, `ExtracaoDaVaga`, `Recomendacao` e `ResultadoMatch`, além dos contratos
 (`ColetorDeVagas`, `ExtratorDeVagas`, `Notificador`, `RepositorioDeUsuarios`,
 `RepositorioDeAvaliacoes`). Nada aqui sabe que Adzuna, Gemini ou Telegram existem.
 
@@ -285,23 +283,14 @@ Agora o número de requisições depende só de quantas vagas novas passaram no 
 perfil. O resumo de cada execução (decisão 10) informa esse número, e o teste
 `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
 
-## Estado da Fase 2
+## Estado e evolução
 
-A base da Fase 2 já está integrada ao sistema. O que ainda não foi implementado permanece como
-trabalho futuro:
+Banco, múltiplos usuários, cadastro, controle da conta, feedback, métricas e entrega após
+vínculo estão implementados. O cadastro é validado e criado pelo banco após confirmação;
+a interface edita campos permitidos e chama RPCs para operações protegidas. As Edge Functions
+tratam vínculo, feedback e navegação. Jooble existe como fonte opcional, desligada por padrão.
 
-- ~~**Banco (Supabase/PostgreSQL)** e **vários usuários**~~ — feito (Passo 9, decisão 10).
-- ~~**Cadastro no site**~~ — feito (Passo 11). A landing estática usa Supabase Auth,
-  grava o perfil diretamente sob RLS, retoma o cadastro após a confirmação de e-mail e
-  termina no deep link do Telegram. O contrato entre as partes continua sendo o schema do
-  banco, não uma API do `radar/`.
-- ~~**Vínculo com o Telegram**~~ — feito (Passo 10). O site abre
-  `t.me/RadarEstagio_bot?start=<token>` com o `token_vinculo` do usuário; o Telegram chama a
-  Edge Function `supabase/functions/telegram-webhook/`, que confere o segredo do webhook,
-  troca o token pelo `chat_id` e grava no perfil. A função fica fora do `radar/` (Deno é a
-  plataforma das Edge Functions) e só tem uma regra pura testada (`vinculo.ts`). O bot
-  continua só enviando mensagens; nada de `python-telegram-bot` nem processo escutando.
-- **Mais fontes**: só depois de a validação comprovar cobertura insuficiente. Cada nova fonte deve
-  cumprir `ColetorDeVagas` e ser registrada na factory e em `FONTES`.
-- **Cota da IA**: medir chamadas e custo por usuário com ativação operacional antes de contratar
-  capacidade ou implementar outro adapter em `matching/`.
+O [catálogo](funcionalidades.md) detalha as capacidades. Publicação e validação estão no
+[guia](guia-publicacao-e-piloto.md), e as pendências no [plano geral](plano-geral.md).
+Novos adapters devem cumprir os contratos do domínio; medir cobertura, custo e comportamento
+antes de ativá-los no piloto.
