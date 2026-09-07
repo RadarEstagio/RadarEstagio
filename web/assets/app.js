@@ -1,4 +1,9 @@
 const dialog = document.querySelector("#signup-dialog");
+const accountPage = document.querySelector("#account-page");
+const accountContent = document.querySelector("#account-content");
+const landingPage = document.querySelector("#landing-page");
+const dialogShell = document.querySelector(".dialog-shell");
+const landingTitle = document.title;
 const form = document.querySelector("#signup-form");
 const successState = document.querySelector("#success-state");
 const progressWrap = document.querySelector(".progress-wrap");
@@ -305,13 +310,44 @@ function resetDialogView() {
   showStep(1);
 }
 
+function openAccountPage() {
+  if (!accountPage.hidden) return;
+  if (dialog.open && typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  accountContent.append(dialogShell);
+  landingPage.hidden = true;
+  accountPage.hidden = false;
+  document.body.style.overflow = "";
+  document.title = "Minha conta — Radar de Estágio";
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("conta")) {
+    url.searchParams.set("conta", "");
+    window.history.pushState(null, "", url);
+  }
+  window.scrollTo(0, 0);
+}
+
+function leaveAccountPage() {
+  if (accountPage.hidden) return;
+  dialog.append(dialogShell);
+  accountPage.hidden = true;
+  landingPage.hidden = false;
+  document.title = landingTitle;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("conta");
+  window.history.replaceState(null, "", url);
+  document.querySelector(".js-open-signup").focus();
+}
+
 function openDialog() {
+  if (!accountPage.hidden) return;
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
   document.body.style.overflow = "hidden";
 }
 
 function closeSignup() {
+  leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
   document.body.style.overflow = "";
@@ -394,6 +430,7 @@ function mostrarEstadoDoPerfil(profile) {
 }
 
 function showActivation(profile) {
+  openAccountPage();
   if (profile.telegram_chat_id) {
     showSuccess({
       kicker: "Radar ativado",
@@ -438,6 +475,7 @@ function estadoDasEntregas(profile) {
 }
 
 function showAccount(profile) {
+  openAccountPage();
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   document.querySelector("#account-emails").checked = Boolean(profile.aceita_emails);
@@ -457,7 +495,7 @@ function showAccount(profile) {
   document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#delete-account").hidden = emExclusao;
   document.querySelector("#cancel-deletion").hidden = !emExclusao;
-  document.querySelector("#close-account").focus();
+  document.querySelector("#account-title").focus();
 }
 
 function preencherFormularioCom(profile) {
@@ -605,9 +643,17 @@ async function resumeConfirmedSignup() {
       else if (!session) showAssistance("reset");
       return;
     }
-    if (!session) return;
+    if (!session) {
+      if (authQuery.has("conta")) {
+        resetDialogView();
+        setAuthMode("login");
+        showStep(3);
+        openDialog();
+      }
+      return;
+    }
     const profile = await loadProfile(session.user.id);
-    if (!returningFromAuth && !readPendingProfile()) return;
+    if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
     clearPendingProfile();
     openDialog();
     if (profile) mostrarEstadoDoPerfil(profile);
@@ -621,6 +667,7 @@ async function resumeConfirmedSignup() {
 
 function prepareMissingProfile(session) {
   resetDialogView();
+  openAccountPage();
   setAuthMode("signup");
   form.elements.email.value = session.user.email ?? "";
   credenciais.hidden = true;
@@ -653,6 +700,15 @@ document.querySelectorAll(".js-open-signup").forEach((button) => {
 });
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
 document.querySelector("#close-account").addEventListener("click", closeSignup);
+document.querySelector("#back-to-site").addEventListener("click", closeSignup);
+document.querySelector("#account-home").addEventListener("click", (event) => {
+  event.preventDefault();
+  closeSignup();
+});
+window.addEventListener("popstate", () => {
+  if (new URLSearchParams(window.location.search).has("conta")) openSignup();
+  else closeSignup();
+});
 
 document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
@@ -816,7 +872,7 @@ telegramLink.addEventListener("click", () => {
 });
 
 window.addEventListener("focus", () => {
-  if (!dialog.open || telegramLink.hidden) return;
+  if ((!dialog.open && accountPage.hidden) || telegramLink.hidden) return;
   refreshActivationStatus();
 });
 
@@ -827,7 +883,7 @@ dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && dialog.open) closeSignup();
-  if (event.key === "Enter" && dialog.open && !form.hidden && currentStep === 1 && event.target.matches("input, select")) {
+  if (event.key === "Enter" && (dialog.open || !accountPage.hidden) && !form.hidden && currentStep === 1 && event.target.matches("input, select")) {
     event.preventDefault();
     completeProfileStep();
   }
@@ -1038,6 +1094,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   const { error } = await getClient().auth.signOut();
   if (error) { setAccountMessage(humanizeError(error)); return; }
   clearPendingProfile();
+  closeSignup();
   form.reset();
   selectedSkills.clear();
   renderSkills();

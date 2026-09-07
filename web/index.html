@@ -14,6 +14,7 @@
     <script src="assets/app.js" defer></script>
   </head>
   <body>
+    <div id="landing-page">
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
     <header class="site-header" id="inicio">
@@ -155,6 +156,16 @@
       </div>
     </footer>
 
+    </div>
+
+    <div id="account-page" hidden>
+      <header class="account-header">
+        <a class="brand" href="./" id="account-home" aria-label="Radar de Estágio, início"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+        <button class="button button-ghost" type="button" id="back-to-site">Voltar ao site</button>
+      </header>
+      <main id="account-content" aria-label="Minha conta"></main>
+    </div>
+
     <dialog class="signup-dialog" id="signup-dialog" aria-labelledby="signup-title">
       <div class="dialog-shell">
         <button class="dialog-close" id="close-dialog" type="button" aria-label="Fechar cadastro">×</button>
@@ -258,11 +269,11 @@
           </section>
           <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-live="polite" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Fechar</button></div>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-live="polite" hidden>
             <p class="eyebrow"><span></span> Sua conta</p>
-            <h2 id="account-title">Seu Radar</h2>
+            <h2 id="account-title" tabindex="-1">Seu Radar</h2>
             <p id="account-summary"></p>
             <p class="account-schedule" id="account-schedule"></p>
             <p class="form-message" id="account-message" role="alert" hidden></p>
@@ -285,7 +296,7 @@
               </div>
             </div>
             <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-            <button class="button button-ghost" type="button" id="close-account">Fechar</button>
+            <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
           </section>
         </div>
       </div>

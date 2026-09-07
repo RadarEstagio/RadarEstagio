@@ -80,6 +80,7 @@ function app(
 ) {
   const dom = new JSDOM(html, { url, runScripts: "outside-only" });
   const w = dom.window;
+  w.scrollTo = () => {};
   const calls: Call[] = [];
   let authCallback: AuthCallback = () => {
     throw new Error("callback não registrado");
@@ -406,4 +407,53 @@ Deno.test("recuperação exige evento autenticado antes de trocar senha", async 
   } finally {
     a.close();
   }
+});
+
+Deno.test("conta sai do modal e mantém edição na página autenticada", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
+    assert.equal(a.w.document.activeElement.id, "account-title");
+    assert.equal(new URL(a.w.location.href).searchParams.has("conta"), true);
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
+    assert.ok(a.w.document.querySelector("#account-content #signup-form"));
+    a.w.document.querySelector("#back-to-site").click();
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.ok(a.w.document.querySelector("#signup-dialog #signup-form"));
+    assert.equal(new URL(a.w.location.href).searchParams.has("conta"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
+  const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#telegram-link").hidden, false);
+    a.w.document.querySelector("#success-account").click();
+    await settle();
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("endereço da conta sem sessão exige login", async () => {
+  const a = app({ url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, true);
+    assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
+  } finally { a.close(); }
 });
