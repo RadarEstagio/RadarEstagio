@@ -1,15 +1,14 @@
 # Radar de Estágio
 
+Documentação: [índice e revisão](docs/README.md) · [funcionalidades para usuários e devs](docs/funcionalidades.md).
+
 Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
 usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
 
-- Proposta completa: [`docs/proposta.md`](docs/proposta.md)
-- Plano do MVP, passo a passo: [`docs/plano-mvp.md`](docs/plano-mvp.md)
-- O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
+- Funcionalidades: [`docs/funcionalidades.md`](docs/funcionalidades.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
 - Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
-- Roteiro da apresentação: [`docs/apresentacao.md`](docs/apresentacao.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
 - Landing page e decisões de frontend: [`web/README.md`](web/README.md)
 
@@ -296,7 +295,7 @@ passos servem para configurar outro ambiente:
 3. Registre o webhook (troque `<TOKEN>`, `<REF>` e `<SEGREDO>`):
 
    ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>
+   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D
    ```
 
    `getWebhookInfo` no lugar de `setWebhook` mostra se ficou registrado.

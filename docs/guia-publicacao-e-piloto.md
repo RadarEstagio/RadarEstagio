@@ -63,7 +63,7 @@ Miguel também está identificado como responsável pelos dados. Registrem:
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
 
 Não retire o aviso de revisão antes de resolver as passagens pendentes e implementar as
-promessas. Use a [lista de revisão](revisao-cadastro-e-privacidade.md).
+promessas. Confiram também os controles reais descritos no [contrato frontend](contrato-front.md).
 
 **Concluído quando:** texto final revisado, contato ativo e responsabilidades registradas.
 
@@ -245,16 +245,9 @@ Use dados sintéticos e seus próprios endereços e Telegram:
 **Concluído quando:** resultados registrados e falhas corrigidas. Identifique as contas e
 sessões de teste para separá-las das métricas do piloto.
 
-## 11. Conduzir o piloto
+## 11. Divulgar e ouvir colegas
 
-Convide 10 a 20 estudantes por canais identificados, acompanhe por duas semanas e faça cinco
-entrevistas. Confira diariamente falhas de confirmação e entrega. Meça a proporção semanal
-de estudantes ativados com feedback positivo em ao menos uma recomendação; abertura sozinha
-não prova utilidade.
-
-Meça extrações, duração e custo com a diversidade real de cidades e áreas, que pode ampliar
-as vagas elegíveis. Para avaliar o ranking, compare recusas com entregas de cada grupo;
-não ajuste pesos por contagens brutas. Candidatura não será medida nesta versão.
-
-Apagar contas abandonadas, reescrever o histórico Git e remover as skills não são pendências
-deste lançamento: os planos já adiaram ou encerraram essas decisões.
+O plano formal de piloto foi retirado por decisão do Igor em 07/09. Depois de conferir os
+fluxos, pedir a alguns colegas que usem e relatem onde travaram e quais vagas serviram.
+Não há obrigação de entrevistas, coorte, prazo de duas semanas ou metas de retenção.
+A checklist vigente está no [plano geral](plano-geral.md#2-o-que-falta-antes-de-divulgar).

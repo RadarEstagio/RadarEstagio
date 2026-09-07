@@ -3,7 +3,7 @@
 **Rascunho para revisão de Igor e Ian. Não publicado e ainda sem vigência.**
 
 Este texto descreve a versão prevista para o piloto. As condições para publicá-lo estão em
-[revisão dos documentos](revisao-cadastro-e-privacidade.md).
+[revisão dos documentos](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção).
 
 ## 1. Quem oferece o Radar
 
