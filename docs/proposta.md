@@ -1,5 +1,8 @@
 # Radar de Estágio — Proposta de Projeto
 
+> Proposta original (agosto de 2026). Preservada como contexto acadêmico; stack, custos e roadmap abaixo não descrevem necessariamente a versão atual.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 _Agosto de 2026_
 
 > O agente de IA que garimpa os sites de vagas todos os dias e entrega, no Telegram,

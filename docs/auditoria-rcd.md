@@ -1,5 +1,8 @@
 # Auditoria RCD e plano de execução
 
+> Diagnóstico histórico. Achados e sprints refletem a revisão original; vários bloqueadores já foram resolvidos. Preserve a evidência e consulte o plano geral para o estado atual.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 **Data:** 03/09/2026
 
 **Escopo auditado:** `radar/`, `web/`, `supabase/migrations/`, `supabase/functions/`,

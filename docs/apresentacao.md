@@ -1,5 +1,8 @@
 # Roteiro da apresentação — Radar de Estágio
 
+> Roteiro da apresentação de 02/09/2026. Revise números, funcionalidades e pendências antes de reutilizar; este arquivo não comprova o estado atual de produção.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 **Status:** preparado em 30/08/2026 e revisado em 02/09/2026
 **Uso:** alinhamento técnico e de produto do MVP  
 **Público assumido:** equipe, professor e avaliadores do projeto

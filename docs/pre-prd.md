@@ -1,5 +1,8 @@
 # Radar de Estágio — Documento de Definição (Pré-PRD)
 
+> Análise de viabilidade de 02/09/2026. Preservada como registro de hipóteses e evidências daquela data; não é o catálogo atual nem o backlog vigente.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 **Status:** base técnica viável; Fase 2 em validação de produto e operação
 
 **Atualizado em:** 02/09/2026

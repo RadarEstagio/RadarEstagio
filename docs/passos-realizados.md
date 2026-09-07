@@ -1,5 +1,8 @@
 # O que foi feito em cada passo
 
+> Histórico dos passos iniciais. Números e pendências abaixo são da época de cada registro; não constituem checklist atual.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 Registro do MVP (Fase 1), passo a passo, seguindo o [plano](plano-mvp.md). Para cada passo:
 o que foi construído, por que daquele jeito, como foi testado e o que aprendemos no caminho.
 

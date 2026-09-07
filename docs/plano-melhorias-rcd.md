@@ -1,5 +1,8 @@
 # Plano de Melhorias — Revenue-Centric Design
 
+> Estratégia de referência. Hipóteses, sugestões e portões abaixo não são todos requisitos aprovados. A execução vigente é acompanhada no plano geral.
+> Estado atual: [funcionalidades](funcionalidades.md), [plano geral](plano-geral.md) e [índice](README.md).
+
 **Projeto:** Radar de Estágio
 
 **Data:** 30/08/2026; revisado em 02/09/2026
