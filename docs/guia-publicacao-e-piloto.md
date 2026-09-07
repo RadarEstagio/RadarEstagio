@@ -1,9 +1,8 @@
 # Guia de publicação e piloto
 
-**Atualizado em 06/09/2026.** O deploy foi parcial: os objetos das migrations `0014`–`0016`
-estão no banco — mas **fora do histórico de migrations**, o que precisa ser reconciliado antes do
-próximo push (seção 9) — e `ir` e `telegram-webhook` estão publicadas. O frontend continua sem
-hospedagem e os documentos continuam como rascunhos, sem vigência.
+**Atualizado em 06/09/2026.** O deploy foi parcial: migrations `0014`–`0016` aplicadas e
+reconciliadas com o histórico em 06/09 (seção 9), `ir` e `telegram-webhook` publicadas. O frontend
+continua sem hospedagem e os documentos continuam como rascunhos, sem vigência.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -16,8 +15,8 @@ Conferido no ambiente remoto em 06/09, nesta revisão:
   `2026-09-05` cravado: o deploy pegou o commit posterior à correção.
 - `getWebhookInfo`: `allowed_updates` com `message` e `callback_query`, sem fila pendente e sem
   último erro.
-- `supabase migration list --linked`: as `0014`–`0016` **não constam** como aplicadas. É a
-  pendência da seção 9.
+- `supabase migration list --linked`: as `0014`–`0016` não constavam como aplicadas. Corrigido no
+  mesmo dia com `migration repair`; a coluna `remote` das três agora traz a própria versão.
 
 Estado registrado na atualização de 05/09 à noite, sem repetir os testes remotos nesta revisão:
 
@@ -210,16 +209,20 @@ As migrations `0013`–`0016` já aplicadas não serão reescritas. Correções 
 entrar em novas migrations pelo histórico do projeto. Depois da integração e revisão final,
 retirar os avisos de rascunho das páginas e registrar versão/data coerentes com o aceite.
 
-**As `0014`–`0016` foram aplicadas fora do histórico de migrations.** A conferência de 06/09
-encontrou todos os objetos das três no banco — as colunas de consentimento, `cadastros_pendentes`,
-as quatro funções da `0014`, `baixar_meus_dados` e `verificar_perfil_da_interacao` — mas nenhuma
-das três registrada em `supabase_migrations.schema_migrations`. Para o Supabase elas nunca rodaram,
-então o próximo `supabase db push` tentaria aplicá-las de novo e quebraria no primeiro `add column`
-de coluna existente, deixando a migration seguinte pela metade.
+**As `0014`–`0016` foram aplicadas fora do histórico de migrations, e isso foi corrigido em
+06/09.** A conferência encontrou todos os objetos das três no banco — as colunas de consentimento,
+`cadastros_pendentes`, as quatro funções da `0014`, `baixar_meus_dados` e
+`verificar_perfil_da_interacao` — mas nenhuma registrada em `supabase_migrations.schema_migrations`.
+Como o `db push` grava o registro na mesma transação em que aplica, as três aplicadas e nenhuma
+registrada indicam que o SQL foi executado direto no banco, sem passar pelo CLI. Os OIDs dos objetos
+são sequenciais, então as três rodaram na ordem certa e de uma vez só.
 
-O conserto é `supabase migration repair --status applied 0014 0015 0016`, que só grava as três como
-aplicadas, sem reexecutar nada. **Conferir `supabase migration list --linked` antes do próximo
-push**: enquanto a coluna `remote` das três estiver vazia, o histórico não descreve o banco.
+Sem conserto, o `db push` seguinte tentaria reaplicá-las e quebraria no primeiro `add column` de
+coluna existente, deixando a migration nova pela metade. `supabase migration repair --status
+applied 0014 0015 0016` resolveu, gravando só o registro, sem reexecutar SQL. O histórico foi
+conferido depois: as três constam com nome e contagem de comandos, como em qualquer push.
+
+**Conferir `supabase migration list --linked` depois de aplicar e antes do próximo push.**
 
 ## 10. Conferência final com conta de teste
 

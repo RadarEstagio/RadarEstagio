@@ -3,7 +3,7 @@
 
 **Atualizado em 06/09/2026.** Código na `main`; migrations `0014`–`0016` aplicadas e
 Edge Functions publicadas, conforme registro remoto de 05/09 à noite. As três foram aplicadas
-fora do histórico de migrations e precisam de `migration repair` antes do próximo push. Frontend ainda não
+fora do histórico de migrations e reconciliadas com `migration repair` em 06/09. Frontend ainda não
 hospedado. Termos e Política continuam em revisão. Confirmação e recuperação reais, Turnstile
 e o fluxo completo de cadastro ainda precisam ser validados após a publicação.
 

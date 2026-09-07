@@ -42,8 +42,8 @@ em vigor. O usuário confirmou o domínio `radarestagio.com` e os responsáveis 
 | Cloudflare, Turnstile e Resend | Configurar e verificar os serviços antes de apresentá-los como ativos |
 | Interrupção após exclusão | Implementada e disponibilizada; testar exclusão pelo fluxo integrado |
 
-As migrations `0014`–`0016` foram conferidas objeto a objeto no banco remoto em 06/09 e todos os
-objetos existem, mas nenhuma das três consta em `supabase_migrations.schema_migrations`.
+As migrations `0014`–`0016` foram conferidas objeto a objeto no banco remoto em 06/09; todos os
+objetos existem e o histórico de migrations, que não as registrava, foi reconciliado no mesmo dia.
 Isso não substitui o teste integrado de exclusão e arrependimento. A `0013` permanece intacta. O prazo de apagamento depende da execução diária; não se deve prometer
 apagamento em um horário exato nem extensão desse apagamento a mensagens já no Telegram.
 
