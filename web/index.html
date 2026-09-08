@@ -14,6 +14,7 @@
     <script src="assets/app.js" defer></script>
   </head>
   <body>
+    <div id="landing-page">
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
     <header class="site-header" id="inicio">
@@ -27,7 +28,7 @@
           <a href="#vantagens">Vantagens</a>
           <a href="#sobre">Sobre</a>
         </nav>
-        <button class="button button-small js-open-signup" data-event-origin="cabecalho" type="button">Cadastrar meu perfil</button>
+        <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
       </div>
     </header>
 
@@ -40,7 +41,7 @@
             <h1>Pare de procurar estágio. <em>Deixe as vagas certas encontrarem você.</em></h1>
             <p class="hero-lead">Cadastre seu perfil uma vez. O Radar monitora novas vagas, compara cada oportunidade com você e envia as melhores no Telegram — já ranqueadas e explicadas.</p>
             <div class="hero-actions">
-              <button class="button button-primary button-large js-open-signup" data-event-origin="hero" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
+              <button class="button button-primary button-large js-open-signup" data-event-origin="hero" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
               <p>Leva cerca de 2 minutos · gratuito nesta fase</p>
             </div>
             <ul class="trust-list" aria-label="Diferenciais do Radar">
@@ -104,7 +105,7 @@
             <p class="eyebrow eyebrow-light"><span></span> Como funciona</p>
             <h2>Você conta quem é. O Radar faz o trabalho repetitivo.</h2>
             <p>Do perfil à recomendação em três passos simples — sem precisar abrir dezenas de abas todo dia.</p>
-            <button class="text-link js-open-signup" data-event-origin="como_funciona" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
+            <button class="text-link js-open-signup" data-event-origin="como_funciona" data-rotulo-conta="Minha conta" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
           </div>
           <ol class="steps">
             <li><span class="step-number">01</span><div><h3>Cadastre seu perfil</h3><p>Informe curso, período, habilidades, cidade e preferência de modalidade.</p></div></li>
@@ -138,14 +139,30 @@
       <section class="final-cta section" id="sobre">
         <div class="container final-card">
           <div><p class="eyebrow eyebrow-light"><span></span> Menos tempo procurando</p><h2>Deixe o Radar procurar enquanto você se prepara.</h2></div>
-          <div class="final-action"><button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button><p>Cadastro gratuito · você decide onde se candidatar</p></div>
+          <div class="final-action"><button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button><p>Cadastro gratuito · você decide onde se candidatar</p></div>
         </div>
       </section>
     </main>
 
+
+    </div>
+
+    <div id="account-page" hidden>
+      <header class="site-header">
+        <div class="container header-inner">
+          <a class="brand" href="./" id="account-home" aria-label="Radar de Estágio, início"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+          <button class="button button-small" type="button" id="back-to-site">Voltar ao site</button>
+        </div>
+      </header>
+      <main class="account-main" aria-label="Minha conta">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="container"><div id="account-content"></div></div>
+      </main>
+    </div>
+
     <footer class="site-footer">
       <div class="container footer-inner">
-        <a class="brand brand-footer" href="#inicio"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+        <a class="brand brand-footer" href="#inicio" id="footer-home"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
         <p>Um projeto acadêmico de Igor Costa, Ian Dias e Miguel Esteves.</p>
         <p>© 2026 Radar de Estágio</p>
       </div>
@@ -173,6 +190,16 @@
           <p class="form-message" id="form-message" role="alert" hidden></p>
           <form id="signup-form" novalidate>
             <fieldset class="form-step is-active" data-step="1">
+              <legend>Comece pela sua conta</legend>
+              <p class="step-help">O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.</p>
+              <div class="field-grid" id="credenciais">
+                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
+                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
+              </div>
+              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
+              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
+            </fieldset>
+            <fieldset class="form-step" data-step="2">
               <legend>Em que momento você está?</legend>
               <p class="step-help">Isso evita recomendar vagas incompatíveis com seu curso ou período.</p>
               <div class="field-grid">
@@ -188,9 +215,8 @@
                 </datalist>
                 <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
               </div>
-              <div class="form-actions form-actions-end"><button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
-            <fieldset class="form-step" data-step="2">
+            <fieldset class="form-step" data-step="3">
               <legend>O que você já sabe usar?</legend>
               <p class="step-help">Escolha pelo menos uma habilidade. Isso melhora a nota das vagas que combinam com você.</p>
               <input name="habilidades" type="hidden" />
@@ -210,9 +236,8 @@
                 <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
               </div>
               <div class="selected-skills" id="selected-skills" aria-live="polite"></div>
-              <div class="form-actions"><button class="button button-ghost" type="button" data-previous-step>← Voltar</button><button class="button button-primary" type="button" data-next-step>Definir preferências <span aria-hidden="true">→</span></button></div>
             </fieldset>
-            <fieldset class="form-step" data-step="3">
+            <fieldset class="form-step" data-step="4">
               <legend>Onde as vagas devem chegar?</legend>
               <p class="step-help">Essas preferências serão usadas nas próximas buscas.</p>
               <div class="field-grid">
@@ -232,19 +257,17 @@
                   <label><input type="checkbox" name="areas" value="suporte_tecnico" /><span>Suporte técnico</span></label>
                   <label><input type="checkbox" name="areas" value="qa_testes" /><span>QA e testes</span></label>
                 </div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
-                <div class="credenciais" id="credenciais">
-                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
-                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
-              </div>
-              </div>
+                </div>
               <div id="signup-consent" class="consent-fields">
                 <label><input type="checkbox" name="aceitou_termos" required /> <span>Aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> (abrem em outra aba).</span></label>
                 <label><input type="checkbox" name="aceita_emails" /> <span>Quero receber e-mails ocasionais do Radar.</span></label>
               </div>
-              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
-              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
-              <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
+            <div class="form-actions" id="form-actions">
+              <button class="button button-ghost" type="button" id="previous-step">← Voltar</button>
+              <button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button>
+              <button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button>
+            </div>
           </form>
           <section id="auth-assistance" hidden aria-labelledby="assistance-title">
             <h2 id="assistance-title">Confirme seu e-mail</h2>
@@ -258,11 +281,11 @@
           </section>
           <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-live="polite" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Fechar</button></div>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-live="polite" hidden>
             <p class="eyebrow"><span></span> Sua conta</p>
-            <h2 id="account-title">Seu Radar</h2>
+            <h2 id="account-title" tabindex="-1">Seu Radar</h2>
             <p id="account-summary"></p>
             <p class="account-schedule" id="account-schedule"></p>
             <p class="form-message" id="account-message" role="alert" hidden></p>
@@ -270,13 +293,17 @@
               <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
               <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
             </div>
+            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
+            <div class="account-actions account-actions-secondary">
+              <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
+              <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
+              <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
+            </div>
             <div class="account-danger">
               <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
               <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
               <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
             </div>
-            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
-            <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
             <div class="account-confirm" id="account-confirm" hidden>
               <p id="account-confirm-copy"></p>
               <div class="account-actions">
@@ -284,8 +311,6 @@
                 <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
               </div>
             </div>
-            <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-            <button class="button button-ghost" type="button" id="close-account">Fechar</button>
           </section>
         </div>
       </div>

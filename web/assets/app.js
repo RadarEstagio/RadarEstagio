@@ -1,4 +1,9 @@
 const dialog = document.querySelector("#signup-dialog");
+const accountPage = document.querySelector("#account-page");
+const accountContent = document.querySelector("#account-content");
+const landingPage = document.querySelector("#landing-page");
+const dialogShell = document.querySelector(".dialog-shell");
+const landingTitle = document.title;
 const form = document.querySelector("#signup-form");
 const successState = document.querySelector("#success-state");
 const progressWrap = document.querySelector(".progress-wrap");
@@ -14,6 +19,11 @@ const accountMessage = document.querySelector("#account-message");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const credenciais = document.querySelector("#credenciais");
+const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
+const rotulosDeCadastro = new Map(
+  chamadasDeCadastro.map((botao) => [botao, botao.firstChild.textContent]),
+);
+let usuarioAutenticado = false;
 const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
 const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
@@ -40,7 +50,14 @@ let currentStep = 1;
 let authMode = "signup";
 let radarClient = null;
 const selectedSkills = new Set();
-const totalSteps = 3;
+const previousStep = document.querySelector("#previous-step");
+const nextStep = document.querySelector("#next-step");
+const PASSO_CONTA = 1;
+const PASSO_MOMENTO = 2;
+const PASSO_HABILIDADES = 3;
+const PASSO_PREFERENCIAS = 4;
+const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
+let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const mensagensValidacao = {
   curso: "Informe seu curso para continuar.",
@@ -109,21 +126,34 @@ function landingJaContadaNestaSessao() {
 }
 
 function showStep(step) {
-  currentStep = step;
+  currentStep = passosAtivos.includes(step) ? step : passosAtivos[0];
+  const posicao = passosAtivos.indexOf(currentStep);
   document.querySelectorAll(".form-step").forEach((element) => {
-    element.classList.toggle("is-active", Number(element.dataset.step) === step);
+    element.classList.toggle("is-active", Number(element.dataset.step) === currentStep);
   });
-  const percent = Math.round((step / totalSteps) * 100);
-  progressLabel.textContent = `Etapa ${step} de ${totalSteps}`;
+  const percent = Math.round(((posicao + 1) / passosAtivos.length) * 100);
+  progressWrap.hidden = passosAtivos.length === 1;
+  progressLabel.textContent = `Etapa ${posicao + 1} de ${passosAtivos.length}`;
   progressPercent.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
+  previousStep.hidden = posicao === 0;
+  nextStep.hidden = posicao === passosAtivos.length - 1;
+  submitProfile.hidden = posicao !== passosAtivos.length - 1;
   document.querySelector(
-    `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select, .form-step[data-step="${step}"] button`,
+    `.form-step[data-step="${currentStep}"] input:not([type="hidden"]), .form-step[data-step="${currentStep}"] select, .form-step[data-step="${currentStep}"] button`,
   )?.focus();
 }
 
+function atualizarPassosAtivos() {
+  if (authMode === "login") passosAtivos = [PASSO_CONTA];
+  else if (credenciais.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
+  else passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
+  showStep(currentStep);
+}
+
 function validateStep(step) {
-  if (step === 2 && selectedSkills.size === 0) {
+  if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
+    showStep(step);
     setFormMessage("Escolha ou digite pelo menos uma habilidade.");
     document.querySelector("#custom-skill").focus();
     return false;
@@ -133,18 +163,19 @@ function validateStep(step) {
     `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select`,
   )];
   const invalid = fields.find((field) => {
-    if (authMode === "login" && !["email", "senha"].includes(field.name)) return false;
     if (field.name === "cidade" && field.value.trim().length < 2) return true;
     if (field.name === "modalidade" && !modalidadesAceitas.has(form.elements.modalidade.value)) return true;
     return !field.checkValidity();
   });
   if (invalid) {
+    showStep(step);
     setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     invalid.reportValidity();
     invalid.focus();
     return false;
   }
-  if (step === 3 && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
+  if (step === PASSO_PREFERENCIAS && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
+    showStep(step);
     setFormMessage(mensagensValidacao.aceitou_termos);
     form.elements.aceitou_termos.focus();
     return false;
@@ -228,9 +259,10 @@ function humanizeError(error, { profilePending = false } = {}) {
   return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
 }
 
-function setFormMessage(message = "") {
+function setFormMessage(message = "", tom = "erro") {
   formMessage.textContent = message;
   formMessage.hidden = !message;
+  formMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
 }
 
 function setSubmitting(submitting) {
@@ -252,10 +284,6 @@ function setAuthMode(mode) {
   authMode = mode;
   document.querySelector("#signup-consent").hidden = mode !== "signup";
   form.elements.aceitou_termos.required = mode === "signup";
-  document.querySelectorAll('.form-step[data-step="3"] .field-grid > .field').forEach((field) => {
-    field.hidden = mode === "login";
-  });
-  document.querySelector("#previous-step").hidden = mode === "login";
   const password = form.elements.senha;
   password.autocomplete = mode === "signup" ? "new-password" : "current-password";
   toggleAuthMode.textContent = mode === "signup" ? "Entrar" : "Criar conta";
@@ -264,11 +292,13 @@ function setAuthMode(mode) {
     : "Ainda não possui uma conta? ";
   setSubmitting(false);
   setFormMessage();
+  atualizarPassosAtivos();
 }
 
 function sairDoModoEdicao() {
   editandoPerfilExistente = false;
   credenciais.hidden = false;
+  atualizarPassosAtivos();
   accountSwitch.hidden = false;
   form.elements.email.required = true;
   form.elements.senha.required = true;
@@ -286,6 +316,7 @@ function entrarNoModoEdicao() {
   document.querySelector("#signup-consent").hidden = true;
   form.elements.aceitou_termos.required = false;
   submitProfile.textContent = "Salvar alterações";
+  atualizarPassosAtivos();
 }
 
 function resetDialogView() {
@@ -302,16 +333,57 @@ function resetDialogView() {
   telegramLink.hidden = true;
   setFormMessage();
   setSubmitting(false);
-  showStep(1);
+  showStep(PASSO_CONTA);
+}
+
+function openAccountPage() {
+  mostrarChamadaDeConta(true);
+  if (!accountPage.hidden) return;
+  if (dialog.open && typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  accountContent.append(dialogShell);
+  landingPage.hidden = true;
+  accountPage.hidden = false;
+  document.body.style.overflow = "";
+  document.title = "Minha conta — Radar de Estágio";
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("conta")) {
+    url.searchParams.set("conta", "");
+    window.history.pushState(null, "", url);
+  }
+  window.scrollTo(0, 0);
+}
+
+function leaveAccountPage() {
+  if (accountPage.hidden) return;
+  dialog.append(dialogShell);
+  accountPage.hidden = true;
+  landingPage.hidden = false;
+  document.title = landingTitle;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("conta");
+  window.history.replaceState(null, "", url);
+  document.querySelector(".js-open-signup").focus();
+}
+
+function mostrarChamadaDeConta(autenticado) {
+  usuarioAutenticado = autenticado;
+  chamadasDeCadastro.forEach((botao) => {
+    botao.firstChild.textContent = autenticado
+      ? `${botao.dataset.rotuloConta} `
+      : rotulosDeCadastro.get(botao);
+  });
 }
 
 function openDialog() {
+  if (dialog.open || !accountPage.hidden) return;
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
   document.body.style.overflow = "hidden";
 }
 
 function closeSignup() {
+  leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
   document.body.style.overflow = "";
@@ -381,7 +453,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
 
 function showConfirmation(email) {
   showAssistance("resend", email);
-  setFormMessage("Se o cadastro foi aceito, você receberá um link. Confirme em qualquer aparelho para continuar.");
+  setFormMessage("Se o cadastro foi aceito, você receberá um link. Confirme em qualquer aparelho para continuar.", "aviso");
   startResendCooldown();
 }
 
@@ -394,6 +466,7 @@ function mostrarEstadoDoPerfil(profile) {
 }
 
 function showActivation(profile) {
+  openAccountPage();
   if (profile.telegram_chat_id) {
     showSuccess({
       kicker: "Radar ativado",
@@ -412,9 +485,10 @@ function showActivation(profile) {
 }
 
 
-function setAccountMessage(message = "") {
+function setAccountMessage(message = "", tom = "erro") {
   accountMessage.textContent = message;
   accountMessage.hidden = !message;
+  accountMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
 }
 
 function resumoDoPerfil(profile) {
@@ -438,6 +512,7 @@ function estadoDasEntregas(profile) {
 }
 
 function showAccount(profile) {
+  openAccountPage();
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   document.querySelector("#account-emails").checked = Boolean(profile.aceita_emails);
@@ -457,7 +532,7 @@ function showAccount(profile) {
   document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#delete-account").hidden = emExclusao;
   document.querySelector("#cancel-deletion").hidden = !emExclusao;
-  document.querySelector("#close-account").focus();
+  document.querySelector("#account-title").focus();
 }
 
 function preencherFormularioCom(profile) {
@@ -579,15 +654,20 @@ async function refreshActivationStatus() {
 
 async function openSignup() {
   resetDialogView();
-  openDialog();
+  if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
-    if (!session) return;
+    mostrarChamadaDeConta(Boolean(session));
+    if (!session) {
+      openDialog();
+      return;
+    }
     form.elements.email.value = session.user.email ?? "";
     const profile = await loadProfile(session.user.id);
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    openDialog();
     setFormMessage(humanizeError(error));
   }
 }
@@ -595,6 +675,7 @@ async function openSignup() {
 async function resumeConfirmedSignup() {
   try {
     const session = await currentSession();
+    mostrarChamadaDeConta(Boolean(session));
     if (authLinkError) {
       showAssistance(returningFromRecovery ? "reset" : "resend");
       setFormMessage("Esse link expirou ou já foi usado. Solicite um novo abaixo.");
@@ -605,11 +686,18 @@ async function resumeConfirmedSignup() {
       else if (!session) showAssistance("reset");
       return;
     }
-    if (!session) return;
+    if (!session) {
+      if (authQuery.has("conta")) {
+        resetDialogView();
+        setAuthMode("login");
+        showStep(PASSO_CONTA);
+        openDialog();
+      }
+      return;
+    }
     const profile = await loadProfile(session.user.id);
-    if (!returningFromAuth && !readPendingProfile()) return;
+    if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
     clearPendingProfile();
-    openDialog();
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
@@ -621,38 +709,59 @@ async function resumeConfirmedSignup() {
 
 function prepareMissingProfile(session) {
   resetDialogView();
+  openAccountPage();
   setAuthMode("signup");
   form.elements.email.value = session.user.email ?? "";
   credenciais.hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
-  setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.");
+  atualizarPassosAtivos();
+  setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.", "aviso");
 }
 
-function completeProfileStep() {
-  if (!validateStep(1)) return;
-  void registerEvent("etapa_perfil_concluida");
-  showStep(2);
+function validarFluxo() {
+  return passosAtivos.every((passo) => validateStep(passo));
 }
 
-function completeSkillsStep() {
-  addCustomSkill();
-  if (!validateStep(2)) return;
-  void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
-  showStep(3);
+function avancarPasso() {
+  if (currentStep === PASSO_HABILIDADES) addCustomSkill();
+  if (!validateStep(currentStep)) return;
+  if (currentStep === PASSO_MOMENTO) void registerEvent("etapa_perfil_concluida");
+  if (currentStep === PASSO_HABILIDADES) {
+    void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
+  }
+  showStep(passosAtivos[passosAtivos.indexOf(currentStep) + 1]);
 }
 
-document.querySelectorAll(".js-open-signup").forEach((button) => {
+function voltarPasso() {
+  showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
+}
+
+chamadasDeCadastro.forEach((button) => {
   button.addEventListener("click", () => {
-    void registerEvent("cta_cadastro_aberto", {
-      origem: button.dataset.eventOrigin ?? "desconhecida",
-    });
+    if (!usuarioAutenticado) {
+      void registerEvent("cta_cadastro_aberto", {
+        origem: button.dataset.eventOrigin ?? "desconhecida",
+      });
+    }
     openSignup();
   });
 });
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
 document.querySelector("#close-account").addEventListener("click", closeSignup);
+document.querySelector("#back-to-site").addEventListener("click", closeSignup);
+document.querySelectorAll("#account-home, #footer-home").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (accountPage.hidden) return;
+    event.preventDefault();
+    closeSignup();
+  });
+});
+window.addEventListener("popstate", () => {
+  if (new URLSearchParams(window.location.search).has("conta")) openSignup();
+  else closeSignup();
+});
 
 document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
@@ -663,7 +772,7 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
     progressWrap.hidden = false;
     entrarNoModoEdicao();
     setSubmitting(false);
-    showStep(1);
+    showStep(PASSO_MOMENTO);
   } catch (error) {
     setAccountMessage(humanizeError(error));
   }
@@ -739,10 +848,8 @@ document.querySelector("#account-confirm-yes").addEventListener("click", async (
   }
 });
 document.querySelector("#finish-signup").addEventListener("click", closeSignup);
-document.querySelector("#previous-step").addEventListener("click", () => showStep(2));
-document.querySelector("#next-step").addEventListener("click", completeProfileStep);
-document.querySelector("[data-previous-step]").addEventListener("click", () => showStep(1));
-document.querySelector("[data-next-step]").addEventListener("click", completeSkillsStep);
+previousStep.addEventListener("click", voltarPasso);
+nextStep.addEventListener("click", avancarPasso);
 document.querySelectorAll("[data-skill]").forEach((button) => {
   button.addEventListener("click", () => {
     const skill = button.dataset.skill;
@@ -763,7 +870,7 @@ toggleAuthMode.addEventListener("click", () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!validateStep(3)) return;
+  if (!validarFluxo()) return;
   void registerEvent("etapa_preferencias_concluida");
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
@@ -816,7 +923,7 @@ telegramLink.addEventListener("click", () => {
 });
 
 window.addEventListener("focus", () => {
-  if (!dialog.open || telegramLink.hidden) return;
+  if ((!dialog.open && accountPage.hidden) || telegramLink.hidden) return;
   refreshActivationStatus();
 });
 
@@ -827,9 +934,9 @@ dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && dialog.open) closeSignup();
-  if (event.key === "Enter" && dialog.open && !form.hidden && currentStep === 1 && event.target.matches("input, select")) {
+  if (event.key === "Enter" && (dialog.open || !accountPage.hidden) && !form.hidden && !nextStep.hidden && event.target.matches("input, select")) {
     event.preventDefault();
-    completeProfileStep();
+    avancarPasso();
   }
 });
 
@@ -924,7 +1031,7 @@ document.querySelector("#open-resend").addEventListener("click", () => showAssis
 document.querySelector("#assistance-back").addEventListener("click", () => {
   resetDialogView();
   setAuthMode("login");
-  showStep(3);
+  showStep(PASSO_CONTA);
 });
 
 document.querySelector("#assistance-form").addEventListener("submit", async (event) => {
@@ -950,8 +1057,8 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
       if (logoutError) throw logoutError;
       resetDialogView();
       setAuthMode("login");
-      showStep(3);
-      setFormMessage("Senha atualizada. Entre com sua nova senha.");
+      showStep(PASSO_CONTA);
+      setFormMessage("Senha atualizada. Entre com sua nova senha.", "aviso");
       return;
     }
     const token = requireCaptcha();
@@ -963,7 +1070,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
       throw result.error;
     }
     if (mode === "resend") startResendCooldown();
-    setFormMessage("Se houver uma conta elegível para esse endereço, você receberá o link. Confira também o spam.");
+    setFormMessage("Se houver uma conta elegível para esse endereço, você receberá o link. Confira também o spam.", "aviso");
   } catch (error) {
     setFormMessage(humanizeError(error));
   } finally {
@@ -995,7 +1102,7 @@ document.querySelector("#account-emails").addEventListener("change", async (even
       .eq("user_id", session.user.id).select("aceita_emails").single();
     if (error) throw error;
     input.checked = data.aceita_emails;
-    setAccountMessage("Preferência de e-mails atualizada.");
+    setAccountMessage("Preferência de e-mails atualizada.", "aviso");
   } catch (error) {
     input.checked = !requested;
     setAccountMessage(humanizeError(error));
@@ -1018,7 +1125,7 @@ document.querySelector("#download-data").addEventListener("click", async (event)
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setAccountMessage("Seus dados foram preparados para download.");
+    setAccountMessage("Seus dados foram preparados para download.", "aviso");
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
@@ -1038,12 +1145,14 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   const { error } = await getClient().auth.signOut();
   if (error) { setAccountMessage(humanizeError(error)); return; }
   clearPendingProfile();
+  mostrarChamadaDeConta(false);
+  closeSignup();
   form.reset();
   selectedSkills.clear();
   renderSkills();
   resetDialogView();
   setAuthMode("login");
-  showStep(3);
+  showStep(PASSO_CONTA);
 });
 
 setupCaptcha();

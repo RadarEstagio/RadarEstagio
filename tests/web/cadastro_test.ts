@@ -80,6 +80,7 @@ function app(
 ) {
   const dom = new JSDOM(html, { url, runScripts: "outside-only" });
   const w = dom.window;
+  w.scrollTo = () => {};
   const calls: Call[] = [];
   let authCallback: AuthCallback = () => {
     throw new Error("callback não registrado");
@@ -406,4 +407,169 @@ Deno.test("recuperação exige evento autenticado antes de trocar senha", async 
   } finally {
     a.close();
   }
+});
+
+Deno.test("conta sai do modal e mantém edição na página autenticada", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
+    assert.equal(a.w.document.activeElement.id, "account-title");
+    assert.equal(new URL(a.w.location.href).searchParams.has("conta"), true);
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
+    assert.ok(a.w.document.querySelector("#account-content #signup-form"));
+    a.w.document.querySelector("#back-to-site").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
+    assert.ok(a.w.document.querySelector("#signup-dialog #signup-form"));
+    assert.equal(new URL(a.w.location.href).searchParams.has("conta"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
+  const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    assert.equal(a.w.document.querySelector("#telegram-link").hidden, false);
+    a.w.document.querySelector("#success-account").click();
+    await settle();
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("endereço da conta sem sessão exige login", async () => {
+  const a = app({ url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, true);
+    assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
+  try {
+    await settle();
+    const mensagem = a.w.document.querySelector("#form-message");
+    assert.equal(mensagem.hidden, false);
+    assert.equal(mensagem.textContent.includes("Complete seu perfil"), true);
+    assert.equal(mensagem.classList.contains("form-message-aviso"), true);
+  } finally { a.close(); }
+});
+
+Deno.test("cadastro começa pela conta e só depois pede o perfil", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const passoAtivo = () =>
+      doc.querySelector(".form-step.is-active").dataset.step;
+    assert.equal(passoAtivo(), "1");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 4");
+    assert.equal(doc.querySelector("#previous-step").hidden, true);
+    assert.equal(doc.querySelector("#submit-profile").hidden, true);
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "1");
+    const form = doc.querySelector("#signup-form");
+    form.elements.email.value = user.email;
+    form.elements.senha.value = "uma-senha-forte";
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "2");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
+    assert.equal(doc.querySelector("#previous-step").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const doc = a.w.document;
+    a.w.setAuthMode("login");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.equal(doc.querySelector(".progress-wrap").hidden, true);
+    assert.equal(doc.querySelector("#next-step").hidden, true);
+    assert.equal(doc.querySelector("#submit-profile").hidden, false);
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 3");
+    assert.equal(doc.querySelector("#credenciais").hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("sessão aberta troca a chamada da landing por minha conta", async () => {
+  const a = app({ session: { user }, savedProfile: profile });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const cabecalho = doc.querySelector('[data-event-origin="cabecalho"]');
+    assert.equal(doc.querySelector("#landing-page").hidden, false);
+    assert.equal(cabecalho.textContent.trim(), "Minha conta");
+    assert.equal(
+      doc.querySelector('[data-event-origin="hero"]').textContent.trim(),
+      "Minha conta →",
+    );
+    cabecalho.click();
+    await settle();
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "cta_cadastro_aberto"
+      ),
+      false,
+    );
+    assert.equal(doc.querySelector("#account-page").hidden, false);
+    doc.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(cabecalho.textContent.trim(), "Cadastrar meu perfil");
+  } finally { a.close(); }
+});
+
+Deno.test("quem já entrou vai para a conta sem piscar o modal", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const dialogo = doc.querySelector("#signup-dialog");
+    doc.querySelector('[data-event-origin="cabecalho"]').click();
+    assert.equal(dialogo.open, false);
+    await settle();
+    assert.equal(dialogo.open, false);
+    assert.equal(doc.querySelector("#account-page").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    const dialogo = a.w.document.querySelector("#signup-dialog");
+    let chegouAAbrir = false;
+    new a.w.MutationObserver((registros: { oldValue: string | null }[]) => {
+      if (registros.some((registro) => registro.oldValue === null)) chegouAAbrir = true;
+    }).observe(dialogo, { attributes: true, attributeFilter: ["open"], attributeOldValue: true });
+    await settle();
+    assert.equal(chegouAAbrir, false);
+    assert.equal(dialogo.open, false);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+  } finally { a.close(); }
 });
