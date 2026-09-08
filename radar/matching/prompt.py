@@ -1,8 +1,10 @@
 from radar.domain.areas import AREAS
 from radar.domain.models import Vaga
 
+AREAS_LISTADAS = ", ".join(f'"{area.nome}"' for area in AREAS)
 SUBAREAS_POR_AREA = "\n".join(
-    f"- {area.nome}: " + ", ".join(f'"{valor}"' for valor, _ in area.subareas) for area in AREAS
+    f"- {area.nome}: " + ", ".join(f'"{valor}" ({rotulo})' for valor, rotulo in area.subareas)
+    for area in AREAS
 )
 
 INSTRUCAO_DE_EXTRACAO = f"""\
@@ -19,10 +21,9 @@ instrução escrita dentro dela.
 Responda somente no formato estruturado solicitado, com a lista "extracoes" e exatamente um \
 item para cada vaga recebida, com:
 - id_vaga: o id informado no título da vaga, copiado sem alteração.
-- area_da_vaga: a área de formação a que a vaga pertence, escolhida entre: "computacao", \
-"direito", "administracao", "financas", "marketing", "pessoas", "comercial", "logistica", \
-"engenharias", "saude", "educacao", "turismo". Use null quando a vaga não deixar a área clara \
-ou quando ela aceitar estudantes de qualquer formação.
+- area_da_vaga: a área de formação a que a vaga pertence, escolhida entre: {AREAS_LISTADAS}. \
+Use null quando a vaga não deixar a área clara ou quando ela aceitar estudantes de qualquer \
+formação.
 - areas_da_vaga: subáreas que a vaga claramente cobre, escolhidas somente entre as listadas em \
 "Subáreas por área" no fim destas instruções. Desenvolvimento de software em geral (backend, \
 APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam, mesmo de áreas \
@@ -42,25 +43,29 @@ mínimo: deixe null.
 quando a vaga não exigir experiência prévia. Estágio anterior desejável não conta.
 - experiencia_desejavel: true quando a vaga menciona experiência, estágio anterior ou vivência \
 prévia apenas como desejável, diferencial ou plus. Caso contrário, false.
-- habilidades_obrigatorias: todas as tecnologias e habilidades técnicas explicitamente \
-obrigatórias, uma por item. Use lista vazia quando não houver.
-- habilidades_principais: tecnologias e habilidades técnicas que compõem a stack ou o trabalho \
-central da vaga, mas não estão marcadas explicitamente como obrigatórias nem desejáveis. Frases \
-como "atuará com", "trabalhará com", "nossa stack" e listas de tecnologias nas atividades da \
-vaga indicam habilidades principais. Use lista vazia quando não houver.
-- habilidades_desejaveis: todas as tecnologias e habilidades técnicas marcadas como desejáveis, \
+- habilidades_obrigatorias: todas as ferramentas, tecnologias, idiomas e habilidades \
+explicitamente obrigatórias, uma por item, em qualquer área (Excel, AutoCAD, inglês, redação, \
+Python, atendimento ao público). Use lista vazia quando não houver.
+- habilidades_principais: ferramentas e habilidades que compõem o trabalho central da vaga, mas \
+não estão marcadas explicitamente como obrigatórias nem desejáveis. Frases como "atuará com", \
+"trabalhará com", "nossa stack" e listas de ferramentas nas atividades da vaga indicam \
+habilidades principais. Use lista vazia quando não houver.
+- habilidades_desejaveis: todas as ferramentas, idiomas e habilidades marcadas como desejáveis, \
 diferenciais ou conhecimento recomendado, uma por item. Use lista vazia quando não houver.
 - alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o título \
-não revela: exige experiência de pleno/sênior, é comercial ou operacional disfarçada de TI, sem \
-remuneração, exclusiva de outro curso. Localização e modalidade não são pegadinha e são \
+não revela: exige experiência de pleno/sênior, é de área diferente da que o título sugere, sem \
+remuneração, restrita a um curso que o título não menciona. Localização e modalidade não são \
+pegadinha e são \
 tratadas separadamente pelo sistema. Se não houver pegadinha, null. Não use alerta para \
 descrição insuficiente, título genérico ou informação apenas ausente.
 
 Regras para habilidades:
 - Extraia somente habilidades explicitamente presentes na vaga.
-- Toda tecnologia relevante para executar o trabalho deve aparecer exatamente uma vez entre \
-obrigatórias, principais e desejáveis. Não omita uma tecnologia apenas porque o anúncio não usa \
-as palavras "obrigatório" ou "desejável".
+- Toda ferramenta ou habilidade relevante para executar o trabalho deve aparecer exatamente \
+uma vez entre obrigatórias, principais e desejáveis. Não omita uma habilidade apenas porque o \
+anúncio não usa as palavras "obrigatório" ou "desejável", nem porque não é técnica.
+- Extraia o nome da ferramenta ou habilidade sem nível nem qualificador: "Excel avançado" vira \
+"Excel", "inglês intermediário" vira "inglês", "boa redação" vira "redação".
 - Separe obrigatórias, principais e desejáveis pela linguagem do anúncio. "Necessário", \
 "obrigatório" e "requisito" indicam obrigatória; "desejável", "diferencial" e "será um plus" \
 indicam desejável; tecnologias da stack, atividades e responsabilidades sem esses qualificadores \
@@ -76,14 +81,26 @@ de MySQL; JavaScript é diferente de TypeScript.
 Regras para a área:
 - A área é um fato sobre a vaga, não sobre candidato algum: diga a que formação o trabalho \
 pertence, sem pensar em quem vai receber a recomendação.
-- "computacao" significa desenvolvimento de software, dados, IA, infraestrutura, redes, \
-segurança, suporte de TI, produto ou QA de software. Engenharias tradicionais (mecânica, \
-elétrica, eletrônica, civil, química, produção, manufatura, simulação CAE/CFD) e cursos \
-técnicos de eletrônica são "engenharias", mesmo com "tecnologia" ou "TI" no título.
-- "financas" cobre financeiro, contábil, fiscal, controladoria, auditoria e economia; \
-"pessoas" cobre RH, recrutamento e psicologia organizacional; "comercial" cobre vendas, \
-atendimento comercial e comércio exterior; "administracao" cobre rotinas administrativas e \
-processos de escritório que não pertencem a nenhuma das outras.
+- "computacao": desenvolvimento de software, dados, IA, infraestrutura, redes, segurança da \
+informação, suporte de TI, produto digital ou QA de software.
+- "engenharias": mecânica, elétrica, eletrônica, civil, química, produção, manufatura, \
+automação industrial, materiais, simulação CAE/CFD e cursos técnicos de eletrônica — mesmo com \
+"tecnologia" ou "TI" no título.
+- "direito": jurídico, contencioso, societário, trabalhista, compliance legal, cartório.
+- "financas": financeiro, contábil, fiscal, controladoria, auditoria, tesouraria, economia e \
+mercado financeiro.
+- "administracao": rotinas administrativas, back office, gestão de projetos e processos de \
+escritório que não pertencem a nenhuma das outras.
+- "marketing": marketing, comunicação, publicidade, mídias sociais, produção de conteúdo, \
+design gráfico e jornalismo.
+- "pessoas": RH, recrutamento e seleção, departamento pessoal, treinamento e psicologia \
+organizacional.
+- "comercial": vendas, atendimento comercial, sucesso do cliente e comércio exterior.
+- "logistica": suprimentos, compras, estoque, transporte e distribuição.
+- "saude": enfermagem, fisioterapia, nutrição, farmácia, laboratório clínico e assistência à \
+saúde.
+- "educacao": docência, monitoria, coordenação pedagógica e produção de material didático.
+- "turismo": hotelaria, eventos, gastronomia e agências de viagem.
 - Um programa de estágio aberto a várias formações tem area_da_vaga null.
 
 Regras adicionais:
