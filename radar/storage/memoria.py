@@ -24,9 +24,6 @@ class RepositorioEmMemoria:
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
         return None
 
-    def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
-        return []
-
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set()
 

@@ -151,10 +151,6 @@ class RepositorioFalso(RepositorioEmMemoria):
         for vaga_extraida, extracao in extracoes:
             self.extracoes_guardadas[vaga_extraida.id_externo] = extracao
 
-    def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
-        ids = {vaga.id_externo for vaga in vagas}
-        return [resultado for resultado in self._guardadas if resultado.vaga.id_externo in ids]
-
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set(self._enviadas)
 

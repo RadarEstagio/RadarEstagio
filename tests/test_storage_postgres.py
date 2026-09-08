@@ -88,12 +88,18 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
     repositorio.guardar_avaliacoes(usuario, avaliadas, "modelo-teste")
     repositorio.registrar_envios(usuario, enviadas)
 
-    existentes = repositorio.avaliacoes_existentes(usuario, [vaga(1), vaga(2)])
-    assert [resultado.nota for resultado in existentes] == [80]
-    assert existentes[0].requisitos_atendidos == ["Python"]
-    assert existentes[0].requisitos_nao_atendidos == ["C#"]
-    assert existentes[0].requisitos_tecnicos_analisados
-    assert existentes[0].pontos_a_favor == ["Curso compatível"]
+    guardadas = conexao.execute(
+        "select a.nota, a.requisitos_atendidos, a.requisitos_nao_atendidos, "
+        "a.requisitos_tecnicos_analisados, a.pontos_a_favor "
+        "from avaliacoes a join vagas v on v.id = a.vaga_id "
+        "where a.perfil_id = %s order by v.id_externo",
+        (usuario.id,),
+    ).fetchall()
+    assert [linha[0] for linha in guardadas] == [80]
+    assert guardadas[0][1] == ["Python"]
+    assert guardadas[0][2] == ["C#"]
+    assert guardadas[0][3]
+    assert guardadas[0][4] == ["Curso compatível"]
     assert repositorio.ids_ja_enviadas(usuario) == {("adzuna", "teste-1")}
     enviadas_recentes = repositorio.vagas_enviadas_recentemente(usuario)
     assert [item.id_externo for item in enviadas_recentes] == ["teste-1"]
@@ -123,7 +129,12 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
     repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
     repositorio.registrar_envios(usuario, [Recomendacao(resultado=resultado)])
 
-    assert len(repositorio.avaliacoes_existentes(usuario, [vaga(1)])) == 1
+    assert (
+        conexao.execute(
+            "select count(*) from avaliacoes where perfil_id = %s", (usuario.id,)
+        ).fetchone()[0]
+        == 1
+    )
     assert (
         conexao.execute("select count(*) from vagas where id_externo = 'teste-1'").fetchone()[0]
         == 1

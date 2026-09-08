@@ -37,7 +37,6 @@ def test_nao_guarda_nada_entre_chamadas():
     repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
     repositorio.registrar_envios(usuario, [resultado])
 
-    assert repositorio.avaliacoes_existentes(usuario, [vaga_exemplo()]) == []
     assert repositorio.ids_ja_enviadas(usuario) == set()
     assert repositorio.vagas_enviadas_recentemente(usuario) == []
     assert repositorio.recusas_do_usuario(usuario).areas == []

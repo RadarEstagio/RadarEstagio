@@ -44,19 +44,6 @@ SQL_PERFIS_SEM_VINCULO = (
     "select count(*) from perfis where ativo and excluida_em is null and telegram_chat_id is null"
 )
 
-SQL_AVALIACOES_EXISTENTES = """
-    select v.fonte, v.id_externo, a.nota,
-           a.requisitos_atendidos, a.requisitos_nao_atendidos,
-           a.requisitos_tecnicos_analisados,
-           a.pontos_a_favor, a.pontos_contra, a.alerta_pegadinha
-    from avaliacoes a
-    join vagas v on v.id = a.vaga_id
-    where a.perfil_id = %(perfil_id)s
-      and (v.fonte, v.id_externo) in (
-        select * from unnest(%(fontes)s::text[], %(ids_externos)s::text[])
-      )
-"""
-
 SQL_EXTRACOES_EXISTENTES = """
     select id_externo, extracao
     from vagas
@@ -262,34 +249,6 @@ class RepositorioPostgres:
                     )
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
-
-    def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
-        if not vagas:
-            return []
-        vagas_por_chave = {(vaga.fonte, vaga.id_externo): vaga for vaga in vagas}
-        parametros = {
-            "perfil_id": usuario.id,
-            "fontes": [vaga.fonte for vaga in vagas],
-            "ids_externos": [vaga.id_externo for vaga in vagas],
-        }
-        try:
-            with self._conexao.cursor(row_factory=dict_row) as cursor:
-                linhas = cursor.execute(SQL_AVALIACOES_EXISTENTES, parametros).fetchall()
-        except psycopg.Error as erro:
-            raise ErroDeArmazenamento(f"Falha ao ler as avaliações: {descrever(erro)}") from erro
-        return [
-            ResultadoMatch(
-                vaga=vagas_por_chave[(linha["fonte"], linha["id_externo"])],
-                nota=linha["nota"],
-                requisitos_atendidos=linha["requisitos_atendidos"],
-                requisitos_nao_atendidos=linha["requisitos_nao_atendidos"],
-                requisitos_tecnicos_analisados=linha["requisitos_tecnicos_analisados"],
-                pontos_a_favor=linha["pontos_a_favor"],
-                pontos_contra=linha["pontos_contra"],
-                alerta_pegadinha=linha["alerta_pegadinha"],
-            )
-            for linha in linhas
-        ]
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         try:

@@ -40,7 +40,6 @@ def test_repositorio_em_memoria_ignora_database_url_e_nao_tem_historico():
 
     assert isinstance(repositorio, RepositorioEmMemoria)
     assert repositorio.ids_ja_enviadas(usuario) == set()
-    assert repositorio.avaliacoes_existentes(usuario, []) == []
 
 
 def test_repositorio_em_memoria_exige_chat_id_mesmo_quando_banco_esta_configurado():

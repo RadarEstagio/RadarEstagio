@@ -33,10 +33,6 @@ class RepositorioDeUsuarios(Protocol):
 
 
 class RepositorioDeAvaliacoes(Protocol):
-    def avaliacoes_existentes(
-        self, usuario: Usuario, vagas: list[Vaga]
-    ) -> list[ResultadoMatch]: ...
-
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]: ...
 
     def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]: ...
