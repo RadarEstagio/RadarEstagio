@@ -23,9 +23,12 @@ O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de 
 
 #### 01. Cadastro por e-mail e senha
 
-Informar curso, período, habilidades, áreas, cidade e modalidade em etapas.
+Informar e-mail e senha no primeiro passo e, em seguida, curso, período, habilidades, áreas,
+cidade e modalidade. Quem já tem conta escolhe "Entrar" e vê só o passo da conta; quem edita o
+perfil depois do login não passa por ele.
 
-**Condições e limites:** Confirmação de e-mail mantida; interface pública depende da hospedagem.
+**Condições e limites:** Confirmação de e-mail mantida; a conta só é criada ao enviar o
+formulário completo; interface pública depende da hospedagem.
 
 #### 02. Preferências
 

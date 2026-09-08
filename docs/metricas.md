@@ -44,7 +44,9 @@ adicionais. Eventos não são apagados ao mudar a resposta.
 ## Aquisição: da visita à primeira recomendação
 
 Inclui visita, CTA, três etapas, conta criada, e-mail confirmado, perfil salvo, abertura do
-Telegram, vínculo e primeira recomendação. Cada etapa conta identidades distintas cuja
+Telegram, vínculo e primeira recomendação. O formulário pede e-mail e senha antes das três
+etapas e esse passo não emite evento próprio: quem desiste nele aparece como CTA aberto sem
+`etapa_perfil_concluida`. Cada etapa conta identidades distintas cuja
 **primeira aparição em qualquer evento** ocorreu nos últimos 30 dias.
 
 A identidade é o usuário explícito, o dono do perfil ou, se ainda anônimo, a sessão. Uma sessão
