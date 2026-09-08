@@ -457,3 +457,14 @@ Deno.test("endereço da conta sem sessão exige login", async () => {
     assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
   } finally { a.close(); }
 });
+
+Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
+  try {
+    await settle();
+    const mensagem = a.w.document.querySelector("#form-message");
+    assert.equal(mensagem.hidden, false);
+    assert.equal(mensagem.textContent.includes("Complete seu perfil"), true);
+    assert.equal(mensagem.classList.contains("form-message-aviso"), true);
+  } finally { a.close(); }
+});

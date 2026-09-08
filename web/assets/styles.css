@@ -255,6 +255,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .form-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 30px; }.form-actions-end { justify-content: flex-end; }
 .form-message { margin: 20px 0 0; padding: 12px 14px; border: 1px solid #c94848; border-radius: 10px; color: #8c2f2f; background: #fff9f7; font-size: 12px; }
 .form-message[hidden] { display: none; }
+.form-message-aviso { border-color: var(--line); color: var(--ink-soft); background: var(--paper); }
 .success-state { max-width: 510px; padding-top: 45px; }.success-state[hidden] { display: none; }.success-icon { width: 66px; height: 66px; display: grid; place-items: center; margin-bottom: 30px; border: 2px solid var(--ink); border-radius: 50%; color: var(--ink); background: var(--lime); box-shadow: 5px 5px 0 var(--ink); font-size: 29px; font-weight: 900; }.success-state h2 { margin-bottom: 16px; font-size: 38px; line-height: 1.05; letter-spacing: -.05em; }.success-state > p:not(.eyebrow) { margin-bottom: 28px; color: var(--muted); }.success-actions { display: flex; flex-wrap: wrap; gap: 14px; }.success-actions [hidden] { display: none; }
 @media (max-width: 980px) {
   .desktop-nav { display: none; }

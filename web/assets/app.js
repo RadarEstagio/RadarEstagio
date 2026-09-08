@@ -233,9 +233,10 @@ function humanizeError(error, { profilePending = false } = {}) {
   return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
 }
 
-function setFormMessage(message = "") {
+function setFormMessage(message = "", tom = "erro") {
   formMessage.textContent = message;
   formMessage.hidden = !message;
+  formMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
 }
 
 function setSubmitting(submitting) {
@@ -417,7 +418,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
 
 function showConfirmation(email) {
   showAssistance("resend", email);
-  setFormMessage("Se o cadastro foi aceito, você receberá um link. Confirme em qualquer aparelho para continuar.");
+  setFormMessage("Se o cadastro foi aceito, você receberá um link. Confirme em qualquer aparelho para continuar.", "aviso");
   startResendCooldown();
 }
 
@@ -449,9 +450,10 @@ function showActivation(profile) {
 }
 
 
-function setAccountMessage(message = "") {
+function setAccountMessage(message = "", tom = "erro") {
   accountMessage.textContent = message;
   accountMessage.hidden = !message;
+  accountMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
 }
 
 function resumoDoPerfil(profile) {
@@ -674,7 +676,7 @@ function prepareMissingProfile(session) {
   form.elements.email.required = false;
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
-  setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.");
+  setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.", "aviso");
 }
 
 function completeProfileStep() {
@@ -1010,7 +1012,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
       resetDialogView();
       setAuthMode("login");
       showStep(3);
-      setFormMessage("Senha atualizada. Entre com sua nova senha.");
+      setFormMessage("Senha atualizada. Entre com sua nova senha.", "aviso");
       return;
     }
     const token = requireCaptcha();
@@ -1022,7 +1024,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
       throw result.error;
     }
     if (mode === "resend") startResendCooldown();
-    setFormMessage("Se houver uma conta elegível para esse endereço, você receberá o link. Confira também o spam.");
+    setFormMessage("Se houver uma conta elegível para esse endereço, você receberá o link. Confira também o spam.", "aviso");
   } catch (error) {
     setFormMessage(humanizeError(error));
   } finally {
@@ -1054,7 +1056,7 @@ document.querySelector("#account-emails").addEventListener("change", async (even
       .eq("user_id", session.user.id).select("aceita_emails").single();
     if (error) throw error;
     input.checked = data.aceita_emails;
-    setAccountMessage("Preferência de e-mails atualizada.");
+    setAccountMessage("Preferência de e-mails atualizada.", "aviso");
   } catch (error) {
     input.checked = !requested;
     setAccountMessage(humanizeError(error));
@@ -1077,7 +1079,7 @@ document.querySelector("#download-data").addEventListener("click", async (event)
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setAccountMessage("Seus dados foram preparados para download.");
+    setAccountMessage("Seus dados foram preparados para download.", "aviso");
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
