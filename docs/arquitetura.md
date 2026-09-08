@@ -106,7 +106,7 @@ o vigésimo usuário não custa nada.
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA devolve JSON no formato
-  `{id_vaga, area_de_tecnologia, areas_da_vaga, cursos_aceitos, aceita_qualquer_curso,
+  `{id_vaga, area_da_vaga, areas_da_vaga, cursos_aceitos, aceita_qualquer_curso,
   periodo_minimo, experiencia_minima_anos, experiencia_desejavel, habilidades_obrigatorias,
   habilidades_principais, habilidades_desejaveis, alerta_pegadinha}`. Tudo é fato do anúncio;
   nada depende de candidato.

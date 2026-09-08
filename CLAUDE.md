@@ -254,9 +254,12 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   morto. Depois de `DIAS_DE_SILENCIO_ATE_AVISAR` dias sem nenhuma recomendação, e no máximo uma
   vez por período, a mesma mensagem ganha um parágrafo sugerindo ampliar cidade ou modalidade —
   parágrafo, e não segunda mensagem, para não notificar duas vezes no mesmo dia.
-- `fora_da_area_de_tecnologia` exige sinal de computação no título ou, se o título for genérico,
-  na descrição. O prompt define "área de tecnologia" como computação e exclui engenharias
-  tradicionais explicitamente.
+- `fora_da_area_do_curso` (`domain/areas.py` + `filtering/prefiltro.py`) exige sinal da área do
+  curso da pessoa no título ou, se o título for genérico, na descrição; título de outra área
+  descarta antes de tudo. Cada área tem dois padrões: `titulo` (amplo, "é da minha área?") e
+  `exclusao` (estreito, "é inequivocamente de outra área?"), porque um padrão só derrubaria
+  vagas legítimas. Curso sem área conhecida não filtra por área — melhor recomendar demais que
+  emudecer o radar.
 
 ### Cobertura das fontes (30/08/2026)
 
