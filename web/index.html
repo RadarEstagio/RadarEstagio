@@ -144,9 +144,25 @@
       </section>
     </main>
 
+
+    </div>
+
+    <div id="account-page" hidden>
+      <header class="site-header">
+        <div class="container header-inner">
+          <a class="brand" href="./" id="account-home" aria-label="Radar de Estágio, início"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+          <button class="button button-small" type="button" id="back-to-site">Voltar ao site</button>
+        </div>
+      </header>
+      <main class="account-main" aria-label="Minha conta">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="container"><div id="account-content"></div></div>
+      </main>
+    </div>
+
     <footer class="site-footer">
       <div class="container footer-inner">
-        <a class="brand brand-footer" href="#inicio"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+        <a class="brand brand-footer" href="#inicio" id="footer-home"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
         <p>Um projeto acadêmico de Igor Costa, Ian Dias e Miguel Esteves.</p>
         <p>© 2026 Radar de Estágio</p>
       </div>
@@ -155,16 +171,6 @@
         <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail e o identificador da sua conversa no Telegram. Usa esses dados para selecionar e entregar vagas, manter sua conta e medir o uso do serviço. Fornecedores como Supabase, Telegram e GitHub Actions participam desse processamento. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro.</p>
       </div>
     </footer>
-
-    </div>
-
-    <div id="account-page" hidden>
-      <header class="account-header">
-        <a class="brand" href="./" id="account-home" aria-label="Radar de Estágio, início"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
-        <button class="button button-ghost" type="button" id="back-to-site">Voltar ao site</button>
-      </header>
-      <main id="account-content" aria-label="Minha conta"></main>
-    </div>
 
     <dialog class="signup-dialog" id="signup-dialog" aria-labelledby="signup-title">
       <div class="dialog-shell">
@@ -281,13 +287,17 @@
               <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
               <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
             </div>
+            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
+            <div class="account-actions account-actions-secondary">
+              <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
+              <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
+              <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
+            </div>
             <div class="account-danger">
               <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
               <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
               <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
             </div>
-            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
-            <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
             <div class="account-confirm" id="account-confirm" hidden>
               <p id="account-confirm-copy"></p>
               <div class="account-actions">
@@ -295,8 +305,6 @@
                 <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
               </div>
             </div>
-            <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-            <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
           </section>
         </div>
       </div>

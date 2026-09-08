@@ -281,18 +281,27 @@ p, h1, h2, h3 { margin-top: 0; }
 }
 
 #landing-page[hidden], #account-page[hidden] { display: none; }
-#account-page { min-height: 100dvh; background: var(--paper); }
-.account-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: var(--container); margin-inline: auto; padding: 24px; }
-#account-content { max-width: 800px; margin-inline: auto; padding: 32px 24px 64px; }
+.account-main { position: relative; overflow: hidden; padding: clamp(44px, 6vw, 84px) 0 clamp(60px, 8vw, 104px); }
+#account-content { position: relative; width: min(100%, 720px); margin-inline: auto; }
 #account-content .dialog-shell { display: block; min-height: 0; }
 #account-content .dialog-intro, #account-content .dialog-close, #account-content #close-account { display: none; }
-#account-content .dialog-form-area { overflow: visible; padding: clamp(24px, 5vw, 48px); border-radius: var(--radius-md); background: var(--white); box-shadow: var(--shadow); }
-#account-content .account-state { padding: 0; }
-#account-content .account-actions { flex-wrap: wrap; gap: 12px; }
-#account-content .account-danger { margin-block: 32px; }
-#account-content .account-schedule { padding: 16px; border-radius: var(--radius-sm); background: var(--paper); }
-@media (max-width: 480px) {
-  .account-header { flex-wrap: wrap; padding: 20px; }
-  #account-content { padding: 12px 16px 40px; }
-  #account-content .dialog-form-area { padding: 24px 20px; }
+#account-content .dialog-form-area {
+  overflow: visible; padding: clamp(26px, 4vw, 46px);
+  border: 1.5px solid var(--ink); border-radius: var(--radius-lg);
+  background: var(--white); box-shadow: 0 12px 0 var(--ink);
+}
+#account-content .account-state { align-items: flex-start; gap: 16px; padding: 0; }
+#account-content .account-state h2 { margin-bottom: 0; }
+#account-content .account-state .eyebrow { margin-bottom: 0; }
+#account-content .account-state h2, #account-content .success-state h2 { font-size: clamp(32px, 3.6vw, 44px); line-height: 1.03; letter-spacing: -.055em; }
+#account-content .account-state > p:not(.eyebrow), #account-content .success-state > p:not(.eyebrow) { max-width: 56ch; font-size: 15px; }
+#account-content .account-schedule { padding: 14px 16px; border: 1px solid var(--paper-deep); border-radius: var(--radius-sm); background: #f8f6ef; }
+#account-content .account-danger, #account-content .account-confirm, #account-content .consent-fields { align-self: stretch; }
+#account-content .success-state { max-width: none; padding-top: 0; }
+#account-content .progress-wrap { margin-bottom: 32px; }
+.account-actions-secondary { padding-top: 4px; }
+.account-danger { margin-top: 10px; }
+@media (max-width: 720px) {
+  #account-content .dialog-form-area { padding: 24px 20px; box-shadow: 0 8px 0 var(--ink); }
+  .account-actions .button, .account-danger .button { flex: 1 1 auto; }
 }

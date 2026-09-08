@@ -701,9 +701,12 @@ document.querySelectorAll(".js-open-signup").forEach((button) => {
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
 document.querySelector("#close-account").addEventListener("click", closeSignup);
 document.querySelector("#back-to-site").addEventListener("click", closeSignup);
-document.querySelector("#account-home").addEventListener("click", (event) => {
-  event.preventDefault();
-  closeSignup();
+document.querySelectorAll("#account-home, #footer-home").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (accountPage.hidden) return;
+    event.preventDefault();
+    closeSignup();
+  });
 });
 window.addEventListener("popstate", () => {
   if (new URLSearchParams(window.location.search).has("conta")) openSignup();
