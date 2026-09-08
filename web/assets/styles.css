@@ -9,6 +9,7 @@
   --accent-light: #9fd3b2;
   --muted: #51605a;
   --line: rgba(23, 32, 26, 0.14);
+  --rail: rgba(120, 138, 128, 0.34);
   --shadow: 0 22px 48px rgba(23, 32, 26, 0.1);
   --radius-sm: 14px;
   --radius-md: 22px;
@@ -143,7 +144,9 @@ p, h1, h2, h3 { margin-top: 0; }
 .note-top { top: 45px; right: -8px; }.note-bottom { bottom: 39px; left: -6px; background: var(--white); }
 .note-bottom strong { color: var(--ink); }
 
-.proof-strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--white); }
+.section { border-top: 1px solid var(--rail); }
+.proof-strip + .section { border-top: 0; }
+.proof-strip { border-top: 1px solid var(--rail); border-bottom: 1px solid var(--rail); background: var(--white); }
 .proof-inner { min-height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
 .proof-inner p { margin: 0; font-size: 13px; }
 .proof-items { display: flex; align-items: center; gap: 38px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
