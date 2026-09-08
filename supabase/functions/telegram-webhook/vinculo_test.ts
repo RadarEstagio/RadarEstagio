@@ -69,6 +69,13 @@ Deno.test("cada resultado do vínculo tem uma resposta própria", () => {
   assertEquals(respostas.filter((resposta) => !resposta).length, 0);
 });
 
+Deno.test("chat de outra conta ensina como liberar o Telegram", () => {
+  assertEquals(
+    RESPOSTAS_DO_VINCULO.chat_de_outra_conta.includes("Desvincular o Telegram"),
+    true,
+  );
+});
+
 Deno.test("o link usado uma vez não promete vínculo", () => {
   assertEquals(
     RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"),
