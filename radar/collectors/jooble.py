@@ -12,15 +12,7 @@ URL_BUSCA = "https://br.jooble.org/api"
 FONTE = "jooble"
 EMPRESA_NAO_INFORMADA = "Empresa não informada"
 LOCALIZACAO_PADRAO = "Brasil"
-TERMOS_DE_BUSCA = (
-    "estágio TI",
-    "estágio desenvolvimento",
-    "estágio programação",
-    "estágio dados",
-    "estágio sistemas",
-    "estágio informática",
-    "estagiário tecnologia",
-)
+TERMO_OBRIGATORIO = "estágio"
 LIMITE_DE_PAGINAS_POR_BUSCA = 3
 PAGINA_CONSIDERADA_INCOMPLETA = 20
 
@@ -33,17 +25,19 @@ class ColetorJooble:
         publicadas_desde: datetime,
         cidades: Iterable[str] = (),
         esperar: Callable[[float], None] = time.sleep,
+        termos: Iterable[str] = (),
     ) -> None:
         self._api_key = api_key
         self._cliente_http = cliente_http
         self._publicadas_desde = publicadas_desde
         self._cidades = tuple(cidades)
         self._esperar = esperar
+        self._termos = tuple(f"{TERMO_OBRIGATORIO} {termo}" for termo in termos)
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
         for cidade in (None, *self._cidades):
-            for termo in TERMOS_DE_BUSCA:
+            for termo in self._termos:
                 for item in self._buscar_recentes(termo, cidade):
                     vaga = converter_em_vaga(item)
                     vagas_por_id.setdefault(vaga.id_externo, vaga)

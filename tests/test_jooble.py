@@ -7,10 +7,11 @@ from pytest_httpx import HTTPXMock
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.jooble import (
     LIMITE_DE_PAGINAS_POR_BUSCA,
-    TERMOS_DE_BUSCA,
     URL_BUSCA,
     ColetorJooble,
 )
+
+TERMOS_DE_BUSCA = ("desenvolvimento", "dados", "sistemas")
 
 PUBLICADAS_DESDE = datetime(2026, 9, 1, tzinfo=UTC)
 CHAVE = "chave-de-teste"
@@ -36,7 +37,9 @@ def resposta(*itens: dict) -> dict:
 @pytest.fixture
 def coletor():
     with httpx.Client() as cliente_http:
-        yield ColetorJooble(CHAVE, cliente_http, PUBLICADAS_DESDE, esperar=lambda _: None)
+        yield ColetorJooble(
+            CHAVE, cliente_http, PUBLICADAS_DESDE, esperar=lambda _: None, termos=TERMOS_DE_BUSCA
+        )
 
 
 def test_converte_resposta_do_jooble_em_vagas(httpx_mock: HTTPXMock, coletor: ColetorJooble):
@@ -62,7 +65,12 @@ def test_envia_chave_termos_e_cidades(httpx_mock: HTTPXMock):
     httpx_mock.add_response(json=resposta(), is_reusable=True)
     with httpx.Client() as cliente_http:
         ColetorJooble(
-            CHAVE, cliente_http, PUBLICADAS_DESDE, ["Rio de Janeiro"], esperar=lambda _: None
+            CHAVE,
+            cliente_http,
+            PUBLICADAS_DESDE,
+            ["Rio de Janeiro"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
         ).coletar()
 
     requisicoes = httpx_mock.get_requests()
@@ -110,7 +118,7 @@ def test_erro_transitorio_e_tentado_de_novo(httpx_mock: HTTPXMock):
     esperas: list[float] = []
     with httpx.Client() as cliente_http:
         vagas = ColetorJooble(
-            CHAVE, cliente_http, PUBLICADAS_DESDE, esperar=esperas.append
+            CHAVE, cliente_http, PUBLICADAS_DESDE, esperar=esperas.append, termos=TERMOS_DE_BUSCA
         ).coletar()
 
     assert len(vagas) == 1

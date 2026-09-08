@@ -7,6 +7,7 @@ from radar.collectors.adzuna import ColetorAdzuna
 from radar.collectors.composto import ColetorComposto
 from radar.collectors.gupy import ColetorGupy
 from radar.collectors.jooble import ColetorJooble
+from radar.domain.areas import COMPUTACAO, area_do_curso, termos_de_busca
 from radar.domain.models import Modalidade, Usuario
 from radar.domain.ports import ColetorDeVagas
 from radar.settings import Settings
@@ -19,14 +20,22 @@ def criar_coletor(
     cliente_http: httpx.Client,
     agora: datetime,
     cidades: Iterable[str] = (),
+    termos: Iterable[str] = (),
 ) -> ColetorDeVagas:
     publicadas_desde = agora - timedelta(days=settings.dias_recentes)
     cidades_de_busca = tuple(cidades)
+    termos_de_interesse = tuple(termos) or termos_de_busca({COMPUTACAO})
     coletores_disponiveis: dict[str, ColetorDeVagas] = {
-        "adzuna": ColetorAdzuna(settings, cliente_http, cidades_de_busca),
+        "adzuna": ColetorAdzuna(
+            settings, cliente_http, cidades_de_busca, termos=termos_de_interesse
+        ),
         "gupy": ColetorGupy(cliente_http, publicadas_desde, cidades_de_busca),
         "jooble": ColetorJooble(
-            settings.jooble_api_key, cliente_http, publicadas_desde, cidades_de_busca
+            settings.jooble_api_key,
+            cliente_http,
+            publicadas_desde,
+            cidades_de_busca,
+            termos=termos_de_interesse,
         ),
     }
     return ColetorComposto(
@@ -41,3 +50,12 @@ def cidades_de_interesse(usuarios: Iterable[Usuario]) -> list[str]:
         if usuario.perfil.modalidade in MODALIDADES_QUE_DEPENDEM_DA_CIDADE
     }
     return sorted(cidades)
+
+
+def areas_de_interesse(usuarios: Iterable[Usuario]) -> set[str]:
+    areas = {area_do_curso(usuario.perfil.curso) for usuario in usuarios}
+    return {area for area in areas if area is not None}
+
+
+def termos_de_interesse(usuarios: Iterable[Usuario]) -> tuple[str, ...]:
+    return termos_de_busca(areas_de_interesse(usuarios))

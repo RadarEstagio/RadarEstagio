@@ -6,7 +6,12 @@ import httpx
 from pytest_httpx import HTTPXMock
 
 from radar.collectors.adzuna import URL_BUSCA as URL_ADZUNA
-from radar.collectors.factory import cidades_de_interesse, criar_coletor
+from radar.collectors.factory import (
+    areas_de_interesse,
+    cidades_de_interesse,
+    criar_coletor,
+    termos_de_interesse,
+)
 from radar.collectors.gupy import URL_BUSCA as URL_GUPY
 from radar.collectors.jooble import URL_BUSCA as URL_JOOBLE
 from radar.domain.models import Modalidade, Perfil, Usuario
@@ -15,9 +20,11 @@ from radar.settings import Settings
 AGORA = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
 
 
-def usuario(numero: int, cidade: str, modalidade: Modalidade) -> Usuario:
+def usuario(
+    numero: int, cidade: str, modalidade: Modalidade, curso: str = "Ciência da Computação"
+) -> Usuario:
     perfil = Perfil(
-        curso="Ciência da Computação",
+        curso=curso,
         periodo=3,
         habilidades=["Python"],
         cidade=cidade,
@@ -104,3 +111,33 @@ def test_cidades_de_interesse_vem_de_perfis_presenciais_e_hibridos_sem_repetir()
 
 def test_cidades_de_interesse_sem_usuarios_e_vazia():
     assert cidades_de_interesse([]) == []
+
+
+def test_areas_saem_dos_cursos_de_quem_esta_cadastrado():
+    de_computacao = usuario(1, "Rio de Janeiro, RJ", Modalidade.REMOTO)
+    de_direito = usuario(2, "Niterói, RJ", Modalidade.REMOTO, curso="Direito")
+
+    assert areas_de_interesse([de_computacao]) == {"computacao"}
+    assert areas_de_interesse([de_computacao, de_direito]) == {"computacao", "direito"}
+
+
+def test_curso_sem_area_conhecida_nao_vira_termo_de_busca():
+    exotico = usuario(1, "Rio de Janeiro, RJ", Modalidade.REMOTO, curso="Curso Inventado")
+
+    assert areas_de_interesse([exotico]) == set()
+    assert termos_de_interesse([exotico]) == ()
+
+
+def test_termos_de_busca_acompanham_os_cursos_cadastrados():
+    de_computacao = usuario(1, "Rio de Janeiro, RJ", Modalidade.REMOTO)
+    de_direito = usuario(2, "Niterói, RJ", Modalidade.REMOTO, curso="Direito")
+
+    somente_computacao = termos_de_interesse([de_computacao])
+
+    assert "software" in somente_computacao
+    assert "direito" not in somente_computacao
+
+    com_direito = termos_de_interesse([de_computacao, de_direito])
+
+    assert "software" in com_direito
+    assert "direito" in com_direito

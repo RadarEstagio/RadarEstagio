@@ -12,9 +12,6 @@ FONTE = "adzuna"
 EMPRESA_NAO_INFORMADA = "Empresa não informada"
 LOCALIZACAO_PADRAO = "Brasil"
 TERMO_OBRIGATORIO = "estágio"
-TERMOS_DA_AREA = (
-    "desenvolvimento software TI dados sistemas programação computação informática tecnologia"
-)
 RESULTADOS_POR_PAGINA = 50
 LIMITE_DE_PAGINAS_POR_REGIAO = 4
 POSICAO_DO_ESTADO = 2
@@ -29,11 +26,13 @@ class ColetorAdzuna:
         cliente_http: httpx.Client,
         cidades: Iterable[str] = (),
         esperar: Callable[[float], None] = time.sleep,
+        termos: Iterable[str] = (),
     ) -> None:
         self._settings = settings
         self._cliente_http = cliente_http
         self._cidades = tuple(cidades)
         self._esperar = esperar
+        self._termos = " ".join(termos)
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
@@ -67,7 +66,7 @@ class ColetorAdzuna:
             "app_id": self._settings.adzuna_app_id,
             "app_key": self._settings.adzuna_app_key,
             "what_and": TERMO_OBRIGATORIO,
-            "what_or": TERMOS_DA_AREA,
+            "what_or": self._termos,
             "max_days_old": self._settings.dias_recentes,
             "results_per_page": RESULTADOS_POR_PAGINA,
             "content-type": "application/json",

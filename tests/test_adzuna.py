@@ -18,6 +18,7 @@ from radar.settings import Settings
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"
 APP_KEY_DE_TESTE = "app-key-de-teste"
+TERMOS_DE_BUSCA = ("desenvolvimento", "dados")
 
 
 def settings_de_teste() -> Settings:
@@ -55,7 +56,9 @@ def pagina_cheia(inicio: int) -> dict:
 @pytest.fixture
 def coletor():
     with httpx.Client() as cliente_http:
-        yield ColetorAdzuna(settings_de_teste(), cliente_http, esperar=lambda _: None)
+        yield ColetorAdzuna(
+            settings_de_teste(), cliente_http, esperar=lambda _: None, termos=TERMOS_DE_BUSCA
+        )
 
 
 def test_converte_resposta_da_adzuna_em_vagas(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
@@ -115,7 +118,7 @@ def test_envia_credenciais_e_filtros_na_busca(httpx_mock: HTTPXMock, coletor: Co
     assert parametros["app_id"] == "app-id-de-teste"
     assert parametros["app_key"] == APP_KEY_DE_TESTE
     assert parametros["what_and"] == "estágio"
-    assert "tecnologia" in parametros["what_or"]
+    assert parametros["what_or"] == "desenvolvimento dados"
     assert "category" not in parametros
     assert "where" not in parametros
     assert parametros["max_days_old"] == "3"
@@ -125,7 +128,9 @@ def test_envia_credenciais_e_filtros_na_busca(httpx_mock: HTTPXMock, coletor: Co
 def test_busca_tambem_por_cidade_dos_usuarios_presenciais(httpx_mock: HTTPXMock):
     httpx_mock.add_response(json={"results": []}, is_reusable=True)
     with httpx.Client() as cliente_http:
-        ColetorAdzuna(settings_de_teste(), cliente_http, ["Rio de Janeiro", "Niterói"]).coletar()
+        ColetorAdzuna(
+            settings_de_teste(), cliente_http, ["Rio de Janeiro", "Niterói"], termos=TERMOS_DE_BUSCA
+        ).coletar()
 
     locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
 
@@ -157,7 +162,9 @@ def test_mesma_vaga_no_pais_e_na_cidade_aparece_uma_vez(httpx_mock: HTTPXMock):
     httpx_mock.add_response(json={"results": [item(1), item(2)]})
     httpx_mock.add_response(json={"results": [item(2), item(3)]})
     with httpx.Client() as cliente_http:
-        vagas = ColetorAdzuna(settings_de_teste(), cliente_http, ["Rio de Janeiro"]).coletar()
+        vagas = ColetorAdzuna(
+            settings_de_teste(), cliente_http, ["Rio de Janeiro"], termos=TERMOS_DE_BUSCA
+        ).coletar()
 
     assert [vaga.id_externo for vaga in vagas] == ["1", "2", "3"]
 
@@ -216,7 +223,9 @@ def test_erro_transitorio_e_tentado_de_novo_antes_de_desistir(httpx_mock: HTTPXM
     httpx_mock.add_response(json=resposta_gravada())
     esperas: list[float] = []
     with httpx.Client() as cliente_http:
-        coletor = ColetorAdzuna(settings_de_teste(), cliente_http, esperar=esperas.append)
+        coletor = ColetorAdzuna(
+            settings_de_teste(), cliente_http, esperar=esperas.append, termos=TERMOS_DE_BUSCA
+        )
         vagas = coletor.coletar()
 
     assert len(vagas) == 3
@@ -227,7 +236,9 @@ def test_erro_de_autenticacao_nao_e_tentado_de_novo(httpx_mock: HTTPXMock):
     httpx_mock.add_response(status_code=401, text="não autorizado")
     esperas: list[float] = []
     with httpx.Client() as cliente_http:
-        coletor = ColetorAdzuna(settings_de_teste(), cliente_http, esperar=esperas.append)
+        coletor = ColetorAdzuna(
+            settings_de_teste(), cliente_http, esperar=esperas.append, termos=TERMOS_DE_BUSCA
+        )
         with pytest.raises(ErroDeColeta, match="401"):
             coletor.coletar()
 
