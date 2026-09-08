@@ -12,6 +12,7 @@ como equivalentes.
 - **Como contribuir:** [README do projeto](../README.md), [arquitetura](arquitetura.md) e
   [contrato do frontend](contrato-front.md).
 - **Como interpretar resultados:** [Métricas](metricas.md).
+- **Definição, hipóteses e viabilidade para a disciplina:** [Pré-PRD](pre-prd.md).
 
 ## Revisão: o que faz sentido manter
 
@@ -25,6 +26,7 @@ como equivalentes.
 | `metricas.md` | Manter | Definições, denominadores, deduplicação e limites históricos |
 | `termos-de-uso.md` | Manter em revisão | Texto para revisão; sincronizar com `web/termos.html` antes de publicar |
 | `politica-de-privacidade.md` | Manter em revisão | Texto para revisão; sincronizar com `web/privacidade.html` antes de publicar |
+| `pre-prd.md` | Restaurado em 08/09; atualizar a cada entrega | Definição, hipóteses, evidências datadas e viabilidade para a disciplina; não é catálogo nem backlog |
 
 Os documentos antigos foram removidos em 07/09/2026. As decisões de privacidade ficam no
 contrato frontend, a revisão dos responsáveis no guia e o viés do ranking na arquitetura.
