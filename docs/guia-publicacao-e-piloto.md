@@ -24,7 +24,7 @@ Estado registrado na atualização de 05/09 à noite, sem repetir os testes remo
 
 - Contato funcionando; combinar a rotina de resposta com Ian e Miguel.
 - Resend verificado e SMTP salvo; falta validar confirmação e recuperação reais.
-- `URL_DE_RASTREIO` criada no GitHub; `URL_DA_LANDING` provisória aponta para o repositório.
+- `URL_DE_RASTREIO` criada no GitHub; `URL_DA_LANDING` aponta para `https://radarestagio.pages.dev` (08/09/2026).
 - Token real validou redirecionamento 302 e registro de `vaga_aberta`.
 - Primeira entrega real após `/start` em cerca de quatro minutos, sem requisições de IA.
 - Trava por perfil implementada e validada com duas conexões no banco real.
@@ -155,7 +155,7 @@ login, reenvio e recuperação, incluindo expiração do desafio.
 
 | Onde | Nome | Valor |
 |---|---|---|
-| Supabase → Edge Functions → Secrets | `URL_DA_LANDING` | `https://radarestagio.com` |
+| Supabase → Edge Functions → Secrets | `URL_DA_LANDING` | `https://radarestagio.pages.dev` (trocar pelo domínio próprio quando existir) |
 | GitHub → Settings → Secrets and variables → Actions | `URL_DE_RASTREIO` | `https://xrhvjwemmylwbqgluebc.supabase.co/functions/v1/ir` |
 
 Preserve os secrets existentes `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` das funções.
