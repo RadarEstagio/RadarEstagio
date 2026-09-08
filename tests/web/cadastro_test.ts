@@ -765,3 +765,28 @@ Deno.test("trocar o curso na edicao descarta as areas do curso antigo no payload
     a.close();
   }
 });
+
+
+Deno.test("habilidades sugeridas acompanham o curso digitado", async () => {
+  for (const [curso, esperada, indevida] of [
+    ["Direito", "Redação", "Python"],
+    ["Computação", "Python", "Redação"],
+    ["Curso Que Ninguem Tem", "Excel", "Python"],
+  ]) {
+    const a = app();
+    try {
+      await settle();
+      a.w.document.querySelector(".js-open-signup").click();
+      await settle();
+      const doc = a.w.document;
+      const form = fill(a.w);
+      form.elements.curso.value = curso;
+      doc.querySelector("#next-step").click();
+      doc.querySelector("#next-step").click();
+      await settle();
+      const sugeridas = [...doc.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
+      assert.equal(sugeridas.includes(esperada), true, curso);
+      assert.equal(sugeridas.includes(indevida), false, curso);
+    } finally { a.close(); }
+  }
+});

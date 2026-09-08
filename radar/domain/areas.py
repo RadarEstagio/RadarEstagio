@@ -15,11 +15,24 @@ class Area:
     termos_de_busca: tuple[str, ...]
     subareas: tuple[tuple[str, str], ...]
     cursos_intercambiaveis: bool = False
+    habilidades: tuple[str, ...] = ()
 
 
 AREAS = (
     Area(
         nome=COMPUTACAO,
+        habilidades=(
+            "Python",
+            "JavaScript",
+            "Java",
+            "React",
+            "SQL",
+            "Git",
+            "Excel",
+            "Power BI",
+            "Linux",
+            "Redes",
+        ),
         cursos=(
             "computacao",
             "ciencia da computacao",
@@ -109,6 +122,18 @@ AREAS = (
     ),
     Area(
         nome="direito",
+        habilidades=(
+            "Redação",
+            "Pesquisa jurídica",
+            "Pacote Office",
+            "Inglês",
+            "Processo civil",
+            "Direito do trabalho",
+            "Contratos",
+            "LGPD",
+            "Atendimento",
+            "Organização",
+        ),
         cursos=("direito",),
         titulo=(
             r"juridic[ao]|direito|advocacia|contencioso|societario|compliance|trabalhista|legal"
@@ -126,6 +151,18 @@ AREAS = (
     ),
     Area(
         nome="administracao",
+        habilidades=(
+            "Excel",
+            "Pacote Office",
+            "Comunicação",
+            "Organização",
+            "Atendimento ao cliente",
+            "Gestão de projetos",
+            "Power BI",
+            "Inglês",
+            "Redação",
+            "Planejamento",
+        ),
         cursos=(
             "administracao",
             "administracao de empresas",
@@ -157,6 +194,18 @@ AREAS = (
     ),
     Area(
         nome="financas",
+        habilidades=(
+            "Excel",
+            "Power BI",
+            "Contabilidade",
+            "Matemática financeira",
+            "SAP",
+            "Inglês",
+            "Análise de dados",
+            "Fluxo de caixa",
+            "Conciliação bancária",
+            "Pacote Office",
+        ),
         cursos=(
             "economia",
             "ciencias economicas",
@@ -189,6 +238,18 @@ AREAS = (
     ),
     Area(
         nome="marketing",
+        habilidades=(
+            "Redes sociais",
+            "Canva",
+            "Copywriting",
+            "Redação",
+            "Photoshop",
+            "Google Analytics",
+            "Meta Ads",
+            "Produção de conteúdo",
+            "Comunicação",
+            "Inglês",
+        ),
         cursos=(
             "marketing",
             "publicidade",
@@ -228,6 +289,18 @@ AREAS = (
     ),
     Area(
         nome="pessoas",
+        habilidades=(
+            "Recrutamento",
+            "Entrevistas",
+            "Comunicação",
+            "Excel",
+            "Pacote Office",
+            "Organização",
+            "Folha de pagamento",
+            "LinkedIn",
+            "Treinamento",
+            "Inglês",
+        ),
         cursos=(
             "psicologia",
             "recursos humanos",
@@ -256,6 +329,18 @@ AREAS = (
     ),
     Area(
         nome="comercial",
+        habilidades=(
+            "Vendas",
+            "Negociação",
+            "Atendimento ao cliente",
+            "CRM",
+            "Prospecção",
+            "Comunicação",
+            "Excel",
+            "Inglês",
+            "Apresentações",
+            "Organização",
+        ),
         cursos=(
             "comercio exterior",
             "relacoes internacionais",
@@ -282,6 +367,18 @@ AREAS = (
     ),
     Area(
         nome="logistica",
+        habilidades=(
+            "Excel",
+            "Controle de estoque",
+            "SAP",
+            "Compras",
+            "Organização",
+            "Planejamento",
+            "Power BI",
+            "Negociação",
+            "Pacote Office",
+            "Transportes",
+        ),
         cursos=("logistica", "transportes", "gestao de logistica"),
         titulo=(
             r"logistic[ao]|suprimentos|supply|compras|estoque|almoxarifado|transportes?"
@@ -298,6 +395,18 @@ AREAS = (
     ),
     Area(
         nome="engenharias",
+        habilidades=(
+            "AutoCAD",
+            "Excel",
+            "SolidWorks",
+            "Revit",
+            "MATLAB",
+            "Desenho técnico",
+            "Projetos",
+            "Manutenção",
+            "Segurança do trabalho",
+            "Inglês",
+        ),
         cursos=(
             "engenharia civil",
             "engenharia mecanica",
@@ -345,6 +454,18 @@ AREAS = (
     ),
     Area(
         nome="saude",
+        habilidades=(
+            "Atendimento ao paciente",
+            "Biossegurança",
+            "Primeiros socorros",
+            "Prontuário",
+            "Comunicação",
+            "Organização",
+            "Pacote Office",
+            "Anatomia",
+            "Laboratório",
+            "Inglês",
+        ),
         cursos=(
             "medicina",
             "enfermagem",
@@ -375,6 +496,18 @@ AREAS = (
     ),
     Area(
         nome="educacao",
+        habilidades=(
+            "Didática",
+            "Comunicação",
+            "Planejamento de aulas",
+            "Produção de material",
+            "Pacote Office",
+            "Redação",
+            "Organização",
+            "Inglês",
+            "Canva",
+            "Educação inclusiva",
+        ),
         cursos=("pedagogia", "letras", "historia", "geografia", "licenciatura"),
         titulo=(
             r"pedagogia|docencia|professor[a]?|monitoria|educacional|educacao(?! fisica)|escola"
@@ -391,6 +524,18 @@ AREAS = (
     ),
     Area(
         nome="turismo",
+        habilidades=(
+            "Atendimento ao cliente",
+            "Inglês",
+            "Espanhol",
+            "Organização de eventos",
+            "Comunicação",
+            "Excel",
+            "Reservas",
+            "Hospitalidade",
+            "Cozinha",
+            "Vendas",
+        ),
         cursos=("turismo", "hotelaria", "gastronomia", "eventos"),
         titulo=(
             r"turismo|hotelaria|gastronomia|eventos|hospitalidade|agencia de viagens|hotel"
@@ -413,6 +558,18 @@ def normalizar(texto: str) -> str:
     return " ".join(sem_acentos.casefold().split())
 
 
+HABILIDADES_GERAIS = (
+    "Excel",
+    "Pacote Office",
+    "Inglês",
+    "Comunicação",
+    "Redação",
+    "Organização",
+    "Atendimento ao cliente",
+    "Power BI",
+    "Canva",
+    "Planejamento",
+)
 AREAS_POR_NOME = {area.nome: area for area in AREAS}
 SUBAREAS = tuple(valor for area in AREAS for valor, _ in area.subareas)
 ROTULOS_DAS_SUBAREAS = {valor: rotulo for area in AREAS for valor, rotulo in area.subareas}
@@ -566,9 +723,11 @@ def catalogo_do_site() -> dict:
                 "nome": area.nome,
                 "cursos": list(area.cursos),
                 "subareas": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in area.subareas],
+                "habilidades": list(area.habilidades),
             }
             for area in AREAS
         ],
+        "habilidades_gerais": list(HABILIDADES_GERAIS),
         "prefixos": list(PREFIXOS_DE_FORMACAO),
         "conectores": list(CONECTORES_DE_FORMACAO),
         "sufixos": list(SUFIXOS_DE_FORMACAO),

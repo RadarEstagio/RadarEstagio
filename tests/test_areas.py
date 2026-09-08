@@ -239,3 +239,26 @@ def test_area_do_curso_entende_formacao_e_sinonimo(curso: str, esperada: str):
 )
 def test_formas_comuns_do_nome_do_curso_sao_reconhecidas(curso: str, esperada: str):
     assert area_do_curso(curso) == esperada
+
+
+def test_toda_area_sugere_habilidades_proprias_e_computacao_mantem_as_de_sempre():
+    from radar.domain.areas import AREAS, AREAS_POR_NOME, HABILIDADES_GERAIS, catalogo_do_site
+
+    assert all(len(area.habilidades) >= 8 for area in AREAS)
+    assert all(len(set(area.habilidades)) == len(area.habilidades) for area in AREAS)
+    assert AREAS_POR_NOME[COMPUTACAO].habilidades == (
+        "Python",
+        "JavaScript",
+        "Java",
+        "React",
+        "SQL",
+        "Git",
+        "Excel",
+        "Power BI",
+        "Linux",
+        "Redes",
+    )
+    assert "Redação" in AREAS_POR_NOME["direito"].habilidades
+    assert HABILIDADES_GERAIS and catalogo_do_site()["habilidades_gerais"] == list(
+        HABILIDADES_GERAIS
+    )

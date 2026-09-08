@@ -58,6 +58,18 @@
           "valor": "qa_testes",
           "rotulo": "QA e testes"
         }
+      ],
+      "habilidades": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "React",
+        "SQL",
+        "Git",
+        "Excel",
+        "Power BI",
+        "Linux",
+        "Redes"
       ]
     },
     {
@@ -82,6 +94,18 @@
           "valor": "compliance",
           "rotulo": "Compliance"
         }
+      ],
+      "habilidades": [
+        "Redação",
+        "Pesquisa jurídica",
+        "Pacote Office",
+        "Inglês",
+        "Processo civil",
+        "Direito do trabalho",
+        "Contratos",
+        "LGPD",
+        "Atendimento",
+        "Organização"
       ]
     },
     {
@@ -110,6 +134,18 @@
           "valor": "processos_e_qualidade",
           "rotulo": "Processos e qualidade"
         }
+      ],
+      "habilidades": [
+        "Excel",
+        "Pacote Office",
+        "Comunicação",
+        "Organização",
+        "Atendimento ao cliente",
+        "Gestão de projetos",
+        "Power BI",
+        "Inglês",
+        "Redação",
+        "Planejamento"
       ]
     },
     {
@@ -141,6 +177,18 @@
           "valor": "mercado_financeiro",
           "rotulo": "Mercado financeiro"
         }
+      ],
+      "habilidades": [
+        "Excel",
+        "Power BI",
+        "Contabilidade",
+        "Matemática financeira",
+        "SAP",
+        "Inglês",
+        "Análise de dados",
+        "Fluxo de caixa",
+        "Conciliação bancária",
+        "Pacote Office"
       ]
     },
     {
@@ -176,6 +224,18 @@
           "valor": "design_grafico",
           "rotulo": "Design gráfico"
         }
+      ],
+      "habilidades": [
+        "Redes sociais",
+        "Canva",
+        "Copywriting",
+        "Redação",
+        "Photoshop",
+        "Google Analytics",
+        "Meta Ads",
+        "Produção de conteúdo",
+        "Comunicação",
+        "Inglês"
       ]
     },
     {
@@ -199,6 +259,18 @@
           "valor": "treinamento_e_desenvolvimento",
           "rotulo": "Treinamento e desenvolvimento"
         }
+      ],
+      "habilidades": [
+        "Recrutamento",
+        "Entrevistas",
+        "Comunicação",
+        "Excel",
+        "Pacote Office",
+        "Organização",
+        "Folha de pagamento",
+        "LinkedIn",
+        "Treinamento",
+        "Inglês"
       ]
     },
     {
@@ -223,6 +295,18 @@
           "valor": "comercio_exterior",
           "rotulo": "Comércio exterior"
         }
+      ],
+      "habilidades": [
+        "Vendas",
+        "Negociação",
+        "Atendimento ao cliente",
+        "CRM",
+        "Prospecção",
+        "Comunicação",
+        "Excel",
+        "Inglês",
+        "Apresentações",
+        "Organização"
       ]
     },
     {
@@ -245,6 +329,18 @@
           "valor": "transporte_e_distribuicao",
           "rotulo": "Transporte e distribuição"
         }
+      ],
+      "habilidades": [
+        "Excel",
+        "Controle de estoque",
+        "SAP",
+        "Compras",
+        "Organização",
+        "Planejamento",
+        "Power BI",
+        "Negociação",
+        "Pacote Office",
+        "Transportes"
       ]
     },
     {
@@ -289,6 +385,18 @@
           "valor": "meio_ambiente_e_seguranca",
           "rotulo": "Meio ambiente e segurança"
         }
+      ],
+      "habilidades": [
+        "AutoCAD",
+        "Excel",
+        "SolidWorks",
+        "Revit",
+        "MATLAB",
+        "Desenho técnico",
+        "Projetos",
+        "Manutenção",
+        "Segurança do trabalho",
+        "Inglês"
       ]
     },
     {
@@ -320,6 +428,18 @@
           "valor": "saude_publica",
           "rotulo": "Saúde pública"
         }
+      ],
+      "habilidades": [
+        "Atendimento ao paciente",
+        "Biossegurança",
+        "Primeiros socorros",
+        "Prontuário",
+        "Comunicação",
+        "Organização",
+        "Pacote Office",
+        "Anatomia",
+        "Laboratório",
+        "Inglês"
       ]
     },
     {
@@ -344,6 +464,18 @@
           "valor": "producao_de_material",
           "rotulo": "Produção de material didático"
         }
+      ],
+      "habilidades": [
+        "Didática",
+        "Comunicação",
+        "Planejamento de aulas",
+        "Produção de material",
+        "Pacote Office",
+        "Redação",
+        "Organização",
+        "Inglês",
+        "Canva",
+        "Educação inclusiva"
       ]
     },
     {
@@ -367,8 +499,32 @@
           "valor": "gastronomia",
           "rotulo": "Gastronomia"
         }
+      ],
+      "habilidades": [
+        "Atendimento ao cliente",
+        "Inglês",
+        "Espanhol",
+        "Organização de eventos",
+        "Comunicação",
+        "Excel",
+        "Reservas",
+        "Hospitalidade",
+        "Cozinha",
+        "Vendas"
       ]
     }
+  ],
+  "habilidades_gerais": [
+    "Excel",
+    "Pacote Office",
+    "Inglês",
+    "Comunicação",
+    "Redação",
+    "Organização",
+    "Atendimento ao cliente",
+    "Power BI",
+    "Canva",
+    "Planejamento"
   ],
   "prefixos": [
     "curso superior de tecnologia",

@@ -177,6 +177,23 @@ function areasDeInteresseDoFormulario(data) {
   return marcadas.filter((valor) => permitidas.has(valor));
 }
 
+async function montarHabilidadesDoCurso() {
+  const catalogo = await carregarAreas();
+  if (!catalogo) return;
+  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
+  const sugeridas = area?.habilidades?.length ? area.habilidades : catalogo.habilidades_gerais;
+  const picker = document.querySelector("#skill-picker");
+  picker.replaceChildren(...sugeridas.map((habilidade) => {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.dataset.skill = habilidade;
+    botao.setAttribute("aria-pressed", "false");
+    botao.textContent = habilidade;
+    return botao;
+  }));
+  renderSkills();
+}
+
 function lembrarAreasEscolhidas() {
   gradeDeAreas.querySelectorAll('input[name="areas"]').forEach((campo) => {
     if (campo.checked) areasEscolhidas.add(campo.value);
@@ -711,6 +728,7 @@ function preencherFormularioCom(profile) {
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
   renderSkills();
+  void montarHabilidadesDoCurso();
   areasSalvas = [...(profile.areas_de_interesse ?? [])];
   areasEscolhidas = new Set(areasSalvas);
   void montarAreasDoCurso();
@@ -897,6 +915,7 @@ function avancarPasso() {
   if (currentStep === PASSO_HABILIDADES) addCustomSkill();
   if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   if (!validateStep(currentStep)) return;
+  if (currentStep === PASSO_MOMENTO) void montarHabilidadesDoCurso();
   if (currentStep === PASSO_HABILIDADES) void montarAreasDoCurso();
   if (currentStep === PASSO_MOMENTO) void registerEvent("etapa_perfil_concluida");
   if (currentStep === PASSO_HABILIDADES) {
@@ -1022,14 +1041,14 @@ document.querySelector("#account-confirm-yes").addEventListener("click", async (
 document.querySelector("#finish-signup").addEventListener("click", closeSignup);
 previousStep.addEventListener("click", voltarPasso);
 nextStep.addEventListener("click", avancarPasso);
-document.querySelectorAll("[data-skill]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const skill = button.dataset.skill;
-    if (selectedSkills.has(skill)) selectedSkills.delete(skill);
-    else selectedSkills.add(skill);
-    renderSkills();
-    setFormMessage();
-  });
+document.querySelector("#skill-picker").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-skill]");
+  if (!button) return;
+  const skill = button.dataset.skill;
+  if (selectedSkills.has(skill)) selectedSkills.delete(skill);
+  else selectedSkills.add(skill);
+  renderSkills();
+  setFormMessage();
 });
 document.querySelector("#custom-skill").addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
