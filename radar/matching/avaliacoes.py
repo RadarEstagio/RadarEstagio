@@ -1,6 +1,6 @@
 import unicodedata
 
-from radar.domain.areas import COMPUTACAO, area_do_curso
+from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -186,14 +186,15 @@ def _compatibilidade_de_interesse(extracao: ExtracaoDaVaga, perfil: Perfil) -> f
     interesses = {area.value for area in perfil.areas_de_interesse}
     if areas_da_vaga & interesses:
         return 1.0
-    if _e_do_campo_do_curso(extracao, perfil):
+    if _mesmo_campo(areas_da_vaga, interesses):
         return INTERESSE_DE_OUTRA_SUBAREA
     return 0.0
 
 
-def _e_do_campo_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
-    area_da_pessoa = area_do_curso(perfil.curso)
-    return area_da_pessoa is not None and extracao.area_da_vaga == area_da_pessoa
+def _mesmo_campo(areas_da_vaga: set[str], interesses: set[str]) -> bool:
+    campos_da_vaga = {AREA_DA_SUBAREA[area] for area in areas_da_vaga}
+    campos_de_interesse = {AREA_DA_SUBAREA[area] for area in interesses}
+    return bool(campos_da_vaga & campos_de_interesse)
 
 
 def _area_recusada(areas_da_vaga: set[str], perfil: Perfil) -> bool:

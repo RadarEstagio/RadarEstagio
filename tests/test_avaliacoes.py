@@ -467,3 +467,23 @@ def test_subarea_marcada_ainda_vence_outra_subarea_do_mesmo_campo():
     assert (
         resultado_da(vaga_marcada, perfil_web).nota > resultado_da(vaga_do_campo, perfil_web).nota
     )
+
+
+def test_programa_aberto_a_varias_formacoes_com_subarea_do_campo_nao_ganha_aviso():
+    perfil_web = perfil(habilidades=["Python", "Java"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+    aberto = extracao(area_da_vaga=None, areas_da_vaga=["dados_ia"])
+    do_campo = extracao(area_da_vaga="computacao", areas_da_vaga=["dados_ia"])
+
+    assert resultado_da(aberto, perfil_web).avisos_objetivos == []
+    assert resultado_da(aberto, perfil_web).nota >= resultado_da(do_campo, perfil_web).nota - 5
+
+
+def test_curso_desconhecido_com_interesses_ainda_reconhece_o_proprio_campo():
+    exotico = perfil(habilidades=["Python", "Java"])
+    exotico.curso = "Curso Que Ninguém Tem"
+    exotico.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(extracao(areas_da_vaga=["dados_ia"]), exotico)
+
+    assert "Fora das suas áreas de interesse" not in resultado.avisos_objetivos

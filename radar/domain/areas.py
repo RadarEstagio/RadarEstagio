@@ -359,6 +359,7 @@ AREAS = (
 AREAS_POR_NOME = {area.nome: area for area in AREAS}
 SUBAREAS = tuple(valor for area in AREAS for valor, _ in area.subareas)
 ROTULOS_DAS_SUBAREAS = {valor: rotulo for area in AREAS for valor, rotulo in area.subareas}
+AREA_DA_SUBAREA = {valor: area.nome for area in AREAS for valor, _ in area.subareas}
 PADROES_DE_TITULO = {area.nome: re.compile(rf"\b(?:{area.titulo})\b") for area in AREAS}
 PADROES_DE_EXCLUSAO = {area.nome: re.compile(rf"\b(?:{area.exclusao})\b") for area in AREAS}
 PADROES_DE_DESCRICAO = {area.nome: re.compile(rf"\b(?:{area.descricao})\b") for area in AREAS}
