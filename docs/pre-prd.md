@@ -246,15 +246,19 @@ Regras vigentes em 08/09:
 - Obrigatórias, principais e desejáveis têm pesos distintos dentro de H (80/20 quando há
   obrigatórias e desejáveis; 60/30/10 quando há as três).
 - **Nível declarado precisa cobrir o exigido** (08/09): "Inglês básico" não atende "Inglês
-  fluente" nem "Excel básico" atende "Excel avançado". O nome é comparado sem o qualificador;
-  sem nível de um dos lados, o requisito vale.
+  fluente" nem "Excel básico" atende "Excel avançado". O nome é comparado sem o qualificador.
+  Requisito sem nível aceita a habilidade conhecida; requisito com nível exige que o perfil
+  declare o seu: "Excel" no perfil não comprova "Excel avançado". Por isso a mensagem chama a
+  lista de "Requisitos a conferir no seu perfil", e não de requisitos não atendidos.
 - Idiomas e pacote Office ficam fora da cobertura **só para perfis de computação**; nas demais
   formações contam como qualquer requisito.
 - Tecnologias comparadas por nome normalizado e exato (Java ≠ JavaScript).
 - **Curso**: incompatível limita a 35 (sai da mensagem); parcial limita a 75. Quem decide é o
   catálogo: cursos da mesma área só são equivalentes onde a área declara
   `cursos_intercambiaveis` (só computação). Curso genérico aceito pelo anúncio ("Engenharia")
-  vale para o curso específico do perfil ("Engenharia Civil"); "qualquer curso" vale para todos.
+  vale para o curso específico do perfil ("Engenharia Civil"). Só abertura explícita a qualquer
+  formação ("qualquer curso", "todos os cursos") libera todo mundo; termo vago como "Ensino
+  Superior" não comprova elegibilidade sozinho nem anula os cursos específicos que o anúncio cita.
 - **Interesse** tem três níveis: subárea marcada vale cheio; outra subárea do mesmo campo vale
   metade e não avisa; vaga de outro campo zera, limita a 65 e avisa. Perfil sem interesses não
   é penalizado. Subárea com duas ou mais recusas "não é da minha área" em 30 dias perde o fator.

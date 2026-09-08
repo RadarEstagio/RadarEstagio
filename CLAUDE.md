@@ -362,9 +362,11 @@ falhava antes da correção:
 - **Nível básico satisfazia requisito avançado.** Tirar o qualificador de nível para comparar o
   nome fazia "Inglês básico" valer por "Inglês fluente" (nota 100). O nome segue comparado sem
   o nível; o requisito só é atendido se o perfil declara nível igual ou maior (básico 1,
-  intermediário 2, avançado/fluente/nativo 3). Sem nível de um dos lados, vale — ausência de
-  informação não é veto. No corpus antigo (só computação) apenas 4 de 202 extrações citam nível;
-  em Direito e Administração é o padrão.
+  intermediário 2, avançado/fluente/nativo 3). Requisito sem nível aceita a habilidade conhecida;
+  requisito com nível exige que o perfil declare o seu (Igor, 08/09 à noite: "Excel" no perfil
+  não comprova "Excel avançado"). A lista na mensagem virou "Requisitos a conferir no seu
+  perfil". No corpus antigo (só computação) apenas 4 de 202 extrações citam nível; em Direito e
+  Administração é o padrão.
 - **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
   candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
   uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
