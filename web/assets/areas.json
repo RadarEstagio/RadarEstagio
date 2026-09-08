@@ -23,7 +23,10 @@
         "redes de computadores",
         "seguranca da informacao",
         "jogos digitais",
-        "inteligencia artificial"
+        "inteligencia artificial",
+        "gestao de ti",
+        "seguranca cibernetica",
+        "engenharia de sistemas"
       ],
       "subareas": [
         {
@@ -84,9 +87,14 @@
       "nome": "administracao",
       "cursos": [
         "administracao",
+        "administracao de empresas",
+        "administracao publica",
         "gestao",
+        "gestao publica",
+        "gestao empresarial",
         "processos gerenciais",
-        "secretariado"
+        "secretariado",
+        "secretariado executivo"
       ],
       "subareas": [
         {
@@ -107,6 +115,7 @@
       "nome": "financas",
       "cursos": [
         "economia",
+        "ciencias economicas",
         "ciencias contabeis",
         "contabilidade",
         "atuaria",
@@ -143,7 +152,9 @@
         "jornalismo",
         "comunicacao",
         "comunicacao social",
-        "design"
+        "design",
+        "design grafico",
+        "relacoes publicas"
       ],
       "subareas": [
         {
@@ -192,7 +203,9 @@
       "cursos": [
         "comercio exterior",
         "relacoes internacionais",
-        "negocios"
+        "negocios",
+        "negocios internacionais",
+        "gestao comercial"
       ],
       "subareas": [
         {
@@ -240,7 +253,14 @@
         "engenharia ambiental",
         "engenharia de producao",
         "arquitetura",
-        "arquitetura e urbanismo"
+        "arquitetura e urbanismo",
+        "engenharia de controle e automacao",
+        "engenharia mecatronica",
+        "engenharia eletronica",
+        "engenharia de telecomunicacoes",
+        "engenharia de materiais",
+        "engenharia de petroleo",
+        "engenharia de alimentos"
       ],
       "subareas": [
         {
@@ -276,7 +296,9 @@
         "biomedicina",
         "odontologia",
         "educacao fisica",
-        "biologia"
+        "biologia",
+        "fonoaudiologia",
+        "terapia ocupacional"
       ],
       "subareas": [
         {

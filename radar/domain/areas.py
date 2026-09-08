@@ -42,6 +42,9 @@ AREAS = (
             "seguranca da informacao",
             "jogos digitais",
             "inteligencia artificial",
+            "gestao de ti",
+            "seguranca cibernetica",
+            "engenharia de sistemas",
         ),
         titulo=(
             r"ti|t\.i\.?|tech|tecnologia|software|desenvolvimento|desenvolvedor[a]?|dev"
@@ -110,7 +113,17 @@ AREAS = (
     ),
     Area(
         nome="administracao",
-        cursos=("administracao", "gestao", "processos gerenciais", "secretariado"),
+        cursos=(
+            "administracao",
+            "administracao de empresas",
+            "administracao publica",
+            "gestao",
+            "gestao publica",
+            "gestao empresarial",
+            "processos gerenciais",
+            "secretariado",
+            "secretariado executivo",
+        ),
         titulo=(
             r"administrativ[ao]|administracao|backoffice|back-?office"
             r"|processos administrativos|gestao|planejamento|pmo"
@@ -128,6 +141,7 @@ AREAS = (
         nome="financas",
         cursos=(
             "economia",
+            "ciencias economicas",
             "ciencias contabeis",
             "contabilidade",
             "atuaria",
@@ -163,6 +177,8 @@ AREAS = (
             "comunicacao",
             "comunicacao social",
             "design",
+            "design grafico",
+            "relacoes publicas",
         ),
         titulo=(
             r"marketing|endomarketing|comunicacao|imprensa|midias sociais|redes sociais"
@@ -210,7 +226,13 @@ AREAS = (
     ),
     Area(
         nome="comercial",
-        cursos=("comercio exterior", "relacoes internacionais", "negocios"),
+        cursos=(
+            "comercio exterior",
+            "relacoes internacionais",
+            "negocios",
+            "negocios internacionais",
+            "gestao comercial",
+        ),
         titulo=(
             r"comercial|vendas|pre-?vendas?|inside sales|trade|comercio exterior|exportacao"
             r"|importacao|relacionamento com o cliente"
@@ -248,6 +270,13 @@ AREAS = (
             "engenharia de producao",
             "arquitetura",
             "arquitetura e urbanismo",
+            "engenharia de controle e automacao",
+            "engenharia mecatronica",
+            "engenharia eletronica",
+            "engenharia de telecomunicacoes",
+            "engenharia de materiais",
+            "engenharia de petroleo",
+            "engenharia de alimentos",
         ),
         titulo=(
             r"eletronic[ao]|eletrotecnic[ao]|eletric[ao]|mecanic[ao]|mecatronic[ao]|civil"
@@ -283,6 +312,8 @@ AREAS = (
             "odontologia",
             "educacao fisica",
             "biologia",
+            "fonoaudiologia",
+            "terapia ocupacional",
         ),
         titulo=(
             r"fisioterapia|enfermagem|nutricao|farmacia|biomedicina|odontologia|laboratorio"

@@ -163,3 +163,23 @@ def test_nome_parcial_nao_inventa_area(curso, esperada):
 def test_laboratorio_continua_reconhecido_como_titulo_de_saude():
     assert titulo_e_da_area("estagio em laboratorio de analises clinicas", "saude")
     assert not titulo_e_de_outra_area("estagio em laboratorio de inovacao", COMPUTACAO)
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperada"),
+    [
+        ("Administração de Empresas", "administracao"),
+        ("Administração Pública", "administracao"),
+        ("Secretariado Executivo", "administracao"),
+        ("Ciências Econômicas", "financas"),
+        ("Design Gráfico", "marketing"),
+        ("Relações Públicas", "marketing"),
+        ("Engenharia de Controle e Automação", "engenharias"),
+        ("Engenharia Mecatrônica", "engenharias"),
+        ("Gestão de TI", COMPUTACAO),
+        ("Fonoaudiologia", "saude"),
+        ("Negócios Internacionais", "comercial"),
+    ],
+)
+def test_nomes_comuns_de_curso_sao_reconhecidos_integralmente(curso: str, esperada: str):
+    assert area_do_curso(curso) == esperada
