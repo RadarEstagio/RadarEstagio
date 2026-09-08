@@ -343,9 +343,11 @@ p, h1, h2, h3 { margin-top: 0; }
 .field input, .field select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--white); }
 .field select { display: block; align-self: stretch; height: 52px; min-width: 100%; padding-right: 42px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position: calc(100% - 19px) 22px, calc(100% - 14px) 22px; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
 .field input::placeholder { color: #9ca39f; }
-.field input:user-invalid, .field [aria-invalid="true"] { border-color: #c94848; background-color: #fff9f7; }
-.field-error, .consent-fields .field-error { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: #8c2f2f; font-size: 11px; font-weight: 700; }
-.field-error::before { content: "!"; flex: 0 0 auto; display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; color: var(--white); background: #c94848; font-size: 10px; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.field [aria-invalid="true"] { border-color: #c94848; background-color: #fdf0ee; }
+.field-error, .form-message { display: flex; align-items: flex-start; gap: 9px; color: #8c2f2f; font-weight: 600; }
+.field-error::before, .form-message::before { content: "!"; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: var(--white); background: #c94848; font-weight: 800; }
+.field-error { margin-top: 8px; font-size: 11px; line-height: 1.45; }
+.field-error::before { width: 15px; height: 15px; font-size: 10px; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
 .skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
 .skill-picker { margin-bottom: 22px; }
 .skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
@@ -361,9 +363,12 @@ p, h1, h2, h3 { margin-top: 0; }
 .option-grid span { min-height: 46px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--white); font-size: 11px; }
 .option-grid input:checked + span { border-color: var(--accent); color: var(--accent); background: rgba(62,124,89,.08); box-shadow: inset 0 0 0 1px var(--accent); }.option-grid input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }#previous-step { margin-right: auto; }
-.form-message { margin: 22px 0 0; padding: 12px 14px; border: 1px solid #c94848; border-radius: 10px; color: #8c2f2f; background: #fff9f7; font-size: 12px; }
-.form-message:empty { margin: 0; padding: 0; border: 0; }
-.form-message-aviso { border-color: var(--line); color: var(--ink-soft); background: var(--paper); }
+.form-message { margin: 20px 0 0; padding: 13px 15px; border-radius: 12px; background: #fdf0ee; font-size: 13px; line-height: 1.5; }
+.form-message::before { width: 18px; height: 18px; margin-top: 1px; font-size: 11px; }
+.form-message:empty { margin: 0; padding: 0; }
+.form-message:empty::before { content: none; }
+.form-message-aviso { color: var(--accent-deep); background: var(--paper-deep); }
+.form-message-aviso::before { content: "i"; background: var(--accent); }
 .success-state { max-width: 510px; padding-top: 45px; }.success-state[hidden] { display: none; }.success-icon { width: 66px; height: 66px; display: grid; place-items: center; margin-bottom: 30px; border-radius: 50%; color: var(--accent-deep); background: var(--paper-deep); font-size: 29px; font-weight: 800; }.success-state h2:focus:not(:focus-visible), .account-state h2:focus:not(:focus-visible) { outline: none; }
 .success-state h2 { margin-bottom: 16px; font-size: 38px; line-height: 1.05; letter-spacing: -.05em; }.success-state > p:not(.eyebrow) { margin-bottom: 28px; color: var(--muted); }.success-actions { display: flex; flex-wrap: wrap; gap: 14px; }.success-actions [hidden] { display: none; }
 @media (max-width: 980px) {
