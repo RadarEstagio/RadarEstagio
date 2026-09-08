@@ -421,5 +421,20 @@ ligação das automações, porque cada uma guardava o dono no nome:
   mesmo com título de outra área. A compatibilidade de curso é decidida após a extração.
 - Pontuação é recalculada em Python em toda execução. Notas persistidas não são reutilizadas;
   extrações continuam compartilhadas e histórico de envios continua bloqueando repetição.
+- Curso genérico aceito pelo anúncio ("Engenharia", "Química", "Administração") conta como o
+  curso específico do perfil quando o nome aceito aparece inteiro dentro do nome do perfil **e**
+  o catálogo reconhece o perfil. Sem a segunda condição, "Medicina" valeria para Medicina
+  Veterinária — que é desconhecida de propósito. A correspondência integral sozinha marcava
+  como incompatível (teto 35) quem estuda Engenharia Civil numa vaga "cursando Engenharia".
+- A correspondência integral exige aliases para os nomes comuns: "Administração de Empresas",
+  "Ciências Econômicas", "Design Gráfico", "Engenharia Mecatrônica" e afins estão no catálogo.
+  Nome que não está lá vira área desconhecida: sem filtro de área, busca geral e nota parcial —
+  funciona, mas com ruído. Ao ver um curso frequente cair nesse caso, o conserto é um alias.
+- "laboratório" saiu do padrão de exclusão de saúde: vetava "Desenvolvimento de Software para
+  Laboratório" para quem é de computação. Continua no padrão positivo, então saúde ainda
+  reconhece laboratório como título seu.
+- Um único perfil de curso desconhecido troca a busca dirigida de todos pela busca geral. Como
+  o teto de páginas é fixo, isso reduz a fatia de cada curso conhecido (computação caiu de ~100
+  para 51 candidatas no Rio numa medição com cinco perfis). É o preço de não assumir tecnologia.
 - A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
   Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
