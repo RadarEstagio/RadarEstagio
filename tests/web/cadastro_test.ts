@@ -511,3 +511,30 @@ Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async 
     assert.equal(doc.querySelector("#credenciais").hidden, true);
   } finally { a.close(); }
 });
+
+Deno.test("sessão aberta troca a chamada da landing por minha conta", async () => {
+  const a = app({ session: { user }, savedProfile: profile });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const cabecalho = doc.querySelector('[data-event-origin="cabecalho"]');
+    assert.equal(doc.querySelector("#landing-page").hidden, false);
+    assert.equal(cabecalho.textContent.trim(), "Minha conta");
+    assert.equal(
+      doc.querySelector('[data-event-origin="hero"]').textContent.trim(),
+      "Minha conta →",
+    );
+    cabecalho.click();
+    await settle();
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "cta_cadastro_aberto"
+      ),
+      false,
+    );
+    assert.equal(doc.querySelector("#account-page").hidden, false);
+    doc.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(cabecalho.textContent.trim(), "Cadastrar meu perfil");
+  } finally { a.close(); }
+});

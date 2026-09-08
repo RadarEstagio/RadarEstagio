@@ -19,6 +19,11 @@ const accountMessage = document.querySelector("#account-message");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const credenciais = document.querySelector("#credenciais");
+const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
+const rotulosDeCadastro = new Map(
+  chamadasDeCadastro.map((botao) => [botao, botao.firstChild.textContent]),
+);
+let usuarioAutenticado = false;
 const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
 const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
@@ -332,6 +337,7 @@ function resetDialogView() {
 }
 
 function openAccountPage() {
+  mostrarChamadaDeConta(true);
   if (!accountPage.hidden) return;
   if (dialog.open && typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
@@ -358,6 +364,15 @@ function leaveAccountPage() {
   url.searchParams.delete("conta");
   window.history.replaceState(null, "", url);
   document.querySelector(".js-open-signup").focus();
+}
+
+function mostrarChamadaDeConta(autenticado) {
+  usuarioAutenticado = autenticado;
+  chamadasDeCadastro.forEach((botao) => {
+    botao.firstChild.textContent = autenticado
+      ? `${botao.dataset.rotuloConta} `
+      : rotulosDeCadastro.get(botao);
+  });
 }
 
 function openDialog() {
@@ -655,6 +670,7 @@ async function openSignup() {
 async function resumeConfirmedSignup() {
   try {
     const session = await currentSession();
+    mostrarChamadaDeConta(Boolean(session));
     if (authLinkError) {
       showAssistance(returningFromRecovery ? "reset" : "resend");
       setFormMessage("Esse link expirou ou já foi usado. Solicite um novo abaixo.");
@@ -718,11 +734,13 @@ function voltarPasso() {
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
 }
 
-document.querySelectorAll(".js-open-signup").forEach((button) => {
+chamadasDeCadastro.forEach((button) => {
   button.addEventListener("click", () => {
-    void registerEvent("cta_cadastro_aberto", {
-      origem: button.dataset.eventOrigin ?? "desconhecida",
-    });
+    if (!usuarioAutenticado) {
+      void registerEvent("cta_cadastro_aberto", {
+        origem: button.dataset.eventOrigin ?? "desconhecida",
+      });
+    }
     openSignup();
   });
 });
@@ -1123,6 +1141,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   const { error } = await getClient().auth.signOut();
   if (error) { setAccountMessage(humanizeError(error)); return; }
   clearPendingProfile();
+  mostrarChamadaDeConta(false);
   closeSignup();
   form.reset();
   selectedSkills.clear();
