@@ -270,6 +270,14 @@ categoria, repetida por cidade de perfil presencial ou híbrido; a localização
 buscar por termos no título e traz todos os estágios do país e da cidade. Efeito medido: perfil
 Rio presencial saiu de 2 para 55 candidatas em um dia.
 
+Paginação da Adzuna (08/09/2026): a busca por termos das áreas cadastradas encontra 4.988 vagas,
+mas `LIMITE_DE_PAGINAS_POR_REGIAO` puxava 4 páginas de 50 por região — 4% do disponível, e esse
+teto era repartido entre os cursos conforme a base crescia. A página 15 ainda devolve 50 vagas
+cheias e relevantes, então o limite subiu para 10. Medido no Rio com quatro áreas: 699 vagas
+coletadas contra ~400, e cada curso ganhou de 65% a 120% mais candidatas. Subir páginas é
+preferível a buscar por área separadamente: o custo fica plano (10 chamadas por região) em vez de
+multiplicar por curso.
+
 Agregadores (Divulga Vagas, BuscarVagas) republicam o mesmo anúncio com "empresa" diferente:
 `remover_republicacoes` em `filtering/duplicatas.py` une vagas com mesmo título e cidade cujas 40
 primeiras palavras da descrição coincidam em 80% — só o início conta porque a Adzuna trunca a
