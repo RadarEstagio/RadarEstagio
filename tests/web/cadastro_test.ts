@@ -573,3 +573,23 @@ Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () =>
     assert.equal(a.w.document.querySelector("#account-page").hidden, false);
   } finally { a.close(); }
 });
+
+Deno.test("Enter adiciona habilidade sem avançar e Continuar ainda avança", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    doc.querySelector("#next-step").click();
+    const input = doc.querySelector("#custom-skill");
+    input.value = "Rust";
+    input.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    assert.ok(doc.querySelector("#selected-skills").textContent.includes("Rust"));
+    assert.equal(input.value, "");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    await settle();
+  } finally { a.close(); }
+});

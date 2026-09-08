@@ -933,6 +933,7 @@ dialog.addEventListener("click", (event) => {
 dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
 
 document.addEventListener("keydown", (event) => {
+  if (event.defaultPrevented) return;
   if (event.key === "Escape" && dialog.open) closeSignup();
   if (event.key === "Enter" && (dialog.open || !accountPage.hidden) && !form.hidden && !nextStep.hidden && event.target.matches("input, select")) {
     event.preventDefault();
