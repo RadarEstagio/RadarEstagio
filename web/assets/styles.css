@@ -307,10 +307,11 @@ p, h1, h2, h3 { margin-top: 0; }
 .password-field input { min-width: 0; }
 .password-field button, .auth-help button { border: 0; background: transparent; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
 .auth-help { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 20px; }
+.auth-help button { min-height: 28px; }
 #assistance-form { display: grid; gap: 24px; margin-block: 24px; }
 #captcha-container { margin-top: 20px; }
 
-.signup-dialog { width: min(1050px, calc(100% - 28px)); max-height: min(780px, calc(100dvh - 28px)); padding: 0; overflow: hidden; border: 0; border-radius: var(--radius-lg); background: var(--white); box-shadow: 0 30px 80px rgba(23, 32, 26, .3); }
+.signup-dialog { width: min(1050px, calc(100% - 28px)); max-height: min(780px, calc(100dvh - 28px)); padding: 0; overflow: hidden; overscroll-behavior: contain; border: 0; border-radius: var(--radius-lg); background: var(--white); box-shadow: 0 30px 80px rgba(23, 32, 26, .3); }
 .signup-dialog::backdrop { background: rgba(16, 24, 20, .6); backdrop-filter: blur(6px); }
 .dialog-shell { position: relative; display: grid; grid-template-columns: .78fr 1.22fr; min-height: 650px; }
 .dialog-close { position: absolute; right: 16px; top: 14px; z-index: 4; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--white); font-size: 24px; line-height: 1; cursor: pointer; }
@@ -323,7 +324,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .account-schedule { color: var(--ink-faint); font-size: 13px; }
 .account-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .account-danger { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
-.account-danger .text-link { color: var(--ink-soft); font-size: 13px; }
+.account-danger .text-link { padding-block: 4px 6px; color: var(--ink-soft); font-size: 13px; }
 .account-confirm { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .account-confirm p { font-size: 14px; }
 .privacy-note { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: 11px; }.privacy-note span { color: var(--accent-light); }
