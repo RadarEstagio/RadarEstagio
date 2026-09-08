@@ -385,6 +385,7 @@ function resetDialogView() {
   document.querySelector("#captcha-container").hidden = false;
   sairDoModoEdicao();
   form.hidden = false;
+  rotularDialogo("signup-title");
   successState.hidden = true;
   accountState.hidden = true;
   accountConfirm.hidden = true;
@@ -434,6 +435,10 @@ function mostrarChamadaDeConta(autenticado) {
       ? `${botao.dataset.rotuloConta} `
       : rotulosDeCadastro.get(botao);
   });
+}
+
+function rotularDialogo(idDoTitulo) {
+  dialog.setAttribute("aria-labelledby", idDoTitulo);
 }
 
 function openDialog() {
@@ -498,6 +503,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = false;
+  rotularDialogo("success-title");
   document.querySelector("#success-kicker").textContent = kicker;
   document.querySelector("#success-title").textContent = title;
   document.querySelector("#success-copy").textContent = copy;
@@ -1061,6 +1067,7 @@ function showAssistance(mode, email = "") {
   successState.hidden = true;
   accountState.hidden = true;
   document.querySelector("#auth-assistance").hidden = false;
+  rotularDialogo("assistance-title");
   document.querySelector("#captcha-container").hidden = mode === "new-password";
   const definingPassword = mode === "new-password";
   const emailInput = document.querySelector("#assistance-email");
