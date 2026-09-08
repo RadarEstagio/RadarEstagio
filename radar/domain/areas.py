@@ -45,24 +45,33 @@ AREAS = (
             "gestao de ti",
             "seguranca cibernetica",
             "engenharia de sistemas",
+            "sistema de informacao",
         ),
         titulo=(
-            r"ti|t\.i\.?|tech|tecnologia|software|desenvolvimento|desenvolvedor[a]?|dev"
-            r"|developer|programacao|programador[a]?|dados|data|sistemas?|computacao|informatica"
-            r"|infra(?:estrutura)?|redes|seguranca da informacao|cyber\w*|cloud|devops"
-            r"|machine learning|inteligencia artificial|ia|front-?end|back-?end|full-?stack"
-            r"|qa|testes?|suporte|help-? ?desk|banco de dados|sql|python|java(?:script)?|web"
-            r"|mobile|analytics|bi|business intelligence|produto|ux|ui|automacao|rpa|digital"
-            r"|inovacao|engenharia de software|ciencia da computacao|sistemas de informacao"
-            r"|ciencia de dados|analise de sistemas"
+            r"(?<!pra )(?<!para )ti|t\.i\.?|tech(?! recruiter| lead)|tecnologia|software"
+            r"|(?<!treinamento e )desenvolvimento(?! de (?:pessoas|negocios|fornecedores)| humano"
+            r"| organizacional| pessoal)|desenvolvedor[a]?|(?<!business )dev(?!\.? de negocios)"
+            r"|developer|programacao|programador[a]?|(?<!protecao de )(?<!cadastro de )dados"
+            r"|data(?! de )|sistemas?(?! (?:hidraulicos?|eletricos?|de gestao da qualidade)\b)"
+            r"|computacao|informatica|(?<!obras e )infra(?:estrutura)?(?! urbana| viaria)"
+            r"|redes(?! sociais)|seguranca da informacao|cyber\w*|cloud|devops"
+            r"|machine learning|inteligencia artificial|ia|front[- ]?end|back[- ]?end"
+            r"|full[- ]?stack|qa|testes?(?! clinicos| de materiais| laboratoriais)"
+            r"|suporte (?:tecnico|de ti|em ti|ti|n[12]|de sistemas|a usuarios?|ao usuario)"
+            r"|help[- ]?desk|banco de dados|sql|python|java(?:script)?|web(?! writer| designer)"
+            r"|mobile|analytics|bi(?!-)|business intelligence|produto|ux|ui"
+            r"|automacao(?! industrial| predial)|rpa|(?<!midia )(?<!publicidade )(?<!conteudo )"
+            r"(?<!marketing )(?<!banco )(?<!educacao )digital|inovacao|engenharia de software"
+            r"|ciencia da computacao|sistemas de informacao|ciencia de dados|analise de sistemas"
         ),
         exclusao=(
-            r"ti|t\.i\.?|tecnologia|informatica|desenvolvedor[a]?|developer|programacao"
+            r"(?<!pra )(?<!para )ti|t\.i\.?|tecnologia|informatica|desenvolvedor[a]?|developer"
+            r"|programacao"
             r"|programador[a]?"
             r"|engenharia de software|ciencia da computacao|sistemas de informacao"
             r"|analise de sistemas|desenvolvimento de (?:software|sistemas|aplicacoes)"
-            r"|software|android|ios|front-?end|back-?end|full-?stack|devops|cyber\w*"
-            r"|(?:banco|base) de dados|seguranca da informacao|help-? ?desk"
+            r"|software|android|ios|front[- ]?end|back[- ]?end|full[- ]?stack|devops|cyber\w*"
+            r"|(?:banco|base) de dados|seguranca da informacao|help[- ]?desk"
         ),
         descricao=(
             r"tecnologia da informacao|ciencia da computacao|engenharia de software"
@@ -100,7 +109,10 @@ AREAS = (
     Area(
         nome="direito",
         cursos=("direito",),
-        titulo=r"juridic[ao]|direito|advocacia|contencioso|societario|compliance",
+        titulo=(
+            r"juridic[ao]|direito|advocacia|contencioso|societario|compliance|trabalhista|legal"
+            r"|cartorio|lgpd|tributari[ao]"
+        ),
         exclusao=r"juridic[ao]|direito|compliance",
         descricao=r"direito|juridic[ao]|advocacia|contencioso|peticao|escritorio de advocacia",
         termos_de_busca=("direito", "jurídico", "advocacia"),
@@ -125,11 +137,16 @@ AREAS = (
             "secretariado executivo",
         ),
         titulo=(
-            r"administrativ[ao]|administracao|backoffice|back-?office"
-            r"|processos administrativos|gestao|planejamento|pmo"
+            r"administrativ[ao]|administracao|back[- ]?office|processos administrativos"
+            r"|gestao(?! de (?:pessoas|trafego|redes sociais|marketing|conteudo)\b)|planejamento"
+            r"|pmo|secretariado|processos gerenciais|projetos|processos e qualidade"
         ),
-        exclusao=r"backoffice|back-?office|processos administrativos",
-        descricao=r"administracao|rotinas administrativas|processos administrativos",
+        exclusao=r"back[- ]?office|processos administrativos",
+        descricao=(
+            r"rotinas administrativas|processos administrativos|area administrativa"
+            r"|apoio administrativo|suporte administrativo|assistente administrativ[ao]"
+            r"|administracao de empresas"
+        ),
         termos_de_busca=("administração", "administrativo", "gestão"),
         subareas=(
             ("rotinas_administrativas", "Rotinas administrativas"),
@@ -152,11 +169,14 @@ AREAS = (
         titulo=(
             r"financeir[ao]|financas|contabil|contabilidade|fiscal|controladoria|tesouraria"
             r"|atuari\w*|auditoria|economi\w*|credito|cobranca|faturamento"
+            r"|contas a (?:pagar|receber)|investimentos?|mercado de capitais|tributari[ao]"
+            r"|compliance"
         ),
         exclusao=r"financeir[ao]|contabil|contabilidade|atuari\w*|auditoria",
         descricao=(
-            r"financeir[ao]|contabil|contabilidade|fiscal|controladoria|tesouraria|auditoria"
-            r"|economia|conciliacao bancaria|contas a pagar|contas a receber"
+            r"(?<!auxilio )(?<!apoio )(?<!ajuda )financeir[ao]|contabil|contabilidade|fiscal"
+            r"|controladoria|tesouraria|auditoria|economia|conciliacao bancaria|contas a pagar"
+            r"|contas a receber"
         ),
         termos_de_busca=("financeiro", "contábil", "economia", "controladoria"),
         subareas=(
@@ -179,15 +199,23 @@ AREAS = (
             "design",
             "design grafico",
             "relacoes publicas",
+            "marketing digital",
+            "gestao de marketing",
         ),
         titulo=(
-            r"marketing|endomarketing|comunicacao|imprensa|midias sociais|redes sociais"
-            r"|publicidade|propaganda|conteudo|branding|crm|inteligencia de mercado"
+            r"marketing|endomarketing|comunicacao|imprensa|midias? sociais|redes sociais"
+            r"|social media|publicidade|propaganda|conteudo|branding|crm|inteligencia de mercado"
+            r"|design(?! de interiores| de processos)|jornalismo|relacoes publicas|e-?commerce"
+            r"|audiovisual|editorial"
         ),
-        exclusao=(r"marketing|endomarketing|comunicacao|imprensa|crm|inteligencia de mercado"),
+        exclusao=(
+            r"marketing|endomarketing|comunicacao|imprensa|crm|inteligencia de mercado"
+            r"|midias? sociais|redes sociais|social media|publicidade"
+        ),
         descricao=(
-            r"marketing|comunicacao|midias sociais|redes sociais|publicidade|propaganda"
-            r"|producao de conteudo|branding|assessoria de imprensa"
+            r"marketing|midias? sociais|redes sociais|publicidade|propaganda|producao de conteudo"
+            r"|branding|assessoria de imprensa|social media"
+            r"|comunicacao (?:institucional|interna|corporativa|social|integrada|visual)"
         ),
         termos_de_busca=("marketing", "comunicação", "publicidade"),
         subareas=(
@@ -206,8 +234,9 @@ AREAS = (
             "gestao de recursos humanos",
         ),
         titulo=(
-            r"recursos humanos|rh|recrutamento e selecao|r&s|people|departamento pessoal"
-            r"|treinamento e desenvolvimento|psicologia"
+            r"recursos humanos|rh|recrutamento(?: e selecao)?|r&s|people|departamento pessoal"
+            r"|treinamento e desenvolvimento|psicologia|gestao de pessoas"
+            r"|desenvolvimento de pessoas|beneficios|cultura e clima|ponto eletronico"
         ),
         exclusao=(
             r"recursos humanos|rh|recrutamento e selecao|r&s|people|psicologia"
@@ -235,10 +264,14 @@ AREAS = (
         ),
         titulo=(
             r"comercial|vendas|pre-?vendas?|inside sales|trade|comercio exterior|exportacao"
-            r"|importacao|relacionamento com o cliente"
+            r"|importacao|relacionamento com o cliente|atendimento ao cliente|customer success"
+            r"|sdr|relacoes internacionais|e-?commerce|comercio eletronico"
         ),
         exclusao=r"comercial|vendas|pre-?vendas?|comercio exterior",
-        descricao=r"comercial|vendas|prospeccao|comercio exterior|atendimento ao cliente",
+        descricao=(
+            r"area comercial|equipe comercial|setor comercial|departamento comercial|vendas"
+            r"|prospeccao|comercio exterior|atendimento ao cliente|carteira de clientes"
+        ),
         termos_de_busca=("comercial", "vendas", "comércio exterior"),
         subareas=(
             ("vendas", "Vendas"),
@@ -248,8 +281,11 @@ AREAS = (
     ),
     Area(
         nome="logistica",
-        cursos=("logistica", "transportes"),
-        titulo=r"logistic[ao]|suprimentos|supply|compras|estoque|almoxarifado",
+        cursos=("logistica", "transportes", "gestao de logistica"),
+        titulo=(
+            r"logistic[ao]|suprimentos|supply|compras|estoque|almoxarifado|transportes?"
+            r"|expedicao|distribuicao|armazem|pcp|frota"
+        ),
         exclusao=r"logistic[ao]",
         descricao=r"logistica|suprimentos|supply chain|compras|controle de estoque|almoxarifado",
         termos_de_busca=("logística", "suprimentos", "compras"),
@@ -277,15 +313,21 @@ AREAS = (
             "engenharia de materiais",
             "engenharia de petroleo",
             "engenharia de alimentos",
+            "engenharia de seguranca do trabalho",
+            "engenharia ambiental e sanitaria",
         ),
         titulo=(
-            r"eletronic[ao]|eletrotecnic[ao]|eletric[ao]|mecanic[ao]|mecatronic[ao]|civil"
-            r"|quimic[ao]|ambiental|manufatura|producao|manutencao|obras"
-            r"|arquitetura e urbanismo|design de interiores|embalagens|seguranca do trabalho"
+            r"engenharia(?! de software| da computacao| de computacao| de dados| de sistemas)"
+            r"|eletronic[ao]|eletrotecnic[ao]|eletric[ao]|mecanic[ao]|mecatronic[ao]|civil"
+            r"|quimic[ao]|ambiental|manufatura|producao(?! de conteudo| audiovisual| editorial"
+            r"| de material| de eventos)|manutencao|obras|arquitetura|design de interiores"
+            r"|embalagens|seguranca do trabalho|automacao industrial|telecomunicacoes"
         ),
         exclusao=(
-            r"eletronic[ao]|eletrotecnic[ao]|mecanic[ao]|civil|quimic[ao]|ambiental|manufatura"
-            r"|producao|arquitetura e urbanismo|design de interiores|embalagens"
+            r"eletronic[ao](?! eletronico)|eletrotecnic[ao]|mecanic[ao]|(?<!direito )(?<!processo )"
+            r"(?<!registro )civil|quimic[ao]|(?<!direito )(?<!educacao )ambiental|manufatura"
+            r"|producao(?! de conteudo| audiovisual| editorial| de material| de eventos)"
+            r"|arquitetura e urbanismo|design de interiores|embalagens"
         ),
         descricao=(
             r"engenharia (?:civil|mecanica|eletrica|quimica|ambiental|de producao)|manufatura"
@@ -314,10 +356,12 @@ AREAS = (
             "biologia",
             "fonoaudiologia",
             "terapia ocupacional",
+            "ciencias biologicas",
         ),
         titulo=(
             r"fisioterapia|enfermagem|nutricao|farmacia|biomedicina|odontologia|laboratorio"
-            r"|clinic[ao]|hospitalar"
+            r"|clinic[ao]|hospitalar|saude|educacao fisica|fonoaudiologia|biologia"
+            r"|terapia ocupacional|medicina"
         ),
         exclusao=r"fisioterapia|enfermagem|nutricao|farmacia",
         descricao=r"enfermagem|fisioterapia|nutricao|farmacia|laboratorio|area da saude|clinica",
@@ -331,7 +375,10 @@ AREAS = (
     Area(
         nome="educacao",
         cursos=("pedagogia", "letras", "historia", "geografia", "licenciatura"),
-        titulo=r"pedagogia|docencia|professor[a]?|monitoria|educacional",
+        titulo=(
+            r"pedagogia|docencia|professor[a]?|monitoria|educacional|educacao(?! fisica)|escola"
+            r"|ensino|sala de aula|pedagogic[ao]|letras|historia|geografia|material didatico"
+        ),
         exclusao=r"pedagogia",
         descricao=r"pedagogia|docencia|acompanhamento pedagogico|material didatico",
         termos_de_busca=("pedagogia", "educação", "ensino"),
@@ -344,7 +391,10 @@ AREAS = (
     Area(
         nome="turismo",
         cursos=("turismo", "hotelaria", "gastronomia", "eventos"),
-        titulo=r"turismo|hotelaria|gastronomia|eventos|hospitalidade",
+        titulo=(
+            r"turismo|hotelaria|gastronomia|eventos|hospitalidade|agencia de viagens|hotel"
+            r"|cozinha|restaurante"
+        ),
         exclusao=r"turismo|hotelaria|gastronomia",
         descricao=r"turismo|hotelaria|gastronomia|organizacao de eventos",
         termos_de_busca=("turismo", "hotelaria", "eventos"),
@@ -356,21 +406,34 @@ AREAS = (
     ),
 )
 
-AREAS_POR_NOME = {area.nome: area for area in AREAS}
-SUBAREAS = tuple(valor for area in AREAS for valor, _ in area.subareas)
-ROTULOS_DAS_SUBAREAS = {valor: rotulo for area in AREAS for valor, rotulo in area.subareas}
-AREA_DA_SUBAREA = {valor: area.nome for area in AREAS for valor, _ in area.subareas}
-PADROES_DE_TITULO = {area.nome: re.compile(rf"\b(?:{area.titulo})\b") for area in AREAS}
-PADROES_DE_EXCLUSAO = {area.nome: re.compile(rf"\b(?:{area.exclusao})\b") for area in AREAS}
-PADROES_DE_DESCRICAO = {area.nome: re.compile(rf"\b(?:{area.descricao})\b") for area in AREAS}
-
 
 def normalizar(texto: str) -> str:
     sem_acentos = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
     return " ".join(sem_acentos.casefold().split())
 
 
+AREAS_POR_NOME = {area.nome: area for area in AREAS}
+SUBAREAS = tuple(valor for area in AREAS for valor, _ in area.subareas)
+ROTULOS_DAS_SUBAREAS = {valor: rotulo for area in AREAS for valor, rotulo in area.subareas}
+AREA_DA_SUBAREA = {valor: area.nome for area in AREAS for valor, _ in area.subareas}
+PADROES_DE_TITULO = {
+    area.nome: re.compile(
+        r"\b(?:"
+        + "|".join(
+            [area.titulo]
+            + [re.escape(nome) for nome in area.cursos]
+            + [re.escape(normalizar(rotulo)) for _, rotulo in area.subareas]
+        )
+        + r")\b"
+    )
+    for area in AREAS
+}
+PADROES_DE_EXCLUSAO = {area.nome: re.compile(rf"\b(?:{area.exclusao})\b") for area in AREAS}
+PADROES_DE_DESCRICAO = {area.nome: re.compile(rf"\b(?:{area.descricao})\b") for area in AREAS}
+
+
 PREFIXOS_DE_FORMACAO = (
+    "curso superior de tecnologia",
     "curso superior",
     "ensino superior",
     "nivel superior",
@@ -419,6 +482,8 @@ TERMOS_GENERICOS_DE_FORMACAO = (
     "areas correlatas",
 )
 SINONIMOS_DE_CURSO = {
+    "ti": "tecnologia da informacao",
+    "rh": "recursos humanos",
     "ciencias economicas": "economia",
     "ciencias contabeis": "contabilidade",
     "ciencias atuariais": "atuaria",
@@ -437,8 +502,11 @@ _PREFIXO_DE_FORMACAO = re.compile(
 _SUFIXO_DE_FORMACAO = re.compile(rf"(?:\s*[-–|:]\s*|\s+)(?:{'|'.join(SUFIXOS_DE_FORMACAO)})$")
 
 
+_COMPLEMENTO_DO_NOME = re.compile(r"\s*(?:\(.*\)|[-–|/].*)$")
+
+
 def normalizar_curso(curso: str) -> str:
-    texto = _SUFIXO_DE_FORMACAO.sub("", normalizar(curso))
+    texto = _SUFIXO_DE_FORMACAO.sub("", _COMPLEMENTO_DO_NOME.sub("", normalizar(curso)))
     if texto in TERMOS_GENERICOS_DE_FORMACAO:
         return ""
     texto = _PREFIXO_DE_FORMACAO.sub("", texto)
@@ -456,9 +524,11 @@ def area_do_curso(curso: str) -> str | None:
     candidatas = [
         (len(nome), area.nome) for area in AREAS for nome in area.cursos if nome == normalizado
     ]
-    if not candidatas:
-        return None
-    return max(candidatas)[1]
+    if candidatas:
+        return max(candidatas)[1]
+    if normalizado and normalizar(curso).startswith("licenciatura"):
+        return "educacao"
+    return None
 
 
 def titulo_e_da_area(titulo: str, area: str | None) -> bool:

@@ -128,15 +128,9 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
         "Estagiário de Engenharia Mecânica",
         "Estágio Financeiro - Novo Hamburgo/RS",
         "Estagio Jurídico",
-        "Estágio RH - Dados",
         "ESTÁGIO SUPERIOR - ENGENHARIA DE MANUFATURA",
-        "Estágio em Comércio Exterior, Processos e Tecnologia",
-        "Estagiário(a) em Pré-Venda de Soluções de TI",
-        "Estagiário De Farmácia - Suporte E Desenvolvimento",
         "Estagiário(a) de Treinamento e Desenvolvimento",
         "Estagiário de R&S",
-        "Estagiário(a) de People & Culture (People Analytics)",
-        "Estágio em CRM | Digital",
         "Estágio em Turismo - 619",
         "Estágio em Arquitetura e Urbanismo",
         "Estagiário de Recrutamento e Seleção",
@@ -236,11 +230,100 @@ def test_descarta_vaga_de_computacao_para_quem_e_de_outro_curso(titulo: str):
     assert fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Direito"))
 
 
-def test_curso_sem_area_conhecida_nao_descarta_nada_pela_area():
-    exotico = perfil(curso="Curso Que Ninguém Tem")
+def test_curso_sem_area_conhecida_recebe_titulos_genericos_e_nao_os_de_area_alheia():
+    exotico = perfil(curso="Agronomia")
 
-    assert not fora_da_area_do_curso(vaga(titulo="Estagiário de Direito"), exotico)
-    assert not fora_da_area_do_curso(vaga(titulo="Estágio em Desenvolvimento"), exotico)
+    for titulo in ("Programa de Estágio 2026", "Estagiário", "Estágio em Agronomia"):
+        assert not fora_da_area_do_curso(vaga(titulo=titulo), exotico)
+    for titulo in ("Estagiário de Direito", "Estágio em Desenvolvimento de Software"):
+        assert fora_da_area_do_curso(vaga(titulo=titulo), exotico)
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio RH - Dados",
+        "Estágio em Comércio Exterior, Processos e Tecnologia",
+        "Estagiário(a) em Pré-Venda de Soluções de TI",
+        "Estágio em CRM | Digital",
+        "Estagiário(a) de People & Culture (People Analytics)",
+    ],
+)
+def test_titulo_com_sinal_de_computacao_e_mantido_mesmo_citando_outra_area(titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil())
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo"),
+    [
+        ("Direito", "Estágio em Direito Civil"),
+        ("Direito", "Estágio Jurídico - Direito Comercial"),
+        ("Administração", "Estágio Administrativo Financeiro"),
+        ("Ciências Contábeis", "Estágio Administrativo Financeiro"),
+        ("Publicidade e Propaganda", "Estágio em Marketing Comercial"),
+        ("Comércio Exterior", "Estágio em Marketing Comercial"),
+        ("Psicologia", "Estágio de Comunicação e RH"),
+        ("Publicidade e Propaganda", "Estágio - Produção de Conteúdo"),
+        ("Pedagogia", "Estágio em Produção de Material Didático"),
+        ("Engenharia Civil", "Estágio em Engenharia"),
+        ("Pedagogia", "Estágio em Educação Infantil"),
+        ("Enfermagem", "Estágio em Saúde"),
+        ("Design Gráfico", "Estágio em Design Gráfico"),
+        ("Engenharia de Software", "Estágio Front End"),
+        ("Administração", "Estágio Back Office"),
+        ("Ciências Contábeis", "Estágio em Compliance"),
+    ],
+)
+def test_sinal_da_propria_area_vence_o_veto_de_outra(curso: str, titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Redes Sociais",
+        "Estágio em Desenvolvimento de Pessoas",
+        "Estágio em Suporte Administrativo",
+        "Estágio em Automação Industrial",
+        "Estágio em Publicidade Digital",
+        "Estagiário(a) de Treinamento e Desenvolvimento",
+    ],
+)
+def test_palavra_curta_de_computacao_nao_puxa_vaga_de_outra_area(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao="Sem detalhes."), perfil())
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        ("Direito", "Estágio em Enfermagem", "O estagiário terá direito a vale-transporte."),
+        ("Comunicação", "Estágio em Desenvolvimento de Software", "Requisitos: boa comunicação."),
+        ("Direito", "Estágio em Suporte Técnico", "Prestar suporte a todas as áreas da empresa."),
+        ("Direito", "Estágio em Engenharia", "Estudantes de qualquer curso de engenharia."),
+    ],
+)
+def test_nome_do_curso_solto_na_descricao_nao_mantem_a_vaga(
+    curso: str, titulo: str, descricao: str
+):
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        ("Direito", "Estágio Comercial", "Cursando Direito ou Administração."),
+        (
+            "Psicologia",
+            "Estágio Financeiro",
+            "Estudantes de Psicologia, Administração ou áreas afins.",
+        ),
+        ("Direito", "Estágio - Vaga pra ti", "Estudantes de Direito a partir do 5º período."),
+    ],
+)
+def test_curso_citado_com_contexto_de_formacao_mantem_a_vaga(
+    curso: str, titulo: str, descricao: str
+):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
 
 
 @pytest.mark.parametrize(

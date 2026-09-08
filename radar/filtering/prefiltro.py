@@ -16,6 +16,14 @@ PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
 )
+PADRAO_CONTEXTO_DE_FORMACAO = (
+    r"(?:cursando|cursar|estudantes?|graduand[oa]s?|graduacao|formacao|formad[oa]s?|bacharelado"
+    r"|licenciatura|tecnologo|cursos?|aceita(?:mos|m)?|vagas? para|areas? de|superior em)"
+)
+PADRAO_QUALQUER_FORMACAO = re.compile(
+    r"\b(?:qualquer|todos os|todas as)\s+(?:cursos?|formacao|formacoes|graduacao|graduacoes)"
+    r"\b(?!\s+(?:de|da|do|das|dos|em|na|no)\b)"
+)
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
@@ -36,22 +44,34 @@ def exige_senioridade(vaga: Vaga) -> bool:
 
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
     area = area_do_curso(perfil.curso)
-    if area is None:
-        return False
-    descricao = normalizar(vaga.descricao)
-    curso = normalizar_curso(perfil.curso)
-    if curso and re.search(rf"\b{re.escape(curso)}\b", descricao):
-        return False
-    if re.search(
-        r"\b(?:qualquer curso|qualquer formacao|qualquer graduacao|todas as areas)\b", descricao
-    ):
-        return False
     titulo = normalizar(vaga.titulo)
-    if titulo_e_de_outra_area(titulo, area):
-        return True
+    descricao = normalizar(vaga.descricao)
+    if aceita_qualquer_formacao(descricao) or menciona_o_curso(descricao, perfil.curso):
+        return False
+    if area is None:
+        return titulo_e_de_outra_area(titulo, None)
     if titulo_e_da_area(titulo, area):
         return False
-    return not descricao_e_da_area(normalizar(vaga.descricao), area)
+    if titulo_e_de_outra_area(titulo, area):
+        return True
+    return not descricao_e_da_area(descricao, area)
+
+
+def aceita_qualquer_formacao(descricao: str) -> bool:
+    return PADRAO_QUALQUER_FORMACAO.search(descricao) is not None
+
+
+def menciona_o_curso(descricao: str, curso_do_perfil: str) -> bool:
+    curso = normalizar_curso(curso_do_perfil)
+    if not curso:
+        return False
+    nome = re.escape(curso)
+    if " " in curso:
+        return re.search(rf"\b{nome}\b", descricao) is not None
+    return (
+        re.search(rf"\b{PADRAO_CONTEXTO_DE_FORMACAO}\b(?:\W+\w+){{0,6}}?\W+\b{nome}\b", descricao)
+        is not None
+    )
 
 
 def exige_anos_de_experiencia(vaga: Vaga) -> bool:

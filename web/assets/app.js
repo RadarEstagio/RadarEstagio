@@ -122,7 +122,10 @@ async function carregarAreas() {
 
 function normalizarCurso(curso, catalogo) {
   const sufixo = new RegExp(`(?:\\s*[-–|:]\\s*|\\s+)(?:${catalogo.sufixos.join("|")})$`);
-  let texto = normalizarTexto(curso).replace(/\s+/g, " ").replace(sufixo, "");
+  let texto = normalizarTexto(curso)
+    .replace(/\s+/g, " ")
+    .replace(/\s*(?:\(.*\)|[-–|/].*)$/, "")
+    .replace(sufixo, "");
   if (catalogo.genericos.includes(texto)) return "";
   const prefixo = new RegExp(
     `^(?:(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+)+`,
@@ -136,7 +139,12 @@ function areaDoCurso(curso, catalogo) {
   if (!catalogo) return null;
   const normalizado = normalizarCurso(curso, catalogo);
   if (!normalizado) return null;
-  return catalogo.areas.find((area) => area.cursos.includes(normalizado)) ?? null;
+  const encontrada = catalogo.areas.find((area) => area.cursos.includes(normalizado));
+  if (encontrada) return encontrada;
+  if (normalizarTexto(curso).startsWith("licenciatura")) {
+    return catalogo.areas.find((area) => area.nome === "educacao") ?? null;
+  }
+  return null;
 }
 
 async function montarAreasDoCurso() {

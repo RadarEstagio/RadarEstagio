@@ -26,7 +26,8 @@
         "inteligencia artificial",
         "gestao de ti",
         "seguranca cibernetica",
-        "engenharia de sistemas"
+        "engenharia de sistemas",
+        "sistema de informacao"
       ],
       "subareas": [
         {
@@ -154,7 +155,9 @@
         "comunicacao social",
         "design",
         "design grafico",
-        "relacoes publicas"
+        "relacoes publicas",
+        "marketing digital",
+        "gestao de marketing"
       ],
       "subareas": [
         {
@@ -226,7 +229,8 @@
       "nome": "logistica",
       "cursos": [
         "logistica",
-        "transportes"
+        "transportes",
+        "gestao de logistica"
       ],
       "subareas": [
         {
@@ -260,7 +264,9 @@
         "engenharia de telecomunicacoes",
         "engenharia de materiais",
         "engenharia de petroleo",
-        "engenharia de alimentos"
+        "engenharia de alimentos",
+        "engenharia de seguranca do trabalho",
+        "engenharia ambiental e sanitaria"
       ],
       "subareas": [
         {
@@ -298,7 +304,8 @@
         "educacao fisica",
         "biologia",
         "fonoaudiologia",
-        "terapia ocupacional"
+        "terapia ocupacional",
+        "ciencias biologicas"
       ],
       "subareas": [
         {
@@ -364,6 +371,7 @@
     }
   ],
   "prefixos": [
+    "curso superior de tecnologia",
     "curso superior",
     "ensino superior",
     "nivel superior",
@@ -419,6 +427,8 @@
     "areas correlatas"
   ],
   "sinonimos": {
+    "ti": "tecnologia da informacao",
+    "rh": "recursos humanos",
     "ciencias economicas": "economia",
     "ciencias contabeis": "contabilidade",
     "ciencias atuariais": "atuaria",

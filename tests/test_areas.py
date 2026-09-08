@@ -220,3 +220,22 @@ def test_termo_generico_de_formacao_nao_e_curso(curso: str):
 )
 def test_area_do_curso_entende_formacao_e_sinonimo(curso: str, esperada: str):
     assert area_do_curso(curso) == esperada
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperada"),
+    [
+        ("Direito - Bacharelado", "direito"),
+        ("Ciência da Computação (Bacharelado)", COMPUTACAO),
+        ("Curso Superior de Tecnologia em ADS", COMPUTACAO),
+        ("Letras - Português/Inglês", "educacao"),
+        ("Engenharia Elétrica/Eletrônica", "engenharias"),
+        ("Comunicação Social - Jornalismo", "marketing"),
+        ("Licenciatura em Matemática", "educacao"),
+        ("Ciências Biológicas", "saude"),
+        ("TI", COMPUTACAO),
+        ("RH", "pessoas"),
+    ],
+)
+def test_formas_comuns_do_nome_do_curso_sao_reconhecidas(curso: str, esperada: str):
+    assert area_do_curso(curso) == esperada
