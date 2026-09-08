@@ -595,37 +595,29 @@ def test_avaliacao_toda_bloqueada_nao_manda_mensagem_enganosa():
     assert notificador.textos == []
 
 
-def test_vaga_com_nota_guardada_nao_e_pontuada_de_novo():
+def test_nota_antiga_e_recalculada_antes_da_selecao():
     guardada = ResultadoMatch(vaga=vaga(1), nota=95, pontos_a_favor=["Guardado"])
     repositorio = RepositorioFalso([usuario()], guardadas=[guardada])
 
-    selecionadas, notificador, pontuador = rodar(
-        [vaga(1), vaga(2)], {"1": 10, "2": 60}, repositorio=repositorio
+    selecionadas, _, pontuador = rodar(
+        [vaga(1), vaga(2)], {"1": 10, "2": 60}, nota_minima=40, repositorio=repositorio
     )
 
-    assert pontuador.pontuadas == ["2"]
-    assert [resultado.nota for resultado in selecionadas] == [95, 60]
-    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
-    assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
+    assert pontuador.pontuadas == ["1", "2"]
+    assert [resultado.nota for resultado in selecionadas] == [60]
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["1", "2"], "modelo-teste")]
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["2"])]
 
 
-def test_aplica_regras_objetivas_na_nota_guardada():
-    sem_modalidade = vaga(1).model_copy(update={"modalidade": None})
-    guardada = ResultadoMatch(
-        vaga=sem_modalidade,
-        nota=95,
-        pontos_a_favor=["Python informado"],
-        pontos_contra=["Modalidade não informada", "SQL não informado"],
-    )
+def test_nota_antiga_nao_substitui_extracao_indisponivel():
+    guardada = ResultadoMatch(vaga=vaga(1), nota=95)
     repositorio = RepositorioFalso([usuario()], guardadas=[guardada])
 
-    selecionadas, notificador, pontuador = rodar([sem_modalidade], {}, repositorio=repositorio)
+    selecionadas, notificador, pontuador = rodar([vaga(1)], {}, repositorio=repositorio)
 
-    assert pontuador.pontuadas == []
-    assert selecionadas[0].nota == 95
-    assert selecionadas[0].pontos_contra == ["SQL não informado"]
-    assert "❌ SQL não informado" in notificador.textos[0]
-    assert "⚠️" not in notificador.textos[0]
+    assert pontuador.pontuadas == ["1"]
+    assert selecionadas == []
+    assert notificador.textos == []
 
 
 def test_avaliacao_e_gravada_mesmo_quando_o_telegram_falha():
