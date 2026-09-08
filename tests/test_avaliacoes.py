@@ -487,3 +487,31 @@ def test_curso_desconhecido_com_interesses_ainda_reconhece_o_proprio_campo():
     resultado = resultado_da(extracao(areas_da_vaga=["dados_ia"]), exotico)
 
     assert "Fora das suas áreas de interesse" not in resultado.avisos_objetivos
+
+
+def test_qualificador_de_nivel_nao_fura_a_exclusao_de_office_em_computacao():
+    so_office = resultado_da(
+        extracao(habilidades_obrigatorias=["Excel avançado", "Pacote Office", "Office 365"])
+    )
+
+    assert so_office.nota == resultado_da(extracao()).nota
+
+
+def test_fora_de_computacao_variantes_de_office_e_nivel_casam_com_o_perfil():
+    de_direito = Perfil(
+        curso="Direito",
+        periodo=4,
+        habilidades=["Excel", "Inglês", "Redação", "Pacote Office"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+    exigentes = ["Excel avançado", "Inglês intermediário", "Boa redação", "Office 365"]
+    anuncio = extracao(
+        area_da_vaga="direito", cursos_aceitos=["Direito"], habilidades_obrigatorias=exigentes
+    )
+    sem_exigencias = extracao(area_da_vaga="direito", cursos_aceitos=["Direito"])
+
+    resultado = resultado_da(anuncio, de_direito)
+
+    assert resultado.requisitos_nao_atendidos == []
+    assert resultado.nota > resultado_da(sem_exigencias, de_direito).nota

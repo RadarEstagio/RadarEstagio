@@ -1,3 +1,4 @@
+import re
 import unicodedata
 
 from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, area_do_curso
@@ -67,7 +68,17 @@ REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
     }
 )
 PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
+QUALIFICADORES_DE_HABILIDADE = re.compile(
+    r"\b(?:avancad[oa]s?|intermediari[oa]s?|basic[oa]s?|fluente|nativ[oa]|iniciante|nivel"
+    r"|bom|boa|bons|boas|otim[oa]|excelente|solid[oa]|conhecimentos?|dominio|nocoes"
+    r"|experiencia|vivencia|habilidades?|em|de|do|da|com|no|na)\b"
+)
 ALIASES_DE_HABILIDADES = {
+    "office365": "office",
+    "microsoft365": "office",
+    "msoffice": "office",
+    "microsoftoffice": "office",
+    "pacoteoffice": "office",
     "apresentacoesgoogle": "apresentacoes",
     "cplusplus": "c++",
     "documentosgoogle": "documentos",
@@ -325,7 +336,7 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
-    normalizada = _normalizar_texto(habilidade)
+    normalizada = QUALIFICADORES_DE_HABILIDADE.sub(" ", _normalizar_texto(habilidade))
     compacta = "".join(
         caractere for caractere in normalizada if caractere.isalnum() or caractere in "#+"
     )
