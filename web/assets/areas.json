@@ -4,6 +4,11 @@
       "nome": "computacao",
       "cursos": [
         "computacao",
+        "ciencia da computacao",
+        "engenharia da computacao",
+        "engenharia de computacao",
+        "gestao da tecnologia da informacao",
+        "gestao de tecnologia da informacao",
         "engenharia de software",
         "sistemas de informacao",
         "analise e desenvolvimento de sistemas",
@@ -105,7 +110,9 @@
         "ciencias contabeis",
         "contabilidade",
         "atuaria",
-        "financas"
+        "ciencias atuariais",
+        "financas",
+        "gestao financeira"
       ],
       "subareas": [
         {
@@ -132,8 +139,10 @@
         "marketing",
         "publicidade",
         "propaganda",
+        "publicidade e propaganda",
         "jornalismo",
         "comunicacao",
+        "comunicacao social",
         "design"
       ],
       "subareas": [
@@ -160,7 +169,8 @@
       "cursos": [
         "psicologia",
         "recursos humanos",
-        "gestao de pessoas"
+        "gestao de pessoas",
+        "gestao de recursos humanos"
       ],
       "subareas": [
         {
@@ -229,7 +239,8 @@
         "engenharia quimica",
         "engenharia ambiental",
         "engenharia de producao",
-        "arquitetura"
+        "arquitetura",
+        "arquitetura e urbanismo"
       ],
       "subareas": [
         {

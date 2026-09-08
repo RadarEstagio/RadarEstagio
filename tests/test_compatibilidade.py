@@ -144,3 +144,15 @@ def test_economia_nao_herda_vaga_exclusiva_de_contabeis():
     aceita_contabeis = extracao(cursos_aceitos=["Ciências Contábeis"])
 
     assert curso_de(aceita_contabeis, perfil(curso="Economia")) is NivelCompatibilidade.INCOMPATIVEL
+
+
+def test_medicina_nao_aceita_medicina_veterinaria_por_substring():
+    anuncio = extracao(cursos_aceitos=["Medicina"])
+    assert (
+        curso_de(anuncio, perfil(curso="Medicina Veterinária")) is NivelCompatibilidade.INCOMPATIVEL
+    )
+
+
+def test_prefixo_de_formacao_nao_impede_curso_explicitamente_aceito():
+    anuncio = extracao(cursos_aceitos=["Bacharelado em Administração"])
+    assert curso_de(anuncio, perfil(curso="Administração")) is NivelCompatibilidade.COMPATIVEL
