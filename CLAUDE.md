@@ -315,6 +315,29 @@ candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, p
 repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
 modalidade e, em empate, a de descrição mais longa.
 
+### Transferência para a organização (08/09/2026)
+
+O repositório saiu de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio`. Commits, autores,
+issues e PRs foram preservados, e o GitHub redireciona o endereço antigo — o que quebra é a
+ligação das automações, porque cada uma guardava o dono no nome:
+
+- **cron-job.org**: mudam a URL **e o token**. Token fine-grained é preso ao dono, então o antigo
+  para de enxergar o repositório mesmo com a URL certa. O teste bem-sucedido responde **204 No
+  Content** com corpo vazio; 404 é token apontando para a conta pessoal e 403 é falta de
+  `Actions: Read and write`.
+- **Entrega imediata**: `REPOSITORIO` em `entrega_imediata.ts` é constante, então exige commit
+  **e** `supabase functions deploy telegram-webhook` — trocar só o `GITHUB_DISPATCH_TOKEN` não
+  basta.
+- **Cloudflare Pages**: o app da Cloudflare fica instalado por conta, não segue o repositório. O
+  link "Manage" da tela de build passa a dar 404 porque aponta para a instalação da conta
+  pessoal. Reconectar é Disconnect e ligar de novo escolhendo a organização, o que instala o app
+  nela — **Disconnect não apaga o projeto nem muda a URL**, e criar projeto novo mudaria, o que
+  derrubaria o Supabase Auth e o `URL_DA_LANDING`.
+- **Antes de gerar os tokens**, a organização precisa liberar tokens fine-grained (Settings →
+  Personal access tokens). Sem isso o token nasce válido e a API responde 404, sem dizer por quê.
+- Os secrets do Actions sobreviveram à transferência. O token do cron **vence em 09/09/2027**:
+  quando vencer, o radar diário para de rodar sem avisar ninguém.
+
 ### Supabase e Telegram: fatos operacionais
 
 - Projeto ativo: **`xrhvjwemmylwbqgluebc` (`sa-east-1`)**. A `DATABASE_URL` do Actions já usa
