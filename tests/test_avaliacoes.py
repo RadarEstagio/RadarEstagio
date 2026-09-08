@@ -426,3 +426,18 @@ def test_excel_do_perfil_corresponde_a_microsoft_excel_da_vaga():
     )
 
     assert resultado.requisitos_atendidos == ["Microsoft Excel"]
+
+
+def test_office_e_idioma_diferenciam_perfis_fora_de_computacao():
+    anuncio = extracao(
+        area_da_vaga="administracao",
+        cursos_aceitos=["Administração"],
+        habilidades_obrigatorias=["Microsoft Excel", "Inglês"],
+    )
+    atende = perfil(["Excel", "Inglês"]).model_copy(update={"curso": "Administração"})
+    nao_informa = perfil(["Python"]).model_copy(update={"curso": "Administração"})
+    bom = resultado_da(anuncio, atende)
+    incompleto = resultado_da(anuncio, nao_informa)
+    assert bom.nota > incompleto.nota
+    assert bom.requisitos_nao_atendidos == []
+    assert incompleto.requisitos_nao_atendidos == ["Microsoft Excel", "Inglês"]
