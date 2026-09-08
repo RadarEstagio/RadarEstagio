@@ -5,7 +5,7 @@
 > Esse plano substitui a restrição anterior à expansão de público e inclui monetização como
 > planejamento futuro. As pendências operacionais abaixo continuam válidas; o piloto permanece informal.
 
-**Atualizado em 07/09/2026 · Próximo passo: concluir a publicação e testar com colegas.**
+**Atualizado em 08/09/2026 · Implementação: executar os IDs do plano de expansão. Operação: verificar publicação.**
 
 Este é o acompanhamento atual do projeto. O plano formal de piloto foi retirado por decisão
 do Igor: não há obrigação de recrutar uma coorte, realizar cinco entrevistas, calcular D7
@@ -47,8 +47,8 @@ Esta revisão não refez esses testes nem consultou o estado atual das contas ex
 
 A conversa sobre publicação no Pages não confirma que ela terminou. Por isso, o estado aqui
 é **a confirmar**, e não “não hospedado em lugar nenhum”. O domínio continua na conta do Igor;
-a organização GitHub foi proposta, mas sua criação/transferência não foi confirmada e não é
-condição obrigatória. Combinar acesso e administração sem compartilhar senhas.
+a transferência para `RadarEstagio/RadarEstagio` foi confirmada em 08/09 e o PR #21 foi
+integrado à main. A configuração de cada automação ainda deve ser verificada. Combinar acesso e administração sem compartilhar senhas.
 
 ### 2. Conectar o endereço ao cadastro
 
@@ -98,7 +98,8 @@ um dashboard ou novas consultas para começar essa conversa.
   automaticamente; investigar exemplos antes de recalibrar.
 - **IA:** reuso reduz trabalho repetido; novos anúncios, cidades e áreas podem exigir extrações.
 - **Fora do trabalho imediato:** monetização, plano formal de pesquisa, mediana/TTV/D7,
-  campanhas de e-mail, exclusão automática por abandono e expansão de público.
+  campanhas de e-mail e exclusão automática por abandono. Expansão de público já está
+  implementada parcialmente; melhorias e métricas adicionais seguem os IDs do plano de expansão.
 - **Jooble:** ativação opcional, com chave e configuração próprias; não bloqueia a divulgação.
 - **Histórico Git e skills:** permanecem conforme decisões registradas em 05/09. Não há nova
   autorização para reescrever histórico ou remover recursos de terceiros.

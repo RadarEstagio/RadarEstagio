@@ -1,192 +1,139 @@
-# Plano de expansão e melhoria do Radar de Estágio
+# Plano de expansão — índice de execução
 
-Atualizado em 08/09/2026. Status: planejamento; funcionalidades abaixo não estão implementadas por este documento.
+Revisado em 08/09/2026 contra a main `40ed28c`, incluindo as duas rodadas de correções
+de Ian e a revalidação local. Este SHA identifica a base examinada, não uma versão para
+restaurar. Conferir mudanças posteriores antes de executar. Planejamento não comprova deploy.
 
-## Direção e resultado esperado
+## Objetivo e decisões mantidas
 
-Atender estudantes de diferentes formações e áreas, entregando recomendações de estágio relevantes e explicadas no Telegram. A expansão remove a restrição a computação; não significa cobertura de todos os anúncios existentes nem garantia de contratação.
+Atender estudantes de diferentes formações com recomendações de estágio explicadas no
+Telegram. Não prometer todos os anúncios existentes nem contratação. A necessidade comum
+é reduzir o trabalho de procurar e avaliar oportunidades; a personalização depende de curso,
+momento, habilidades, interesses e logística.
 
-O público principal continua definido pela necessidade: estudantes procurando estágio que precisam reduzir o tempo gasto encontrando e avaliando oportunidades. Curso, interesses, momento acadêmico e localização personalizam a experiência. A comunicação pode atender segmentos distintos sem criar um produto separado para cada curso.
+O piloto continua informal. Entrevistas, coortes mínimas, D7 e teste A/B não são requisitos
+para divulgar. Pagamento, mídia paga, fontes adicionais e novas regras de elegibilidade só
+entram nas tarefas específicas, com dados e decisões registrados. O plano não autoriza envio
+de mensagens a terceiros. Não há dashboard, candidatura automática ou novo framework nesta fila.
 
-A expansão de público está autorizada pela nova direção. Monetização entra como frente de planejamento e validação futura, sem cobrança ou alteração do compromisso de gratuidade neste trabalho. O piloto continua informal: não há quantidade mínima de entrevistas, coorte ou meta estatística obrigatória para divulgar.
+Mecanismos da [skill Revenue-Centric Design](../.agents/skills/revenue-centric-design/SKILL.md):
+promessa sustentada por prova (L01–L02), valor antes do pedido e fricção declarativa (C01–C05),
+tempo até o valor (M03), retenção por utilidade e jobs-to-be-done (R01–R03), Bullseye (E03),
+custo de servir e pagamento como evidência (E04–E05). Swiss Knife filter rege todo o escopo:
+cada tarefa precisa reforçar seleção, entrega ou compreensão do valor. Estatísticas da skill
+não são metas nem previsões do Radar.
 
-## Fundamentos de Revenue-Centric Design
+## Já implementado — preservar, não refazer
 
-Aplicação da [skill revenue-centric-design](../.agents/skills/revenue-centric-design/SKILL.md):
+| Entrega | Evidência no código/commit | Limite ainda existente |
+|---|---|---|
+| Catálogo de 12 áreas, subáreas, extração e cadastro dinâmico | `radar/domain/areas.py`, `web/assets/areas.json`, migration 0017 | Catálogo não representa todas as formações; aplicação remota da migration não verificada nesta revisão |
+| Cursos completos e aliases explícitos | `d24d8a5` | Nomes não reconhecidos ficam sem área; preservar normalização e correspondências controladas atuais, sem substring irrestrita |
+| Exceção do pré-filtro quando a descrição menciona curso/qualquer formação | `f2d9b21` | Heurística não comprova elegibilidade; manter avaliação posterior |
+| Busca geral para cursos desconhecidos, inclusive grupos mistos | `d57c8ad` | Teto de paginação limita cobertura |
+| Recálculo de notas em Python com extrações compartilhadas | `fcfc82d` | Não reintroduzir cache de notas; migração de versões futuras da extração é outra decisão |
+| Office e idiomas contam fora de computação | `4930d9e` | Exceção histórica de computação e pesos atuais permanecem |
+| Auth, confirmação entre aparelhos, controle da conta e entrega inicial | `web/assets/app.js`, funções Supabase, pipeline | Estado remoto requer verificação; não recriar essas funcionalidades |
+| Feedback por vaga, abertura e utilidade semanal | `docs/metricas.md` | Candidatura nova não é capturada; ausência de feedback não é aprovação |
 
-| Mecanismo ou princípio | Aplicação ao Radar |
-|---|---|
-| ICP e níveis de consciência | Explicar a dor comum, personalizar por formação e adaptar a mensagem ao canal de aquisição. |
-| A promessa tem o tamanho da prova | Comunicar cobertura real e demonstrar recomendações fiéis ao produto. |
-| Valor antes do pedido; fricção declarativa | Começar pelo que o estudante procura e pedir a conta para guardar suas escolhas. |
-| Hierarquia de atenção | Dar destaque ao próximo passo necessário para receber e avaliar uma recomendação. |
-| Tempo até o valor | Acompanhar a primeira abertura, separadamente da entrega técnica. |
-| Jobs-to-be-done | Distinguir saída por contratação de abandono por falta de utilidade. |
-| Bullseye | Concentrar aquisição nos canais com evidência de estudantes interessados e vagas úteis. |
-| Custo de servir e pagamento como evidência | Medir custos reais e testar uma oferta antes de elaborar vários planos. |
-| Swiss Knife filter | Priorizar funcionalidades que reforçam seleção e entrega; avaliar custo permanente e esforço do usuário. |
+Verificação Python na base `40ed28c`: 649 aprovados, 24 ignorados; lint e formatação
+aprovados na árvore das correções. Web/banco: 36 aprovados em `a87f9fc`, antes das duas
+correções Python; não confundir essa execução com verificação web no SHA final. Isso não substitui testar uma alteração nova.
+Os testes Python ignorados dependem de ambiente adicional; não registrar como executados.
 
-Referências de trabalho: [posicionamento](../.agents/skills/revenue-centric-design/references/positioning-icp-and-gtm.md), [conversão](../.agents/skills/revenue-centric-design/references/conversion-and-landing-pages.md), [ativação](../.agents/skills/revenue-centric-design/references/onboarding-and-activation.md), [retenção](../.agents/skills/revenue-centric-design/references/churn-and-retention.md), [monetização](../.agents/skills/revenue-centric-design/references/pricing-and-monetization.md), [disciplina de produto](../.agents/skills/revenue-centric-design/references/product-strategy-and-features.md) e [experimentação](../.agents/skills/revenue-centric-design/references/metrics-and-experimentation.md). Os princípios orientam hipóteses; estatísticas ilustrativas da skill não são metas nem previsões para este produto.
+## Correções atuais que a fila deve preservar
 
-## Prioridades e sequência
+| Comportamento | Evidência | Verificação relevante |
+|---|---|---|
+| Sugestões por área já vêm do catálogo único; curso desconhecido usa sugestões gerais atualmente | `Area.habilidades`, `catalogo_do_site`, `montarHabilidadesDoCurso` | `tests/test_areas_do_front.py`, `tests/web/cadastro_test.ts`; C04 descreve somente o restante |
+| Termos genéricos não anulam cursos específicos; abertura explícita continua aceita | `c2d6f96` | `tests/test_compatibilidade.py` |
+| Nível desconhecido não comprova nível exigido; requisito sem nível aceita habilidade conhecida | `40ed28c` | `tests/test_avaliacoes.py`, `tests/test_formatador.py` |
+| Falha de uma extração não descarta sucessos nem repete lote inteiro já processado | `25d5d06` | `tests/test_lotes.py` |
+| Busca parcialmente processada não vira aviso de nenhuma vaga compatível | `7a4586e` | `tests/test_pipeline.py` |
+| Anúncio entregue a todos é excluído antes da extração; histórico é relido sob trava antes do envio | `48994b4` | `tests/test_pipeline.py` |
+| Logout e troca de conta limpam interesses do perfil anterior | `7cf547b` | `tests/web/cadastro_test.ts` |
 
-P0: necessário para entregar a expansão com qualidade. P1: melhorar conversão, ativação e utilidade. P2: crescimento e sustentabilidade comercial.
+Detalhes e limites dos cenários: [auditoria datada](auditorias/2026-09-08-expansao-adversarial.md).
+C02–C05 devem preservar essas regras. L02 e C06 devem usar a mensagem atual “Requisitos a
+conferir no seu perfil”, sem transformar informação ausente em incapacidade comprovada.
 
-| Ordem | Frente | Prioridade | Dependência | Responsabilidade sugerida |
-|---|---|---|---|---|
-| 1 | Cobertura e critérios de atendimento | P0 | Nenhuma | Produto + backend |
-| 2 | Seleção e ranking para diferentes áreas | P0 | Critérios definidos | Backend |
-| 3 | Migração e compatibilidade | P0 | Novo modelo definido | Backend + frontend |
-| 4 | Cadastro inclusivo e primeira experiência | P0/P1 | Contrato de perfil definido | Frontend + produto |
-| 5 | Landing e demonstração | P1 | Cobertura e comportamento confirmados | Produto + frontend |
-| 6 | Métricas e utilidade recorrente | P1 | Base atual; ampliar junto das frentes 2–4 | Backend + produto |
-| 7 | Publicação e operação | P0 | Verificação integrada | Equipe |
-| 8 | Aquisição e prova real | P2 | Jornada funcional | Produto |
-| 9 | Oferta paga e economia | P2 | Evidência de utilidade e custos | Equipe |
+## Como pedir a implementação ao Codex
 
-Os responsáveis são papéis propostos; a equipe distribui os nomes antes de executar. Não há estimativa de calendário sem conhecer capacidade e disponibilidade. Métricas básicas, inventário de cobertura e rascunhos de interface podem avançar juntos; publicação da promessa ampla depende da seleção funcionando.
+Este é o ponto de entrada único. A divisão em IDs serve para executar mudanças pequenas em
+sequência; **não é necessário enviar um prompt por ID**. O Codex deve continuar autonomamente
+até terminar o escopo local, preparar os artefatos externos e registrar limitações reais.
 
-## 1. Cobertura e critérios de atendimento
+Prompt pronto para copiar:
 
-- [ ] Inventariar consultas, termos e filtros de cada coletor que restringem a tecnologia.
-- [ ] Amostrar anúncios disponíveis nas fontes atuais por área, cidade, modalidade e formação exigida; registrar data da observação.
-- [ ] Distinguir ausência de oferta, falha de coleta e rejeição pelo ranking.
-- [ ] Definir um catálogo inicial extensível de áreas com exemplos e aliases, permitindo múltiplas áreas e classificação desconhecida.
-- [ ] Considerar formações de níveis distintos, sem presumir que todo estágio exige graduação ou que todo curso usa semestres.
-- [ ] Medir lacunas antes de ativar Jooble ou implementar outra fonte. Conferir acesso, limites e qualidade das descrições no momento da decisão.
-- [ ] Evitar tratar bolsa não informada, modalidade desconhecida ou descrição incompleta como dado confirmado.
+> Leia `docs/plano-expansao-revenue-centric.md` e siga
+> `docs/execucao-expansao/00-protocolo.md`. Implemente o plano completo, executando um ID por
+> vez na ordem de dependências e continuando automaticamente após cada entrega. Confira o
+> código atual para não refazer o que já existe. Preserve as decisões fechadas nas fichas,
+> em especial o limite de cinco recomendações para usuários. Teste as mudanças e registre o
+> progresso em `docs/execucao-expansao/progresso.md`. Prepare os documentos das tarefas externas
+> com evidências disponíveis e explicite o que depende da equipe, sem bloquear as demais.
+> Não pare na primeira tarefa nem somente em planejamento. Ao terminar, entregue o resumo de
+> implementação, verificações e pendências reais; não declare deploy ou validação sem evidência.
 
-Conclusão: existe uma matriz datada de cobertura e um contrato claro do que será aceito. Áreas pouco cobertas recebem comunicação honesta; a arquitetura permite sua inclusão sem nova reescrita geral.
+Leia [o protocolo](execucao-expansao/00-protocolo.md) antes de começar. As fichas são o contrato
+de cada entrega. O [registro de progresso](execucao-expansao/progresso.md) permite retomar com
+contexto novo sem reiniciar a fila. Um pedido explicitamente limitado a um ID continua válido.
 
-## 2. Seleção, elegibilidade e ranking
+## Fila e dependências
 
-Superfícies atuais: `radar/collectors/`, `radar/filtering/prefiltro.py`, `radar/domain/models.py`, `radar/matching/prompt.py`, `compatibilidade.py` e `avaliacoes.py`.
+P0: funcionamento e compatibilidade. P1: compreensão, cadastro e utilidade. P2: aprendizado,
+aquisição e sustentabilidade. “Pronta” significa especificada, não implementada. “Parcial” indica código existente com ajustes definidos na ficha. “Externa”
+significa que a conclusão exige evidência/acesso ou decisão da equipe.
 
-- [ ] Remover a exclusão geral de vagas fora de computação, preservando identificação de estágio, deduplicação e restrições reais do perfil.
-- [ ] Substituir `area_de_tecnologia` e interesses exclusivos de computação por critérios adequados a diferentes áreas.
-- [ ] Comparar curso do estudante com cursos explicitamente aceitos. Reconhecer aliases e “qualquer curso”; não declarar elegibilidade apenas porque um curso pertence a uma grande área.
-- [ ] Tratar requisito obrigatório incompatível, preferência não atendida e informação ausente de formas distintas.
-- [ ] Extrair habilidades técnicas, ferramentas, idiomas e outros requisitos explícitos pertinentes ao anúncio. Rever exclusões globais como Office/idiomas, relevantes em outras áreas.
-- [ ] Preservar separação entre obrigatório, atividade principal e desejável; não transformar requisito desejável em veto.
-- [ ] Rever pesos dominados por habilidades de software. Começar com critérios explicáveis comuns; adotar pesos específicos por área somente quando exemplos e feedback justificarem.
-- [ ] Não favorecer anúncio incompleto por parecer fácil de atender; manter incerteza visível e nota contextualizada como compatibilidade, nunca chance de contratação.
-- [ ] Adaptar personalização por recusas para o novo catálogo sem ampliar uma rejeição específica para áreas inteiras indevidamente.
+| ID | Tarefa | Prioridade | Estado | Depende de | Especificação |
+|---|---|---|---|---|---|
+| O00 | Restaurar limite de cinco no workflow | P0 | Pronta | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
+| L01 | Corrigir promessa e copy da landing | P1 | Pendente | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
+| L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
+| C01 | Permitir habilidades vazias no banco | P0 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
+| C02 | Aceitar perfil iniciante no Python | P0 | Pendente | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
+| C03 | Oferecer caminho sem habilidades no site | P1 | Pendente | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
+| C04 | Concluir sugestões existentes e fallback | P1 | Parcial | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
+| C05 | Colocar conta após o perfil | P1 | Pendente | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
+| C06 | Explicar vínculo, espera e ausência de vagas | P1 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c06) |
+| M01 | Mapear eventos e lacunas do cadastro | P1 | Pendente | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
+| M02 | Participação no feedback | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |
+| M03 | Tempo até entrega e abertura | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m03) |
+| M04 | Utilidade por área do curso | P1 | Pendente | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
+| R01 | Persistir motivo opcional da pausa | P1 | Pronta | — | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r01) |
+| R02 | Perguntar motivo após pausar | P1 | Pendente | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
+| R03 | Relatar motivos de pausa | P1 | Pendente | R02 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r03) |
+| E01 | Verificar publicação e jornada real | P0 | Externa | Versão a publicar definida | [Operação](execucao-expansao/03-evidencias-e-decisoes.md#e01) |
+| E02 | Registrar cobertura e casos de qualidade | P1 | Externa | Acesso às fontes/dados | [Cobertura](execucao-expansao/03-evidencias-e-decisoes.md#e02) |
+| E03 | Escolher canal e obter prova real | P2 | Externa | E01 | [Aquisição](execucao-expansao/03-evidencias-e-decisoes.md#e03) |
+| E04 | Levantar custos da operação | P2 | Externa | Dados de custo disponíveis | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e04) |
+| E05 | Definir oferta e teste de pagamento | P2 | Externa | E02, E04, decisão da equipe | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e05) |
+| D01 | Resolver elegibilidade e formatos acadêmicos | P1 | Decisão | Casos de E02 | [Decisões](execucao-expansao/03-evidencias-e-decisoes.md#d01) |
 
-Verificação: conjunto de casos com anúncios de áreas distintas, perfis iniciantes, cursos equivalentes e incompatíveis, dados ausentes, requisitos desejáveis, modalidade e período. Incluir perfis atuais de tecnologia para detectar regressões. Testes devem verificar seleção e explicações, além da pontuação.
+Sequência recomendada de implementação: **O00 → L01 → L02 → C01 → C02 → C03 → C04 → C05 → C06 →
+M01 → M02 → M03 → M04 → R01 → R02 → R03**. E01 pode conferir a versão atual antes dessa fila;
+a verificação deve ser repetida apenas para as partes alteradas após publicação. E02–E04
+podem ser preparados sem bloquear as melhorias prontas. Não exigir todas as métricas para divulgar.
 
-Conclusão: vaga elegível de outra área chega ao ranking; incompatibilidade explícita não vira recomendação de alta compatibilidade; justificativas correspondem aos fatos do anúncio e do perfil.
+## Pontos do plano anterior que mudaram
 
-## 3. Migração sem perda de perfil e histórico
+- A expansão básica e as correções do PR #21 estão concluídas no código; não são o primeiro lote.
+- Recálculo atual substitui o pedido genérico de versionar notas. Não invalidar dados ou reenviar vagas.
+- Decisão explícita do Igor: usuários recebem até **5** recomendações; **7** era teste local.
+  O00 corrige o workflow ainda configurado em sete; L01 comunica até cinco. O parâmetro local
+  continua configurável para testes sem alterar o workflow de produção.
+- Formações sem semestres, interesses entre grandes áreas e equivalência de cursos precisam de
+  contrato específico (D01). Não resolver com defaults inventados ou curso automaticamente equivalente.
+- Frequência, pesos por área, fontes novas, páginas por curso, indicação com recompensa e planos
+  comerciais ficam condicionados às evidências de E02–E05. Não são trabalho implícito de interface.
+- O repositório já está na organização `RadarEstagio/RadarEstagio`; verificar integrações, não refazer transferência.
 
-- [ ] Mapear campos, enums, validações, SQL, frontend e feedback afetados pelo novo modelo.
-- [ ] Versionar mudanças de banco em migrations e planejar uma transição compatível entre versões do site, funções e job.
-- [ ] Mapear interesses antigos para o novo catálogo; preservar ambiguidades sem inventar preferências.
-- [ ] Versionar extrações e regras de avaliação, identificando resultados antigos que exigem reextração ou recálculo.
-- [ ] Reprocessar de forma controlada, com limite de custo e prioridade para anúncios ainda relevantes.
-- [ ] Preservar vínculos, consentimentos, histórico de envios e bloqueio de repetição. Recalcular nota não autoriza reenviar vaga já entregue.
-- [ ] Testar migração com dados representativos e definir reversão de aplicação e recuperação dos dados antes da publicação.
+## Registro de conclusão
 
-Conclusão: perfis existentes continuam utilizáveis, o cache não mistura regras incompatíveis e a transição não produz reenvios indevidos.
+Após cada tarefa, atualizar o estado resumido neste índice e os detalhes em
+`execucao-expansao/progresso.md`. Estados e condição final são definidos no protocolo.
+Preparar um documento externo não equivale a validar seus dados ou publicar uma funcionalidade.
 
-## 4. Cadastro, iniciantes e primeira experiência
-
-Mecanismos: fricção declarativa, divulgação progressiva e valor antes do pedido.
-
-- [ ] Prototipar sequência: formação/momento → interesses e logística → habilidades → conta para salvar → confirmação quando exigida → Telegram.
-- [ ] Mostrar poucas sugestões contextuais, busca e entrada livre; evitar uma lista extensa de todas as profissões.
-- [ ] Permitir múltiplos interesses e incerteza sobre a área desejada sem interpretar isso como autorização irrestrita.
-- [ ] Incluir “Ainda estou aprendendo” ou “Não quero informar agora”, diferenciando os estados quando necessário. Ajustar também validações de domínio e banco que exigem uma habilidade.
-- [ ] Pedir dados que influenciam seleção e explicar sua finalidade; permitir informar requisitos adicionais depois, quando fizerem diferença.
-- [ ] Preservar escolhas ao voltar etapas e confirmar em outro aparelho, mantendo o comportamento existente.
-- [ ] Mostrar confirmação e vínculo no progresso total; não apresentar cadastro concluído como entrega já ativada.
-- [ ] Manter recuperação, reenvio, edição e erros acionáveis; verificar uso em celular, teclado e leitores de tela nas partes alteradas.
-- [ ] Confirmar estados de perfil salvo, Telegram vinculado e busca solicitada. Só afirmar busca iniciada quando houver evidência desse estado.
-- [ ] Preservar entrega inicial existente e explicar espera/fallback para o diário, sem prometer prazo não medido.
-- [ ] Diferenciar ausência de vagas de falha operacional; oferecer edição de preferências sem pressionar o estudante a aceitar condições inadequadas.
-
-Conclusão: o estudante consegue cadastrar um perfil verdadeiro, recuperar interrupções e entender quando e onde receberá recomendações. Observar colegas usando ajuda a encontrar erros, sem amostra mínima obrigatória.
-
-## 5. Landing, confiança e demonstração
-
-- [ ] Atualizar título, descrição, metadados, formulário e exemplos para diferentes áreas.
-- [ ] Explicar limite de até cinco recomendações quando houver oportunidades compatíveis e indicar Telegram antes do CTA.
-- [ ] Uniformizar a condição gratuita vigente, esclarecendo o que ela cobre. Não anunciar um preço ou prazo ainda não decidido.
-- [ ] Identificar a demonstração visivelmente como “Exemplo ilustrativo” e usar o formato real da mensagem.
-- [ ] Trocar “match” pelo vocabulário do produto e alinhar alegações sobre IA ao comportamento real.
-- [ ] Tratar logos como fontes/tecnologias, sem sugerir endosso ou prova de resultado.
-- [ ] Responder às dúvidas principais: áreas atendidas, dias sem vagas, vínculo, edição, pausa e candidatura na fonte.
-- [ ] Acrescentar prova real autorizada quando disponível, com contexto e sem inferir contratação a partir de um clique.
-
-Copy inicial proposta:
-
-> **Encontre estágios que combinam com seu curso e seu momento.**
-> O Radar reúne oportunidades de diferentes áreas, compara com seu perfil e envia até cinco recomendações explicadas no Telegram, quando houver vagas compatíveis.
-> **Cadastrar meu perfil**
-
-Conclusão: promessa, demonstração e entrega descrevem o mesmo produto. Verificar legibilidade e funcionamento da página em tamanhos móveis e desktop.
-
-## 6. Medição e retenção por utilidade
-
-Preservar definições de `CONTEXT.md` e `docs/metricas.md`. A primeira abertura é ativação de produto; feedback positivo é evidência explícita de utilidade. Candidatura continua sem captura nova até existir mecanismo próprio.
-
-- [ ] Conferir instrumentação de credenciais, etapas, confirmação, vínculo e primeira entrega; acrescentar eventos apenas para perguntas ainda sem resposta.
-- [ ] Segmentar cobertura e utilidade por formação/área e localização, indicando tamanho das amostras e permitindo múltiplos interesses sem somar usuários duas vezes no total.
-- [ ] Apresentar alcance de etapas como alcance; construir conversão sequencial somente com ordem, identidade e janela definidas.
-- [ ] Acompanhar tempo até primeira entrega e primeira abertura junto da proporção ainda sem cada resultado. Não calcular sucesso apenas sobre os que completaram.
-- [ ] Ler utilidade semanal ao lado da participação no feedback e dos motivos de recusa; ausência de resposta não é aprovação.
-- [ ] Manter a métrica geral atual e acrescentar leitura por tempo desde cadastro quando útil. Não remover silenciosamente pausados do denominador para melhorar indicadores.
-- [ ] Pedir motivo opcional da pausa: conseguiu estágio, interrompeu a busca, faltaram vagas úteis, frequência ou outro. Resposta não condiciona a pausa.
-- [ ] Separar saída por sucesso de insatisfação; oferecer retomada simples.
-- [ ] Ajustar frequência somente se o uso indicar necessidade. Não criar notificações ou recompensas artificiais para produzir engajamento.
-- [ ] Registrar data das consultas e limitações de exclusão de dados, semanas parciais, amostras pequenas e atribuição.
-
-Conclusão: a equipe consegue identificar se o problema é aquisição, cadastro, cobertura, relevância ou conclusão da busca. As métricas existentes podem continuar em relatório; dashboard não é requisito.
-
-## 7. Publicação e operação
-
-- [ ] Resolver as pendências atuais do plano geral: endereço público, configuração de Auth, Turnstile, textos pendentes e responsáveis pela operação.
-- [ ] Verificar a jornada integrada: cadastro, confirmação, recuperação, vínculo, entrega, abertura, feedback, edição, pausa e controles da conta.
-- [ ] Monitorar duração de coleta, extrações novas, falhas, entregas e custo após ampliar áreas/cidades.
-- [ ] Estimar carga com diversidade de perfis: reuso de extração reduz duplicação, mas ampliar cobertura aumenta anúncios e trabalho.
-- [ ] Publicar banco, backend, funções e frontend em ordem compatível; confirmar logs e exemplos após atualização.
-- [ ] Corrigir bloqueadores funcionais e incompatibilidades graves antes de ampliar a divulgação. Problemas específicos de cobertura podem ser comunicados e acompanhados sem fingir atendimento comprovado.
-- [ ] Atualizar documentação de funcionalidades, operação e contrato após a implementação efetiva.
-
-Conclusão: a equipe sabe publicar, verificar, responder a falhas e reverter uma versão defeituosa. Prazo de primeira entrega observado não vira garantia pública automaticamente.
-
-## 8. Aquisição e diferenciação
-
-Mecanismos: Bullseye, consciência do público e prova antes da escala.
-
-- [ ] Começar pelos canais acessíveis à equipe, como colegas, comunidades de cursos e contatos com centros acadêmicos; selecionar conforme acesso e retorno observado.
-- [ ] Adaptar exemplos por área, preservando a promessa central. Páginas específicas só entram quando houver demanda e cobertura que justifiquem manutenção.
-- [ ] Registrar origem de aquisição sem incluir dados pessoais nos parâmetros da URL.
-- [ ] Comparar usuários que chegam e sinalizam utilidade por canal; separar público próximo da equipe de pessoas sem vínculo anterior.
-- [ ] Facilitar compartilhamento voluntário após uma experiência útil, sem expor links pessoais rastreáveis ou tokens de vínculo.
-- [ ] Avaliar investimento em mídia após compreender gargalos e custo por usuário com utilidade; definir orçamento e regra de parada antes de gastar.
-
-Conclusão: há evidência de quais canais trazem estudantes atendidos pelo produto. A diferenciação demonstrada combina seleção pessoal, explicações, menor repetição e melhoria por feedback.
-
-## 9. Monetização e economia
-
-Mecanismos: custo de servir, pagamento como evidência e oferta no momento de valor.
-
-- [ ] Definir hipótese inicial de pagador. Estudante é a hipótese B2C; instituição patrocinadora exige validação comercial separada e não deve misturar prioridades de imediato.
-- [ ] Medir custos fixos, incrementais, suporte, taxas de pagamento e aquisição. Vagas extraídas por ativado é indicador operacional, não custo em reais.
-- [ ] Investigar benefício pelo qual usuários com utilidade pagariam e alternativas que já usam.
-- [ ] Comparar uma assinatura simples com acesso por período de busca, considerando saída por contratação. Não fixar preço sem observar disposição de pagar e custo.
-- [ ] Preparar oferta concreta com preço, duração, condições de acesso, renovação e cancelamento; preservar o que foi prometido aos participantes gratuitos.
-- [ ] Testar pagamento real com participantes informados. Intenção declarada e clique em interesse não equivalem a compra.
-- [ ] Medir visitantes elegíveis à oferta, compradores, uso posterior, cancelamentos, receita líquida e margem de contribuição por coorte.
-- [ ] Considerar expansão paga somente por benefício adicional comprovado. Não bloquear de surpresa uma vaga já prometida nem criar perda fictícia de histórico.
-- [ ] Definir mais planos apenas se aparecerem necessidades e disposições de pagar distintas. Good-Better-Best e ancoragem são opções futuras, não requisitos para este MVP.
-
-Conclusão: existe uma oferta testável e uma leitura de sustentabilidade. Se utilidade existir sem pagamento, investigar pagador, benefício e modelo antes de escalar aquisição paga.
-
-## Critérios de decisão e controle de escopo
-
-Não prometer aumentos percentuais sem medição. Com pouco volume, usar problemas observados e feedback concreto; A/B exige amostra e regra de decisão definidas previamente. Metas numéricas podem ser estabelecidas após a linha de base, sem importar benchmarks da skill.
-
-Para cada entrega, registrar problema, responsável, dependência, evidência de funcionamento e próximo ajuste. Aplicar o Swiss Knife filter a currículo por IA, dashboard, cursos, candidatura automática, gamificação e novas integrações: só priorizar quando reforçarem a entrega central e justificarem custo permanente.
-
-Primeiro lote executável: inventário das restrições a tecnologia, matriz de cobertura, proposta do novo contrato de perfil/vaga e conjunto de exemplos de aceitação. Depois, implementar seleção e migração; integrar cadastro e comunicação; verificar a jornada; divulgar e melhorar com os sinais reais.
+| ID | Commit/arquivos | Verificação executada | Estado externo/limites |
+|---|---|---|---|
+| Base atual | `40ed28c` | 649 Python; 36 web em `a87f9fc`; ver limites acima | Deploy e utilidade por área não confirmados nesta revisão |

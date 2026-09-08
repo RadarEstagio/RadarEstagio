@@ -1,6 +1,6 @@
 # Documentação do Radar de Estágio
 
-Revisão de 07/09/2026. Este índice define o papel de cada documento. Implementação no código,
+Revisão de 08/09/2026. Este índice define o papel de cada documento. Implementação no código,
 publicação e validação com usuários são estados diferentes; nenhum documento deve tratá-los
 como equivalentes.
 
@@ -8,6 +8,9 @@ como equivalentes.
 
 - **O que o produto faz:** [Funcionalidades](funcionalidades.md), para usuários e desenvolvedores.
 - **O que falta concluir:** [Plano geral](plano-geral.md).
+- **Implementar o plano em tarefas sequenciais:** [Índice de expansão](plano-expansao-revenue-centric.md) e
+  [protocolo de execução](execucao-expansao/00-protocolo.md).
+- **Correções da expansão e revalidação:** [Auditoria](auditorias/2026-09-08-expansao-adversarial.md).
 - **Como publicar e testar:** [Guia de publicação e piloto](guia-publicacao-e-piloto.md).
 - **Como contribuir:** [README do projeto](../README.md), [arquitetura](arquitetura.md) e
   [contrato do frontend](contrato-front.md).
