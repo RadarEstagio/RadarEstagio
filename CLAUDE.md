@@ -266,11 +266,27 @@ nada pode ganhar uma lista própria:
   `tests/test_migracao_das_areas.py` quebram se alguma das três listas sair do lugar.
 
 Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
-`exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". Com um padrão só,
-perfis de computação perdiam vagas que já recebiam — "Estágio em Projetos" viraria de
-administração. A menção ao curso do perfil ou a qualquer formação na descrição evita veto antecipado;
-sem esse sinal, a precedência do pré-filtro é: outra área descarta, própria área mantém, título
-genérico cai para a descrição.
+`exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". O padrão `titulo`
+compilado inclui automaticamente os nomes de curso e os rótulos de subárea da área — "Estágio em
+Engenharia de Alimentos" e "Produção de Material Didático" contam sem lista extra.
+
+Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à noite):
+1. Descrição que cita o curso do perfil **com contexto de formação** ("cursando X", "estudantes
+   de X", "aceita X") ou que abre a qualquer formação mantém. Sem o contexto, "terá direito a
+   vale-transporte" mantinha toda vaga para Direito e "boa comunicação" mantinha tudo para
+   Comunicação — 19 de 20 casos falsos numa auditoria.
+2. Curso sem área conhecida: mantém só título sem marcador forte de área alguma ("Programa de
+   Estágio", "Estagiário"). Sem isso, um perfil de Agronomia passava 96% das vagas (641 de 667)
+   para a extração.
+3. **Sinal da própria área no título vence o veto de outra área.** "Marketing Comercial" é de
+   marketing e de comercial; "Direito Civil" era vetado por `civil` de engenharias, "Estágio
+   Administrativo Financeiro" por `financeiro`. Com a ordem antiga, 240 de 315 títulos legítimos
+   caíam para o próprio dono; com a nova, zero título com marcador forte é perdido nos dados reais.
+4. Sem sinal próprio, marcador forte de outra área descarta; título genérico cai para a descrição.
+
+Os padrões de descrição são estreitos de propósito ("rotinas administrativas", não
+"administração"; "área comercial", não "comercial"), porque a citação do curso já é tratada com
+contexto no passo 1.
 
 ### Qualidade da mensagem e do pré-filtro
 
@@ -290,6 +306,44 @@ genérico cai para a descrição.
   subárea do mesmo campo do curso vale metade e sem aviso, e vaga de outro campo zera e avisa.
   Punir igual quem marcou "Mercado financeiro" e recebeu uma vaga de Contabilidade era mentir no
   aviso e cobrar duas vezes, já que estar em outra área já pesa em `PESO_AREA`.
+
+### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
+
+Três revisores independentes e uma medição em produção depois da expansão. Regras que ficaram:
+
+- **Extração e nota.** `area_da_vaga` é normalizada no modelo e vira `None` se não está no
+  catálogo — "Computação", "tecnologia" ou "" viravam área alheia (teto 35). O fator de interesse
+  decide "mesmo campo" pelas subáreas da vaga contra as dos interesses (`AREA_DA_SUBAREA`), não
+  pela área da vaga nem pelo curso: programa aberto a várias formações com subárea de computação
+  ganhava aviso falso. O teto de 65 só vale para outro campo, área recusada ou vaga sem subárea
+  reconhecida; outra subárea do mesmo campo não é presa a 65. Curso genérico aceito
+  ("Engenharia", "Sistemas", "Negócios") vale se estiver inteiro no nome do perfil e o catálogo
+  reconhecer o perfil. Qualificadores de nível saem da habilidade ("Excel avançado" → excel;
+  "Office 365" → office), senão furavam a exclusão de Office em computação e não casavam fora
+  dela.
+- **Recusas e histórico.** Recusa no Telegram nunca cancela uma subárea escolhida no cadastro
+  (a vaga recusada carrega várias subáreas). `avaliacoes` é upsert: a nota gravada acompanha as
+  regras atuais, porque `baixar_meus_dados` a exporta. Subárea de outro campo gravada no banco é
+  ignorada ao carregar o perfil; o site só envia as do curso atual e, sem catálogo, repete as
+  salvas em vez de apagar.
+- **Cache de extração com versão.** `modelo_extracao` guarda `modelo#hash(prompt+formato)` e a
+  leitura filtra por ele: mudar prompt ou catálogo invalida o cache sozinho, sem depender de a
+  validação rejeitar o formato antigo.
+- **Prompt sem viés de TI.** Habilidades são "ferramentas, idiomas e habilidades", com exemplos
+  de várias áreas; pegadinha é "área diferente da que o título sugere"; a lista das 12 áreas e as
+  subáreas com rótulo vêm do catálogo.
+- **Incidente das 16:13 de 08/09.** Primeiro run com o motor novo: cota gratuita do Gemini (20
+  requisições) estourou porque 503 dividia o lote e multiplicava requisições; 0 de 36 vagas foram
+  extraídas e o run "passou" enviando 13 vagas com notas antigas guardadas. Desde então 502/503/504
+  esperam e repetem o **mesmo** lote (`AvaliadorIndisponivel`), e o resumo do Telegram e o stdout
+  mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
+  total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
+
+Sabidos e não corrigidos: republicação por outra fonte com descrição curta pode reenviar;
+extrações e enriquecimento são chaveados por `id_externo` sem `fonte` (colisão improvável entre
+Adzuna e Gupy); o banco ainda aceita subárea de outro curso (mitigado ao carregar); o aviso "Área
+que você recusou" não nomeia a subárea; as habilidades sugeridas no cadastro são só de TI; a
+Jooble multiplica consultas por termo (segue desligada).
 
 ### Cobertura das fontes (30/08/2026)
 
@@ -415,10 +469,16 @@ ligação das automações, porque cada uma guardava o dono no nome:
 - Cursos passam por correspondência integral após remover prefixos de formação; aliases
   explícitos estão no catálogo e no JSON gerado. Medicina Veterinária fica desconhecida,
   não herda saúde humana; Gestão Financeira tem alias em finanças.
-- Perfil sem área reconhecida amplia Adzuna/Jooble para busca geral de estágio, também em
-  grupos mistos. O teto de paginação continua valendo.
-- Curso mencionado na descrição ou abertura a qualquer formação mantém a vaga para análise,
-  mesmo com título de outra área. A compatibilidade de curso é decidida após a extração.
+- Perfil sem área reconhecida **soma** uma busca geral (Adzuna sem `what_or`, Jooble com
+  "estágio" puro) à busca dirigida dos cursos conhecidos, em vez de substituí-la. Trocar a de
+  todos custava 68% das candidatas de computação e 66% das de Direito no Rio (167→54, 116→40),
+  porque o `what_or` é o que ordena as 500 primeiras da fatia nacional. Termos de busca são
+  palavras soltas: a Adzuna trata `what_or` como OR por palavra, então "recursos humanos" virava
+  "recursos" OU "humanos" (1546 vagas contra 1185 da frase); o catálogo usa "recrutamento",
+  "rh", "exportação".
+- Curso mencionado na descrição com contexto de formação, ou abertura a qualquer formação,
+  mantém a vaga para análise mesmo com título de outra área. A compatibilidade de curso é
+  decidida após a extração.
 - Pontuação é recalculada em Python em toda execução. Notas persistidas não são reutilizadas;
   extrações continuam compartilhadas e histórico de envios continua bloqueando repetição.
 - Curso genérico aceito pelo anúncio ("Engenharia", "Química", "Administração") conta como o
@@ -426,15 +486,17 @@ ligação das automações, porque cada uma guardava o dono no nome:
   o catálogo reconhece o perfil. Sem a segunda condição, "Medicina" valeria para Medicina
   Veterinária — que é desconhecida de propósito. A correspondência integral sozinha marcava
   como incompatível (teto 35) quem estuda Engenharia Civil numa vaga "cursando Engenharia".
-- A correspondência integral exige aliases para os nomes comuns: "Administração de Empresas",
-  "Ciências Econômicas", "Design Gráfico", "Engenharia Mecatrônica" e afins estão no catálogo.
-  Nome que não está lá vira área desconhecida: sem filtro de área, busca geral e nota parcial —
-  funciona, mas com ruído. Ao ver um curso frequente cair nesse caso, o conserto é um alias.
+- A correspondência integral roda depois de `normalizar_curso`: tira prefixos de formação
+  ("Cursando", "Graduação em", "Curso Superior de Tecnologia em"), sufixos ("completo",
+  "- Bacharelado", "(Bacharelado)", "/Eletrônica"), aplica sinônimos ("Ciências Econômicas" →
+  economia, "ADS", "TI", "RH") e devolve vazio para termo genérico ("Ensino Superior",
+  "qualquer curso") — que em `cursos_aceitos` vale como qualquer curso. "Licenciatura em X" sem
+  alias cai em educação. Prefixos, sufixos, sinônimos e genéricos vão no `areas.json` e o site
+  aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
+  genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é
+  um alias.
 - "laboratório" saiu do padrão de exclusão de saúde: vetava "Desenvolvimento de Software para
   Laboratório" para quem é de computação. Continua no padrão positivo, então saúde ainda
   reconhece laboratório como título seu.
-- Um único perfil de curso desconhecido troca a busca dirigida de todos pela busca geral. Como
-  o teto de páginas é fixo, isso reduz a fatia de cada curso conhecido (computação caiu de ~100
-  para 51 candidatas no Rio numa medição com cinco perfis). É o preço de não assumir tecnologia.
 - A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
   Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
