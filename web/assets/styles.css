@@ -83,11 +83,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .hero-layout { position: relative; display: grid; justify-items: center; gap: clamp(36px, 5vh, 64px); text-align: center; }
 .hero-copy { max-width: 900px; }
 .hero-copy > * { animation: surgir 620ms cubic-bezier(.2, .7, .3, 1) both; }
-.hero-copy > .eyebrow { animation-delay: 60ms; }
-.hero-copy > h1 { animation-delay: 140ms; }
-.hero-copy > .hero-lead { animation-delay: 240ms; }
-.hero-copy > .hero-actions { animation-delay: 330ms; }
-.hero-copy > .trust-list { animation-delay: 410ms; }
+.hero-copy > h1 { animation-delay: 60ms; }
+.hero-copy > .hero-lead { animation-delay: 170ms; }
+.hero-copy > .hero-actions { animation-delay: 270ms; }
+.hero-copy > .trust-list { animation-delay: 350ms; }
 @keyframes surgir { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 .eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 20px; color: var(--ink-soft); font-size: 12px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
 .eyebrow > span:first-child { display: inline-block; flex: 0 0 auto; width: 24px; height: 3px; background: var(--accent); }
