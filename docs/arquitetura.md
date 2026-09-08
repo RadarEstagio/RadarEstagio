@@ -37,6 +37,14 @@ radar/
   settings.py    variáveis de ambiente
 ```
 
+### `domain/areas.py` — o catálogo de áreas
+
+As 12 áreas vivem em um módulo só, e dele derivam o enum `AreaDeInteresse`, a migration que
+restringe `perfis.areas_de_interesse` e o `web/assets/areas.json` que o cadastro consome. Cada
+área carrega os cursos que caem nela, os padrões que reconhecem uma vaga sua, os termos de busca
+usados na coleta e as subáreas oferecidas no cadastro. O pré-filtro pergunta "essa vaga é da área
+do curso desta pessoa?" e a pontuação compara a área extraída da vaga com a do curso.
+
 ### `domain/` — o que o sistema *é*
 
 Entidades como `Vaga`, `Perfil`, `Usuario`, `ExtracaoDaVaga`, `Recomendacao` e `ResultadoMatch`, além dos contratos
@@ -111,7 +119,7 @@ o vigésimo usuário não custa nada.
   habilidades_principais, habilidades_desejaveis, alerta_pegadinha}`. Tudo é fato do anúncio;
   nada depende de candidato.
 - **A comparação é determinística** (`matching/compatibilidade.py`): `cursos_aceitos` vira
-  compatível/parcial/incompatível contra um catálogo fechado de cursos de computação;
+  compatível/parcial/incompatível contra o catálogo de cursos de `domain/areas.py`;
   `periodo_minimo` e `experiencia_minima_anos` viram o nível de período; os pontos a favor e
   contra são montados da comparação, não escritos pela IA. Mesmos dados, mesma nota, sempre.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,

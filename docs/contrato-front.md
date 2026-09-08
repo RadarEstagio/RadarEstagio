@@ -17,6 +17,11 @@ O cadastro coleta o perfil antes de `signUp`. Envia em `options.data.cadastro_ra
 | `versao_dos_termos` | Versão aceita em formato de data válida; manter coerente com os documentos |
 | `sessao_id` | UUID da sessão de origem do funil |
 
+As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `assets/areas.json`
+(arquivo gerado a partir de `radar/domain/areas.py`), descobre a área do curso digitado e monta
+só as subáreas dela. Curso sem área conhecida esconde o campo em vez de oferecer opções de outra
+formação. O banco recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
+
 O banco valida o payload e preserva cópia em `cadastros_pendentes`, sem acesso direto pelo
 navegador. Na confirmação, cria o perfil com os dados e aceite registrados. O retorno consulta
 sessão e banco, inclusive quando a confirmação ocorre em outro aparelho.

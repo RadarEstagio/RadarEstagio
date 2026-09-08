@@ -224,19 +224,24 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
 - **Tecnologias comparadas por nome normalizado e exato**, de modo que `Java` não corresponde a
   `JavaScript`.
-- **Área de interesse** (01/09/2026): a IA classifica a vaga em subáreas de um catálogo fechado
-  de 7 (`AreaDeInteresse` no domínio) e o fator compara com `perfis.areas_de_interesse`. Match
-  ganha o fator cheio; vaga sem subárea reconhecida fica com meio fator e respeita o teto de 65
-  (só passa de 65 quem é comprovadamente da área de interesse); mismatch zera o fator, limita a
-  nota a 65 e põe o aviso "Fora das suas áreas de interesse" na mensagem — vaga de outra área
-  preenche dia vazio, mas nunca passa na frente da área do candidato. Perfil sem interesses não
-  é penalizado.
+- **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
+  de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
+  `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do
+  mesmo campo do curso vale meio fator e não gera aviso**; vaga de outro campo zera o fator,
+  limita a nota a 65 e põe o aviso "Fora das suas áreas de interesse". Vaga sem subárea
+  reconhecida também fica com meio fator. Perfil sem interesses não é penalizado, e área recusada
+  no Telegram continua zerando. O nível do meio existe porque punir igual quem marcou "Mercado
+  financeiro" e recebeu Contabilidade era mentir no aviso e cobrar duas vezes: estar em outro
+  campo já pesa em `PESO_AREA`.
 - **Curso** (02/09/2026): incompatível limita a 35 (abaixo da nota mínima, sai da mensagem) com
   o aviso "Exige formação de outra área"; parcial limita a 75 — vaga operacional de fundos com
   Excel/Python/SQL chegou a 90 só pela stack genérica. Desde 03/09/2026 quem decide o nível é
-  `matching/compatibilidade.py`, com um catálogo fechado de cursos de computação, e não mais o
-  julgamento do modelo: a IA extrai `cursos_aceitos` e o Python compara. Curso que o catálogo não
-  reconhecer cai como incompatível — é o ponto mais frágil da mudança.
+  `matching/compatibilidade.py`, com o catálogo de cursos de `domain/areas.py`, e não mais o
+  julgamento do modelo: a IA extrai `cursos_aceitos` e o Python compara. Curso aceito da mesma
+  área só conta como equivalente quando a área declara `cursos_intercambiaveis` — verdadeiro só
+  em computação, onde Ciência da Computação, Engenharia de Software e ADS disputam as mesmas
+  vagas. Sem essa trava, Engenharia Civil valia por Engenharia Química e Contábeis por Economia
+  (08/09/2026).
 - **Pontos a favor e contra são gerados da comparação** (03/09/2026), não escritos pela IA.
   Sobraram "Curso compatível", "Período mínimo incompatível" e "Exige experiência prévia", porque
   as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
@@ -246,6 +251,25 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   a suavização dá 1.0 cravado com 1 de 1. Quanto mais honesto o anúncio, pior a nota. As duas
   correções possíveis e o sinal que reverte a decisão estão na seção de viés do ranking de
   `docs/arquitetura.md`. **Não ajustar peso sem `vaga_irrelevante` real.**
+
+### Áreas: uma fonte só para curso, vaga, banco e site (08/09/2026)
+
+`domain/areas.py` é o catálogo único das 12 áreas. Cada área declara os cursos que caem nela,
+três padrões de vaga, os termos de busca e as subáreas. Tudo o mais deriva daí, e é por isso que
+nada pode ganhar uma lista própria:
+
+- `AreaDeInteresse` (em `domain/models.py`) é **construído** a partir de `SUBAREAS`.
+- A migration `0017` foi **gerada** do mesmo catálogo — o `CHECK` de `perfis.areas_de_interesse`
+  e a função `validar_cadastro_radar`.
+- `web/assets/areas.json` é **arquivo gerado** e serve o cadastro, que monta as áreas conforme o
+  curso digitado. Mexeu em `areas.py`, regere; `tests/test_areas_do_front.py` e
+  `tests/test_migracao_das_areas.py` quebram se alguma das três listas sair do lugar.
+
+Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
+`exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". Com um padrão só,
+perfis de computação perdiam vagas que já recebiam — "Estágio em Projetos" viraria de
+administração. A precedência do pré-filtro é: outra área descarta, própria área mantém, título
+genérico cai para a descrição.
 
 ### Qualidade da mensagem e do pré-filtro
 

@@ -32,7 +32,7 @@ formulário completo; interface pública depende da hospedagem.
 
 #### 02. Preferências
 
-Selecionar uma cidade e uma modalidade; várias habilidades e áreas.
+Selecionar uma cidade e uma modalidade; várias habilidades e áreas. As áreas oferecidas são as do curso informado.
 
 **Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente.
 
@@ -214,7 +214,7 @@ Une duplicatas e filtra republicações, incluindo histórico recente do usuári
 
 #### 05. Pré-filtro
 
-Regras de estágio, computação, localização e elegibilidade reduzem candidatos à IA.
+Regras de estágio, área do curso, localização e elegibilidade reduzem candidatos à IA.
 
 **Código de referência:** `radar/filtering/prefiltro.py`.
 
@@ -240,7 +240,7 @@ Uma extração por vaga compartilhada entre perfis.
 
 #### 09. Nota determinística
 
-Python compara curso, período, tecnologias, interesses e logística.
+Python compara curso, período, habilidades, área, interesses e logística.
 
 **Código de referência:** `radar/matching/avaliacoes.py`, `compatibilidade.py`.
 
