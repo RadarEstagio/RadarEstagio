@@ -202,7 +202,9 @@ def executar_fluxo(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
         f"em {extrator.requisicoes} requisições ao avaliador; "
         f"{resumo.usuarios_com_falha_de_revalidacao} usuários com falha de revalidação, "
-        f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha"
+        f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha; "
+        f"{resumo.vagas_sem_extracao} vagas sem extração, "
+        f"{resumo.extracoes_nao_gravadas} extrações não gravadas"
     )
     avisar_operacao(
         settings,
@@ -216,6 +218,8 @@ def executar_fluxo(
             extrator.requisicoes,
             resumo.usuarios_com_falha_de_revalidacao,
             resumo.usuarios_sem_entrega_por_falha_de_revalidacao,
+            resumo.vagas_sem_extracao,
+            resumo.extracoes_nao_gravadas,
         ),
     )
 

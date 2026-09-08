@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 import pytest
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
-from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import (
+    AvaliadorIndisponivel,
+    CotaDeAvaliacaoExcedida,
+    ErroDeAvaliacao,
+)
 from radar.matching.lotes import ExtratorEmLotes
 
 
@@ -184,3 +188,16 @@ def test_conta_uma_requisicao_por_lote_enviado_ao_avaliador():
 
     assert em_lotes.requisicoes == 3
     assert len(avaliador.lotes_recebidos) == 3
+
+
+def test_avaliador_fora_do_ar_espera_e_repete_o_mesmo_lote_sem_dividir():
+    interno = ExtratorDeLoteFalso(
+        falhas_temporarias_por_lote={("1", "2", "3"): AvaliadorIndisponivel("HTTP 503")}
+    )
+    esperas: list[float] = []
+
+    resultados = ExtratorEmLotes(interno, 3, esperar=esperas.append).extrair(vagas(3))
+
+    assert esperas == [61]
+    assert interno.lotes_recebidos == [["1", "2", "3"], ["1", "2", "3"]]
+    assert ids_de(resultados) == ["1", "2", "3"]

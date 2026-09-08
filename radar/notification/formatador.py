@@ -98,17 +98,24 @@ def formatar_resumo_da_execucao(
     requisicoes: int,
     falhas_de_revalidacao: int = 0,
     sem_entrega_por_revalidacao: int = 0,
+    vagas_sem_extracao: int = 0,
+    extracoes_nao_gravadas: int = 0,
 ) -> str:
-    return (
-        f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>\n"
-        f"Usuários ativos: {usuarios}\n"
-        f"Receberam recomendação: {atendidos}\n"
-        f"Vagas enviadas: {vagas_enviadas}\n"
-        f"Vagas coletadas: {vagas_coletadas}\n"
-        f"Requisições ao avaliador: {requisicoes}\n"
-        f"Usuários com falha de revalidação: {falhas_de_revalidacao}\n"
-        f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}"
-    )
+    linhas = [
+        f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>",
+        f"Usuários ativos: {usuarios}",
+        f"Receberam recomendação: {atendidos}",
+        f"Vagas enviadas: {vagas_enviadas}",
+        f"Vagas coletadas: {vagas_coletadas}",
+        f"Requisições ao avaliador: {requisicoes}",
+        f"Usuários com falha de revalidação: {falhas_de_revalidacao}",
+        f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
+    ]
+    if vagas_sem_extracao:
+        linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
+    if extracoes_nao_gravadas:
+        linhas.append(f"⚠️ Extrações não gravadas no banco: {extracoes_nao_gravadas}")
+    return "\n".join(linhas)
 
 
 def formatar_falha_da_execucao(data: date, erro: str) -> str:

@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.domain.ports import ExtratorDeVagas
-from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import ErroDeAvaliacao, ErroTemporarioDeAvaliacao
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +34,9 @@ class ExtratorEmLotes:
             lote = vagas[inicio : inicio + self._tamanho_do_lote]
             try:
                 resultados.extend(self._extrair_respeitando_a_cota(lote))
-            except CotaDeAvaliacaoExcedida as erro:
+            except ErroTemporarioDeAvaliacao as erro:
                 logger.warning(
-                    "Cota excedida; %d de %d vagas ficaram sem extração: %s",
+                    "Avaliador indisponível ou cota excedida; %d de %d vagas ficaram sem extração: %s",
                     len(vagas) - len(resultados),
                     len(vagas),
                     erro,
@@ -48,7 +48,7 @@ class ExtratorEmLotes:
         for tentativa in range(1, TENTATIVAS_APOS_COTA_EXCEDIDA + 1):
             try:
                 return self._extrair_com_tolerancia(lote)
-            except CotaDeAvaliacaoExcedida as erro:
+            except ErroTemporarioDeAvaliacao as erro:
                 espera = erro.aguardar_segundos or ESPERA_PADRAO_EM_SEGUNDOS
                 if espera > ESPERA_MAXIMA_EM_SEGUNDOS:
                     raise
@@ -65,7 +65,7 @@ class ExtratorEmLotes:
         try:
             self.requisicoes += 1
             resultados = self._extrator.extrair(lote)
-        except CotaDeAvaliacaoExcedida:
+        except ErroTemporarioDeAvaliacao:
             raise
         except ErroDeAvaliacao as erro:
             return self._dividir_e_tentar_de_novo(lote, erro)

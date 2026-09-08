@@ -344,3 +344,23 @@ def test_resumo_avisa_operacao_sobre_revalidacao_indisponivel():
     texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 12, 9, 31, 480, 18, 3, 2)
     assert "Usuários com falha de revalidação: 3" in texto
     assert "Sem entrega por falha de revalidação: 2" in texto
+
+
+def test_resumo_avisa_vagas_sem_extracao_e_extracoes_nao_gravadas():
+    texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 2, 2, 13, 830, 7, 0, 0, 36, 0)
+
+    assert "Vagas sem extração (cota ou avaliador fora): 36" in texto
+    assert "Extrações não gravadas" not in texto
+
+    com_falha_de_gravacao = formatar_resumo_da_execucao(
+        DATA_DE_TESTE, 2, 2, 13, 830, 7, 0, 0, 0, 12
+    )
+
+    assert "Extrações não gravadas no banco: 12" in com_falha_de_gravacao
+    assert "Vagas sem extração" not in com_falha_de_gravacao
+
+
+def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
+    texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 2, 2, 13, 830, 7)
+
+    assert "⚠️" not in texto

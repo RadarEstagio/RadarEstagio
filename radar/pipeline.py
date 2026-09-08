@@ -69,6 +69,8 @@ class ResumoDaExecucao(BaseModel):
     vagas_unicas: int
     vagas_candidatas: int
     vagas_extraidas_agora: int
+    vagas_sem_extracao: int = 0
+    extracoes_nao_gravadas: int = 0
     enviadas_por_usuario: dict[UUID, list[Recomendacao]]
 
     def atendidos(self) -> int:
@@ -102,9 +104,7 @@ def executar(
         len(candidatas),
         len(usuarios),
     )
-    extracoes, extraidas_agora = obter_extracoes(
-        extrator, repositorio, candidatas, parametros.modelo
-    )
+    extracoes, balanco = obter_extracoes(extrator, repositorio, candidatas, parametros.modelo)
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
     for usuario in usuarios:
@@ -130,7 +130,9 @@ def executar(
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
-        vagas_extraidas_agora=extraidas_agora,
+        vagas_extraidas_agora=balanco.extraidas_agora,
+        vagas_sem_extracao=balanco.sem_extracao,
+        extracoes_nao_gravadas=balanco.nao_gravadas,
         enviadas_por_usuario=enviadas_por_usuario,
     )
 
@@ -174,9 +176,15 @@ def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> li
     return list(aprovadas.values())
 
 
+class BalancoDaExtracao(BaseModel):
+    extraidas_agora: int = 0
+    sem_extracao: int = 0
+    nao_gravadas: int = 0
+
+
 def obter_extracoes(
     extrator: ExtratorDeVagas, repositorio: Repositorio, candidatas: list[Vaga], modelo: str
-) -> tuple[dict[str, ExtracaoDaVaga], int]:
+) -> tuple[dict[str, ExtracaoDaVaga], BalancoDaExtracao]:
     try:
         extracoes = dict(repositorio.extracoes_existentes(candidatas))
     except ErroDeArmazenamento as erro:
@@ -193,11 +201,20 @@ def obter_extracoes(
             continue
         extracoes[extracao.id_vaga] = extracao
         guardadas.append((vaga, extracao))
+    nao_gravadas = 0
     try:
         repositorio.guardar_extracoes(guardadas, modelo)
     except ErroDeArmazenamento as erro:
+        nao_gravadas = len(guardadas)
         logger.warning("extrações não foram gravadas: %s", erro)
-    return extracoes, len(guardadas)
+    sem_extracao = len(pendentes) - len(guardadas)
+    if sem_extracao:
+        logger.warning(
+            "%d de %d vagas pendentes ficaram sem extração", sem_extracao, len(pendentes)
+        )
+    return extracoes, BalancoDaExtracao(
+        extraidas_agora=len(guardadas), sem_extracao=sem_extracao, nao_gravadas=nao_gravadas
+    )
 
 
 def atender_usuario(

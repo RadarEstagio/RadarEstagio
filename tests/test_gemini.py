@@ -6,7 +6,12 @@ import pytest
 from google.genai import errors
 
 from radar.domain.models import Vaga
-from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import (
+    AvaliadorIndisponivel,
+    CotaDeAvaliacaoExcedida,
+    ErroDeAvaliacao,
+    ErroTemporarioDeAvaliacao,
+)
 from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.gemini import ExtratorGemini
 from radar.matching.prompt import montar_prompt
@@ -167,9 +172,18 @@ def test_resposta_invalida_levanta_erro_de_avaliacao(texto: str | None):
 
 
 def test_erro_da_api_levanta_erro_de_avaliacao_com_status():
-    extrator, _ = extrator_com(erro_da_api(503, "sobrecarga"))
+    extrator, _ = extrator_com(erro_da_api(400, "pedido inválido"))
 
-    with pytest.raises(ErroDeAvaliacao, match="503") as capturado:
+    with pytest.raises(ErroDeAvaliacao, match="400") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, ErroTemporarioDeAvaliacao)
+
+
+@pytest.mark.parametrize("codigo", [502, 503, 504])
+def test_avaliador_fora_do_ar_e_erro_temporario_e_nao_cota(codigo: int):
+    extrator, _ = extrator_com(erro_da_api(codigo, "sobrecarga"))
+
+    with pytest.raises(AvaliadorIndisponivel, match=str(codigo)) as capturado:
         extrator.extrair([vaga_exemplo()])
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
 

@@ -5,13 +5,18 @@ from google.genai import errors, types
 from pydantic import ValidationError
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
-from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import (
+    AvaliadorIndisponivel,
+    CotaDeAvaliacaoExcedida,
+    ErroDeAvaliacao,
+)
 from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
 TEMPERATURA_DETERMINISTICA = 0
 HTTP_COTA_EXCEDIDA = 429
+HTTP_INDISPONIVEL = frozenset({502, 503, 504})
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
 
 
@@ -40,6 +45,8 @@ class ExtratorGemini:
             mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
             if erro.code == HTTP_COTA_EXCEDIDA:
                 raise CotaDeAvaliacaoExcedida(mensagem, tempo_de_espera(erro.message)) from None
+            if erro.code in HTTP_INDISPONIVEL:
+                raise AvaliadorIndisponivel(mensagem) from None
             raise ErroDeAvaliacao(mensagem) from None
         return interpretar_resposta(resposta.text)
 
