@@ -1,3 +1,5 @@
+import re
+
 from pydantic import BaseModel
 
 from radar.domain.areas import AREAS_POR_NOME, area_do_curso, normalizar_curso
@@ -82,4 +84,11 @@ def mesma_area(aceito: str, do_perfil: str) -> bool:
 def mesmo_curso(aceito: str, do_perfil: str) -> bool:
     esquerda = normalizar_curso(aceito)
     direita = normalizar_curso(do_perfil)
-    return bool(esquerda and direita and esquerda == direita)
+    if not esquerda or not direita:
+        return False
+    if esquerda == direita:
+        return True
+    if area_do_curso(direita) is None:
+        return False
+    generico = esquerda[:-1] if esquerda.endswith("s") and " " not in esquerda else esquerda
+    return re.search(rf"\b{re.escape(generico)}\b", direita) is not None

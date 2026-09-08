@@ -1,3 +1,5 @@
+import pytest
+
 from radar.domain.models import ExtracaoDaVaga, Modalidade, NivelCompatibilidade, Perfil
 from radar.matching.compatibilidade import derivar_niveis, montar_pontos
 
@@ -156,3 +158,26 @@ def test_medicina_nao_aceita_medicina_veterinaria_por_substring():
 def test_prefixo_de_formacao_nao_impede_curso_explicitamente_aceito():
     anuncio = extracao(cursos_aceitos=["Bacharelado em Administração"])
     assert curso_de(anuncio, perfil(curso="Administração")) is NivelCompatibilidade.COMPATIVEL
+
+
+@pytest.mark.parametrize(
+    ("aceito", "curso"),
+    [
+        ("Engenharia", "Engenharia Civil"),
+        ("Engenharias", "Engenharia Química"),
+        ("Química", "Engenharia Química"),
+        ("Administração", "Administração de Empresas"),
+    ],
+)
+def test_curso_generico_aceito_vale_para_a_formacao_especifica_reconhecida(aceito, curso):
+    anuncio = extracao(cursos_aceitos=[aceito])
+
+    assert curso_de(anuncio, perfil(curso=curso)) is NivelCompatibilidade.COMPATIVEL
+
+
+def test_curso_generico_nao_vale_para_formacao_que_o_catalogo_nao_conhece():
+    anuncio = extracao(cursos_aceitos=["Medicina"])
+
+    assert (
+        curso_de(anuncio, perfil(curso="Medicina Veterinária")) is NivelCompatibilidade.INCOMPATIVEL
+    )
