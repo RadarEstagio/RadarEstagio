@@ -260,9 +260,9 @@
           <div class="privacy-note"><span aria-hidden="true">●</span> Seu perfil serve para selecionar vagas. O e-mail dá acesso à conta e o Telegram recebe as recomendações. Usamos fornecedores para operar o serviço. Consulte a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade (em revisão, abre em outra aba)</a>.</div>
         </div>
         <div class="dialog-form-area">
-          <div class="progress-wrap" aria-label="Progresso do cadastro">
+          <div class="progress-wrap">
             <div class="progress-meta"><span id="progress-label">Etapa 1 de 3</span><strong id="progress-percent">33%</strong></div>
-            <div class="progress-track"><span id="progress-bar"></span></div>
+            <div class="progress-track" id="progress-track" role="progressbar" aria-labelledby="progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33"><span id="progress-bar"></span></div>
           </div>
           <p class="form-message" id="form-message" role="alert" hidden></p>
           <form id="signup-form" novalidate>
@@ -297,7 +297,7 @@
               <legend>O que você já sabe usar?</legend>
               <p class="step-help">Escolha pelo menos uma habilidade. Isso melhora a nota das vagas que combinam com você.</p>
               <input name="habilidades" type="hidden" />
-              <div class="skill-picker" id="skill-picker" aria-label="Habilidades sugeridas">
+              <div class="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
                 <button type="button" data-skill="Python" aria-pressed="false">Python</button>
                 <button type="button" data-skill="JavaScript" aria-pressed="false">JavaScript</button>
                 <button type="button" data-skill="Java" aria-pressed="false">Java</button>
@@ -312,7 +312,7 @@
               <div class="field-grid">
                 <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
               </div>
-              <div class="selected-skills" id="selected-skills" aria-live="polite"></div>
+              <div class="selected-skills" id="selected-skills" role="group" aria-label="Habilidades escolhidas" aria-live="polite"></div>
             </fieldset>
             <fieldset class="form-step" data-step="4">
               <legend>Onde as vagas devem chegar?</legend>

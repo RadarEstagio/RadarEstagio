@@ -41,6 +41,7 @@ const progressWrap = document.querySelector(".progress-wrap");
 const progressLabel = document.querySelector("#progress-label");
 const progressPercent = document.querySelector("#progress-percent");
 const progressBar = document.querySelector("#progress-bar");
+const progressTrack = document.querySelector("#progress-track");
 const formMessage = document.querySelector("#form-message");
 const submitProfile = document.querySelector("#submit-profile");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
@@ -167,6 +168,7 @@ function showStep(step) {
   progressLabel.textContent = `Etapa ${posicao + 1} de ${passosAtivos.length}`;
   progressPercent.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
+  progressTrack.setAttribute("aria-valuenow", String(percent));
   previousStep.hidden = posicao === 0;
   nextStep.hidden = posicao === passosAtivos.length - 1;
   submitProfile.hidden = posicao !== passosAtivos.length - 1;
