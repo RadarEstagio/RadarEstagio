@@ -13,6 +13,7 @@ class Area:
     exclusao: str
     descricao: str
     termos_de_busca: tuple[str, ...]
+    subareas: tuple[tuple[str, str], ...]
 
 
 AREAS = (
@@ -75,6 +76,15 @@ AREAS = (
             "informática",
             "tecnologia",
         ),
+        subareas=(
+            ("desenvolvimento_web", "Desenvolvimento web"),
+            ("desenvolvimento_mobile", "Desenvolvimento mobile"),
+            ("dados_ia", "Dados e IA"),
+            ("infraestrutura_redes", "Infraestrutura e redes"),
+            ("seguranca", "Segurança"),
+            ("suporte_tecnico", "Suporte técnico"),
+            ("qa_testes", "QA e testes"),
+        ),
     ),
     Area(
         nome="direito",
@@ -83,6 +93,12 @@ AREAS = (
         exclusao=r"juridic[ao]|direito|compliance",
         descricao=r"direito|juridic[ao]|advocacia|contencioso|peticao|escritorio de advocacia",
         termos_de_busca=("direito", "jurídico", "advocacia"),
+        subareas=(
+            ("direito_contencioso", "Contencioso"),
+            ("direito_societario", "Societário e contratos"),
+            ("direito_trabalhista", "Trabalhista"),
+            ("compliance", "Compliance"),
+        ),
     ),
     Area(
         nome="administracao",
@@ -94,6 +110,11 @@ AREAS = (
         exclusao=r"backoffice|back-?office|processos administrativos",
         descricao=r"administracao|rotinas administrativas|processos administrativos",
         termos_de_busca=("administração", "administrativo", "gestão"),
+        subareas=(
+            ("rotinas_administrativas", "Rotinas administrativas"),
+            ("gestao_de_projetos", "Gestão de projetos"),
+            ("processos_e_qualidade", "Processos e qualidade"),
+        ),
     ),
     Area(
         nome="financas",
@@ -108,6 +129,12 @@ AREAS = (
             r"|economia|conciliacao bancaria|contas a pagar|contas a receber"
         ),
         termos_de_busca=("financeiro", "contábil", "economia", "controladoria"),
+        subareas=(
+            ("financeiro", "Financeiro"),
+            ("contabil_fiscal", "Contábil e fiscal"),
+            ("controladoria_auditoria", "Controladoria e auditoria"),
+            ("mercado_financeiro", "Mercado financeiro"),
+        ),
     ),
     Area(
         nome="marketing",
@@ -122,6 +149,12 @@ AREAS = (
             r"|producao de conteudo|branding|assessoria de imprensa"
         ),
         termos_de_busca=("marketing", "comunicação", "publicidade"),
+        subareas=(
+            ("marketing_digital", "Marketing digital"),
+            ("conteudo_e_redes", "Conteúdo e redes sociais"),
+            ("comunicacao_institucional", "Comunicação institucional"),
+            ("design_grafico", "Design gráfico"),
+        ),
     ),
     Area(
         nome="pessoas",
@@ -139,6 +172,11 @@ AREAS = (
             r"|treinamento e desenvolvimento|psicologia"
         ),
         termos_de_busca=("recursos humanos", "recrutamento", "psicologia"),
+        subareas=(
+            ("recrutamento_e_selecao", "Recrutamento e seleção"),
+            ("departamento_pessoal", "Departamento pessoal"),
+            ("treinamento_e_desenvolvimento", "Treinamento e desenvolvimento"),
+        ),
     ),
     Area(
         nome="comercial",
@@ -150,6 +188,11 @@ AREAS = (
         exclusao=r"comercial|vendas|pre-?vendas?|comercio exterior",
         descricao=r"comercial|vendas|prospeccao|comercio exterior|atendimento ao cliente",
         termos_de_busca=("comercial", "vendas", "comércio exterior"),
+        subareas=(
+            ("vendas", "Vendas"),
+            ("atendimento_ao_cliente", "Atendimento ao cliente"),
+            ("comercio_exterior", "Comércio exterior"),
+        ),
     ),
     Area(
         nome="logistica",
@@ -158,6 +201,11 @@ AREAS = (
         exclusao=r"logistic[ao]",
         descricao=r"logistica|suprimentos|supply chain|compras|controle de estoque|almoxarifado",
         termos_de_busca=("logística", "suprimentos", "compras"),
+        subareas=(
+            ("suprimentos_e_compras", "Suprimentos e compras"),
+            ("estoque_e_armazem", "Estoque e armazém"),
+            ("transporte_e_distribuicao", "Transporte e distribuição"),
+        ),
     ),
     Area(
         nome="engenharias",
@@ -184,6 +232,13 @@ AREAS = (
             r"|autocad|obras|manutencao industrial|seguranca do trabalho"
         ),
         termos_de_busca=("engenharia", "produção", "manutenção"),
+        subareas=(
+            ("engenharia_civil", "Engenharia civil"),
+            ("engenharia_mecanica", "Engenharia mecânica"),
+            ("engenharia_eletrica", "Engenharia elétrica"),
+            ("engenharia_de_producao", "Engenharia de produção"),
+            ("meio_ambiente_e_seguranca", "Meio ambiente e segurança"),
+        ),
     ),
     Area(
         nome="saude",
@@ -205,6 +260,11 @@ AREAS = (
         exclusao=r"fisioterapia|enfermagem|nutricao|farmacia|laboratorio",
         descricao=r"enfermagem|fisioterapia|nutricao|farmacia|laboratorio|area da saude|clinica",
         termos_de_busca=("saúde", "enfermagem", "laboratório"),
+        subareas=(
+            ("assistencia_a_saude", "Assistência à saúde"),
+            ("laboratorio_e_pesquisa", "Laboratório e pesquisa"),
+            ("saude_publica", "Saúde pública"),
+        ),
     ),
     Area(
         nome="educacao",
@@ -213,6 +273,11 @@ AREAS = (
         exclusao=r"pedagogia",
         descricao=r"pedagogia|docencia|acompanhamento pedagogico|material didatico",
         termos_de_busca=("pedagogia", "educação", "ensino"),
+        subareas=(
+            ("docencia_e_monitoria", "Docência e monitoria"),
+            ("coordenacao_pedagogica", "Coordenação pedagógica"),
+            ("producao_de_material", "Produção de material didático"),
+        ),
     ),
     Area(
         nome="turismo",
@@ -221,10 +286,17 @@ AREAS = (
         exclusao=r"turismo|hotelaria|gastronomia",
         descricao=r"turismo|hotelaria|gastronomia|organizacao de eventos",
         termos_de_busca=("turismo", "hotelaria", "eventos"),
+        subareas=(
+            ("eventos", "Eventos"),
+            ("hotelaria", "Hotelaria"),
+            ("gastronomia", "Gastronomia"),
+        ),
     ),
 )
 
 AREAS_POR_NOME = {area.nome: area for area in AREAS}
+SUBAREAS = tuple(valor for area in AREAS for valor, _ in area.subareas)
+ROTULOS_DAS_SUBAREAS = {valor: rotulo for area in AREAS for valor, rotulo in area.subareas}
 PADROES_DE_TITULO = {area.nome: re.compile(rf"\b(?:{area.titulo})\b") for area in AREAS}
 PADROES_DE_EXCLUSAO = {area.nome: re.compile(rf"\b(?:{area.exclusao})\b") for area in AREAS}
 PADROES_DE_DESCRICAO = {area.nome: re.compile(rf"\b(?:{area.descricao})\b") for area in AREAS}
@@ -267,3 +339,8 @@ def titulo_e_de_outra_area(titulo: str, area: str | None) -> bool:
 def termos_de_busca(areas: set[str]) -> tuple[str, ...]:
     escolhidas = [area for area in AREAS if area.nome in areas]
     return tuple(termo for area in escolhidas for termo in area.termos_de_busca)
+
+
+def subareas_do_curso(curso: str) -> tuple[tuple[str, str], ...]:
+    area = area_do_curso(curso)
+    return AREAS_POR_NOME[area].subareas if area else ()

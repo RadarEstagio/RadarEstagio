@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from radar.domain.areas import SUBAREAS
+
 
 class Modalidade(StrEnum):
     REMOTO = "remoto"
@@ -13,14 +15,7 @@ class Modalidade(StrEnum):
     INDIFERENTE = "indiferente"
 
 
-class AreaDeInteresse(StrEnum):
-    DESENVOLVIMENTO_WEB = "desenvolvimento_web"
-    DESENVOLVIMENTO_MOBILE = "desenvolvimento_mobile"
-    DADOS_IA = "dados_ia"
-    INFRAESTRUTURA_REDES = "infraestrutura_redes"
-    SEGURANCA = "seguranca"
-    SUPORTE_TECNICO = "suporte_tecnico"
-    QA_TESTES = "qa_testes"
+AreaDeInteresse = StrEnum("AreaDeInteresse", {valor.upper(): valor for valor in SUBAREAS})
 
 
 class NivelCompatibilidade(StrEnum):

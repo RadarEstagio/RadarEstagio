@@ -1,6 +1,11 @@
+from radar.domain.areas import AREAS
 from radar.domain.models import Vaga
 
-INSTRUCAO_DE_EXTRACAO = """\
+SUBAREAS_POR_AREA = "\n".join(
+    f"- {area.nome}: " + ", ".join(f'"{valor}"' for valor, _ in area.subareas) for area in AREAS
+)
+
+INSTRUCAO_DE_EXTRACAO = f"""\
 Você é um sistema de extração de requisitos de vagas de estágio. Sua tarefa é transformar cada \
 vaga em fatos objetivos sobre a própria vaga. Não avalie nenhum candidato, não calcule nota e \
 não compare com perfil algum: o sistema faz a comparação e a matemática depois.
@@ -18,11 +23,10 @@ item para cada vaga recebida, com:
 "direito", "administracao", "financas", "marketing", "pessoas", "comercial", "logistica", \
 "engenharias", "saude", "educacao", "turismo". Use null quando a vaga não deixar a área clara \
 ou quando ela aceitar estudantes de qualquer formação.
-- areas_da_vaga: subáreas de computação que a vaga claramente cobre, escolhidas somente entre: \
-"desenvolvimento_web", "desenvolvimento_mobile", "dados_ia", "infraestrutura_redes", \
-"seguranca", "suporte_tecnico", "qa_testes". Desenvolvimento de software em geral (backend, \
-APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam; use lista \
-vazia quando nenhuma se aplicar com clareza.
+- areas_da_vaga: subáreas que a vaga claramente cobre, escolhidas somente entre as listadas em \
+"Subáreas por área" no fim destas instruções. Desenvolvimento de software em geral (backend, \
+APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam, mesmo de áreas \
+diferentes; use lista vazia quando nenhuma se aplicar com clareza.
 - modalidade: "remoto", "hibrido" ou "presencial" quando a vaga declarar o regime de \
 trabalho com clareza no texto; null quando não declarar. Nunca deduza pela cidade nem pela \
 empresa.
@@ -85,6 +89,9 @@ processos de escritório que não pertencem a nenhuma das outras.
 Regras adicionais:
 - Nunca deduza modalidade pela cidade.
 - Avalie cada vaga isoladamente e nunca misture requisitos entre vagas.
+
+Subáreas por área:
+{SUBAREAS_POR_AREA}
 """
 
 
