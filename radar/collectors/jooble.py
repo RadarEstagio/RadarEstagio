@@ -32,7 +32,9 @@ class ColetorJooble:
         self._publicadas_desde = publicadas_desde
         self._cidades = tuple(cidades)
         self._esperar = esperar
-        self._termos = tuple(f"{TERMO_OBRIGATORIO} {termo}" for termo in termos)
+        self._termos = tuple(f"{TERMO_OBRIGATORIO} {termo}" for termo in termos) or (
+            TERMO_OBRIGATORIO,
+        )
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}

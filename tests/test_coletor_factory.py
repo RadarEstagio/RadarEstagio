@@ -141,3 +141,27 @@ def test_termos_de_busca_acompanham_os_cursos_cadastrados():
 
     assert "software" in com_direito
     assert "direito" in com_direito
+
+
+def test_curso_desconhecido_amplia_a_busca_em_grupo_misto(httpx_mock):
+    conhecidos = usuario(1, "Rio", Modalidade.REMOTO)
+    desconhecido = usuario(2, "Rio", Modalidade.REMOTO, curso="Agronomia")
+    termos = termos_de_interesse(iter([conhecidos, desconhecido]))
+    httpx_mock.add_response(url=re.compile(re.escape(URL_ADZUNA)), json={"results": []})
+    with httpx.Client() as cliente:
+        criar_coletor(settings_de_teste("adzuna"), cliente, AGORA, termos=termos).coletar()
+    parametros = httpx_mock.get_request().url.params
+    assert parametros["what_and"] == "estágio"
+    assert "what_or" not in parametros
+
+
+def test_busca_geral_jooble_nao_retorna_a_tecnologia(httpx_mock):
+    import json
+
+    httpx_mock.add_response(url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []})
+    settings = settings_de_teste("adzuna").model_copy(
+        update={"fontes": "jooble", "jooble_api_key": "teste"}
+    )
+    with httpx.Client() as cliente:
+        criar_coletor(settings, cliente, AGORA, termos=()).coletar()
+    assert json.loads(httpx_mock.get_request().content)["keywords"] == "estágio"
