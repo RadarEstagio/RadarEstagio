@@ -339,11 +339,15 @@ Três revisores independentes e uma medição em produção depois da expansão.
   mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
   total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
 
+As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`, com
+`HABILIDADES_GERAIS` para curso desconhecido) e são montadas ao entrar na etapa de habilidades;
+a lista de computação é a mesma de antes. O aviso "Área que você recusou" nomeia as subáreas
+pelo rótulo do catálogo.
+
 Sabidos e não corrigidos: republicação por outra fonte com descrição curta pode reenviar;
 extrações e enriquecimento são chaveados por `id_externo` sem `fonte` (colisão improvável entre
-Adzuna e Gupy); o banco ainda aceita subárea de outro curso (mitigado ao carregar); o aviso "Área
-que você recusou" não nomeia a subárea; as habilidades sugeridas no cadastro são só de TI; a
-Jooble multiplica consultas por termo (segue desligada).
+Adzuna e Gupy); o banco ainda aceita subárea de outro curso (mitigado ao carregar); a Jooble
+multiplica consultas por termo (segue desligada).
 
 ### Cobertura das fontes (30/08/2026)
 
