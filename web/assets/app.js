@@ -510,6 +510,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = false;
+  setFormMessage();
   rotularDialogo("success-title");
   document.querySelector("#success-kicker").textContent = kicker;
   document.querySelector("#success-title").textContent = title;
