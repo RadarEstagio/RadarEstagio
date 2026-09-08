@@ -43,11 +43,13 @@ const progressPercent = document.querySelector("#progress-percent");
 const progressBar = document.querySelector("#progress-bar");
 const progressTrack = document.querySelector("#progress-track");
 const formMessage = document.querySelector("#form-message");
+const formNotice = document.querySelector("#form-notice");
 const submitProfile = document.querySelector("#submit-profile");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
 const accountState = document.querySelector("#account-state");
 const accountMessage = document.querySelector("#account-message");
+const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const credenciais = document.querySelector("#credenciais");
@@ -311,9 +313,10 @@ function marcarErroNoCampo(campo) {
 }
 
 function setFormMessage(message = "", tom = "erro") {
-  formMessage.textContent = message;
-  formMessage.hidden = !message;
-  formMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
+  const regiao = tom === "aviso" ? formNotice : formMessage;
+  const outra = tom === "aviso" ? formMessage : formNotice;
+  outra.textContent = "";
+  regiao.textContent = message;
 }
 
 function setSubmitting(submitting) {
@@ -537,9 +540,10 @@ function showActivation(profile) {
 
 
 function setAccountMessage(message = "", tom = "erro") {
-  accountMessage.textContent = message;
-  accountMessage.hidden = !message;
-  accountMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
+  const regiao = tom === "aviso" ? accountNotice : accountMessage;
+  const outra = tom === "aviso" ? accountMessage : accountNotice;
+  outra.textContent = "";
+  regiao.textContent = message;
 }
 
 function resumoDoPerfil(profile) {
