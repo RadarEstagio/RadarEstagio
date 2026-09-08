@@ -339,20 +339,22 @@
                 <label><input type="checkbox" name="aceita_emails" /> <span>Quero receber e-mails ocasionais do Radar.</span></label>
               </div>
             </fieldset>
+            <p class="form-message" id="form-message" role="alert"></p>
+            <p class="form-message form-message-aviso" id="form-notice" role="status"></p>
             <div class="form-actions" id="form-actions">
               <button class="button button-ghost" type="button" id="previous-step">← Voltar</button>
               <button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button>
               <button class="button button-primary" type="submit" id="submit-profile" aria-busy="false"><span id="submit-label">Criar conta e continuar</span><span class="button-spinner" aria-hidden="true"></span><span class="button-arrow" aria-hidden="true">→</span></button>
             </div>
           </form>
-          <p class="form-message" id="form-message" role="alert"></p>
-          <p class="form-message form-message-aviso" id="form-notice" role="status"></p>
           <section id="auth-assistance" hidden aria-labelledby="assistance-title">
             <h2 id="assistance-title">Confirme seu e-mail</h2>
             <p id="assistance-copy"></p>
             <form id="assistance-form">
               <label class="field" id="assistance-email-field"><span>E-mail</span><input id="assistance-email" type="email" autocomplete="email" spellcheck="false" required /></label>
               <label class="field" id="assistance-password-field" hidden><span>Nova senha</span><input id="assistance-password" type="password" autocomplete="new-password" minlength="8" /><button type="button" data-toggle-password="assistance-password" aria-pressed="false">Mostrar senha</button></label>
+              <p class="form-message" id="assistance-message" role="alert"></p>
+              <p class="form-message form-message-aviso" id="assistance-notice" role="status"></p>
               <button class="button button-primary" id="assistance-submit" type="submit">Reenviar confirmação</button>
             </form>
             <button class="button button-ghost" id="assistance-back" type="button">Voltar para entrar</button>

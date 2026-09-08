@@ -44,6 +44,8 @@ const progressBar = document.querySelector("#progress-bar");
 const progressTrack = document.querySelector("#progress-track");
 const formMessage = document.querySelector("#form-message");
 const formNotice = document.querySelector("#form-notice");
+const assistanceMessage = document.querySelector("#assistance-message");
+const assistanceNotice = document.querySelector("#assistance-notice");
 const submitProfile = document.querySelector("#submit-profile");
 const submitLabel = document.querySelector("#submit-label");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
@@ -325,10 +327,13 @@ function marcarErroNoCampo(campo, mensagem) {
 }
 
 function setFormMessage(message = "", tom = "erro") {
-  const regiao = tom === "aviso" ? formNotice : formMessage;
-  const outra = tom === "aviso" ? formMessage : formNotice;
-  outra.textContent = "";
-  regiao.textContent = message;
+  const naAssistencia = !document.querySelector("#auth-assistance").hidden;
+  const erro = naAssistencia ? assistanceMessage : formMessage;
+  const aviso = naAssistencia ? assistanceNotice : formNotice;
+  [formMessage, formNotice, assistanceMessage, assistanceNotice].forEach((regiao) => {
+    regiao.textContent = "";
+  });
+  (tom === "aviso" ? aviso : erro).textContent = message;
 }
 
 function marcarOcupado(botao, ocupado) {
