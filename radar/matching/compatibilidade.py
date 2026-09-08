@@ -2,7 +2,7 @@ import unicodedata
 
 from pydantic import BaseModel
 
-from radar.domain.areas import area_do_curso
+from radar.domain.areas import AREAS_POR_NOME, area_do_curso
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
@@ -76,7 +76,9 @@ def montar_pontos(
 
 def mesma_area(aceito: str, do_perfil: str) -> bool:
     area_aceita = area_do_curso(aceito)
-    return area_aceita is not None and area_aceita == area_do_curso(do_perfil)
+    if area_aceita is None or area_aceita != area_do_curso(do_perfil):
+        return False
+    return AREAS_POR_NOME[area_aceita].cursos_intercambiaveis
 
 
 def mesmo_curso(aceito: str, do_perfil: str) -> bool:

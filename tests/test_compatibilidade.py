@@ -131,3 +131,16 @@ def test_curso_compativel_sem_lista_declarada_nao_vira_ponto_a_favor():
 
     assert a_favor == []
     assert contra == []
+
+
+def test_engenharias_diferentes_nao_sao_curso_equivalente():
+    aceita_civil = extracao(cursos_aceitos=["Engenharia Civil"])
+    quimica = perfil(curso="Engenharia Química")
+
+    assert curso_de(aceita_civil, quimica) is NivelCompatibilidade.INCOMPATIVEL
+
+
+def test_economia_nao_herda_vaga_exclusiva_de_contabeis():
+    aceita_contabeis = extracao(cursos_aceitos=["Ciências Contábeis"])
+
+    assert curso_de(aceita_contabeis, perfil(curso="Economia")) is NivelCompatibilidade.INCOMPATIVEL

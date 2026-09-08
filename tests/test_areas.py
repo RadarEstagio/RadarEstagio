@@ -129,3 +129,7 @@ def test_vaga_de_software_nao_vaza_para_administracao(titulo: str):
 def test_treinamento_e_desenvolvimento_continua_sendo_de_pessoas():
     assert not titulo_e_de_outra_area("estagio em treinamento e desenvolvimento", "pessoas")
     assert titulo_e_da_area("estagio em treinamento e desenvolvimento", "pessoas")
+
+
+def test_vaga_de_base_de_dados_nao_vaza_para_financas():
+    assert titulo_e_de_outra_area("estagio em base de dados", "financas")

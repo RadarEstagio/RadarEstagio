@@ -14,6 +14,7 @@ class Area:
     descricao: str
     termos_de_busca: tuple[str, ...]
     subareas: tuple[tuple[str, str], ...]
+    cursos_intercambiaveis: bool = False
 
 
 AREAS = (
@@ -52,7 +53,7 @@ AREAS = (
             r"|engenharia de software|ciencia da computacao|sistemas de informacao"
             r"|analise de sistemas|desenvolvimento de (?:software|sistemas|aplicacoes)"
             r"|software|android|ios|front-?end|back-?end|full-?stack|devops|cyber\w*"
-            r"|banco de dados|seguranca da informacao|help-? ?desk"
+            r"|(?:banco|base) de dados|seguranca da informacao|help-? ?desk"
         ),
         descricao=(
             r"tecnologia da informacao|ciencia da computacao|engenharia de software"
@@ -85,6 +86,7 @@ AREAS = (
             ("suporte_tecnico", "Suporte técnico"),
             ("qa_testes", "QA e testes"),
         ),
+        cursos_intercambiaveis=True,
     ),
     Area(
         nome="direito",
