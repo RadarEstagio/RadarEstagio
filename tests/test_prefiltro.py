@@ -379,3 +379,20 @@ def test_filtrar_preserva_ordem_e_aceita_lista_vazia():
 
     assert filtrar([], perfil()) == []
     assert filtrar([segunda, primeira], perfil()) == [segunda, primeira]
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        ("Administração", "Estágio Financeiro", "Aceita Administração ou Economia."),
+        ("Administração", "Estágio em Recursos Humanos", "Cursando Administração ou Psicologia."),
+        (
+            "Ciência da Computação",
+            "Estágio em Software para Laboratório",
+            "Cursando Ciência da Computação. Python.",
+        ),
+        ("Direito", "Estágio Comercial", "Aceita qualquer curso."),
+    ],
+)
+def test_titulo_de_outra_area_nao_veta_curso_mencionado(curso, titulo, descricao):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))

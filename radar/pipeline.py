@@ -255,27 +255,21 @@ def atender_usuario_travado(
         candidatas,
         repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_repetidas,
     )
-    guardadas = aplicar_regras_objetivas(
-        repositorio.avaliacoes_existentes(usuario, candidatas), usuario.perfil
-    )
-    ids_guardados = {resultado.vaga.id_externo for resultado in guardadas}
-    pendentes = [vaga for vaga in candidatas if vaga.id_externo not in ids_guardados]
     novas = aplicar_regras_objetivas(
-        pontuador(pendentes, extracoes, usuario.perfil), usuario.perfil
+        pontuador(candidatas, extracoes, usuario.perfil), usuario.perfil
     )
-    if pendentes and not novas and not guardadas:
+    if candidatas and not novas:
         logger.warning(
             "usuário %s ficou sem mensagem: nenhuma das %d vagas pendentes tem extração",
             usuario.id,
-            len(pendentes),
+            len(candidatas),
         )
         return None
-    selecionadas = selecionar(guardadas + novas, parametros.quantidade, parametros.nota_minima)
+    selecionadas = selecionar(novas, parametros.quantidade, parametros.nota_minima)
     logger.info(
-        "usuário %s: %d candidatas, %d com nota guardada, %d avaliadas agora, %d enviadas",
+        "usuário %s: %d candidatas, %d avaliadas agora, %d enviadas",
         usuario.id,
         len(candidatas),
-        len(guardadas),
         len(novas),
         len(selecionadas),
     )

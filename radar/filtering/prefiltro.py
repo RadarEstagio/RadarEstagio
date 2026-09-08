@@ -4,6 +4,7 @@ import unicodedata
 from radar.domain.areas import (
     area_do_curso,
     descricao_e_da_area,
+    normalizar_curso,
     titulo_e_da_area,
     titulo_e_de_outra_area,
 )
@@ -36,6 +37,14 @@ def exige_senioridade(vaga: Vaga) -> bool:
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
     area = area_do_curso(perfil.curso)
     if area is None:
+        return False
+    descricao = normalizar(vaga.descricao)
+    curso = normalizar_curso(perfil.curso)
+    if curso and re.search(rf"\b{re.escape(curso)}\b", descricao):
+        return False
+    if re.search(
+        r"\b(?:qualquer curso|qualquer formacao|qualquer graduacao|todas as areas)\b", descricao
+    ):
         return False
     titulo = normalizar(vaga.titulo)
     if titulo_e_de_outra_area(titulo, area):

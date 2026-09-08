@@ -66,11 +66,12 @@ class ColetorAdzuna:
             "app_id": self._settings.adzuna_app_id,
             "app_key": self._settings.adzuna_app_key,
             "what_and": TERMO_OBRIGATORIO,
-            "what_or": self._termos,
             "max_days_old": self._settings.dias_recentes,
             "results_per_page": RESULTADOS_POR_PAGINA,
             "content-type": "application/json",
         }
+        if self._termos:
+            parametros["what_or"] = self._termos
         if cidade:
             parametros["where"] = cidade
         return parametros

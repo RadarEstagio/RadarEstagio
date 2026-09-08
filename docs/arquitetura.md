@@ -45,6 +45,19 @@ restringe `perfis.areas_de_interesse` e o `web/assets/areas.json` que o cadastro
 usados na coleta e as subáreas oferecidas no cadastro. O pré-filtro pergunta "essa vaga é da área
 do curso desta pessoa?" e a pontuação compara a área extraída da vaga com a do curso.
 
+Desde a revisão de 08/09, menção ao curso do perfil ou abertura a qualquer formação na
+descrição impede o veto antecipado por título: a extração e a compatibilidade verificam os
+requisitos depois. Nomes de cursos são comparados inteiros, com aliases explícitos e remoção
+de prefixos de formação. Um nome desconhecido não herda a área de um trecho do nome.
+Quando algum perfil não tem área reconhecida, Adzuna e Jooble fazem busca geral de estágio,
+respeitando os limites de paginação existentes; isso não garante cobertura integral.
+
+As notas são recalculadas em Python a cada execução, usando extrações compartilhadas.
+Avaliações armazenadas permanecem como registro, mas não alimentam a seleção; isso evita
+notas antigas após mudanças de regras ou feedback. O histórico de envios continua impedindo
+repetições. Office e idiomas passam a contar na cobertura para cursos fora de computação;
+o comportamento anterior de computação permanece.
+
 ### `domain/` — o que o sistema *é*
 
 Entidades como `Vaga`, `Perfil`, `Usuario`, `ExtracaoDaVaga`, `Recomendacao` e `ResultadoMatch`, além dos contratos

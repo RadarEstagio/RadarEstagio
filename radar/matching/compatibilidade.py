@@ -1,8 +1,6 @@
-import unicodedata
-
 from pydantic import BaseModel
 
-from radar.domain.areas import AREAS_POR_NOME, area_do_curso
+from radar.domain.areas import AREAS_POR_NOME, area_do_curso, normalizar_curso
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
@@ -82,13 +80,6 @@ def mesma_area(aceito: str, do_perfil: str) -> bool:
 
 
 def mesmo_curso(aceito: str, do_perfil: str) -> bool:
-    esquerda = normalizar(aceito)
-    direita = normalizar(do_perfil)
-    if not esquerda or not direita:
-        return False
-    return esquerda in direita or direita in esquerda
-
-
-def normalizar(texto: str) -> str:
-    sem_acentos = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
-    return " ".join(sem_acentos.casefold().split())
+    esquerda = normalizar_curso(aceito)
+    direita = normalizar_curso(do_perfil)
+    return bool(esquerda and direita and esquerda == direita)

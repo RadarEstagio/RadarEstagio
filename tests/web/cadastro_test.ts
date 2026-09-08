@@ -658,3 +658,29 @@ Deno.test("curso sem area conhecida esconde o campo de areas", async () => {
     assert.equal(doc.querySelectorAll('input[name="areas"]').length, 0);
   } finally { a.close(); }
 });
+
+
+for (const [curso, subarea] of [
+  ["Medicina Veterinária", null],
+  ["Design de Interiores", null],
+  ["Tecnologia em Gestão Financeira", "financeiro"],
+  ["Gestão de Recursos Humanos", "recrutamento_e_selecao"],
+  ["Bacharelado em Ciência da Computação", "desenvolvimento_web"],
+]) {
+  Deno.test(`áreas respeitam o nome completo de ${curso}`, async () => {
+    const a = app();
+    try {
+      await settle();
+      a.w.document.querySelector(".js-open-signup").click();
+      await settle();
+      const doc = a.w.document;
+      const form = fill(a.w);
+      form.elements.curso.value = curso;
+      for (let passo = 0; passo < 3; passo++) doc.querySelector("#next-step").click();
+      await settle();
+      const valores = [...doc.querySelectorAll('input[name="areas"]')].map((c) => c.value);
+      if (subarea === null) assert.deepEqual(valores, []);
+      else assert.ok(valores.includes(subarea));
+    } finally { a.close(); }
+  });
+}

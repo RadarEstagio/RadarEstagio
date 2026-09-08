@@ -1,6 +1,6 @@
 import unicodedata
 
-from radar.domain.areas import area_do_curso
+from radar.domain.areas import COMPUTACAO, area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -212,9 +212,9 @@ def _areas_reconhecidas(extracao: ExtracaoDaVaga) -> set[str]:
 
 
 def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
-    obrigatorias = _cobertura(extracao.habilidades_obrigatorias, perfil.habilidades)
-    principais = _cobertura(extracao.habilidades_principais, perfil.habilidades)
-    desejaveis = _cobertura(extracao.habilidades_desejaveis, perfil.habilidades)
+    obrigatorias = _cobertura(extracao.habilidades_obrigatorias, perfil)
+    principais = _cobertura(extracao.habilidades_principais, perfil)
+    desejaveis = _cobertura(extracao.habilidades_desejaveis, perfil)
     if obrigatorias is not None and principais is not None and desejaveis is not None:
         return (
             PESO_OBRIGATORIAS_QUANDO_TODAS * obrigatorias
@@ -245,16 +245,16 @@ def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) ->
     return COBERTURA_NEUTRA_SEM_STACK_DECLARADA
 
 
-def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
-    requisitos_normalizados = {
-        normalizado
-        for item in requisitos
-        if item.strip() and _conta_para_a_nota(normalizado := _normalizar_habilidade(item))
-    }
+def _cobertura(requisitos: list[str], perfil: Perfil) -> float | None:
+    requisitos_normalizados = {_normalizar_habilidade(item) for item in requisitos if item.strip()}
+    if area_do_curso(perfil.curso) == COMPUTACAO:
+        requisitos_normalizados = {
+            item for item in requisitos_normalizados if _conta_para_a_nota(item)
+        }
     if not requisitos_normalizados:
         return None
     habilidades_normalizadas = {
-        _normalizar_habilidade(item) for item in habilidades if item.strip()
+        _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
     }
     atendidas = requisitos_normalizados & habilidades_normalizadas
     return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (

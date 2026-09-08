@@ -7,7 +7,7 @@ from radar.collectors.adzuna import ColetorAdzuna
 from radar.collectors.composto import ColetorComposto
 from radar.collectors.gupy import ColetorGupy
 from radar.collectors.jooble import ColetorJooble
-from radar.domain.areas import COMPUTACAO, area_do_curso, termos_de_busca
+from radar.domain.areas import area_do_curso, termos_de_busca
 from radar.domain.models import Modalidade, Usuario
 from radar.domain.ports import ColetorDeVagas
 from radar.settings import Settings
@@ -24,7 +24,7 @@ def criar_coletor(
 ) -> ColetorDeVagas:
     publicadas_desde = agora - timedelta(days=settings.dias_recentes)
     cidades_de_busca = tuple(cidades)
-    termos_de_interesse = tuple(termos) or termos_de_busca({COMPUTACAO})
+    termos_de_interesse = tuple(termos)
     coletores_disponiveis: dict[str, ColetorDeVagas] = {
         "adzuna": ColetorAdzuna(
             settings, cliente_http, cidades_de_busca, termos=termos_de_interesse
@@ -58,4 +58,7 @@ def areas_de_interesse(usuarios: Iterable[Usuario]) -> set[str]:
 
 
 def termos_de_interesse(usuarios: Iterable[Usuario]) -> tuple[str, ...]:
-    return termos_de_busca(areas_de_interesse(usuarios))
+    perfis = list(usuarios)
+    if any(area_do_curso(usuario.perfil.curso) is None for usuario in perfis):
+        return ()
+    return termos_de_busca(areas_de_interesse(perfis))

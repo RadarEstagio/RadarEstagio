@@ -22,6 +22,11 @@ AREAS = (
         nome=COMPUTACAO,
         cursos=(
             "computacao",
+            "ciencia da computacao",
+            "engenharia da computacao",
+            "engenharia de computacao",
+            "gestao da tecnologia da informacao",
+            "gestao de tecnologia da informacao",
             "engenharia de software",
             "sistemas de informacao",
             "analise e desenvolvimento de sistemas",
@@ -121,7 +126,15 @@ AREAS = (
     ),
     Area(
         nome="financas",
-        cursos=("economia", "ciencias contabeis", "contabilidade", "atuaria", "financas"),
+        cursos=(
+            "economia",
+            "ciencias contabeis",
+            "contabilidade",
+            "atuaria",
+            "ciencias atuariais",
+            "financas",
+            "gestao financeira",
+        ),
         titulo=(
             r"financeir[ao]|financas|contabil|contabilidade|fiscal|controladoria|tesouraria"
             r"|atuari\w*|auditoria|economi\w*|credito|cobranca|faturamento"
@@ -141,7 +154,16 @@ AREAS = (
     ),
     Area(
         nome="marketing",
-        cursos=("marketing", "publicidade", "propaganda", "jornalismo", "comunicacao", "design"),
+        cursos=(
+            "marketing",
+            "publicidade",
+            "propaganda",
+            "publicidade e propaganda",
+            "jornalismo",
+            "comunicacao",
+            "comunicacao social",
+            "design",
+        ),
         titulo=(
             r"marketing|endomarketing|comunicacao|imprensa|midias sociais|redes sociais"
             r"|publicidade|propaganda|conteudo|branding|crm|inteligencia de mercado"
@@ -161,7 +183,12 @@ AREAS = (
     ),
     Area(
         nome="pessoas",
-        cursos=("psicologia", "recursos humanos", "gestao de pessoas"),
+        cursos=(
+            "psicologia",
+            "recursos humanos",
+            "gestao de pessoas",
+            "gestao de recursos humanos",
+        ),
         titulo=(
             r"recursos humanos|rh|recrutamento e selecao|r&s|people|departamento pessoal"
             r"|treinamento e desenvolvimento|psicologia"
@@ -220,6 +247,7 @@ AREAS = (
             "engenharia ambiental",
             "engenharia de producao",
             "arquitetura",
+            "arquitetura e urbanismo",
         ),
         titulo=(
             r"eletronic[ao]|eletrotecnic[ao]|eletric[ao]|mecanic[ao]|mecatronic[ao]|civil"
@@ -310,12 +338,18 @@ def normalizar(texto: str) -> str:
     return " ".join(sem_acentos.casefold().split())
 
 
+def normalizar_curso(curso: str) -> str:
+    return re.sub(
+        r"^(?:(?:bacharelado|licenciatura|tecnologo|tecnologia|tecnico|curso superior) em )+",
+        "",
+        normalizar(curso),
+    )
+
+
 def area_do_curso(curso: str) -> str | None:
-    normalizado = normalizar(curso)
-    if not normalizado:
-        return None
+    normalizado = normalizar_curso(curso)
     candidatas = [
-        (len(nome), area.nome) for area in AREAS for nome in area.cursos if nome in normalizado
+        (len(nome), area.nome) for area in AREAS for nome in area.cursos if nome == normalizado
     ]
     if not candidatas:
         return None

@@ -121,12 +121,14 @@ async function carregarAreas() {
 }
 
 function areaDoCurso(curso, areas) {
-  const normalizado = normalizarTexto(curso);
+  const normalizado = normalizarTexto(curso)
+    .replace(/\s+/g, " ")
+    .replace(/^(?:(?:bacharelado|licenciatura|tecnologo|tecnologia|tecnico|curso superior) em )+/, "");
   if (!normalizado) return null;
   let escolhida = null;
   for (const area of areas) {
     for (const nome of area.cursos) {
-      if (normalizado.includes(nome) && (!escolhida || nome.length > escolhida.tamanho)) {
+      if (normalizado === nome && (!escolhida || nome.length > escolhida.tamanho)) {
         escolhida = { area, tamanho: nome.length };
       }
     }

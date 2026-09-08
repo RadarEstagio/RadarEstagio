@@ -142,3 +142,19 @@ def test_vaga_de_base_de_dados_nao_vaza_para_financas():
 def test_titulo_generico_de_tecnologia_nao_entra_para_quem_e_de_outra_area(titulo: str):
     assert titulo_e_de_outra_area(titulo, "marketing")
     assert titulo_e_da_area(titulo, COMPUTACAO)
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperada"),
+    [
+        ("Medicina Veterinária", None),
+        ("Design de Interiores", None),
+        ("Gestão Financeira", "financas"),
+        ("Gestão de Recursos Humanos", "pessoas"),
+        ("Bacharelado em Ciência da Computação", "computacao"),
+        ("Tecnologia em Gestão Financeira", "financas"),
+        ("Agronomia", None),
+    ],
+)
+def test_nome_parcial_nao_inventa_area(curso, esperada):
+    assert area_do_curso(curso) == esperada
