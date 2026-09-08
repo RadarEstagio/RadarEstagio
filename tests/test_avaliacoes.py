@@ -172,14 +172,25 @@ def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
     assert resultado.avisos_objetivos == []
 
 
-def test_vaga_fora_da_area_de_interesse_perde_o_fator_e_ganha_aviso():
+def test_outra_subarea_do_mesmo_campo_perde_metade_do_fator_e_nao_ganha_aviso():
     perfil_web = perfil(habilidades=["Python", "Java"])
     perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
 
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]), perfil_web)
 
-    assert resultado.nota == 58
-    assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
+    assert resultado.nota == 63
+    assert resultado.avisos_objetivos == []
+
+
+def test_vaga_de_outro_campo_perde_o_fator_inteiro_e_ganha_aviso():
+    perfil_web = perfil(habilidades=["Python", "Java"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(
+        extracao(area_da_vaga="direito", areas_da_vaga=["direito_contencioso"]), perfil_web
+    )
+
+    assert "Fora das suas áreas de interesse" in resultado.avisos_objetivos
 
 
 def test_vaga_sem_area_reconhecida_fica_neutra_para_quem_tem_interesses():
@@ -209,12 +220,16 @@ def test_match_total_de_habilidades_fora_do_interesse_fica_limitado_a_65():
     perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
 
     resultado = resultado_da(
-        extracao(habilidades_obrigatorias=["SQL"], areas_da_vaga=["infraestrutura_redes"]),
+        extracao(
+            habilidades_obrigatorias=["SQL"],
+            area_da_vaga="direito",
+            areas_da_vaga=["direito_contencioso"],
+        ),
         perfil_web,
     )
 
     assert resultado.nota == 65
-    assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
+    assert "Fora das suas áreas de interesse" in resultado.avisos_objetivos
 
 
 def test_area_recusada_zera_o_interesse_e_limita_a_65_com_aviso():

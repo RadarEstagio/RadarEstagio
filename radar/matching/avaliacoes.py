@@ -1,5 +1,6 @@
 import unicodedata
 
+from radar.domain.areas import area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -26,6 +27,8 @@ LIMITE_CURSO_PARCIAL = 75
 LIMITE_CURSO_INCOMPATIVEL = 35
 AVISO_CURSO_INCOMPATIVEL = "Exige formação de outra área"
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
+INTERESSE_SEM_AREA_RECONHECIDA = 0.5
+INTERESSE_DE_OUTRA_SUBAREA = 0.5
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 AVISO_AREA_RECUSADA = "Área que você recusou nos últimos dias"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
@@ -172,9 +175,18 @@ def _compatibilidade_de_interesse(extracao: ExtracaoDaVaga, perfil: Perfil) -> f
     if not perfil.areas_de_interesse:
         return 1.0
     if not areas_da_vaga:
-        return 0.5
+        return INTERESSE_SEM_AREA_RECONHECIDA
     interesses = {area.value for area in perfil.areas_de_interesse}
-    return 1.0 if areas_da_vaga & interesses else 0.0
+    if areas_da_vaga & interesses:
+        return 1.0
+    if _e_do_campo_do_curso(extracao, perfil):
+        return INTERESSE_DE_OUTRA_SUBAREA
+    return 0.0
+
+
+def _e_do_campo_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
+    area_da_pessoa = area_do_curso(perfil.curso)
+    return area_da_pessoa is not None and extracao.area_da_vaga == area_da_pessoa
 
 
 def _area_recusada(areas_da_vaga: set[str], perfil: Perfil) -> bool:
@@ -188,7 +200,7 @@ def _avisos_objetivos(
     avisos = []
     if _area_recusada(_areas_reconhecidas(extracao), perfil):
         avisos.append(AVISO_AREA_RECUSADA)
-    elif _compatibilidade_de_interesse(extracao, perfil) == 0.0:
+    elif _compatibilidade_de_interesse(extracao, perfil) == 0.0 and perfil.areas_de_interesse:
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)

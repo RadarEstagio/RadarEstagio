@@ -261,6 +261,11 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   vagas legítimas. Curso sem área conhecida não filtra por área — melhor recomendar demais que
   emudecer o radar.
 
+- O fator de interesse (`PESO_INTERESSE`) tem três níveis: subárea marcada vale cheio, outra
+  subárea do mesmo campo do curso vale metade e sem aviso, e vaga de outro campo zera e avisa.
+  Punir igual quem marcou "Mercado financeiro" e recebeu uma vaga de Contabilidade era mentir no
+  aviso e cobrar duas vezes, já que estar em outra área já pesa em `PESO_AREA`.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
