@@ -184,8 +184,9 @@ function showStep(step) {
 }
 
 function atualizarPassosAtivos() {
+  const consentimento = document.querySelector("#signup-consent");
   if (authMode === "login") passosAtivos = [PASSO_CONTA];
-  else if (credenciais.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
+  else if (credenciais.hidden && consentimento.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
   else passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
   showStep(currentStep);
 }
@@ -218,7 +219,7 @@ function validateStep(step) {
     marcarErroNoCampo(invalid, mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     return false;
   }
-  if (step === PASSO_PREFERENCIAS && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
+  if (step === PASSO_CONTA && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
     showStep(step);
     marcarErroNoCampo(form.elements.aceitou_termos, mensagensValidacao.aceitou_termos);
     return false;
@@ -370,6 +371,7 @@ function setAuthMode(mode) {
 function sairDoModoEdicao() {
   editandoPerfilExistente = false;
   credenciais.hidden = false;
+  document.querySelector(".auth-help").hidden = false;
   atualizarPassosAtivos();
   accountSwitch.hidden = false;
   form.elements.email.required = true;
@@ -382,6 +384,7 @@ function entrarNoModoEdicao() {
   setAuthMode("signup");
   editandoPerfilExistente = true;
   credenciais.hidden = true;
+  document.querySelector(".auth-help").hidden = true;
   accountSwitch.hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
@@ -791,6 +794,7 @@ function prepareMissingProfile(session) {
   setAuthMode("signup");
   form.elements.email.value = session.user.email ?? "";
   credenciais.hidden = true;
+  document.querySelector(".auth-help").hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
