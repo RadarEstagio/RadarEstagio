@@ -215,9 +215,29 @@ def test_sinonimo_formacao_e_plural_nao_viram_formacao_de_outra_area(aceito, cur
 
 
 @pytest.mark.parametrize(
-    "aceito", ["Ensino Superior", "Nível superior completo", "Qualquer graduação"]
+    "aceito", ["Qualquer curso", "Qualquer graduação", "Qualquer formação", "Todos os cursos"]
 )
-def test_termo_generico_na_lista_de_aceitos_vale_como_qualquer_curso(aceito):
-    assert curso_de(extracao(cursos_aceitos=[aceito]), perfil(curso="Direito")) is (
-        NivelCompatibilidade.COMPATIVEL
+def test_abertura_explicita_na_lista_aceita_qualquer_curso(aceito):
+    assert (
+        curso_de(extracao(cursos_aceitos=["Enfermagem", aceito]), perfil(curso="Direito"))
+        is NivelCompatibilidade.COMPATIVEL
+    )
+
+
+@pytest.mark.parametrize(
+    "generico", ["Ensino Superior", "Nível superior completo", "Áreas afins", "Áreas correlatas"]
+)
+def test_termo_generico_nao_anula_restricao_de_curso(generico):
+    anuncio = extracao(cursos_aceitos=["Enfermagem", generico], aceita_qualquer_curso=False)
+    assert curso_de(anuncio, perfil(curso="Direito")) is NivelCompatibilidade.INCOMPATIVEL
+    assert curso_de(anuncio, perfil(curso="Enfermagem")) is NivelCompatibilidade.COMPATIVEL
+
+
+@pytest.mark.parametrize(
+    "generico", ["Ensino Superior", "Nível superior completo", "Áreas afins", "Áreas correlatas"]
+)
+def test_termo_generico_sozinho_nao_comprova_curso(generico):
+    assert (
+        curso_de(extracao(cursos_aceitos=[generico]), perfil(curso="Direito"))
+        is NivelCompatibilidade.PARCIAL
     )

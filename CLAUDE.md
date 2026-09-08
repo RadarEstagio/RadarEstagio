@@ -528,7 +528,8 @@ ligação das automações, porque cada uma guardava o dono no nome:
   ("Cursando", "Graduação em", "Curso Superior de Tecnologia em"), sufixos ("completo",
   "- Bacharelado", "(Bacharelado)", "/Eletrônica"), aplica sinônimos ("Ciências Econômicas" →
   economia, "ADS", "TI", "RH") e devolve vazio para termo genérico ("Ensino Superior",
-  "qualquer curso") — que em `cursos_aceitos` vale como qualquer curso. "Licenciatura em X" sem
+  "qualquer curso") — que em `cursos_aceitos` não comprova elegibilidade sozinho. Só abertura explícita
+  a qualquer curso libera todas as formações; termos genéricos não anulam cursos específicos. "Licenciatura em X" sem
   alias cai em educação. Prefixos, sufixos, sinônimos e genéricos vão no `areas.json` e o site
   aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
   genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é

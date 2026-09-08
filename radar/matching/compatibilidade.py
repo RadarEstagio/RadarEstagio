@@ -2,7 +2,7 @@ import re
 
 from pydantic import BaseModel
 
-from radar.domain.areas import AREAS_POR_NOME, area_do_curso, curso_e_generico, normalizar_curso
+from radar.domain.areas import AREAS_POR_NOME, area_do_curso, normalizar, normalizar_curso
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
@@ -37,7 +37,9 @@ def nivel_da_area(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilid
 
 def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
     if extracao.aceita_qualquer_curso or any(
-        curso_e_generico(curso) for curso in extracao.cursos_aceitos
+        normalizar(curso)
+        in {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
+        for curso in extracao.cursos_aceitos
     ):
         return NivelCompatibilidade.COMPATIVEL
     aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
