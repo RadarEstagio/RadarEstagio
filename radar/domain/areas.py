@@ -49,7 +49,8 @@ AREAS = (
             r"|ciencia de dados|analise de sistemas"
         ),
         exclusao=(
-            r"ti|t\.i\.?|desenvolvedor[a]?|developer|programacao|programador[a]?"
+            r"ti|t\.i\.?|tecnologia|informatica|desenvolvedor[a]?|developer|programacao"
+            r"|programador[a]?"
             r"|engenharia de software|ciencia da computacao|sistemas de informacao"
             r"|analise de sistemas|desenvolvimento de (?:software|sistemas|aplicacoes)"
             r"|software|android|ios|front-?end|back-?end|full-?stack|devops|cyber\w*"

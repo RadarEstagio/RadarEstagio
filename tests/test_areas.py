@@ -133,3 +133,12 @@ def test_treinamento_e_desenvolvimento_continua_sendo_de_pessoas():
 
 def test_vaga_de_base_de_dados_nao_vaza_para_financas():
     assert titulo_e_de_outra_area("estagio em base de dados", "financas")
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    ["estagio em tecnologia", "estagio - tecnologia da informacao", "estagio informatica"],
+)
+def test_titulo_generico_de_tecnologia_nao_entra_para_quem_e_de_outra_area(titulo: str):
+    assert titulo_e_de_outra_area(titulo, "marketing")
+    assert titulo_e_da_area(titulo, COMPUTACAO)
