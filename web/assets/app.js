@@ -499,10 +499,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
     const bot = window.RADAR_CONFIG.telegramBot;
     telegramLink.href = `https://t.me/${bot}?start=${token}`;
   }
-  const target = telegramLink.hidden
-    ? document.querySelector("#finish-signup")
-    : telegramLink;
-  target.focus();
+  document.querySelector("#success-title").focus();
 }
 
 function showConfirmation(email) {
