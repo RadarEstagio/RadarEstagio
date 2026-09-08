@@ -246,7 +246,7 @@ AREAS = (
             r"recursos humanos|recrutamento e selecao|departamento pessoal|gestao de pessoas"
             r"|treinamento e desenvolvimento|psicologia"
         ),
-        termos_de_busca=("recursos humanos", "recrutamento", "psicologia"),
+        termos_de_busca=("recrutamento", "psicologia", "rh"),
         subareas=(
             ("recrutamento_e_selecao", "Recrutamento e seleção"),
             ("departamento_pessoal", "Departamento pessoal"),
@@ -272,7 +272,7 @@ AREAS = (
             r"area comercial|equipe comercial|setor comercial|departamento comercial|vendas"
             r"|prospeccao|comercio exterior|atendimento ao cliente|carteira de clientes"
         ),
-        termos_de_busca=("comercial", "vendas", "comércio exterior"),
+        termos_de_busca=("comercial", "vendas", "exportação", "importação"),
         subareas=(
             ("vendas", "Vendas"),
             ("atendimento_ao_cliente", "Atendimento ao cliente"),

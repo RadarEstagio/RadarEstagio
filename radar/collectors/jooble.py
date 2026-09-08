@@ -26,15 +26,16 @@ class ColetorJooble:
         cidades: Iterable[str] = (),
         esperar: Callable[[float], None] = time.sleep,
         termos: Iterable[str] = (),
+        busca_geral: bool = False,
     ) -> None:
         self._api_key = api_key
         self._cliente_http = cliente_http
         self._publicadas_desde = publicadas_desde
         self._cidades = tuple(cidades)
         self._esperar = esperar
-        self._termos = tuple(f"{TERMO_OBRIGATORIO} {termo}" for termo in termos) or (
-            TERMO_OBRIGATORIO,
-        )
+        dirigidos = tuple(f"{TERMO_OBRIGATORIO} {termo}" for termo in termos)
+        geral = (TERMO_OBRIGATORIO,) if busca_geral or not dirigidos else ()
+        self._termos = dirigidos + geral
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}

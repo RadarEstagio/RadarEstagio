@@ -8,7 +8,12 @@ import httpx
 from pydantic import ValidationError
 
 from radar.collectors.errors import ErroDeColeta
-from radar.collectors.factory import cidades_de_interesse, criar_coletor, termos_de_interesse
+from radar.collectors.factory import (
+    cidades_de_interesse,
+    criar_coletor,
+    ha_curso_desconhecido,
+    termos_de_interesse,
+)
 from radar.domain.models import Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import ColetorDeVagas, Repositorio
@@ -148,7 +153,8 @@ def montar_coletor(
 ) -> ColetorDeVagas:
     cidades = cidades_de_interesse(usuarios)
     termos = termos_de_interesse(usuarios)
-    return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades, termos)
+    busca_geral = ha_curso_desconhecido(usuarios)
+    return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades, termos, busca_geral)
 
 
 def montar_extrator(settings: Settings) -> ExtratorEmLotes:

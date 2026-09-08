@@ -27,41 +27,46 @@ class ColetorAdzuna:
         cidades: Iterable[str] = (),
         esperar: Callable[[float], None] = time.sleep,
         termos: Iterable[str] = (),
+        busca_geral: bool = False,
     ) -> None:
         self._settings = settings
         self._cliente_http = cliente_http
         self._cidades = tuple(cidades)
         self._esperar = esperar
-        self._termos = " ".join(termos)
+        dirigida = " ".join(termos)
+        self._buscas = tuple(
+            dict.fromkeys([dirigida] + ([""] if busca_geral or not dirigida else []))
+        )
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
         for cidade in (None, *self._cidades):
-            for item in self._buscar_regiao(cidade):
-                vaga = converter_em_vaga(item)
-                vagas_por_id.setdefault(vaga.id_externo, vaga)
+            for termos in self._buscas:
+                for item in self._buscar_regiao(cidade, termos):
+                    vaga = converter_em_vaga(item)
+                    vagas_por_id.setdefault(vaga.id_externo, vaga)
         return list(vagas_por_id.values())
 
-    def _buscar_regiao(self, cidade: str | None) -> list[dict]:
+    def _buscar_regiao(self, cidade: str | None, termos: str) -> list[dict]:
         itens: list[dict] = []
         for pagina in range(1, LIMITE_DE_PAGINAS_POR_REGIAO + 1):
-            resultados = self._buscar_pagina(pagina, cidade)
+            resultados = self._buscar_pagina(pagina, cidade, termos)
             itens.extend(resultados)
             if len(resultados) < RESULTADOS_POR_PAGINA:
                 break
         return itens
 
-    def _buscar_pagina(self, pagina: int, cidade: str | None) -> list[dict]:
+    def _buscar_pagina(self, pagina: int, cidade: str | None, termos: str) -> list[dict]:
         resposta = requisitar_com_tentativas(
             "Adzuna",
             lambda: self._cliente_http.get(
-                f"{URL_BUSCA}/{pagina}", params=self._parametros_da_busca(cidade)
+                f"{URL_BUSCA}/{pagina}", params=self._parametros_da_busca(cidade, termos)
             ),
             self._esperar,
         )
         return resposta.json()["results"]
 
-    def _parametros_da_busca(self, cidade: str | None) -> dict[str, str | int]:
+    def _parametros_da_busca(self, cidade: str | None, termos: str) -> dict[str, str | int]:
         parametros: dict[str, str | int] = {
             "app_id": self._settings.adzuna_app_id,
             "app_key": self._settings.adzuna_app_key,
@@ -70,8 +75,8 @@ class ColetorAdzuna:
             "results_per_page": RESULTADOS_POR_PAGINA,
             "content-type": "application/json",
         }
-        if self._termos:
-            parametros["what_or"] = self._termos
+        if termos:
+            parametros["what_or"] = termos
         if cidade:
             parametros["where"] = cidade
         return parametros

@@ -10,6 +10,7 @@ from radar.collectors.factory import (
     areas_de_interesse,
     cidades_de_interesse,
     criar_coletor,
+    ha_curso_desconhecido,
     termos_de_interesse,
 )
 from radar.collectors.gupy import URL_BUSCA as URL_GUPY
@@ -126,6 +127,15 @@ def test_curso_sem_area_conhecida_nao_vira_termo_de_busca():
 
     assert areas_de_interesse([exotico]) == set()
     assert termos_de_interesse([exotico]) == ()
+    assert ha_curso_desconhecido([exotico])
+
+
+def test_grupo_misto_mantem_os_termos_dos_cursos_conhecidos():
+    de_computacao = usuario(1, "Rio", Modalidade.REMOTO)
+    exotico = usuario(2, "Rio", Modalidade.REMOTO, curso="Agronomia")
+
+    assert "software" in termos_de_interesse([de_computacao, exotico])
+    assert ha_curso_desconhecido([de_computacao, exotico])
 
 
 def test_termos_de_busca_acompanham_os_cursos_cadastrados():
@@ -143,16 +153,40 @@ def test_termos_de_busca_acompanham_os_cursos_cadastrados():
     assert "direito" in com_direito
 
 
-def test_curso_desconhecido_amplia_a_busca_em_grupo_misto(httpx_mock):
-    conhecidos = usuario(1, "Rio", Modalidade.REMOTO)
+def test_curso_desconhecido_soma_a_busca_geral_sem_tirar_a_dirigida(httpx_mock):
+    conhecido = usuario(1, "Rio", Modalidade.REMOTO)
     desconhecido = usuario(2, "Rio", Modalidade.REMOTO, curso="Agronomia")
-    termos = termos_de_interesse(iter([conhecidos, desconhecido]))
-    httpx_mock.add_response(url=re.compile(re.escape(URL_ADZUNA)), json={"results": []})
+    grupo = [conhecido, desconhecido]
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_ADZUNA)), json={"results": []}, is_reusable=True
+    )
     with httpx.Client() as cliente:
-        criar_coletor(settings_de_teste("adzuna"), cliente, AGORA, termos=termos).coletar()
-    parametros = httpx_mock.get_request().url.params
-    assert parametros["what_and"] == "estágio"
-    assert "what_or" not in parametros
+        criar_coletor(
+            settings_de_teste("adzuna"),
+            cliente,
+            AGORA,
+            termos=termos_de_interesse(grupo),
+            busca_geral=ha_curso_desconhecido(grupo),
+        ).coletar()
+    buscas = [requisicao.url.params.get("what_or") for requisicao in httpx_mock.get_requests()]
+    assert any(busca and "software" in busca for busca in buscas)
+    assert any(busca is None for busca in buscas)
+
+
+def test_sem_curso_desconhecido_nao_ha_busca_geral(httpx_mock):
+    grupo = [usuario(1, "Rio", Modalidade.REMOTO)]
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_ADZUNA)), json={"results": []}, is_reusable=True
+    )
+    with httpx.Client() as cliente:
+        criar_coletor(
+            settings_de_teste("adzuna"),
+            cliente,
+            AGORA,
+            termos=termos_de_interesse(grupo),
+            busca_geral=ha_curso_desconhecido(grupo),
+        ).coletar()
+    assert all("what_or" in requisicao.url.params for requisicao in httpx_mock.get_requests())
 
 
 def test_busca_geral_jooble_nao_retorna_a_tecnologia(httpx_mock):

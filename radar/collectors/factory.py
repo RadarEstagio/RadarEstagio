@@ -21,13 +21,18 @@ def criar_coletor(
     agora: datetime,
     cidades: Iterable[str] = (),
     termos: Iterable[str] = (),
+    busca_geral: bool = False,
 ) -> ColetorDeVagas:
     publicadas_desde = agora - timedelta(days=settings.dias_recentes)
     cidades_de_busca = tuple(cidades)
     termos_de_interesse = tuple(termos)
     coletores_disponiveis: dict[str, ColetorDeVagas] = {
         "adzuna": ColetorAdzuna(
-            settings, cliente_http, cidades_de_busca, termos=termos_de_interesse
+            settings,
+            cliente_http,
+            cidades_de_busca,
+            termos=termos_de_interesse,
+            busca_geral=busca_geral,
         ),
         "gupy": ColetorGupy(cliente_http, publicadas_desde, cidades_de_busca),
         "jooble": ColetorJooble(
@@ -36,6 +41,7 @@ def criar_coletor(
             publicadas_desde,
             cidades_de_busca,
             termos=termos_de_interesse,
+            busca_geral=busca_geral,
         ),
     }
     return ColetorComposto(
@@ -58,7 +64,8 @@ def areas_de_interesse(usuarios: Iterable[Usuario]) -> set[str]:
 
 
 def termos_de_interesse(usuarios: Iterable[Usuario]) -> tuple[str, ...]:
-    perfis = list(usuarios)
-    if any(area_do_curso(usuario.perfil.curso) is None for usuario in perfis):
-        return ()
-    return termos_de_busca(areas_de_interesse(perfis))
+    return termos_de_busca(areas_de_interesse(usuarios))
+
+
+def ha_curso_desconhecido(usuarios: Iterable[Usuario]) -> bool:
+    return any(area_do_curso(usuario.perfil.curso) is None for usuario in usuarios)
