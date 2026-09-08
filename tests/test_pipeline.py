@@ -890,3 +890,37 @@ def test_resumo_conta_extracoes_que_nao_foram_gravadas_mas_entrega_mesmo_assim()
 
     assert resumo.extracoes_nao_gravadas == 1
     assert resumo.vagas_enviadas() == 1
+
+
+class ExtratorQueSoExtraiAlgumas(ExtratorFalso):
+    def __init__(self, ids: set[str]) -> None:
+        super().__init__({})
+        self._ids = ids
+
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(vaga.id_externo for vaga in vagas)
+        return [
+            ExtracaoDaVaga(id_vaga=vaga.id_externo, area_da_vaga="computacao")
+            for vaga in vagas
+            if vaga.id_externo in self._ids
+        ]
+
+
+def pontuador_fraco(vagas, extracoes, perfil):
+    return [ResultadoMatch(vaga=v, nota=10) for v in vagas if v.id_externo in extracoes]
+
+
+def test_candidata_sem_extracao_nao_vira_conclusao_de_que_nao_ha_vaga_compativel():
+    notificador = NotificadorFalso()
+
+    executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorQueSoExtraiAlgumas({"1"}),
+        notificador,
+        RepositorioFalso([usuario()]),
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        pontuador_fraco,
+    )
+
+    assert notificador.textos == []

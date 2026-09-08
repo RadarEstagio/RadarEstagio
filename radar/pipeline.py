@@ -277,14 +277,16 @@ def atender_usuario_travado(
     novas = aplicar_regras_objetivas(
         pontuador(candidatas, extracoes, usuario.perfil), usuario.perfil
     )
-    if candidatas and not novas:
+    sem_extracao = len(candidatas) - len(novas)
+    selecionadas = selecionar(novas, parametros.quantidade, parametros.nota_minima)
+    if not selecionadas and sem_extracao:
         logger.warning(
-            "usuário %s ficou sem mensagem: nenhuma das %d vagas pendentes tem extração",
+            "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
             usuario.id,
+            sem_extracao,
             len(candidatas),
         )
         return None
-    selecionadas = selecionar(novas, parametros.quantidade, parametros.nota_minima)
     logger.info(
         "usuário %s: %d candidatas, %d avaliadas agora, %d enviadas",
         usuario.id,
