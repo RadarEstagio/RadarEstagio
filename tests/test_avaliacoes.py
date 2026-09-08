@@ -441,3 +441,29 @@ def test_office_e_idioma_diferenciam_perfis_fora_de_computacao():
     assert bom.nota > incompleto.nota
     assert bom.requisitos_nao_atendidos == []
     assert incompleto.requisitos_nao_atendidos == ["Microsoft Excel", "Inglês"]
+
+
+def test_outra_subarea_do_mesmo_campo_nao_fica_presa_ao_teto_de_65():
+    perfil_web = perfil(habilidades=["SQL"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(
+        extracao(habilidades_obrigatorias=["SQL"], areas_da_vaga=["infraestrutura_redes"]),
+        perfil_web,
+    )
+
+    assert resultado.nota > 65
+    assert resultado.avisos_objetivos == []
+
+
+def test_subarea_marcada_ainda_vence_outra_subarea_do_mesmo_campo():
+    perfil_web = perfil(habilidades=["SQL"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+    vaga_marcada = extracao(habilidades_obrigatorias=["SQL"], areas_da_vaga=["desenvolvimento_web"])
+    vaga_do_campo = extracao(
+        habilidades_obrigatorias=["SQL"], areas_da_vaga=["infraestrutura_redes"]
+    )
+
+    assert (
+        resultado_da(vaga_marcada, perfil_web).nota > resultado_da(vaga_do_campo, perfil_web).nota
+    )

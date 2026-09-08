@@ -154,10 +154,17 @@ def _calcular_nota(
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
         + PESO_INTERESSE * interesse
     )
-    if interesse < 1.0:
-        nota = min(nota, LIMITE_FORA_DAS_AREAS_DE_INTERESSE)
+    nota = min(nota, _limite_por_interesse(extracao, perfil, interesse))
     nota = min(nota, _limite_por_curso(niveis))
     return int(nota + 0.5)
+
+
+def _limite_por_interesse(extracao: ExtracaoDaVaga, perfil: Perfil, interesse: float) -> float:
+    if interesse == 0.0:
+        return LIMITE_FORA_DAS_AREAS_DE_INTERESSE
+    if perfil.areas_de_interesse and not _areas_reconhecidas(extracao):
+        return LIMITE_FORA_DAS_AREAS_DE_INTERESSE
+    return 100.0
 
 
 def _limite_por_curso(niveis: NiveisDeCompatibilidade) -> float:
