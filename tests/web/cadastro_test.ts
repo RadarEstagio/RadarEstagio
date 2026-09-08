@@ -468,3 +468,46 @@ Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
     assert.equal(mensagem.classList.contains("form-message-aviso"), true);
   } finally { a.close(); }
 });
+
+Deno.test("cadastro começa pela conta e só depois pede o perfil", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const passoAtivo = () =>
+      doc.querySelector(".form-step.is-active").dataset.step;
+    assert.equal(passoAtivo(), "1");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 4");
+    assert.equal(doc.querySelector("#previous-step").hidden, true);
+    assert.equal(doc.querySelector("#submit-profile").hidden, true);
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "1");
+    const form = doc.querySelector("#signup-form");
+    form.elements.email.value = user.email;
+    form.elements.senha.value = "uma-senha-forte";
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "2");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
+    assert.equal(doc.querySelector("#previous-step").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const doc = a.w.document;
+    a.w.setAuthMode("login");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.equal(doc.querySelector(".progress-wrap").hidden, true);
+    assert.equal(doc.querySelector("#next-step").hidden, true);
+    assert.equal(doc.querySelector("#submit-profile").hidden, false);
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 3");
+    assert.equal(doc.querySelector("#credenciais").hidden, true);
+  } finally { a.close(); }
+});

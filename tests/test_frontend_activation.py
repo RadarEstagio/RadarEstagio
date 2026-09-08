@@ -23,12 +23,13 @@ def test_cadastro_persiste_perfil_e_monta_vinculo():
     assert 'localStorage.setItem("radar-perfil"' not in javascript
 
 
-def test_funil_monta_o_perfil_antes_de_pedir_a_conta():
+def test_funil_pede_a_conta_antes_de_montar_o_perfil():
     html = (RAIZ / "web/index.html").read_text()
 
-    assert html.count('class="form-step') == 3
-    assert html.index('name="curso"') < html.index('name="email"')
-    assert html.index('name="habilidades"') < html.index('name="email"')
+    assert html.count('class="form-step') == 4
+    assert html.index('name="email"') < html.index('name="curso"')
+    assert html.index('name="email"') < html.index('name="habilidades"')
+    assert html.index('name="senha"') < html.index('name="cidade"')
     assert 'id="cursos-sugeridos"' in html
     assert 'data-skill="Python"' in html
 
@@ -39,14 +40,15 @@ def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
     assert "const selectedSkills = new Set()" in javascript
     assert 'form.elements.habilidades.value = [...selectedSkills].join(",")' in javascript
     assert "Escolha ou digite pelo menos uma habilidade." in javascript
-    assert "const totalSteps = 3" in javascript
+    assert "const PASSO_HABILIDADES = 3" in javascript
 
 
-def test_envio_final_valida_todos_os_campos_da_etapa_3():
+def test_envio_final_valida_todos_os_passos_ativos():
     javascript = (RAIZ / "web/assets/app.js").read_text()
     html = (RAIZ / "web/index.html").read_text()
 
-    assert "if (!validateStep(3)) return;" in javascript
+    assert "if (!validarFluxo()) return;" in javascript
+    assert "return passosAtivos.every((passo) => validateStep(passo));" in javascript
     assert 'name="cidade" required minlength="2" maxlength="120"' in html
     assert 'name="modalidade" value="remoto" required' in html
     assert 'name="email" type="email"' in html

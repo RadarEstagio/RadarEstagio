@@ -252,7 +252,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .option-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }.option-grid label { cursor: pointer; }.option-grid input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .option-grid span { min-height: 46px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--white); font-size: 11px; }
 .option-grid input:checked + span { border-color: var(--blue); color: var(--blue); background: rgba(95,124,255,.08); box-shadow: inset 0 0 0 1px var(--blue); }.option-grid input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 2px; }
-.form-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 30px; }.form-actions-end { justify-content: flex-end; }
+.form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }#previous-step { margin-right: auto; }
 .form-message { margin: 20px 0 0; padding: 12px 14px; border: 1px solid #c94848; border-radius: 10px; color: #8c2f2f; background: #fff9f7; font-size: 12px; }
 .form-message[hidden] { display: none; }
 .form-message-aviso { border-color: var(--line); color: var(--ink-soft); background: var(--paper); }

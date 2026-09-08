@@ -190,6 +190,16 @@
           <p class="form-message" id="form-message" role="alert" hidden></p>
           <form id="signup-form" novalidate>
             <fieldset class="form-step is-active" data-step="1">
+              <legend>Comece pela sua conta</legend>
+              <p class="step-help">O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.</p>
+              <div class="field-grid" id="credenciais">
+                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
+                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
+              </div>
+              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
+              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
+            </fieldset>
+            <fieldset class="form-step" data-step="2">
               <legend>Em que momento você está?</legend>
               <p class="step-help">Isso evita recomendar vagas incompatíveis com seu curso ou período.</p>
               <div class="field-grid">
@@ -205,9 +215,8 @@
                 </datalist>
                 <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
               </div>
-              <div class="form-actions form-actions-end"><button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
-            <fieldset class="form-step" data-step="2">
+            <fieldset class="form-step" data-step="3">
               <legend>O que você já sabe usar?</legend>
               <p class="step-help">Escolha pelo menos uma habilidade. Isso melhora a nota das vagas que combinam com você.</p>
               <input name="habilidades" type="hidden" />
@@ -227,9 +236,8 @@
                 <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
               </div>
               <div class="selected-skills" id="selected-skills" aria-live="polite"></div>
-              <div class="form-actions"><button class="button button-ghost" type="button" data-previous-step>← Voltar</button><button class="button button-primary" type="button" data-next-step>Definir preferências <span aria-hidden="true">→</span></button></div>
             </fieldset>
-            <fieldset class="form-step" data-step="3">
+            <fieldset class="form-step" data-step="4">
               <legend>Onde as vagas devem chegar?</legend>
               <p class="step-help">Essas preferências serão usadas nas próximas buscas.</p>
               <div class="field-grid">
@@ -249,19 +257,17 @@
                   <label><input type="checkbox" name="areas" value="suporte_tecnico" /><span>Suporte técnico</span></label>
                   <label><input type="checkbox" name="areas" value="qa_testes" /><span>QA e testes</span></label>
                 </div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
-                <div class="credenciais" id="credenciais">
-                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
-                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
-              </div>
-              </div>
+                </div>
               <div id="signup-consent" class="consent-fields">
                 <label><input type="checkbox" name="aceitou_termos" required /> <span>Aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> (abrem em outra aba).</span></label>
                 <label><input type="checkbox" name="aceita_emails" /> <span>Quero receber e-mails ocasionais do Radar.</span></label>
               </div>
-              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
-              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
-              <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
+            <div class="form-actions" id="form-actions">
+              <button class="button button-ghost" type="button" id="previous-step">← Voltar</button>
+              <button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button>
+              <button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button>
+            </div>
           </form>
           <section id="auth-assistance" hidden aria-labelledby="assistance-title">
             <h2 id="assistance-title">Confirme seu e-mail</h2>
