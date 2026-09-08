@@ -168,6 +168,11 @@ async function montarAreasDoCurso() {
   }
 }
 
+function esquecerPerfilCarregado() {
+  areasSalvas = [];
+  areasEscolhidas = new Set();
+}
+
 function areasDeInteresseDoFormulario(data) {
   const marcadas = data.getAll("areas");
   if (!catalogoDeAreas) return [...areasSalvas];
@@ -1082,6 +1087,7 @@ form.addEventListener("submit", async (event) => {
     if (!editandoPerfilExistente && existingSession && existingSession.user.email !== email) {
       const { error } = await getClient().auth.signOut();
       if (error) throw error;
+      esquecerPerfilCarregado();
     }
     const session = editandoPerfilExistente || existingSession?.user.email === email
       ? existingSession
@@ -1346,6 +1352,8 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   form.reset();
   selectedSkills.clear();
   renderSkills();
+  esquecerPerfilCarregado();
+  void montarAreasDoCurso();
   resetDialogView();
   setAuthMode("login");
   showStep(PASSO_CONTA);

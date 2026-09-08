@@ -790,3 +790,35 @@ Deno.test("habilidades sugeridas acompanham o curso digitado", async () => {
     } finally { a.close(); }
   }
 });
+
+Deno.test("sair da conta nao deixa as areas de interesse da pessoa anterior no proximo cadastro", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: {
+      ...profile,
+      telegram_chat_id: "123",
+      areas_de_interesse: ["dados_ia"],
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    a.w.setAuthMode("signup");
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    fill(a.w);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    await settle();
+    const marcadas = [...doc.querySelectorAll('input[name="areas"]:checked')].map((c) => c.value);
+    assert.deepEqual(Array.from(marcadas), []);
+  } finally {
+    a.close();
+  }
+});
