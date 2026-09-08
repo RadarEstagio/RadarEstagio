@@ -360,7 +360,7 @@ Deno.test("link expirado oferece e-mail editável sem contexto local", async () 
       true,
     );
     assert.match(
-      a.w.document.querySelector("#form-message").textContent,
+      a.w.document.querySelector("#assistance-message").textContent,
       /expirou/,
     );
   } finally {
@@ -464,7 +464,7 @@ Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
   const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
   try {
     await settle();
-    const mensagem = a.w.document.querySelector("#form-message");
+    const mensagem = a.w.document.querySelector("#form-notice");
     assert.equal(mensagem.hidden, false);
     assert.equal(mensagem.textContent.includes("Complete seu perfil"), true);
     assert.equal(mensagem.classList.contains("form-message-aviso"), true);
@@ -489,6 +489,7 @@ Deno.test("cadastro começa pela conta e só depois pede o perfil", async () => 
     const form = doc.querySelector("#signup-form");
     form.elements.email.value = user.email;
     form.elements.senha.value = "uma-senha-forte";
+    form.elements.aceitou_termos.checked = true;
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
