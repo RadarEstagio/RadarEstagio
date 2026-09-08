@@ -94,14 +94,15 @@ const PASSO_PREFERENCIAS = 4;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
+let campoComErro = null;
 const mensagensValidacao = {
-  curso: "Informe seu curso para continuar.",
-  periodo: "Selecione seu período atual para continuar.",
-  cidade: "Informe uma cidade válida para continuar.",
-  modalidade: "Escolha uma modalidade para continuar.",
-  email: "Digite um e-mail válido para continuar.",
-  aceitou_termos: "Aceite os Termos de Uso e a Política de Privacidade para continuar.",
-  senha: "Use uma senha com pelo menos 8 caracteres para continuar.",
+  curso: "Informe o nome do seu curso.",
+  periodo: "Selecione o período que você está cursando.",
+  cidade: "Informe a cidade onde você procura vaga.",
+  modalidade: "Escolha uma modalidade.",
+  email: "Digite um e-mail como nome@exemplo.com.",
+  aceitou_termos: "Aceite os Termos de Uso e a Política de Privacidade para criar a conta.",
+  senha: "Use pelo menos 8 caracteres.",
 };
 
 function getClient() {
@@ -187,6 +188,13 @@ function atualizarPassosAtivos() {
   showStep(currentStep);
 }
 
+function limparErroSeCorrigido(event) {
+  if (!campoComErro || campoComErro.id === "custom-skill") return;
+  const alvo = event.target;
+  if (alvo !== campoComErro && alvo.name !== campoComErro.name) return;
+  if (campoComErro.checkValidity()) limparErroDoCampo();
+}
+
 function validateStep(step) {
   limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
@@ -217,6 +225,7 @@ function validateStep(step) {
 }
 
 function renderSkills() {
+  if (selectedSkills.size > 0 && campoComErro?.id === "custom-skill") limparErroDoCampo();
   form.elements.habilidades.value = [...selectedSkills].join(",");
   document.querySelectorAll("[data-skill]").forEach((button) => {
     const active = selectedSkills.has(button.dataset.skill);
@@ -291,8 +300,6 @@ function humanizeError(error, { profilePending = false } = {}) {
   }
   return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
 }
-
-let campoComErro = null;
 
 function limparErroDoCampo() {
   if (!campoComErro) return;
@@ -932,6 +939,9 @@ document.querySelector("#custom-skill").addEventListener("keydown", (event) => {
 toggleAuthMode.addEventListener("click", () => {
   setAuthMode(authMode === "signup" ? "login" : "signup");
 });
+
+form.addEventListener("input", limparErroSeCorrigido);
+form.addEventListener("change", limparErroSeCorrigido);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
