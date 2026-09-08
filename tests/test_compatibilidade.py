@@ -181,3 +181,15 @@ def test_curso_generico_nao_vale_para_formacao_que_o_catalogo_nao_conhece():
     assert (
         curso_de(anuncio, perfil(curso="Medicina Veterinária")) is NivelCompatibilidade.INCOMPATIVEL
     )
+
+
+@pytest.mark.parametrize("valor", ["Computação", "computação", " computacao ", "COMPUTACAO"])
+def test_area_da_vaga_e_normalizada_antes_de_comparar(valor: str):
+    assert extracao(area_da_vaga=valor).area_da_vaga == "computacao"
+    assert area_de(extracao(area_da_vaga=valor)) is NivelCompatibilidade.COMPATIVEL
+
+
+@pytest.mark.parametrize("valor", ["tecnologia", "juridico", "", "ti", 42, None])
+def test_area_da_vaga_fora_do_catalogo_vira_desconhecida_e_nao_outra_area(valor):
+    assert extracao(area_da_vaga=valor).area_da_vaga is None
+    assert area_de(extracao(area_da_vaga=valor)) is NivelCompatibilidade.PARCIAL

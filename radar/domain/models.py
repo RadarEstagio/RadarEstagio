@@ -3,9 +3,9 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from radar.domain.areas import SUBAREAS
+from radar.domain.areas import AREAS_POR_NOME, SUBAREAS, normalizar
 
 
 class Modalidade(StrEnum):
@@ -51,6 +51,14 @@ class ExtracaoDaVaga(BaseModel):
     habilidades_desejaveis: list[str] = Field(default_factory=list)
     modalidade: str | None = None
     alerta_pegadinha: str | None = None
+
+    @field_validator("area_da_vaga", mode="before")
+    @classmethod
+    def reconhecer_area(cls, valor: object) -> str | None:
+        if not isinstance(valor, str):
+            return None
+        area = normalizar(valor)
+        return area if area in AREAS_POR_NOME else None
 
     def modalidade_reconhecida(self) -> Modalidade | None:
         if not self.modalidade:
