@@ -7,7 +7,7 @@ from radar.filtering.prefiltro import (
     exige_anos_de_experiencia,
     exige_senioridade,
     filtrar,
-    fora_da_area_de_tecnologia,
+    fora_da_area_do_curso,
     localizacao_incompativel,
     modalidade_incompativel,
     nao_e_estagio,
@@ -34,10 +34,12 @@ def vaga(
 
 
 def perfil(
-    modalidade: Modalidade = Modalidade.REMOTO, cidade: str = "Rio de Janeiro, RJ"
+    modalidade: Modalidade = Modalidade.REMOTO,
+    cidade: str = "Rio de Janeiro, RJ",
+    curso: str = "Engenharia de Software",
 ) -> Perfil:
     return Perfil(
-        curso="Engenharia de Software",
+        curso=curso,
         periodo=4,
         habilidades=["Python"],
         cidade=cidade,
@@ -141,7 +143,7 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
     ],
 )
 def test_descarta_titulo_de_outra_area(titulo: str):
-    assert fora_da_area_de_tecnologia(vaga(titulo=titulo))
+    assert fora_da_area_do_curso(vaga(titulo=titulo), perfil())
 
 
 @pytest.mark.parametrize(
@@ -155,7 +157,7 @@ def test_descarta_titulo_de_outra_area(titulo: str):
     ],
 )
 def test_mantem_titulo_de_computacao(titulo: str):
-    assert not fora_da_area_de_tecnologia(vaga(titulo=titulo))
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil())
 
 
 @pytest.mark.parametrize(
@@ -171,7 +173,7 @@ def test_mantem_titulo_de_computacao(titulo: str):
     ],
 )
 def test_reconhece_area_de_tecnologia_no_titulo(titulo: str):
-    assert not fora_da_area_de_tecnologia(vaga(titulo=titulo, descricao="Sem detalhes."))
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao="Sem detalhes."), perfil())
 
 
 @pytest.mark.parametrize(
@@ -186,7 +188,7 @@ def test_reconhece_area_de_tecnologia_no_titulo(titulo: str):
 )
 def test_descarta_titulo_generico_sem_tecnologia_na_descricao(titulo: str):
     descricao = "Vaga para estudantes. Auxiliar a equipe nas rotinas do setor."
-    assert fora_da_area_de_tecnologia(vaga(titulo=titulo, descricao=descricao))
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil())
 
 
 @pytest.mark.parametrize(
@@ -199,12 +201,46 @@ def test_descarta_titulo_generico_sem_tecnologia_na_descricao(titulo: str):
     ],
 )
 def test_mantem_titulo_generico_quando_descricao_e_de_tecnologia(descricao: str):
-    assert not fora_da_area_de_tecnologia(vaga(titulo="Programa de Estágio", descricao=descricao))
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Programa de Estágio", descricao=descricao), perfil()
+    )
 
 
 def test_titulo_de_outra_area_e_descartado_mesmo_com_descricao_de_tecnologia():
     descricao = "Desejável conhecimento em programação em Python."
-    assert fora_da_area_de_tecnologia(vaga(titulo="Estágio em Eletrônica", descricao=descricao))
+    assert fora_da_area_do_curso(
+        vaga(titulo="Estágio em Eletrônica", descricao=descricao), perfil()
+    )
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo"),
+    [
+        ("Direito", "Estagiário de Direito"),
+        ("Ciências Contábeis", "Estagiário de contabilidade"),
+        ("Publicidade e Propaganda", "Estagiário de marketing"),
+        ("Psicologia", "Estágio em Recursos Humanos"),
+        ("Logística", "Estágio em Logística"),
+        ("Enfermagem", "Estagiário de Enfermagem"),
+    ],
+)
+def test_mantem_a_vaga_da_area_do_curso_de_quem_nao_e_de_computacao(curso: str, titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    ["Estágio em Desenvolvimento de Software", "Estagiário de TI", "Estagiário Programador"],
+)
+def test_descarta_vaga_de_computacao_para_quem_e_de_outro_curso(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Direito"))
+
+
+def test_curso_sem_area_conhecida_nao_descarta_nada_pela_area():
+    exotico = perfil(curso="Curso Que Ninguém Tem")
+
+    assert not fora_da_area_do_curso(vaga(titulo="Estagiário de Direito"), exotico)
+    assert not fora_da_area_do_curso(vaga(titulo="Estágio em Desenvolvimento"), exotico)
 
 
 @pytest.mark.parametrize(
