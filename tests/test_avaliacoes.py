@@ -528,3 +528,45 @@ def test_aviso_de_recusa_nomeia_so_as_subareas_recusadas_que_a_vaga_tem():
     assert resultado.avisos_objetivos == [
         "Área que você recusou nos últimos dias: Dados e IA, QA e testes"
     ]
+
+
+def perfil_de_direito(habilidades: list[str]) -> Perfil:
+    return Perfil(
+        curso="Direito",
+        periodo=4,
+        habilidades=habilidades,
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.REMOTO,
+    )
+
+
+def extracao_juridica(obrigatorias: list[str]) -> ExtracaoDaVaga:
+    return ExtracaoDaVaga(
+        id_vaga="vaga-1",
+        area_da_vaga="direito",
+        cursos_aceitos=["Direito"],
+        habilidades_obrigatorias=obrigatorias,
+    )
+
+
+def test_nivel_basico_nao_satisfaz_requisito_avancado():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês fluente", "Excel avançado"]),
+        perfil_de_direito(["Inglês básico", "Excel básico"]),
+    )
+
+    assert resultado.requisitos_atendidos == []
+    assert resultado.requisitos_nao_atendidos == ["Inglês fluente", "Excel avançado"]
+    assert resultado.nota < 100
+
+
+def test_nivel_igual_ou_maior_e_habilidade_sem_nivel_satisfazem_o_requisito():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês intermediário", "Excel avançado"]),
+        perfil_de_direito(["Inglês avançado", "Excel"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Inglês intermediário", "Excel avançado"]
+    assert resultado.requisitos_nao_atendidos == []

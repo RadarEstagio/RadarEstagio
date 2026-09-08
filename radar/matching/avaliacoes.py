@@ -73,6 +73,12 @@ QUALIFICADORES_DE_HABILIDADE = re.compile(
     r"|bom|boa|bons|boas|otim[oa]|excelente|solid[oa]|conhecimentos?|dominio|nocoes"
     r"|experiencia|vivencia|habilidades?|em|de|do|da|com|no|na)\b"
 )
+NIVEL_NAO_INFORMADO = 0
+PADROES_DE_NIVEL = (
+    (re.compile(r"\b(?:basic[oa]s?|iniciante|nocoes)\b"), 1),
+    (re.compile(r"\bintermediari[oa]s?\b"), 2),
+    (re.compile(r"\b(?:avancad[oa]s?|fluente|nativ[oa]|dominio)\b"), 3),
+)
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
     "microsoft365": "office",
@@ -271,20 +277,61 @@ def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) ->
 
 
 def _cobertura(requisitos: list[str], perfil: Perfil) -> float | None:
-    requisitos_normalizados = {_normalizar_habilidade(item) for item in requisitos if item.strip()}
+    exigencias = _niveis_exigidos(requisitos)
     if area_do_curso(perfil.curso) == COMPUTACAO:
-        requisitos_normalizados = {
-            item for item in requisitos_normalizados if _conta_para_a_nota(item)
-        }
-    if not requisitos_normalizados:
+        exigencias = {nome: nivel for nome, nivel in exigencias.items() if _conta_para_a_nota(nome)}
+    if not exigencias:
         return None
-    habilidades_normalizadas = {
-        _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
-    }
-    atendidas = requisitos_normalizados & habilidades_normalizadas
-    return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (
-        SUAVIZACAO_DA_COBERTURA + len(requisitos_normalizados)
-    )
+    niveis_do_perfil = _niveis_do_perfil(perfil)
+    atendidas = [
+        nome for nome, nivel in exigencias.items() if _atende(nome, nivel, niveis_do_perfil)
+    ]
+    return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (SUAVIZACAO_DA_COBERTURA + len(exigencias))
+
+
+def _niveis_exigidos(requisitos: list[str]) -> dict[str, int]:
+    exigencias: dict[str, int] = {}
+    for requisito in requisitos:
+        if requisito.strip():
+            nome = _normalizar_habilidade(requisito)
+            nivel = _nivel_exigido(requisito)
+            exigencias[nome] = min(exigencias.get(nome, nivel), nivel)
+    return exigencias
+
+
+def _niveis_do_perfil(perfil: Perfil) -> dict[str, int]:
+    niveis: dict[str, int] = {}
+    for habilidade in perfil.habilidades:
+        if habilidade.strip():
+            nome = _normalizar_habilidade(habilidade)
+            niveis[nome] = max(niveis.get(nome, NIVEL_NAO_INFORMADO), _nivel_declarado(habilidade))
+    return niveis
+
+
+def _atende(nome: str, nivel_exigido: int, niveis_do_perfil: dict[str, int]) -> bool:
+    if nome not in niveis_do_perfil:
+        return False
+    nivel_do_perfil = niveis_do_perfil[nome]
+    if NIVEL_NAO_INFORMADO in (nivel_exigido, nivel_do_perfil):
+        return True
+    return nivel_do_perfil >= nivel_exigido
+
+
+def _perfil_atende(habilidade: str, niveis_do_perfil: dict[str, int]) -> bool:
+    return _atende(_normalizar_habilidade(habilidade), _nivel_exigido(habilidade), niveis_do_perfil)
+
+
+def _nivel_exigido(habilidade: str) -> int:
+    return min(_niveis_citados(habilidade), default=NIVEL_NAO_INFORMADO)
+
+
+def _nivel_declarado(habilidade: str) -> int:
+    return max(_niveis_citados(habilidade), default=NIVEL_NAO_INFORMADO)
+
+
+def _niveis_citados(habilidade: str) -> set[int]:
+    texto = _normalizar_texto(habilidade)
+    return {nivel for padrao, nivel in PADROES_DE_NIVEL if padrao.search(texto)}
 
 
 def _conta_para_a_nota(requisito_normalizado: str) -> bool:
@@ -296,18 +343,16 @@ def _conta_para_a_nota(requisito_normalizado: str) -> bool:
 def _classificar_habilidades(
     extracao: ExtracaoDaVaga, perfil: Perfil
 ) -> tuple[list[str], list[str]]:
-    habilidades_do_perfil = {
-        _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
-    }
+    niveis_do_perfil = _niveis_do_perfil(perfil)
     requisitos_atendidos = [
         habilidade
         for habilidade in _juntar_habilidades_da_vaga(extracao)
-        if _normalizar_habilidade(habilidade) in habilidades_do_perfil
+        if _perfil_atende(habilidade, niveis_do_perfil)
     ]
     requisitos_nao_atendidos = [
         habilidade
         for habilidade in _exigidas_pela_vaga(extracao)
-        if _normalizar_habilidade(habilidade) not in habilidades_do_perfil
+        if not _perfil_atende(habilidade, niveis_do_perfil)
     ]
     return requisitos_atendidos, requisitos_nao_atendidos
 
