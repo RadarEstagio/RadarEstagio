@@ -61,7 +61,8 @@ AREAS = (
             r"|help[- ]?desk|banco de dados|sql|python|java(?:script)?|web(?! writer| designer)"
             r"|mobile|analytics|bi(?!-)|business intelligence|produto|ux|ui"
             r"|automacao(?! industrial| predial)|rpa|(?<!midia )(?<!publicidade )(?<!conteudo )"
-            r"(?<!marketing )(?<!banco )(?<!educacao )digital|inovacao|engenharia de software"
+            r"(?<!marketing )(?<!banco )(?<!educacao )(?<!direito )digital|inovacao"
+            r"|engenharia de software"
             r"|ciencia da computacao|sistemas de informacao|ciencia de dados|analise de sistemas"
         ),
         exclusao=(

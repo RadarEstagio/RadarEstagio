@@ -286,6 +286,7 @@ def test_sinal_da_propria_area_vence_o_veto_de_outra(curso: str, titulo: str):
         "Estágio em Suporte Administrativo",
         "Estágio em Automação Industrial",
         "Estágio em Publicidade Digital",
+        "Estágio - Direito Digital",
         "Estagiário(a) de Treinamento e Desenvolvimento",
     ],
 )
