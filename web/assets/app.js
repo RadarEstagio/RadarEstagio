@@ -477,16 +477,16 @@ function profileFromForm() {
     modalidade: data.get("modalidade"),
     areas_de_interesse: data.getAll("areas"),
   };
-  if (!profile.curso) throw validationError("Informe seu curso para continuar.");
+  if (!profile.curso) throw validationError(mensagensValidacao.curso);
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
-    throw validationError("Selecione seu período atual para continuar.");
+    throw validationError(mensagensValidacao.periodo);
   }
   if (profile.habilidades.length === 0) {
     throw validationError("Escolha ou digite pelo menos uma habilidade.");
   }
-  if (profile.cidade.length < 2) throw validationError("Informe uma cidade válida para continuar.");
+  if (profile.cidade.length < 2) throw validationError(mensagensValidacao.cidade);
   if (!modalidadesAceitas.has(profile.modalidade)) {
-    throw validationError("Escolha uma modalidade para continuar.");
+    throw validationError(mensagensValidacao.modalidade);
   }
   return profile;
 }
