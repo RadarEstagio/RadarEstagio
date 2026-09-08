@@ -185,10 +185,11 @@ function atualizarPassosAtivos() {
 }
 
 function validateStep(step) {
+  limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
     showStep(step);
     setFormMessage("Escolha ou digite pelo menos uma habilidade.");
-    document.querySelector("#custom-skill").focus();
+    marcarErroNoCampo(document.querySelector("#custom-skill"));
     return false;
   }
   setFormMessage();
@@ -204,13 +205,13 @@ function validateStep(step) {
     showStep(step);
     setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     invalid.reportValidity();
-    invalid.focus();
+    marcarErroNoCampo(invalid);
     return false;
   }
   if (step === PASSO_PREFERENCIAS && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
     showStep(step);
     setFormMessage(mensagensValidacao.aceitou_termos);
-    form.elements.aceitou_termos.focus();
+    marcarErroNoCampo(form.elements.aceitou_termos);
     return false;
   }
   return true;
@@ -290,6 +291,23 @@ function humanizeError(error, { profilePending = false } = {}) {
     return "Não foi possível conectar ao cadastro. Verifique a conexão e tente novamente.";
   }
   return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
+}
+
+let campoComErro = null;
+
+function limparErroDoCampo() {
+  if (!campoComErro) return;
+  campoComErro.removeAttribute("aria-invalid");
+  campoComErro.removeAttribute("aria-describedby");
+  campoComErro = null;
+}
+
+function marcarErroNoCampo(campo) {
+  limparErroDoCampo();
+  campo.setAttribute("aria-invalid", "true");
+  campo.setAttribute("aria-describedby", "form-message");
+  campoComErro = campo;
+  campo.focus();
 }
 
 function setFormMessage(message = "", tom = "erro") {
