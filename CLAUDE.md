@@ -349,6 +349,40 @@ extrações e enriquecimento são chaveados por `id_externo` sem `fonte` (colis�
 Adzuna e Gupy); o banco ainda aceita subárea de outro curso (mitigado ao carregar); a Jooble
 multiplica consultas por termo (segue desligada).
 
+### Segunda rodada de falhas reproduzidas (08/09/2026, fim de tarde)
+
+Cinco falhas que a auditoria anterior deixou passar, cada uma reproduzida por um teste que
+falhava antes da correção:
+
+- **Lote perdia o que já tinha extraído.** A repetição por erro temporário envolvia o lote
+  inteiro, inclusive a reextração uma a uma das vagas que o modelo omitiu. Um 429 numa única
+  vaga omitida repetia o lote quatro vezes e descartava as extrações certas. Agora só a chamada
+  à API é repetida (`_chamar_esperando_a_cota`) e cada lote acumula o resultado antes de a cota
+  interromper; divisão do lote continua só para erro não temporário.
+- **Nível básico satisfazia requisito avançado.** Tirar o qualificador de nível para comparar o
+  nome fazia "Inglês básico" valer por "Inglês fluente" (nota 100). O nome segue comparado sem
+  o nível; o requisito só é atendido se o perfil declara nível igual ou maior (básico 1,
+  intermediário 2, avançado/fluente/nativo 3). Sem nível de um dos lados, vale — ausência de
+  informação não é veto. No corpus antigo (só computação) apenas 4 de 202 extrações citam nível;
+  em Direito e Administração é o padrão.
+- **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
+  candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
+  uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
+  e volta a ser candidata no dia seguinte.
+- **Logout herdava áreas de interesse.** `#logout-account` limpava formulário e habilidades,
+  mas não `areasEscolhidas`/`areasSalvas`, e a grade da etapa 4 é remontada a partir delas. O
+  mesmo esquecimento vale ao trocar de conta dentro do formulário, onde as salvas eram reserva
+  sem catálogo.
+- **IA processava vaga já entregue a todos.** As candidatas iam para a extração antes dos
+  envios; com o cache versionado por prompt, cada mudança de prompt reextraía o histórico
+  inteiro. `candidatas_de_algum_perfil` agora consulta `ids_ja_enviadas` por usuário; falha ao
+  lê-los mantém a vaga na extração, nunca o contrário (`atender_usuario_travado` reconsulta e
+  segue estrito).
+
+Lição de método: os quatro pontos do Igor e a auditoria anterior foram verificados lendo o
+código e rodando a suíte que já existia — que só cobria o que já se sabia. Falha nova se
+procura escrevendo o teste que a reproduz **antes** de mexer no código.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
