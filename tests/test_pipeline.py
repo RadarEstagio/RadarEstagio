@@ -924,3 +924,18 @@ def test_candidata_sem_extracao_nao_vira_conclusao_de_que_nao_ha_vaga_compativel
     )
 
     assert notificador.textos == []
+
+
+def test_vaga_ja_entregue_a_todos_os_interessados_nao_vai_para_a_ia():
+    extrator = ExtratorFalso({"1": 90})
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        extrator,
+        NotificadorFalso(),
+        RepositorioFalso([usuario()], enviadas={("adzuna", "1")}),
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert extrator.extraidas == []

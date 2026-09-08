@@ -95,7 +95,7 @@ def executar(
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
-    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios))
+    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
     unicas = substituir_enriquecidas(unicas, candidatas)
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
@@ -170,12 +170,24 @@ def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -
     return escolhidos
 
 
-def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> list[Vaga]:
+def candidatas_de_algum_perfil(
+    vagas: list[Vaga], usuarios: list[Usuario], repositorio: Repositorio
+) -> list[Vaga]:
     aprovadas: dict[str, Vaga] = {}
     for usuario in usuarios:
+        ja_enviadas = ids_ja_enviadas_ou_nenhum(repositorio, usuario)
         for vaga in filtrar(vagas, usuario.perfil):
-            aprovadas.setdefault(vaga.id_externo, vaga)
+            if (vaga.fonte, vaga.id_externo) not in ja_enviadas:
+                aprovadas.setdefault(vaga.id_externo, vaga)
     return list(aprovadas.values())
+
+
+def ids_ja_enviadas_ou_nenhum(repositorio: Repositorio, usuario: Usuario) -> set[tuple[str, str]]:
+    try:
+        return repositorio.ids_ja_enviadas(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning("envios do usuário %s não puderam ser lidos: %s", usuario.id, erro)
+        return set()
 
 
 class BalancoDaExtracao(BaseModel):
