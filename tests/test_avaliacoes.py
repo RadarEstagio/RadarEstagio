@@ -501,7 +501,7 @@ def test_fora_de_computacao_variantes_de_office_e_nivel_casam_com_o_perfil():
     de_direito = Perfil(
         curso="Direito",
         periodo=4,
-        habilidades=["Excel", "Inglês", "Redação", "Pacote Office"],
+        habilidades=["Excel avançado", "Inglês intermediário", "Redação", "Pacote Office"],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
     )
@@ -561,12 +561,33 @@ def test_nivel_basico_nao_satisfaz_requisito_avancado():
     assert resultado.nota < 100
 
 
-def test_nivel_igual_ou_maior_e_habilidade_sem_nivel_satisfazem_o_requisito():
+def test_nivel_igual_ou_maior_satisfaz_o_requisito():
     resultado = pontuar(
         vaga(),
         extracao_juridica(["Inglês intermediário", "Excel avançado"]),
-        perfil_de_direito(["Inglês avançado", "Excel"]),
+        perfil_de_direito(["Inglês avançado", "Excel avançado"]),
     )
 
     assert resultado.requisitos_atendidos == ["Inglês intermediário", "Excel avançado"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_nivel_desconhecido_nao_comprova_proficiencia_exigida():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês fluente", "Excel avançado"]),
+        perfil_de_direito(["Inglês", "Excel"]),
+    )
+    assert resultado.requisitos_atendidos == []
+    assert resultado.requisitos_nao_atendidos == ["Inglês fluente", "Excel avançado"]
+    assert resultado.nota < 100
+
+
+def test_requisito_sem_nivel_aceita_habilidade_conhecida():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês", "Office 365"]),
+        perfil_de_direito(["Inglês", "Pacote Office básico"]),
+    )
+    assert resultado.requisitos_atendidos == ["Inglês", "Office 365"]
     assert resultado.requisitos_nao_atendidos == []

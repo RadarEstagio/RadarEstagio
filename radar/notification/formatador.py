@@ -137,7 +137,7 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
         )
     if resultado.requisitos_nao_atendidos:
         linhas.append(
-            "❌ <b>Requisitos não atendidos:</b> "
+            "🔎 <b>Requisitos a conferir no seu perfil:</b> "
             f"{formatar_requisitos(resultado.requisitos_nao_atendidos)}"
         )
     if (

@@ -312,7 +312,7 @@ def _atende(nome: str, nivel_exigido: int, niveis_do_perfil: dict[str, int]) -> 
     if nome not in niveis_do_perfil:
         return False
     nivel_do_perfil = niveis_do_perfil[nome]
-    if NIVEL_NAO_INFORMADO in (nivel_exigido, nivel_do_perfil):
+    if nivel_exigido == NIVEL_NAO_INFORMADO:
         return True
     return nivel_do_perfil >= nivel_exigido
 

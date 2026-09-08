@@ -155,7 +155,7 @@ def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
     )
 
     assert "✅ <b>Requisitos atendidos:</b> SQL" in texto
-    assert "❌ <b>Requisitos não atendidos:</b> C# · JavaScript" in texto
+    assert "🔎 <b>Requisitos a conferir no seu perfil:</b> C# · JavaScript" in texto
 
 
 def test_avisa_quando_descricao_nao_informa_requisitos_tecnicos():
