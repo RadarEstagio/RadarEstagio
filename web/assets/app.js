@@ -376,7 +376,7 @@ function mostrarChamadaDeConta(autenticado) {
 }
 
 function openDialog() {
-  if (!accountPage.hidden) return;
+  if (dialog.open || !accountPage.hidden) return;
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
   document.body.style.overflow = "hidden";
@@ -654,15 +654,20 @@ async function refreshActivationStatus() {
 
 async function openSignup() {
   resetDialogView();
-  openDialog();
+  if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
-    if (!session) return;
+    mostrarChamadaDeConta(Boolean(session));
+    if (!session) {
+      openDialog();
+      return;
+    }
     form.elements.email.value = session.user.email ?? "";
     const profile = await loadProfile(session.user.id);
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    openDialog();
     setFormMessage(humanizeError(error));
   }
 }
@@ -693,7 +698,6 @@ async function resumeConfirmedSignup() {
     const profile = await loadProfile(session.user.id);
     if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
     clearPendingProfile();
-    openDialog();
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {

@@ -425,8 +425,10 @@ Deno.test("conta sai do modal e mantém edição na página autenticada", async 
     assert.equal(a.w.document.querySelector("#signup-form").hidden, false);
     assert.ok(a.w.document.querySelector("#account-content #signup-form"));
     a.w.document.querySelector("#back-to-site").click();
+    await settle();
     assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
     assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, false);
     assert.ok(a.w.document.querySelector("#signup-dialog #signup-form"));
     assert.equal(new URL(a.w.location.href).searchParams.has("conta"), false);
   } finally { a.close(); }
@@ -536,5 +538,38 @@ Deno.test("sessão aberta troca a chamada da landing por minha conta", async () 
     doc.querySelector("#logout-account").click();
     await settle();
     assert.equal(cabecalho.textContent.trim(), "Cadastrar meu perfil");
+  } finally { a.close(); }
+});
+
+Deno.test("quem já entrou vai para a conta sem piscar o modal", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const dialogo = doc.querySelector("#signup-dialog");
+    doc.querySelector('[data-event-origin="cabecalho"]').click();
+    assert.equal(dialogo.open, false);
+    await settle();
+    assert.equal(dialogo.open, false);
+    assert.equal(doc.querySelector("#account-page").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    const dialogo = a.w.document.querySelector("#signup-dialog");
+    let chegouAAbrir = false;
+    new a.w.MutationObserver((registros: { oldValue: string | null }[]) => {
+      if (registros.some((registro) => registro.oldValue === null)) chegouAAbrir = true;
+    }).observe(dialogo, { attributes: true, attributeFilter: ["open"], attributeOldValue: true });
+    await settle();
+    assert.equal(chegouAAbrir, false);
+    assert.equal(dialogo.open, false);
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
   } finally { a.close(); }
 });
