@@ -1,0 +1,333 @@
+{
+  "areas": [
+    {
+      "nome": "computacao",
+      "cursos": [
+        "computacao",
+        "engenharia de software",
+        "sistemas de informacao",
+        "analise e desenvolvimento de sistemas",
+        "analise de sistemas",
+        "desenvolvimento de sistemas",
+        "sistemas para internet",
+        "ciencia de dados",
+        "engenharia de dados",
+        "banco de dados",
+        "tecnologia da informacao",
+        "informatica",
+        "redes de computadores",
+        "seguranca da informacao",
+        "jogos digitais",
+        "inteligencia artificial"
+      ],
+      "subareas": [
+        {
+          "valor": "desenvolvimento_web",
+          "rotulo": "Desenvolvimento web"
+        },
+        {
+          "valor": "desenvolvimento_mobile",
+          "rotulo": "Desenvolvimento mobile"
+        },
+        {
+          "valor": "dados_ia",
+          "rotulo": "Dados e IA"
+        },
+        {
+          "valor": "infraestrutura_redes",
+          "rotulo": "Infraestrutura e redes"
+        },
+        {
+          "valor": "seguranca",
+          "rotulo": "Segurança"
+        },
+        {
+          "valor": "suporte_tecnico",
+          "rotulo": "Suporte técnico"
+        },
+        {
+          "valor": "qa_testes",
+          "rotulo": "QA e testes"
+        }
+      ]
+    },
+    {
+      "nome": "direito",
+      "cursos": [
+        "direito"
+      ],
+      "subareas": [
+        {
+          "valor": "direito_contencioso",
+          "rotulo": "Contencioso"
+        },
+        {
+          "valor": "direito_societario",
+          "rotulo": "Societário e contratos"
+        },
+        {
+          "valor": "direito_trabalhista",
+          "rotulo": "Trabalhista"
+        },
+        {
+          "valor": "compliance",
+          "rotulo": "Compliance"
+        }
+      ]
+    },
+    {
+      "nome": "administracao",
+      "cursos": [
+        "administracao",
+        "gestao",
+        "processos gerenciais",
+        "secretariado"
+      ],
+      "subareas": [
+        {
+          "valor": "rotinas_administrativas",
+          "rotulo": "Rotinas administrativas"
+        },
+        {
+          "valor": "gestao_de_projetos",
+          "rotulo": "Gestão de projetos"
+        },
+        {
+          "valor": "processos_e_qualidade",
+          "rotulo": "Processos e qualidade"
+        }
+      ]
+    },
+    {
+      "nome": "financas",
+      "cursos": [
+        "economia",
+        "ciencias contabeis",
+        "contabilidade",
+        "atuaria",
+        "financas"
+      ],
+      "subareas": [
+        {
+          "valor": "financeiro",
+          "rotulo": "Financeiro"
+        },
+        {
+          "valor": "contabil_fiscal",
+          "rotulo": "Contábil e fiscal"
+        },
+        {
+          "valor": "controladoria_auditoria",
+          "rotulo": "Controladoria e auditoria"
+        },
+        {
+          "valor": "mercado_financeiro",
+          "rotulo": "Mercado financeiro"
+        }
+      ]
+    },
+    {
+      "nome": "marketing",
+      "cursos": [
+        "marketing",
+        "publicidade",
+        "propaganda",
+        "jornalismo",
+        "comunicacao",
+        "design"
+      ],
+      "subareas": [
+        {
+          "valor": "marketing_digital",
+          "rotulo": "Marketing digital"
+        },
+        {
+          "valor": "conteudo_e_redes",
+          "rotulo": "Conteúdo e redes sociais"
+        },
+        {
+          "valor": "comunicacao_institucional",
+          "rotulo": "Comunicação institucional"
+        },
+        {
+          "valor": "design_grafico",
+          "rotulo": "Design gráfico"
+        }
+      ]
+    },
+    {
+      "nome": "pessoas",
+      "cursos": [
+        "psicologia",
+        "recursos humanos",
+        "gestao de pessoas"
+      ],
+      "subareas": [
+        {
+          "valor": "recrutamento_e_selecao",
+          "rotulo": "Recrutamento e seleção"
+        },
+        {
+          "valor": "departamento_pessoal",
+          "rotulo": "Departamento pessoal"
+        },
+        {
+          "valor": "treinamento_e_desenvolvimento",
+          "rotulo": "Treinamento e desenvolvimento"
+        }
+      ]
+    },
+    {
+      "nome": "comercial",
+      "cursos": [
+        "comercio exterior",
+        "relacoes internacionais",
+        "negocios"
+      ],
+      "subareas": [
+        {
+          "valor": "vendas",
+          "rotulo": "Vendas"
+        },
+        {
+          "valor": "atendimento_ao_cliente",
+          "rotulo": "Atendimento ao cliente"
+        },
+        {
+          "valor": "comercio_exterior",
+          "rotulo": "Comércio exterior"
+        }
+      ]
+    },
+    {
+      "nome": "logistica",
+      "cursos": [
+        "logistica",
+        "transportes"
+      ],
+      "subareas": [
+        {
+          "valor": "suprimentos_e_compras",
+          "rotulo": "Suprimentos e compras"
+        },
+        {
+          "valor": "estoque_e_armazem",
+          "rotulo": "Estoque e armazém"
+        },
+        {
+          "valor": "transporte_e_distribuicao",
+          "rotulo": "Transporte e distribuição"
+        }
+      ]
+    },
+    {
+      "nome": "engenharias",
+      "cursos": [
+        "engenharia civil",
+        "engenharia mecanica",
+        "engenharia eletrica",
+        "engenharia quimica",
+        "engenharia ambiental",
+        "engenharia de producao",
+        "arquitetura"
+      ],
+      "subareas": [
+        {
+          "valor": "engenharia_civil",
+          "rotulo": "Engenharia civil"
+        },
+        {
+          "valor": "engenharia_mecanica",
+          "rotulo": "Engenharia mecânica"
+        },
+        {
+          "valor": "engenharia_eletrica",
+          "rotulo": "Engenharia elétrica"
+        },
+        {
+          "valor": "engenharia_de_producao",
+          "rotulo": "Engenharia de produção"
+        },
+        {
+          "valor": "meio_ambiente_e_seguranca",
+          "rotulo": "Meio ambiente e segurança"
+        }
+      ]
+    },
+    {
+      "nome": "saude",
+      "cursos": [
+        "medicina",
+        "enfermagem",
+        "fisioterapia",
+        "nutricao",
+        "farmacia",
+        "biomedicina",
+        "odontologia",
+        "educacao fisica",
+        "biologia"
+      ],
+      "subareas": [
+        {
+          "valor": "assistencia_a_saude",
+          "rotulo": "Assistência à saúde"
+        },
+        {
+          "valor": "laboratorio_e_pesquisa",
+          "rotulo": "Laboratório e pesquisa"
+        },
+        {
+          "valor": "saude_publica",
+          "rotulo": "Saúde pública"
+        }
+      ]
+    },
+    {
+      "nome": "educacao",
+      "cursos": [
+        "pedagogia",
+        "letras",
+        "historia",
+        "geografia",
+        "licenciatura"
+      ],
+      "subareas": [
+        {
+          "valor": "docencia_e_monitoria",
+          "rotulo": "Docência e monitoria"
+        },
+        {
+          "valor": "coordenacao_pedagogica",
+          "rotulo": "Coordenação pedagógica"
+        },
+        {
+          "valor": "producao_de_material",
+          "rotulo": "Produção de material didático"
+        }
+      ]
+    },
+    {
+      "nome": "turismo",
+      "cursos": [
+        "turismo",
+        "hotelaria",
+        "gastronomia",
+        "eventos"
+      ],
+      "subareas": [
+        {
+          "valor": "eventos",
+          "rotulo": "Eventos"
+        },
+        {
+          "valor": "hotelaria",
+          "rotulo": "Hotelaria"
+        },
+        {
+          "valor": "gastronomia",
+          "rotulo": "Gastronomia"
+        }
+      ]
+    }
+  ]
+}

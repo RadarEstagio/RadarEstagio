@@ -7,6 +7,9 @@ const html = await Deno.readTextFile(
 const script = await Deno.readTextFile(
   new URL("../../web/assets/app.js", import.meta.url),
 );
+const areasJson = JSON.parse(
+  await Deno.readTextFile(new URL("../../web/assets/areas.json", import.meta.url)),
+);
 const user = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "teste@example.com",
@@ -81,6 +84,10 @@ function app(
   const dom = new JSDOM(html, { url, runScripts: "outside-only" });
   const w = dom.window;
   w.scrollTo = () => {};
+  w.fetch = async (caminho: string) => ({
+    ok: String(caminho).includes("areas.json"),
+    json: async () => areasJson,
+  });
   const calls: Call[] = [];
   let authCallback: AuthCallback = () => {
     throw new Error("callback não registrado");
@@ -592,5 +599,62 @@ Deno.test("Enter adiciona habilidade sem avançar e Continuar ainda avança", as
     doc.querySelector("#next-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
     await settle();
+  } finally { a.close(); }
+});
+
+
+Deno.test("as areas de interesse acompanham o curso digitado", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    form.elements.curso.value = "Direito";
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    await settle();
+    const valores = [...doc.querySelectorAll('input[name="areas"]')].map((c) => c.value);
+    assert.equal(doc.querySelector("#campo-areas").hidden, false);
+    assert.equal(valores.includes("direito_contencioso"), true);
+    assert.equal(valores.includes("desenvolvimento_web"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("curso de computacao continua vendo as areas de tecnologia", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    fill(a.w);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    await settle();
+    const valores = [...doc.querySelectorAll('input[name="areas"]')].map((c) => c.value);
+    assert.equal(valores.includes("desenvolvimento_web"), true);
+    assert.equal(valores.includes("direito_contencioso"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("curso sem area conhecida esconde o campo de areas", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    form.elements.curso.value = "Curso Que Ninguem Tem";
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(doc.querySelector("#campo-areas").hidden, true);
+    assert.equal(doc.querySelectorAll('input[name="areas"]').length, 0);
   } finally { a.close(); }
 });

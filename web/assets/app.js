@@ -96,6 +96,70 @@ const PASSO_PREFERENCIAS = 4;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
+const campoDeAreas = document.querySelector("#campo-areas");
+const gradeDeAreas = document.querySelector("#grade-de-areas");
+let catalogoDeAreas = null;
+let areasEscolhidas = new Set();
+
+function normalizarTexto(texto) {
+  return texto
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+async function carregarAreas() {
+  if (catalogoDeAreas) return catalogoDeAreas;
+  try {
+    const resposta = await fetch("assets/areas.json");
+    catalogoDeAreas = resposta.ok ? (await resposta.json()).areas : [];
+  } catch {
+    catalogoDeAreas = [];
+  }
+  return catalogoDeAreas;
+}
+
+function areaDoCurso(curso, areas) {
+  const normalizado = normalizarTexto(curso);
+  if (!normalizado) return null;
+  let escolhida = null;
+  for (const area of areas) {
+    for (const nome of area.cursos) {
+      if (normalizado.includes(nome) && (!escolhida || nome.length > escolhida.tamanho)) {
+        escolhida = { area, tamanho: nome.length };
+      }
+    }
+  }
+  return escolhida?.area ?? null;
+}
+
+async function montarAreasDoCurso() {
+  const areas = await carregarAreas();
+  const area = areaDoCurso(form.elements.curso?.value ?? "", areas);
+  gradeDeAreas.replaceChildren();
+  campoDeAreas.hidden = !area;
+  if (!area) return;
+  for (const subarea of area.subareas) {
+    const rotulo = document.createElement("label");
+    const campo = document.createElement("input");
+    campo.type = "checkbox";
+    campo.name = "areas";
+    campo.value = subarea.valor;
+    campo.checked = areasEscolhidas.has(subarea.valor);
+    const texto = document.createElement("span");
+    texto.textContent = subarea.rotulo;
+    rotulo.append(campo, texto);
+    gradeDeAreas.append(rotulo);
+  }
+}
+
+function lembrarAreasEscolhidas() {
+  gradeDeAreas.querySelectorAll('input[name="areas"]').forEach((campo) => {
+    if (campo.checked) areasEscolhidas.add(campo.value);
+    else areasEscolhidas.delete(campo.value);
+  });
+}
 let campoComErro = null;
 const mensagensValidacao = {
   curso: "Informe o nome do seu curso.",
@@ -624,9 +688,8 @@ function preencherFormularioCom(profile) {
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
   renderSkills();
-  document.querySelectorAll('input[name="areas"]').forEach((campo) => {
-    campo.checked = (profile.areas_de_interesse ?? []).includes(campo.value);
-  });
+  areasEscolhidas = new Set(profile.areas_de_interesse ?? []);
+  void montarAreasDoCurso();
 }
 
 async function perfilAtual() {
@@ -808,7 +871,9 @@ function validarFluxo() {
 
 function avancarPasso() {
   if (currentStep === PASSO_HABILIDADES) addCustomSkill();
+  if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   if (!validateStep(currentStep)) return;
+  if (currentStep === PASSO_HABILIDADES) void montarAreasDoCurso();
   if (currentStep === PASSO_MOMENTO) void registerEvent("etapa_perfil_concluida");
   if (currentStep === PASSO_HABILIDADES) {
     void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
@@ -817,6 +882,7 @@ function avancarPasso() {
 }
 
 function voltarPasso() {
+  if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
 }
 
