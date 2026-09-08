@@ -201,3 +201,15 @@ def test_avaliador_fora_do_ar_espera_e_repete_o_mesmo_lote_sem_dividir():
     assert esperas == [61]
     assert interno.lotes_recebidos == [["1", "2", "3"], ["1", "2", "3"]]
     assert ids_de(resultados) == ["1", "2", "3"]
+
+
+def test_falha_temporaria_numa_vaga_nao_apaga_o_que_o_lote_ja_extraiu():
+    interno = ExtratorDeLoteFalso(
+        ids_omitidos_apenas_em_lote={"2"},
+        falhas_por_lote={("2",): CotaDeAvaliacaoExcedida("HTTP 429", 1)},
+    )
+
+    resultados = ExtratorEmLotes(interno, 2, esperar=lambda _: None).extrair(vagas(2))
+
+    assert ids_de(resultados) == ["1"]
+    assert interno.lotes_recebidos.count(["1", "2"]) == 1
