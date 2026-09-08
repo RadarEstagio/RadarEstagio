@@ -36,7 +36,8 @@ class ExtratorEmLotes:
                 resultados.extend(self._extrair_respeitando_a_cota(lote))
             except ErroTemporarioDeAvaliacao as erro:
                 logger.warning(
-                    "Avaliador indisponível ou cota excedida; %d de %d vagas ficaram sem extração: %s",
+                    "Avaliador indisponível ou cota excedida; "
+                    "%d de %d vagas ficaram sem extração: %s",
                     len(vagas) - len(resultados),
                     len(vagas),
                     erro,
