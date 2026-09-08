@@ -1,7 +1,7 @@
 import re
 import unicodedata
 
-from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, area_do_curso
+from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, ROTULOS_DAS_SUBAREAS, area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -217,13 +217,19 @@ def _avisos_objetivos(
     extracao: ExtracaoDaVaga, niveis: NiveisDeCompatibilidade, perfil: Perfil
 ) -> list[str]:
     avisos = []
-    if _area_recusada(_areas_reconhecidas(extracao), perfil):
-        avisos.append(AVISO_AREA_RECUSADA)
+    recusadas = _areas_reconhecidas(extracao) & {area.value for area in perfil.areas_recusadas}
+    if recusadas:
+        avisos.append(aviso_de_area_recusada(recusadas))
     elif _compatibilidade_de_interesse(extracao, perfil) == 0.0 and perfil.areas_de_interesse:
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
     return avisos
+
+
+def aviso_de_area_recusada(areas: set[str]) -> str:
+    rotulos = ", ".join(ROTULOS_DAS_SUBAREAS[area] for area in sorted(areas))
+    return f"{AVISO_AREA_RECUSADA}: {rotulos}"
 
 
 def _areas_reconhecidas(extracao: ExtracaoDaVaga) -> set[str]:

@@ -241,7 +241,7 @@ def test_area_recusada_zera_o_interesse_e_limita_a_65_com_aviso():
     )
 
     assert resultado.nota <= 65
-    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias: Dados e IA"]
 
 
 def test_area_recusada_vale_mesmo_sem_interesses_declarados():
@@ -251,7 +251,7 @@ def test_area_recusada_vale_mesmo_sem_interesses_declarados():
 
     resultado = resultado_da(extracao(areas_da_vaga=["suporte_tecnico"]), candidato)
 
-    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias: Suporte técnico"]
 
 
 def test_area_recusada_prevalece_sobre_o_interesse_declarado():
@@ -262,7 +262,7 @@ def test_area_recusada_prevalece_sobre_o_interesse_declarado():
     resultado = resultado_da(extracao(areas_da_vaga=["dados_ia"]), candidato)
 
     assert resultado.nota <= 65
-    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias: Dados e IA"]
 
 
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
@@ -515,3 +515,16 @@ def test_fora_de_computacao_variantes_de_office_e_nivel_casam_com_o_perfil():
 
     assert resultado.requisitos_nao_atendidos == []
     assert resultado.nota > resultado_da(sem_exigencias, de_direito).nota
+
+
+def test_aviso_de_recusa_nomeia_so_as_subareas_recusadas_que_a_vaga_tem():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_recusadas = [AreaDeInteresse.DADOS_IA, AreaDeInteresse.QA_TESTES]
+
+    resultado = resultado_da(
+        extracao(areas_da_vaga=["desenvolvimento_web", "qa_testes", "dados_ia"]), candidato
+    )
+
+    assert resultado.avisos_objetivos == [
+        "Área que você recusou nos últimos dias: Dados e IA, QA e testes"
+    ]
