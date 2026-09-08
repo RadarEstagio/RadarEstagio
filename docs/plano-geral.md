@@ -1,5 +1,10 @@
 # Plano geral
 
+> Nova direção em 08/09/2026: a expansão para diferentes áreas de estágio e as melhorias de
+> conversão, ativação e sustentabilidade estão no [plano de expansão baseado em Revenue-Centric Design](plano-expansao-revenue-centric.md).
+> Esse plano substitui a restrição anterior à expansão de público e inclui monetização como
+> planejamento futuro. As pendências operacionais abaixo continuam válidas; o piloto permanece informal.
+
 **Atualizado em 07/09/2026 · Próximo passo: concluir a publicação e testar com colegas.**
 
 Este é o acompanhamento atual do projeto. O plano formal de piloto foi retirado por decisão

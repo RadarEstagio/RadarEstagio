@@ -268,7 +268,8 @@ nada pode ganhar uma lista própria:
 Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
 `exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". Com um padrão só,
 perfis de computação perdiam vagas que já recebiam — "Estágio em Projetos" viraria de
-administração. A precedência do pré-filtro é: outra área descarta, própria área mantém, título
+administração. A menção ao curso do perfil ou a qualquer formação na descrição evita veto antecipado;
+sem esse sinal, a precedência do pré-filtro é: outra área descarta, própria área mantém, título
 genérico cai para a descrição.
 
 ### Qualidade da mensagem e do pré-filtro
@@ -407,3 +408,18 @@ ligação das automações, porque cada uma guardava o dono no nome:
   separa esse marco da ativação de produto.
 - `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
   `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
+
+
+### Correções da revisão de expansão (08/09/2026)
+
+- Cursos passam por correspondência integral após remover prefixos de formação; aliases
+  explícitos estão no catálogo e no JSON gerado. Medicina Veterinária fica desconhecida,
+  não herda saúde humana; Gestão Financeira tem alias em finanças.
+- Perfil sem área reconhecida amplia Adzuna/Jooble para busca geral de estágio, também em
+  grupos mistos. O teto de paginação continua valendo.
+- Curso mencionado na descrição ou abertura a qualquer formação mantém a vaga para análise,
+  mesmo com título de outra área. A compatibilidade de curso é decidida após a extração.
+- Pontuação é recalculada em Python em toda execução. Notas persistidas não são reutilizadas;
+  extrações continuam compartilhadas e histórico de envios continua bloqueando repetição.
+- A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
+  Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
