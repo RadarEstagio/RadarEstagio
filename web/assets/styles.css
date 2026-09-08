@@ -13,7 +13,7 @@
   --radius-sm: 14px;
   --radius-md: 22px;
   --radius-lg: 28px;
-  --container: 1180px;
+  --container: 1100px;
 }
 
 * { box-sizing: border-box; }
@@ -30,7 +30,7 @@ button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 p, h1, h2, h3 { margin-top: 0; }
-.container { width: min(calc(100% - 40px), var(--container)); margin-inline: auto; }
+.container { width: min(calc(100% - 72px), var(--container)); margin-inline: auto; }
 .section { padding: 112px 0; }
 
 .skip-link {
