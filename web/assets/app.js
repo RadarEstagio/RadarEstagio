@@ -1,3 +1,34 @@
+const cabecalhoDaLanding = document.querySelector("#inicio");
+const ROLAGEM_ATE_ESCONDER = 10;
+const ROLAGEM_ATE_MOSTRAR = 64;
+let ultimoDeslocamento = Math.max(window.scrollY, 0);
+let rolagemAcumulada = 0;
+let leituraDeRolagemAgendada = false;
+
+function ajustarCabecalho() {
+  leituraDeRolagemAgendada = false;
+  const deslocamentoAtual = Math.max(window.scrollY, 0);
+  const variacao = deslocamentoAtual - ultimoDeslocamento;
+  ultimoDeslocamento = deslocamentoAtual;
+  if (variacao === 0) return;
+  const mudouDeDirecao = Math.sign(variacao) !== Math.sign(rolagemAcumulada);
+  rolagemAcumulada = mudouDeDirecao ? variacao : rolagemAcumulada + variacao;
+  if (deslocamentoAtual <= cabecalhoDaLanding.offsetHeight) {
+    cabecalhoDaLanding.classList.remove("header-oculto");
+    return;
+  }
+  if (rolagemAcumulada > ROLAGEM_ATE_ESCONDER) cabecalhoDaLanding.classList.add("header-oculto");
+  else if (rolagemAcumulada < -ROLAGEM_ATE_MOSTRAR) cabecalhoDaLanding.classList.remove("header-oculto");
+}
+
+if (cabecalhoDaLanding) {
+  window.addEventListener("scroll", () => {
+    if (leituraDeRolagemAgendada) return;
+    leituraDeRolagemAgendada = true;
+    requestAnimationFrame(ajustarCabecalho);
+  }, { passive: true });
+}
+
 const dialog = document.querySelector("#signup-dialog");
 const accountPage = document.querySelector("#account-page");
 const accountContent = document.querySelector("#account-content");
@@ -10,12 +41,18 @@ const progressWrap = document.querySelector(".progress-wrap");
 const progressLabel = document.querySelector("#progress-label");
 const progressPercent = document.querySelector("#progress-percent");
 const progressBar = document.querySelector("#progress-bar");
+const progressTrack = document.querySelector("#progress-track");
 const formMessage = document.querySelector("#form-message");
+const formNotice = document.querySelector("#form-notice");
+const assistanceMessage = document.querySelector("#assistance-message");
+const assistanceNotice = document.querySelector("#assistance-notice");
 const submitProfile = document.querySelector("#submit-profile");
+const submitLabel = document.querySelector("#submit-label");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
 const accountState = document.querySelector("#account-state");
 const accountMessage = document.querySelector("#account-message");
+const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const credenciais = document.querySelector("#credenciais");
@@ -59,14 +96,15 @@ const PASSO_PREFERENCIAS = 4;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
+let campoComErro = null;
 const mensagensValidacao = {
-  curso: "Informe seu curso para continuar.",
-  periodo: "Selecione seu período atual para continuar.",
-  cidade: "Informe uma cidade válida para continuar.",
-  modalidade: "Escolha uma modalidade para continuar.",
-  email: "Digite um e-mail válido para continuar.",
-  aceitou_termos: "Aceite os Termos de Uso e a Política de Privacidade para continuar.",
-  senha: "Use uma senha com pelo menos 8 caracteres para continuar.",
+  curso: "Informe o nome do seu curso.",
+  periodo: "Selecione o período que você está cursando.",
+  cidade: "Informe a cidade onde você procura vaga.",
+  modalidade: "Escolha uma modalidade.",
+  email: "Digite um e-mail como nome@exemplo.com.",
+  aceitou_termos: "Aceite os Termos de Uso e a Política de Privacidade para criar a conta.",
+  senha: "Use pelo menos 8 caracteres.",
 };
 
 function getClient() {
@@ -136,6 +174,7 @@ function showStep(step) {
   progressLabel.textContent = `Etapa ${posicao + 1} de ${passosAtivos.length}`;
   progressPercent.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
+  progressTrack.setAttribute("aria-valuenow", String(percent));
   previousStep.hidden = posicao === 0;
   nextStep.hidden = posicao === passosAtivos.length - 1;
   submitProfile.hidden = posicao !== passosAtivos.length - 1;
@@ -145,17 +184,25 @@ function showStep(step) {
 }
 
 function atualizarPassosAtivos() {
+  const consentimento = document.querySelector("#signup-consent");
   if (authMode === "login") passosAtivos = [PASSO_CONTA];
-  else if (credenciais.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
+  else if (credenciais.hidden && consentimento.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
   else passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
   showStep(currentStep);
 }
 
+function limparErroSeCorrigido(event) {
+  if (!campoComErro || campoComErro.id === "custom-skill") return;
+  const alvo = event.target;
+  if (alvo !== campoComErro && alvo.name !== campoComErro.name) return;
+  if (campoComErro.checkValidity()) limparErroDoCampo();
+}
+
 function validateStep(step) {
+  limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
     showStep(step);
-    setFormMessage("Escolha ou digite pelo menos uma habilidade.");
-    document.querySelector("#custom-skill").focus();
+    marcarErroNoCampo(document.querySelector("#custom-skill"), "Escolha ou digite pelo menos uma habilidade.");
     return false;
   }
   setFormMessage();
@@ -169,21 +216,19 @@ function validateStep(step) {
   });
   if (invalid) {
     showStep(step);
-    setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
-    invalid.reportValidity();
-    invalid.focus();
+    marcarErroNoCampo(invalid, mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     return false;
   }
-  if (step === PASSO_PREFERENCIAS && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
+  if (step === PASSO_CONTA && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
     showStep(step);
-    setFormMessage(mensagensValidacao.aceitou_termos);
-    form.elements.aceitou_termos.focus();
+    marcarErroNoCampo(form.elements.aceitou_termos, mensagensValidacao.aceitou_termos);
     return false;
   }
   return true;
 }
 
 function renderSkills() {
+  if (selectedSkills.size > 0 && campoComErro?.id === "custom-skill") limparErroDoCampo();
   form.elements.habilidades.value = [...selectedSkills].join(",");
   document.querySelectorAll("[data-skill]").forEach((button) => {
     const active = selectedSkills.has(button.dataset.skill);
@@ -259,25 +304,53 @@ function humanizeError(error, { profilePending = false } = {}) {
   return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
 }
 
+function limparErroDoCampo() {
+  if (!campoComErro) return;
+  campoComErro.removeAttribute("aria-invalid");
+  campoComErro.removeAttribute("aria-describedby");
+  document.querySelector("#erro-do-campo")?.remove();
+  campoComErro = null;
+}
+
+function marcarErroNoCampo(campo, mensagem) {
+  limparErroDoCampo();
+  const aviso = document.createElement("span");
+  aviso.className = "field-error";
+  aviso.id = "erro-do-campo";
+  aviso.textContent = mensagem;
+  const rotuloDeConsentimento = campo.closest(".consent-fields") ? campo.closest("label") : null;
+  if (rotuloDeConsentimento) rotuloDeConsentimento.insertAdjacentElement("afterend", aviso);
+  else (campo.closest(".field") ?? campo.parentElement).append(aviso);
+  campo.setAttribute("aria-invalid", "true");
+  campo.setAttribute("aria-describedby", aviso.id);
+  campoComErro = campo;
+  campo.focus();
+}
+
 function setFormMessage(message = "", tom = "erro") {
-  formMessage.textContent = message;
-  formMessage.hidden = !message;
-  formMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
+  const naAssistencia = !document.querySelector("#auth-assistance").hidden;
+  const erro = naAssistencia ? assistanceMessage : formMessage;
+  const aviso = naAssistencia ? assistanceNotice : formNotice;
+  [formMessage, formNotice, assistanceMessage, assistanceNotice].forEach((regiao) => {
+    regiao.textContent = "";
+  });
+  (tom === "aviso" ? aviso : erro).textContent = message;
+}
+
+function marcarOcupado(botao, ocupado) {
+  botao.disabled = ocupado;
+  botao.setAttribute("aria-busy", String(ocupado));
 }
 
 function setSubmitting(submitting) {
-  submitProfile.disabled = submitting;
-  if (submitting) {
-    submitProfile.textContent = "Salvando…";
-    return;
-  }
+  marcarOcupado(submitProfile, submitting);
   if (editandoPerfilExistente) {
-    submitProfile.textContent = "Salvar alterações";
+    submitLabel.textContent = "Salvar alterações";
     return;
   }
-  submitProfile.textContent = authMode === "signup"
-    ? "Criar conta e continuar →"
-    : "Entrar e continuar →";
+  submitLabel.textContent = authMode === "signup"
+    ? "Criar conta e continuar"
+    : "Entrar e continuar";
 }
 
 function setAuthMode(mode) {
@@ -298,6 +371,7 @@ function setAuthMode(mode) {
 function sairDoModoEdicao() {
   editandoPerfilExistente = false;
   credenciais.hidden = false;
+  document.querySelector(".auth-help").hidden = false;
   atualizarPassosAtivos();
   accountSwitch.hidden = false;
   form.elements.email.required = true;
@@ -310,6 +384,7 @@ function entrarNoModoEdicao() {
   setAuthMode("signup");
   editandoPerfilExistente = true;
   credenciais.hidden = true;
+  document.querySelector(".auth-help").hidden = true;
   accountSwitch.hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
@@ -325,6 +400,7 @@ function resetDialogView() {
   document.querySelector("#captcha-container").hidden = false;
   sairDoModoEdicao();
   form.hidden = false;
+  rotularDialogo("signup-title");
   successState.hidden = true;
   accountState.hidden = true;
   accountConfirm.hidden = true;
@@ -332,6 +408,7 @@ function resetDialogView() {
   progressWrap.hidden = false;
   telegramLink.hidden = true;
   setFormMessage();
+  limparErroDoCampo();
   setSubmitting(false);
   showStep(PASSO_CONTA);
 }
@@ -375,6 +452,10 @@ function mostrarChamadaDeConta(autenticado) {
   });
 }
 
+function rotularDialogo(idDoTitulo) {
+  dialog.setAttribute("aria-labelledby", idDoTitulo);
+}
+
 function openDialog() {
   if (dialog.open || !accountPage.hidden) return;
   if (typeof dialog.showModal === "function") dialog.showModal();
@@ -404,16 +485,16 @@ function profileFromForm() {
     modalidade: data.get("modalidade"),
     areas_de_interesse: data.getAll("areas"),
   };
-  if (!profile.curso) throw validationError("Informe seu curso para continuar.");
+  if (!profile.curso) throw validationError(mensagensValidacao.curso);
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
-    throw validationError("Selecione seu período atual para continuar.");
+    throw validationError(mensagensValidacao.periodo);
   }
   if (profile.habilidades.length === 0) {
     throw validationError("Escolha ou digite pelo menos uma habilidade.");
   }
-  if (profile.cidade.length < 2) throw validationError("Informe uma cidade válida para continuar.");
+  if (profile.cidade.length < 2) throw validationError(mensagensValidacao.cidade);
   if (!modalidadesAceitas.has(profile.modalidade)) {
-    throw validationError("Escolha uma modalidade para continuar.");
+    throw validationError(mensagensValidacao.modalidade);
   }
   return profile;
 }
@@ -437,6 +518,8 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = false;
+  setFormMessage();
+  rotularDialogo("success-title");
   document.querySelector("#success-kicker").textContent = kicker;
   document.querySelector("#success-title").textContent = title;
   document.querySelector("#success-copy").textContent = copy;
@@ -445,10 +528,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
     const bot = window.RADAR_CONFIG.telegramBot;
     telegramLink.href = `https://t.me/${bot}?start=${token}`;
   }
-  const target = telegramLink.hidden
-    ? document.querySelector("#finish-signup")
-    : telegramLink;
-  target.focus();
+  document.querySelector("#success-title").focus();
 }
 
 function showConfirmation(email) {
@@ -486,9 +566,10 @@ function showActivation(profile) {
 
 
 function setAccountMessage(message = "", tom = "erro") {
-  accountMessage.textContent = message;
-  accountMessage.hidden = !message;
-  accountMessage.classList.toggle("form-message-aviso", Boolean(message) && tom === "aviso");
+  const regiao = tom === "aviso" ? accountNotice : accountMessage;
+  const outra = tom === "aviso" ? accountMessage : accountNotice;
+  outra.textContent = "";
+  regiao.textContent = message;
 }
 
 function resumoDoPerfil(profile) {
@@ -713,6 +794,7 @@ function prepareMissingProfile(session) {
   setAuthMode("signup");
   form.elements.email.value = session.user.email ?? "";
   credenciais.hidden = true;
+  document.querySelector(".auth-help").hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
@@ -868,6 +950,9 @@ toggleAuthMode.addEventListener("click", () => {
   setAuthMode(authMode === "signup" ? "login" : "signup");
 });
 
+form.addEventListener("input", limparErroSeCorrigido);
+form.addEventListener("change", limparErroSeCorrigido);
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!validarFluxo()) return;
@@ -1002,6 +1087,7 @@ function showAssistance(mode, email = "") {
   successState.hidden = true;
   accountState.hidden = true;
   document.querySelector("#auth-assistance").hidden = false;
+  rotularDialogo("assistance-title");
   document.querySelector("#captcha-container").hidden = mode === "new-password";
   const definingPassword = mode === "new-password";
   const emailInput = document.querySelector("#assistance-email");
@@ -1020,7 +1106,7 @@ function showAssistance(mode, email = "") {
   document.querySelector("#assistance-title").textContent = content[0];
   document.querySelector("#assistance-copy").textContent = content[1];
   document.querySelector("#assistance-submit").textContent = content[2];
-  document.querySelector("#assistance-submit").disabled = false;
+  marcarOcupado(document.querySelector("#assistance-submit"), false);
   setFormMessage();
   updateResendButton();
   openDialog();
@@ -1041,7 +1127,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
   if (mode === "resend" && Date.now() < resendAvailableAt) return;
   const button = document.querySelector("#assistance-submit");
   if (button.disabled) return;
-  button.disabled = true;
+  marcarOcupado(button, true);
   setFormMessage();
   try {
     const email = document.querySelector("#assistance-email").value.trim();
@@ -1076,7 +1162,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
     setFormMessage(humanizeError(error));
   } finally {
     resetCaptcha();
-    button.disabled = false;
+    marcarOcupado(button, false);
     updateResendButton();
   }
 });
@@ -1114,7 +1200,7 @@ document.querySelector("#account-emails").addEventListener("change", async (even
 
 document.querySelector("#download-data").addEventListener("click", async (event) => {
   const button = event.currentTarget;
-  button.disabled = true;
+  marcarOcupado(button, true);
   try {
     const { data, error } = await getClient().rpc("baixar_meus_dados");
     if (error) throw error;
@@ -1130,7 +1216,7 @@ document.querySelector("#download-data").addEventListener("click", async (event)
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
-    button.disabled = false;
+    marcarOcupado(button, false);
   }
 });
 

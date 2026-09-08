@@ -68,10 +68,10 @@ def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
 def test_validacao_do_cadastro_orienta_como_corrigir_cada_campo_invalido():
     javascript = (RAIZ / "web/assets/app.js").read_text()
 
-    assert "Informe uma cidade válida para continuar." in javascript
-    assert "Escolha uma modalidade para continuar." in javascript
-    assert "Digite um e-mail válido para continuar." in javascript
-    assert "Use uma senha com pelo menos 8 caracteres para continuar." in javascript
+    assert "Informe a cidade onde você procura vaga." in javascript
+    assert "Escolha uma modalidade." in javascript
+    assert "Digite um e-mail como nome@exemplo.com." in javascript
+    assert "Use pelo menos 8 caracteres." in javascript
     assert "const modalidadesAceitas = new Set" in javascript
 
 
