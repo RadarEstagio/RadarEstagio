@@ -71,6 +71,10 @@ p, h1, h2, h3 { margin-top: 0; }
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 .button:hover { transform: translateY(-2px); }
+.button-spinner { display: none; flex: 0 0 auto; width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; }
+.button[aria-busy="true"] .button-spinner { display: block; animation: girar 700ms linear infinite; }
+.button[aria-busy="true"] .button-arrow { display: none; }
+@keyframes girar { to { transform: rotate(360deg); } }
 .button:focus-visible, .text-link:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .button-small { min-height: 42px; padding-inline: 18px; font-size: 13px; border-color: var(--accent); background: var(--accent); color: var(--white); }
 .button-primary { border-color: var(--accent); background: var(--accent); color: var(--white); }

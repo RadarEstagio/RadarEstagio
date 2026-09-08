@@ -45,6 +45,7 @@ const progressTrack = document.querySelector("#progress-track");
 const formMessage = document.querySelector("#form-message");
 const formNotice = document.querySelector("#form-notice");
 const submitProfile = document.querySelector("#submit-profile");
+const submitLabel = document.querySelector("#submit-label");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
 const accountState = document.querySelector("#account-state");
@@ -319,19 +320,20 @@ function setFormMessage(message = "", tom = "erro") {
   regiao.textContent = message;
 }
 
+function marcarOcupado(botao, ocupado) {
+  botao.disabled = ocupado;
+  botao.setAttribute("aria-busy", String(ocupado));
+}
+
 function setSubmitting(submitting) {
-  submitProfile.disabled = submitting;
-  if (submitting) {
-    submitProfile.textContent = "Salvando…";
-    return;
-  }
+  marcarOcupado(submitProfile, submitting);
   if (editandoPerfilExistente) {
-    submitProfile.textContent = "Salvar alterações";
+    submitLabel.textContent = "Salvar alterações";
     return;
   }
-  submitProfile.textContent = authMode === "signup"
-    ? "Criar conta e continuar →"
-    : "Entrar e continuar →";
+  submitLabel.textContent = authMode === "signup"
+    ? "Criar conta e continuar"
+    : "Entrar e continuar";
 }
 
 function setAuthMode(mode) {
@@ -1072,7 +1074,7 @@ function showAssistance(mode, email = "") {
   document.querySelector("#assistance-title").textContent = content[0];
   document.querySelector("#assistance-copy").textContent = content[1];
   document.querySelector("#assistance-submit").textContent = content[2];
-  document.querySelector("#assistance-submit").disabled = false;
+  marcarOcupado(document.querySelector("#assistance-submit"), false);
   setFormMessage();
   updateResendButton();
   openDialog();
@@ -1093,7 +1095,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
   if (mode === "resend" && Date.now() < resendAvailableAt) return;
   const button = document.querySelector("#assistance-submit");
   if (button.disabled) return;
-  button.disabled = true;
+  marcarOcupado(button, true);
   setFormMessage();
   try {
     const email = document.querySelector("#assistance-email").value.trim();
@@ -1128,7 +1130,7 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
     setFormMessage(humanizeError(error));
   } finally {
     resetCaptcha();
-    button.disabled = false;
+    marcarOcupado(button, false);
     updateResendButton();
   }
 });
@@ -1166,7 +1168,7 @@ document.querySelector("#account-emails").addEventListener("change", async (even
 
 document.querySelector("#download-data").addEventListener("click", async (event) => {
   const button = event.currentTarget;
-  button.disabled = true;
+  marcarOcupado(button, true);
   try {
     const { data, error } = await getClient().rpc("baixar_meus_dados");
     if (error) throw error;
@@ -1182,7 +1184,7 @@ document.querySelector("#download-data").addEventListener("click", async (event)
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
-    button.disabled = false;
+    marcarOcupado(button, false);
   }
 });
 
