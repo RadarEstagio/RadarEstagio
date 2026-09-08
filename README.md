@@ -64,7 +64,7 @@ link de confirmação. Veja a configuração em [`web/README.md`](web/README.md)
 ### 1.1 Git e o repositório
 
 ```bash
-git clone https://github.com/babue0/RadarEstagio.git
+git clone https://github.com/RadarEstagio/RadarEstagio.git
 cd RadarEstagio
 ```
 
@@ -222,7 +222,7 @@ uv run ruff check . && uv run ruff format --check .
 O arquivo [`.github/workflows/radar-diario.yml`](.github/workflows/radar-diario.yml)
 roda o fluxo completo. Quem dispara todo dia às 07:23 (Brasília) é um cron externo no
 [cron-job.org](https://cron-job.org), que chama a API do GitHub
-(`POST /repos/babue0/RadarEstagio/actions/workflows/radar-diario.yml/dispatches`, body
+(`POST /repos/RadarEstagio/RadarEstagio/actions/workflows/radar-diario.yml/dispatches`, body
 `{"ref":"main"}`) com um *fine-grained token* de permissão **Actions: Read and write**.
 O `schedule` nativo do GitHub Actions foi removido: ficou dois dias sem disparar nenhuma vez.
 
@@ -240,7 +240,7 @@ Deixe o `TELEGRAM_CHAT_ID` vazio para não receber esses resumos.
 
 Para disparar na hora (teste ou demo):
 
-1. Abra <https://github.com/babue0/RadarEstagio/actions>.
+1. Abra <https://github.com/RadarEstagio/RadarEstagio/actions>.
 2. No menu da esquerda, clique em **Radar diário**.
 3. **Run workflow** → **Run workflow**.
 4. Em ~1 minuto o job fica verde e a mensagem chega no Telegram. Se ficar vermelho, abra

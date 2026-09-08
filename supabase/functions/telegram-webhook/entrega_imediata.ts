@@ -1,4 +1,4 @@
-const REPOSITORIO = "babue0/RadarEstagio";
+const REPOSITORIO = "RadarEstagio/RadarEstagio";
 const WORKFLOW = "radar-diario.yml";
 const INICIO_DA_JANELA_DO_DIARIO_EM_MINUTOS_UTC = 9 * 60 + 23;
 const FIM_DA_JANELA_DO_DIARIO_EM_MINUTOS_UTC = 10 * 60 + 23;

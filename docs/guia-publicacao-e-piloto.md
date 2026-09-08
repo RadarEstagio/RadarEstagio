@@ -177,7 +177,7 @@ feedback grava o evento correto. Links antigos de conta excluída não podem ger
 
 A execução sob demanda foi implementada usando `workflow_dispatch` com o input `perfil`.
 A Edge Function lê o secret `GITHUB_DISPATCH_TOKEN`, com permissão de Actions para
-`babue0/RadarEstagio`. Sem esse secret, o vínculo funciona e a busca fica para o diário.
+`RadarEstagio/RadarEstagio`. Sem esse secret, o vínculo funciona e a busca fica para o diário.
 O fluxo real levou cerca de quatro minutos no teste registrado. A trava por perfil foi
 validada com duas conexões; execuções concorrentes aguardam e releem o histórico.
 Confira a validade do token e reconfigure o acesso se o repositório mudar de organização.
