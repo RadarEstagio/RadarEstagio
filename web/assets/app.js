@@ -191,8 +191,7 @@ function validateStep(step) {
   limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
     showStep(step);
-    setFormMessage("Escolha ou digite pelo menos uma habilidade.");
-    marcarErroNoCampo(document.querySelector("#custom-skill"));
+    marcarErroNoCampo(document.querySelector("#custom-skill"), "Escolha ou digite pelo menos uma habilidade.");
     return false;
   }
   setFormMessage();
@@ -206,15 +205,12 @@ function validateStep(step) {
   });
   if (invalid) {
     showStep(step);
-    setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
-    invalid.reportValidity();
-    marcarErroNoCampo(invalid);
+    marcarErroNoCampo(invalid, mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     return false;
   }
   if (step === PASSO_PREFERENCIAS && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
     showStep(step);
-    setFormMessage(mensagensValidacao.aceitou_termos);
-    marcarErroNoCampo(form.elements.aceitou_termos);
+    marcarErroNoCampo(form.elements.aceitou_termos, mensagensValidacao.aceitou_termos);
     return false;
   }
   return true;
@@ -302,13 +298,21 @@ function limparErroDoCampo() {
   if (!campoComErro) return;
   campoComErro.removeAttribute("aria-invalid");
   campoComErro.removeAttribute("aria-describedby");
+  document.querySelector("#erro-do-campo")?.remove();
   campoComErro = null;
 }
 
-function marcarErroNoCampo(campo) {
+function marcarErroNoCampo(campo, mensagem) {
   limparErroDoCampo();
+  const aviso = document.createElement("span");
+  aviso.className = "field-error";
+  aviso.id = "erro-do-campo";
+  aviso.textContent = mensagem;
+  const rotuloDeConsentimento = campo.closest(".consent-fields") ? campo.closest("label") : null;
+  if (rotuloDeConsentimento) rotuloDeConsentimento.insertAdjacentElement("afterend", aviso);
+  else (campo.closest(".field") ?? campo.parentElement).append(aviso);
   campo.setAttribute("aria-invalid", "true");
-  campo.setAttribute("aria-describedby", "form-message");
+  campo.setAttribute("aria-describedby", aviso.id);
   campoComErro = campo;
   campo.focus();
 }
@@ -388,6 +392,7 @@ function resetDialogView() {
   progressWrap.hidden = false;
   telegramLink.hidden = true;
   setFormMessage();
+  limparErroDoCampo();
   setSubmitting(false);
   showStep(PASSO_CONTA);
 }

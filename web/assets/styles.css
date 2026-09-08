@@ -342,7 +342,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .field { display: flex; flex-direction: column; gap: 7px; color: var(--ink-soft); font-size: 12px; font-weight: 600; }
 .field input, .field select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--white); }
 .field select { display: block; align-self: stretch; height: 52px; min-width: 100%; padding-right: 42px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position: calc(100% - 19px) 22px, calc(100% - 14px) 22px; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
-.field input::placeholder { color: #9ca39f; }.field input:user-invalid { border-color: #c94848; background: #fff9f7; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.field input::placeholder { color: #9ca39f; }
+.field input:user-invalid, .field [aria-invalid="true"] { border-color: #c94848; background-color: #fff9f7; }
+.field-error, .consent-fields .field-error { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: #8c2f2f; font-size: 11px; font-weight: 700; }
+.field-error::before { content: "!"; flex: 0 0 auto; display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; color: var(--white); background: #c94848; font-size: 10px; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
 .skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
 .skill-picker { margin-bottom: 22px; }
 .skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
