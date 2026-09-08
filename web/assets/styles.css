@@ -77,8 +77,17 @@ p, h1, h2, h3 { margin-top: 0; }
 .hero-grid {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle 620px at 78% 42%, #d9e5ff 0%, transparent 68%);
+  animation: respirar 14s ease-in-out infinite;
 }
+@keyframes respirar { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(-18px, 14px, 0) scale(1.06); } }
 .hero-layout { position: relative; display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 72px; align-items: center; }
+.hero-copy > * { animation: surgir 620ms cubic-bezier(.2, .7, .3, 1) both; }
+.hero-copy > .eyebrow { animation-delay: 60ms; }
+.hero-copy > h1 { animation-delay: 140ms; }
+.hero-copy > .hero-lead { animation-delay: 240ms; }
+.hero-copy > .hero-actions { animation-delay: 330ms; }
+.hero-copy > .trust-list { animation-delay: 410ms; }
+@keyframes surgir { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 .eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 20px; color: var(--ink-soft); font-size: 12px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
 .eyebrow > span:first-child { display: inline-block; flex: 0 0 auto; width: 24px; height: 3px; background: var(--accent); }
 .eyebrow-light { color: rgba(255, 255, 255, 0.72); }
@@ -98,8 +107,9 @@ p, h1, h2, h3 { margin-top: 0; }
 .telegram-card {
   position: relative; z-index: 2; width: min(100%, 430px); padding: 14px;
   border: 1px solid rgba(16, 23, 40, 0.06); border-radius: var(--radius-md); background: var(--white);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow); animation: flutuar 7s ease-in-out infinite;
 }
+@keyframes flutuar { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
 .telegram-header { display: flex; align-items: center; gap: 10px; padding: 5px 7px 14px; }
 .bot-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--white); background: var(--accent-deep); }
 .radar-mark-small { width: 25px; height: 25px; border-width: 1.5px; }
@@ -141,7 +151,8 @@ p, h1, h2, h3 { margin-top: 0; }
 .section-heading { max-width: 780px; margin-bottom: 56px; }
 .section-heading h2, .how-copy h2, .transparency-copy h2, .final-card h2 { margin-bottom: 0; font-size: clamp(34px, 3.6vw, 52px); line-height: 1.08; letter-spacing: -.03em; }
 .benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.benefit-card { min-height: 350px; display: flex; flex-direction: column; padding: 30px; border: 1px solid rgba(16, 23, 40, 0.06); border-radius: var(--radius-md); box-shadow: 0 14px 32px rgba(16, 23, 40, 0.06); }
+.benefit-card { min-height: 350px; display: flex; flex-direction: column; padding: 30px; border: 1px solid rgba(16, 23, 40, 0.06); border-radius: var(--radius-md); box-shadow: 0 14px 32px rgba(16, 23, 40, 0.06); transition: transform 240ms ease, box-shadow 240ms ease; }
+.benefit-card:hover { transform: translateY(-6px); box-shadow: 0 26px 52px rgba(16, 23, 40, 0.14); }
 .card-dark { color: var(--white); background: var(--accent-deep); }.card-lime { background: var(--paper-deep); }.card-paper { background: var(--white); }
 .card-index { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: .12em; opacity: .6; }
 .card-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: auto 0 20px; border: 1px solid currentColor; border-radius: 50%; font-size: 24px; }
