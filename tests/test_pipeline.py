@@ -818,3 +818,75 @@ def test_feedback_chega_na_propria_mensagem_das_vagas():
     assert "Empresa 1" in notificador.perguntas[0].texto
     assert notificador.perguntas[0].texto.endswith("Deixe seu feedback 👇")
     assert notificador.perguntas[0].linhas_de_botoes[0][0].dados.startswith("feedback:")
+
+
+def test_recusa_em_subarea_escolhida_no_cadastro_nao_vira_area_recusada():
+    capturados = []
+
+    def pontuador_espiao(vagas, extracoes, perfil):
+        capturados.append(list(perfil.areas_recusadas))
+        return []
+
+    interessado = usuario()
+    interessado = interessado.model_copy(
+        update={
+            "perfil": interessado.perfil.model_copy(
+                update={"areas_de_interesse": [AreaDeInteresse.DADOS_IA]}
+            )
+        }
+    )
+    repositorio = RepositorioFalso(
+        [interessado],
+        recusas=RecusasDoUsuario(areas=[AreaDeInteresse.DADOS_IA, AreaDeInteresse.SUPORTE_TECNICO]),
+    )
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        pontuador_espiao,
+    )
+
+    assert capturados == [[AreaDeInteresse.SUPORTE_TECNICO]]
+
+
+class ExtratorQueNaoDevolveNada(ExtratorFalso):
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        return []
+
+
+class RepositorioQueNaoGravaExtracoes(RepositorioFalso):
+    def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
+        raise ErroDeArmazenamento("banco indisponível")
+
+
+def test_resumo_conta_vagas_que_ficaram_sem_extracao():
+    resumo = executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorQueNaoDevolveNada({}),
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert resumo.vagas_sem_extracao == 2
+    assert resumo.vagas_extraidas_agora == 0
+    assert resumo.extracoes_nao_gravadas == 0
+
+
+def test_resumo_conta_extracoes_que_nao_foram_gravadas_mas_entrega_mesmo_assim():
+    notificador = NotificadorFalso()
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        RepositorioQueNaoGravaExtracoes([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert resumo.extracoes_nao_gravadas == 1
+    assert resumo.vagas_enviadas() == 1

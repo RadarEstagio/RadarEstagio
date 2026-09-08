@@ -153,9 +153,11 @@ def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> N
 
 
 def com_areas_recusadas(usuario: Usuario, recusas: RecusasDoUsuario) -> Usuario:
-    if not recusas.areas:
+    escolhidas = set(usuario.perfil.areas_de_interesse)
+    recusadas = [area for area in recusas.areas if area not in escolhidas]
+    if not recusadas:
         return usuario
-    perfil = usuario.perfil.model_copy(update={"areas_recusadas": recusas.areas})
+    perfil = usuario.perfil.model_copy(update={"areas_recusadas": recusadas})
     return usuario.model_copy(update={"perfil": perfil})
 
 

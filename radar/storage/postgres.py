@@ -7,6 +7,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
+from radar.domain.areas import subareas_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -122,7 +123,15 @@ SQL_GUARDAR_AVALIACAO = """
       (%(perfil_id)s, %(vaga_id)s, %(nota)s, %(requisitos_atendidos)s,
        %(requisitos_nao_atendidos)s, %(requisitos_tecnicos_analisados)s,
        %(pontos_a_favor)s, %(pontos_contra)s, %(alerta_pegadinha)s, %(modelo)s)
-    on conflict (perfil_id, vaga_id) do nothing
+    on conflict (perfil_id, vaga_id) do update set
+      nota = excluded.nota,
+      requisitos_atendidos = excluded.requisitos_atendidos,
+      requisitos_nao_atendidos = excluded.requisitos_nao_atendidos,
+      requisitos_tecnicos_analisados = excluded.requisitos_tecnicos_analisados,
+      pontos_a_favor = excluded.pontos_a_favor,
+      pontos_contra = excluded.pontos_contra,
+      alerta_pegadinha = excluded.alerta_pegadinha,
+      modelo = excluded.modelo
 """
 
 SQL_GUARDAR_ENVIO = """
@@ -449,6 +458,11 @@ def converter_em_vaga_enviada(linha: dict) -> Vaga:
     )
 
 
+def areas_do_campo_do_curso(curso: str, areas: list[str]) -> list[AreaDeInteresse]:
+    permitidas = {valor for valor, _ in subareas_do_curso(curso)}
+    return [AreaDeInteresse(area) for area in areas if area in permitidas]
+
+
 def converter_em_usuario(linha: dict) -> Usuario:
     return Usuario(
         id=linha["id"],
@@ -458,7 +472,7 @@ def converter_em_usuario(linha: dict) -> Usuario:
             habilidades=linha["habilidades"],
             cidade=linha["cidade"],
             modalidade=Modalidade(linha["modalidade"]),
-            areas_de_interesse=[AreaDeInteresse(area) for area in linha["areas_de_interesse"]],
+            areas_de_interesse=areas_do_campo_do_curso(linha["curso"], linha["areas_de_interesse"]),
         ),
         chat_id=linha["telegram_chat_id"],
         sem_recomendacao_desde=linha["sem_recomendacao_desde"],
