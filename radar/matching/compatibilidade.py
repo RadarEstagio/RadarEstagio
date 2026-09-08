@@ -2,7 +2,7 @@ import re
 
 from pydantic import BaseModel
 
-from radar.domain.areas import AREAS_POR_NOME, area_do_curso, normalizar_curso
+from radar.domain.areas import AREAS_POR_NOME, area_do_curso, curso_e_generico, normalizar_curso
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
@@ -36,9 +36,11 @@ def nivel_da_area(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilid
 
 
 def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
-    if extracao.aceita_qualquer_curso:
+    if extracao.aceita_qualquer_curso or any(
+        curso_e_generico(curso) for curso in extracao.cursos_aceitos
+    ):
         return NivelCompatibilidade.COMPATIVEL
-    aceitos = [curso for curso in extracao.cursos_aceitos if curso.strip()]
+    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
     if not aceitos:
         return NivelCompatibilidade.PARCIAL
     if any(mesma_area(curso, perfil.curso) for curso in aceitos):
@@ -90,5 +92,7 @@ def mesmo_curso(aceito: str, do_perfil: str) -> bool:
         return True
     if area_do_curso(direita) is None:
         return False
-    generico = esquerda[:-1] if esquerda.endswith("s") and " " not in esquerda else esquerda
-    return re.search(rf"\b{re.escape(generico)}\b", direita) is not None
+    formas = [re.escape(esquerda)]
+    if esquerda.endswith("s") and " " not in esquerda:
+        formas.append(re.escape(esquerda[:-1]))
+    return re.search(rf"\b(?:{'|'.join(formas)})\b", direita) is not None

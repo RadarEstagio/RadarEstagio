@@ -362,5 +362,73 @@
         }
       ]
     }
-  ]
+  ],
+  "prefixos": [
+    "curso superior",
+    "ensino superior",
+    "nivel superior",
+    "bacharelado",
+    "licenciatura",
+    "tecnologo",
+    "tecnologia",
+    "tecnico",
+    "graduacao",
+    "graduando",
+    "graduanda",
+    "superior",
+    "cursando",
+    "estudante",
+    "estudantes",
+    "formacao",
+    "formado",
+    "formada",
+    "bacharel",
+    "aluno",
+    "aluna",
+    "alunos",
+    "cursos",
+    "curso"
+  ],
+  "conectores": [
+    "em",
+    "de",
+    "do",
+    "da",
+    "no",
+    "na"
+  ],
+  "sufixos": [
+    "em andamento",
+    "em curso",
+    "incompleto",
+    "completo",
+    "concluido",
+    "cursando"
+  ],
+  "genericos": [
+    "ensino superior",
+    "nivel superior",
+    "curso superior",
+    "superior",
+    "graduacao",
+    "qualquer curso",
+    "qualquer graduacao",
+    "qualquer formacao",
+    "todos os cursos",
+    "areas afins",
+    "areas correlatas"
+  ],
+  "sinonimos": {
+    "ciencias economicas": "economia",
+    "ciencias contabeis": "contabilidade",
+    "ciencias atuariais": "atuaria",
+    "gestao de recursos humanos": "recursos humanos",
+    "administracao de empresas": "administracao",
+    "publicidade e propaganda": "publicidade",
+    "propaganda": "publicidade",
+    "ciencias da computacao": "ciencia da computacao",
+    "ads": "analise e desenvolvimento de sistemas",
+    "comunicacao social": "comunicacao",
+    "engenharia da computacao": "engenharia de computacao"
+  }
 }

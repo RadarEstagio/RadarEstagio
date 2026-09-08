@@ -193,3 +193,31 @@ def test_area_da_vaga_e_normalizada_antes_de_comparar(valor: str):
 def test_area_da_vaga_fora_do_catalogo_vira_desconhecida_e_nao_outra_area(valor):
     assert extracao(area_da_vaga=valor).area_da_vaga is None
     assert area_de(extracao(area_da_vaga=valor)) is NivelCompatibilidade.PARCIAL
+
+
+@pytest.mark.parametrize(
+    ("aceito", "curso"),
+    [
+        ("Economia", "Ciências Econômicas"),
+        ("Ciências Econômicas", "Economia"),
+        ("Contabilidade", "Ciências Contábeis"),
+        ("Gestão de Recursos Humanos", "Recursos Humanos"),
+        ("Cursando Engenharia Civil", "Engenharia Civil"),
+        ("Graduação em Direito", "Direito"),
+        ("Sistemas", "Sistemas de Informação"),
+        ("Negócios", "Negócios Internacionais"),
+    ],
+)
+def test_sinonimo_formacao_e_plural_nao_viram_formacao_de_outra_area(aceito, curso):
+    assert curso_de(extracao(cursos_aceitos=[aceito]), perfil(curso=curso)) is (
+        NivelCompatibilidade.COMPATIVEL
+    )
+
+
+@pytest.mark.parametrize(
+    "aceito", ["Ensino Superior", "Nível superior completo", "Qualquer graduação"]
+)
+def test_termo_generico_na_lista_de_aceitos_vale_como_qualquer_curso(aceito):
+    assert curso_de(extracao(cursos_aceitos=[aceito]), perfil(curso="Direito")) is (
+        NivelCompatibilidade.COMPATIVEL
+    )

@@ -370,12 +370,85 @@ def normalizar(texto: str) -> str:
     return " ".join(sem_acentos.casefold().split())
 
 
+PREFIXOS_DE_FORMACAO = (
+    "curso superior",
+    "ensino superior",
+    "nivel superior",
+    "bacharelado",
+    "licenciatura",
+    "tecnologo",
+    "tecnologia",
+    "tecnico",
+    "graduacao",
+    "graduando",
+    "graduanda",
+    "superior",
+    "cursando",
+    "estudante",
+    "estudantes",
+    "formacao",
+    "formado",
+    "formada",
+    "bacharel",
+    "aluno",
+    "aluna",
+    "alunos",
+    "cursos",
+    "curso",
+)
+CONECTORES_DE_FORMACAO = ("em", "de", "do", "da", "no", "na")
+SUFIXOS_DE_FORMACAO = (
+    "em andamento",
+    "em curso",
+    "incompleto",
+    "completo",
+    "concluido",
+    "cursando",
+)
+TERMOS_GENERICOS_DE_FORMACAO = (
+    "ensino superior",
+    "nivel superior",
+    "curso superior",
+    "superior",
+    "graduacao",
+    "qualquer curso",
+    "qualquer graduacao",
+    "qualquer formacao",
+    "todos os cursos",
+    "areas afins",
+    "areas correlatas",
+)
+SINONIMOS_DE_CURSO = {
+    "ciencias economicas": "economia",
+    "ciencias contabeis": "contabilidade",
+    "ciencias atuariais": "atuaria",
+    "gestao de recursos humanos": "recursos humanos",
+    "administracao de empresas": "administracao",
+    "publicidade e propaganda": "publicidade",
+    "propaganda": "publicidade",
+    "ciencias da computacao": "ciencia da computacao",
+    "ads": "analise e desenvolvimento de sistemas",
+    "comunicacao social": "comunicacao",
+    "engenharia da computacao": "engenharia de computacao",
+}
+_PREFIXO_DE_FORMACAO = re.compile(
+    rf"^(?:(?:{'|'.join(PREFIXOS_DE_FORMACAO)})(?: (?:{'|'.join(CONECTORES_DE_FORMACAO)}))?\s+)+"
+)
+_SUFIXO_DE_FORMACAO = re.compile(rf"(?:\s*[-–|:]\s*|\s+)(?:{'|'.join(SUFIXOS_DE_FORMACAO)})$")
+
+
 def normalizar_curso(curso: str) -> str:
-    return re.sub(
-        r"^(?:(?:bacharelado|licenciatura|tecnologo|tecnologia|tecnico|curso superior) em )+",
-        "",
-        normalizar(curso),
-    )
+    texto = _SUFIXO_DE_FORMACAO.sub("", normalizar(curso))
+    if texto in TERMOS_GENERICOS_DE_FORMACAO:
+        return ""
+    texto = _PREFIXO_DE_FORMACAO.sub("", texto)
+    if texto in TERMOS_GENERICOS_DE_FORMACAO:
+        return ""
+    return SINONIMOS_DE_CURSO.get(texto, texto)
+
+
+def curso_e_generico(curso: str) -> bool:
+    return bool(normalizar(curso)) and not normalizar_curso(curso)
 
 
 def area_do_curso(curso: str) -> str | None:
@@ -413,3 +486,21 @@ def termos_de_busca(areas: set[str]) -> tuple[str, ...]:
 def subareas_do_curso(curso: str) -> tuple[tuple[str, str], ...]:
     area = area_do_curso(curso)
     return AREAS_POR_NOME[area].subareas if area else ()
+
+
+def catalogo_do_site() -> dict:
+    return {
+        "areas": [
+            {
+                "nome": area.nome,
+                "cursos": list(area.cursos),
+                "subareas": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in area.subareas],
+            }
+            for area in AREAS
+        ],
+        "prefixos": list(PREFIXOS_DE_FORMACAO),
+        "conectores": list(CONECTORES_DE_FORMACAO),
+        "sufixos": list(SUFIXOS_DE_FORMACAO),
+        "genericos": list(TERMOS_GENERICOS_DE_FORMACAO),
+        "sinonimos": dict(SINONIMOS_DE_CURSO),
+    }

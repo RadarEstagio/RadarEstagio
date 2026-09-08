@@ -113,32 +113,35 @@ async function carregarAreas() {
   if (catalogoDeAreas) return catalogoDeAreas;
   try {
     const resposta = await fetch("assets/areas.json");
-    catalogoDeAreas = resposta.ok ? (await resposta.json()).areas : [];
+    catalogoDeAreas = resposta.ok ? await resposta.json() : null;
   } catch {
-    catalogoDeAreas = [];
+    catalogoDeAreas = null;
   }
   return catalogoDeAreas;
 }
 
-function areaDoCurso(curso, areas) {
-  const normalizado = normalizarTexto(curso)
-    .replace(/\s+/g, " ")
-    .replace(/^(?:(?:bacharelado|licenciatura|tecnologo|tecnologia|tecnico|curso superior) em )+/, "");
+function normalizarCurso(curso, catalogo) {
+  const sufixo = new RegExp(`(?:\\s*[-–|:]\\s*|\\s+)(?:${catalogo.sufixos.join("|")})$`);
+  let texto = normalizarTexto(curso).replace(/\s+/g, " ").replace(sufixo, "");
+  if (catalogo.genericos.includes(texto)) return "";
+  const prefixo = new RegExp(
+    `^(?:(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+)+`,
+  );
+  texto = texto.replace(prefixo, "");
+  if (catalogo.genericos.includes(texto)) return "";
+  return catalogo.sinonimos[texto] ?? texto;
+}
+
+function areaDoCurso(curso, catalogo) {
+  if (!catalogo) return null;
+  const normalizado = normalizarCurso(curso, catalogo);
   if (!normalizado) return null;
-  let escolhida = null;
-  for (const area of areas) {
-    for (const nome of area.cursos) {
-      if (normalizado === nome && (!escolhida || nome.length > escolhida.tamanho)) {
-        escolhida = { area, tamanho: nome.length };
-      }
-    }
-  }
-  return escolhida?.area ?? null;
+  return catalogo.areas.find((area) => area.cursos.includes(normalizado)) ?? null;
 }
 
 async function montarAreasDoCurso() {
-  const areas = await carregarAreas();
-  const area = areaDoCurso(form.elements.curso?.value ?? "", areas);
+  const catalogo = await carregarAreas();
+  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = !area;
   if (!area) return;

@@ -3,7 +3,9 @@ import pytest
 from radar.domain.areas import (
     COMPUTACAO,
     area_do_curso,
+    curso_e_generico,
     descricao_e_da_area,
+    normalizar_curso,
     termos_de_busca,
     titulo_e_da_area,
     titulo_e_de_outra_area,
@@ -182,4 +184,39 @@ def test_laboratorio_continua_reconhecido_como_titulo_de_saude():
     ],
 )
 def test_nomes_comuns_de_curso_sao_reconhecidos_integralmente(curso: str, esperada: str):
+    assert area_do_curso(curso) == esperada
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperado"),
+    [
+        ("Cursando Engenharia Civil", "engenharia civil"),
+        ("Graduação em Direito", "direito"),
+        ("Superior em Administração", "administracao"),
+        ("Estudante de Ciências Econômicas", "economia"),
+        ("Bacharelado em Ciências Contábeis", "contabilidade"),
+        ("Administração de Empresas", "administracao"),
+        ("Engenharia Civil - completo", "engenharia civil"),
+        ("Engenharia Civil completo", "engenharia civil"),
+        ("Tecnólogo em ADS", "analise e desenvolvimento de sistemas"),
+    ],
+)
+def test_normalizar_curso_tira_formacao_e_aplica_sinonimos(curso: str, esperado: str):
+    assert normalizar_curso(curso) == esperado
+
+
+@pytest.mark.parametrize(
+    "curso", ["Ensino Superior", "Nível Superior", "Qualquer curso", "Áreas afins"]
+)
+def test_termo_generico_de_formacao_nao_e_curso(curso: str):
+    assert curso_e_generico(curso)
+    assert normalizar_curso(curso) == ""
+    assert area_do_curso(curso) is None
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperada"),
+    [("Cursando Direito", "direito"), ("Estudante de Ciências Econômicas", "financas")],
+)
+def test_area_do_curso_entende_formacao_e_sinonimo(curso: str, esperada: str):
     assert area_do_curso(curso) == esperada

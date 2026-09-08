@@ -684,3 +684,28 @@ for (const [curso, subarea] of [
     } finally { a.close(); }
   });
 }
+
+
+Deno.test("formacao e sinonimo no curso digitado ainda montam as areas certas", async () => {
+  for (const [curso, esperada, indevida] of [
+    ["Cursando Direito", "direito_contencioso", "desenvolvimento_web"],
+    ["Estudante de Ciências Econômicas", "financeiro", "direito_contencioso"],
+  ]) {
+    const a = app();
+    try {
+      await settle();
+      a.w.document.querySelector(".js-open-signup").click();
+      await settle();
+      const doc = a.w.document;
+      const form = fill(a.w);
+      form.elements.curso.value = curso;
+      doc.querySelector("#next-step").click();
+      doc.querySelector("#next-step").click();
+      doc.querySelector("#next-step").click();
+      await settle();
+      const valores = [...doc.querySelectorAll('input[name="areas"]')].map((c) => c.value);
+      assert.equal(valores.includes(esperada), true, curso);
+      assert.equal(valores.includes(indevida), false, curso);
+    } finally { a.close(); }
+  }
+});
