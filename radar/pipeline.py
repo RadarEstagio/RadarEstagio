@@ -188,7 +188,7 @@ def obter_extracoes(
     extrator: ExtratorDeVagas, repositorio: Repositorio, candidatas: list[Vaga], modelo: str
 ) -> tuple[dict[str, ExtracaoDaVaga], BalancoDaExtracao]:
     try:
-        extracoes = dict(repositorio.extracoes_existentes(candidatas))
+        extracoes = dict(repositorio.extracoes_existentes(candidatas, modelo))
     except ErroDeArmazenamento as erro:
         logger.warning("extrações guardadas não puderam ser lidas: %s", erro)
         extracoes = {}

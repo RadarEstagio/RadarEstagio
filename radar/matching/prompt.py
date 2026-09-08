@@ -1,5 +1,8 @@
+import hashlib
+import json
+
 from radar.domain.areas import AREAS
-from radar.domain.models import Vaga
+from radar.domain.models import ExtracaoDaVaga, Vaga
 
 AREAS_LISTADAS = ", ".join(f'"{area.nome}"' for area in AREAS)
 SUBAREAS_POR_AREA = "\n".join(
@@ -127,3 +130,10 @@ def descrever_vaga(vaga: Vaga) -> str:
 def montar_prompt(vagas: list[Vaga]) -> str:
     descricoes = "\n\n".join(descrever_vaga(vaga) for vaga in vagas)
     return f"{INSTRUCAO_DE_EXTRACAO}\n## Vagas ({len(vagas)})\n{descricoes}\n"
+
+
+VERSAO_DA_EXTRACAO = hashlib.sha1(
+    (
+        INSTRUCAO_DE_EXTRACAO + json.dumps(ExtracaoDaVaga.model_json_schema(), sort_keys=True)
+    ).encode()
+).hexdigest()[:8]

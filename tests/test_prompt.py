@@ -68,3 +68,10 @@ def test_habilidades_usam_qualificador_especifico_e_tecnologias_exatas():
 def test_informacao_ausente_nao_e_alerta_pegadinha():
     assert "Não use alerta para descrição insuficiente" in INSTRUCAO_DE_EXTRACAO
     assert "título genérico" in INSTRUCAO_DE_EXTRACAO
+
+
+def test_versao_da_extracao_acompanha_o_prompt_e_o_formato():
+    from radar.matching.prompt import VERSAO_DA_EXTRACAO
+
+    assert len(VERSAO_DA_EXTRACAO) == 8
+    assert VERSAO_DA_EXTRACAO.isalnum()

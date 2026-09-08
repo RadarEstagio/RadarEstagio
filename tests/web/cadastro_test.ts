@@ -709,3 +709,59 @@ Deno.test("formacao e sinonimo no curso digitado ainda montam as areas certas", 
     } finally { a.close(); }
   }
 });
+
+
+Deno.test("catalogo indisponivel na edicao preserva as areas salvas em vez de apagar", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: {
+      ...profile,
+      telegram_chat_id: "123",
+      areas_de_interesse: ["desenvolvimento_web"],
+    } as unknown as Profile,
+  });
+  try {
+    a.w.fetch = async () => {
+      throw new Error("offline");
+    };
+    await settle();
+    a.w.setAuthMode("login");
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.cidade.value = "Natal, RN";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].cidade, "Natal, RN");
+    assert.deepEqual(Array.from(update[2].areas_de_interesse as string[]), ["desenvolvimento_web"]);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("trocar o curso na edicao descarta as areas do curso antigo no payload", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: {
+      ...profile,
+      telegram_chat_id: "123",
+      areas_de_interesse: ["desenvolvimento_web"],
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.curso.value = "Direito";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].curso, "Direito");
+    assert.deepEqual(Array.from(update[2].areas_de_interesse as string[]), []);
+  } finally {
+    a.close();
+  }
+});

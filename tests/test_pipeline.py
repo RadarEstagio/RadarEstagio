@@ -138,7 +138,7 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
 
-    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
+    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
         ids = {vaga.id_externo for vaga in vagas}
         return {
             id_vaga: extracao

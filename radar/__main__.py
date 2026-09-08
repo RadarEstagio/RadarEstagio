@@ -22,7 +22,7 @@ from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.enriquecimento import EnriquecedorDeDescricoes
 from radar.matching.errors import ErroDeAvaliacao
-from radar.matching.factory import criar_extrator, nome_do_modelo
+from radar.matching.factory import criar_extrator, identidade_da_extracao
 from radar.matching.lotes import ExtratorEmLotes
 from radar.notification.formatador import (
     formatar_falha_da_execucao,
@@ -183,7 +183,7 @@ def executar_fluxo(
             notificador,
             repositorio,
             ParametrosDaExecucao(
-                modelo=nome_do_modelo(settings),
+                modelo=identidade_da_extracao(settings),
                 quantidade=settings.quantidade_vagas_enviadas,
                 nota_minima=settings.nota_minima,
                 falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,

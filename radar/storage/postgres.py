@@ -49,6 +49,7 @@ SQL_EXTRACOES_EXISTENTES = """
     select id_externo, extracao
     from vagas
     where extracao is not null
+      and modelo_extracao = %(modelo)s
       and (fonte, id_externo) in (
         select * from unnest(%(fontes)s::text[], %(ids_externos)s::text[])
       )
@@ -227,10 +228,11 @@ class RepositorioPostgres:
                 f"Falha ao conferir destinatário: {descrever(erro)}"
             ) from erro
 
-    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
+    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
         if not vagas:
             return {}
         parametros = {
+            "modelo": modelo,
             "fontes": [vaga.fonte for vaga in vagas],
             "ids_externos": [vaga.id_externo for vaga in vagas],
         }

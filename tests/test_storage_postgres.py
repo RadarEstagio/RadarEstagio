@@ -233,7 +233,7 @@ def test_extracao_em_formato_antigo_e_ignorada_em_vez_de_quebrar(conexao: psycop
         (Jsonb({"id_vaga": "teste-1", "area_de_tecnologia": "compativel"}),),
     )
 
-    assert repositorio.extracoes_existentes([vaga(1)]) == {}
+    assert repositorio.extracoes_existentes([vaga(1)], "modelo-teste") == {}
 
 
 def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection):
@@ -246,11 +246,11 @@ def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection
         periodo_minimo=3,
     )
 
-    assert repositorio.extracoes_existentes([vaga(1)]) == {}
+    assert repositorio.extracoes_existentes([vaga(1)], "modelo-teste") == {}
 
     repositorio.guardar_extracoes([(vaga(1), extracao)], "modelo-teste")
 
-    guardadas = repositorio.extracoes_existentes([vaga(1), vaga(2)])
+    guardadas = repositorio.extracoes_existentes([vaga(1), vaga(2)], "modelo-teste")
     assert list(guardadas) == ["teste-1"]
     assert guardadas["teste-1"] == extracao
     assert (
@@ -516,3 +516,12 @@ def test_excluir_conta_sem_sessao_falha_em_vez_de_apagar_qualquer_coisa(
 
     with pytest.raises(psycopg.errors.RaiseException):
         conexao.execute("select public.excluir_minha_conta()")
+
+
+def test_extracao_de_outra_versao_do_prompt_nao_e_reaproveitada(conexao: psycopg.Connection):
+    repositorio = RepositorioPostgres(conexao)
+    extracao = ExtracaoDaVaga(id_vaga="teste-1", area_da_vaga="computacao")
+    repositorio.guardar_extracoes([(vaga(1), extracao)], "gemini#versao-antiga")
+
+    assert repositorio.extracoes_existentes([vaga(1)], "gemini#versao-nova") == {}
+    assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == ["teste-1"]
