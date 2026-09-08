@@ -44,7 +44,7 @@ class Vaga(BaseModel):
 
 class ExtracaoDaVaga(BaseModel):
     id_vaga: str
-    area_de_tecnologia: NivelCompatibilidade
+    area_da_vaga: str | None
     areas_da_vaga: list[str] = Field(default_factory=list)
     cursos_aceitos: list[str] = Field(default_factory=list)
     aceita_qualquer_curso: bool = False

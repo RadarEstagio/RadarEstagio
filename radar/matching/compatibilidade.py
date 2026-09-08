@@ -2,26 +2,9 @@ import unicodedata
 
 from pydantic import BaseModel
 
+from radar.domain.areas import area_do_curso
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
-CURSOS_DE_COMPUTACAO = (
-    "computacao",
-    "engenharia de software",
-    "sistemas de informacao",
-    "analise e desenvolvimento de sistemas",
-    "analise de sistemas",
-    "desenvolvimento de sistemas",
-    "sistemas para internet",
-    "ciencia de dados",
-    "engenharia de dados",
-    "banco de dados",
-    "tecnologia da informacao",
-    "informatica",
-    "redes de computadores",
-    "seguranca da informacao",
-    "jogos digitais",
-    "inteligencia artificial",
-)
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
 PONTO_PERIODO_INCOMPATIVEL = "Período mínimo incompatível"
 PONTO_EXPERIENCIA_EXIGIDA = "Exige experiência prévia"
@@ -35,10 +18,21 @@ class NiveisDeCompatibilidade(BaseModel):
 
 def derivar_niveis(extracao: ExtracaoDaVaga, perfil: Perfil) -> NiveisDeCompatibilidade:
     return NiveisDeCompatibilidade(
-        area=extracao.area_de_tecnologia,
+        area=nivel_da_area(extracao, perfil),
         curso=nivel_do_curso(extracao, perfil),
         periodo_experiencia=nivel_do_periodo(extracao, perfil),
     )
+
+
+def nivel_da_area(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
+    if extracao.area_da_vaga is None:
+        return NivelCompatibilidade.PARCIAL
+    area_da_pessoa = area_do_curso(perfil.curso)
+    if area_da_pessoa is None:
+        return NivelCompatibilidade.PARCIAL
+    if extracao.area_da_vaga == area_da_pessoa:
+        return NivelCompatibilidade.COMPATIVEL
+    return NivelCompatibilidade.INCOMPATIVEL
 
 
 def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
@@ -47,7 +41,7 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
     aceitos = [curso for curso in extracao.cursos_aceitos if curso.strip()]
     if not aceitos:
         return NivelCompatibilidade.PARCIAL
-    if any(e_de_computacao(curso) for curso in aceitos):
+    if any(mesma_area(curso, perfil.curso) for curso in aceitos):
         return NivelCompatibilidade.COMPATIVEL
     if any(mesmo_curso(curso, perfil.curso) for curso in aceitos):
         return NivelCompatibilidade.COMPATIVEL
@@ -80,9 +74,9 @@ def montar_pontos(
     return a_favor, contra
 
 
-def e_de_computacao(curso: str) -> bool:
-    normalizado = normalizar(curso)
-    return any(nome in normalizado for nome in CURSOS_DE_COMPUTACAO)
+def mesma_area(aceito: str, do_perfil: str) -> bool:
+    area_aceita = area_do_curso(aceito)
+    return area_aceita is not None and area_aceita == area_do_curso(do_perfil)
 
 
 def mesmo_curso(aceito: str, do_perfil: str) -> bool:

@@ -5,7 +5,6 @@ from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
     Modalidade,
-    NivelCompatibilidade,
     Perfil,
     PerguntaDeFeedback,
     RecusasDoUsuario,
@@ -66,7 +65,7 @@ class ExtratorFalso:
         return [
             ExtracaoDaVaga(
                 id_vaga=vaga.id_externo,
-                area_de_tecnologia=NivelCompatibilidade.COMPATIVEL,
+                area_da_vaga="computacao",
             )
             for vaga in vagas
         ]
@@ -736,9 +735,7 @@ def test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas():
 
 def test_extracao_ja_guardada_nao_volta_ao_extrator():
     repositorio = RepositorioFalso([usuario()])
-    repositorio.extracoes_guardadas["1"] = ExtracaoDaVaga(
-        id_vaga="1", area_de_tecnologia=NivelCompatibilidade.COMPATIVEL
-    )
+    repositorio.extracoes_guardadas["1"] = ExtracaoDaVaga(id_vaga="1", area_da_vaga="computacao")
 
     extrator = executar_com(repositorio, [vaga(1), vaga(2)], {"1": 70, "2": 80})
 

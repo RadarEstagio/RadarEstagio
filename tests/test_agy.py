@@ -61,7 +61,7 @@ def test_extrai_vagas_com_saida_estruturada_do_agy():
             "extracoes": [
                 {
                     "id_vaga": "vaga-1",
-                    "area_de_tecnologia": "compativel",
+                    "area_da_vaga": "computacao",
                     "cursos_aceitos": ["Engenharia de Software"],
                     "habilidades_obrigatorias": [],
                     "habilidades_desejaveis": ["Python", "SQL"],

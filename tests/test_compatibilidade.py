@@ -13,7 +13,7 @@ def perfil(curso: str = "Engenharia de Software", periodo: int = 4) -> Perfil:
 
 
 def extracao(**alteracoes) -> ExtracaoDaVaga:
-    dados = {"id_vaga": "vaga-1", "area_de_tecnologia": "compativel"}
+    dados = {"id_vaga": "vaga-1", "area_da_vaga": "computacao"}
     dados.update(alteracoes)
     return ExtracaoDaVaga.model_validate(dados)
 
@@ -81,10 +81,46 @@ def test_experiencia_apenas_desejavel_e_parcial():
     assert periodo_de(extracao(experiencia_desejavel=True)) is NivelCompatibilidade.PARCIAL
 
 
-def test_area_de_tecnologia_vem_direto_da_vaga():
-    niveis = derivar_niveis(extracao(area_de_tecnologia="incompativel"), perfil())
+def area_de(extracao_da_vaga: ExtracaoDaVaga, candidato: Perfil | None = None):
+    return derivar_niveis(extracao_da_vaga, candidato or perfil()).area
 
-    assert niveis.area is NivelCompatibilidade.INCOMPATIVEL
+
+def test_area_da_vaga_igual_a_do_curso_e_compativel():
+    assert area_de(extracao(area_da_vaga="computacao")) is NivelCompatibilidade.COMPATIVEL
+    assert (
+        area_de(extracao(area_da_vaga="direito"), perfil(curso="Direito"))
+        is NivelCompatibilidade.COMPATIVEL
+    )
+
+
+def test_area_da_vaga_de_outro_curso_e_incompativel():
+    assert area_de(extracao(area_da_vaga="direito")) is NivelCompatibilidade.INCOMPATIVEL
+    assert (
+        area_de(extracao(area_da_vaga="computacao"), perfil(curso="Direito"))
+        is NivelCompatibilidade.INCOMPATIVEL
+    )
+
+
+def test_vaga_aberta_a_qualquer_formacao_fica_parcial():
+    assert area_de(extracao(area_da_vaga=None)) is NivelCompatibilidade.PARCIAL
+
+
+def test_curso_sem_area_conhecida_nao_e_punido_pela_area():
+    exotico = perfil(curso="Curso Que Ninguém Tem")
+
+    assert area_de(extracao(area_da_vaga="direito"), exotico) is NivelCompatibilidade.PARCIAL
+
+
+def test_vaga_que_aceita_curso_da_mesma_area_conta_como_compativel():
+    da_area = extracao(cursos_aceitos=["Ciência da Computação"])
+
+    assert curso_de(da_area) is NivelCompatibilidade.COMPATIVEL
+
+
+def test_curso_de_computacao_aceito_nao_serve_para_quem_e_de_outra_area():
+    so_de_computacao = extracao(cursos_aceitos=["Ciência da Computação"])
+
+    assert curso_de(so_de_computacao, perfil(curso="Direito")) is NivelCompatibilidade.INCOMPATIVEL
 
 
 def test_curso_compativel_sem_lista_declarada_nao_vira_ponto_a_favor():

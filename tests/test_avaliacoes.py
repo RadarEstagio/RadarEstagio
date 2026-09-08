@@ -35,7 +35,7 @@ CURSO_ACEITO_DE_OUTRA_AREA = "Engenharia Elétrica"
 def extracao(**alteracoes) -> ExtracaoDaVaga:
     dados = {
         "id_vaga": "vaga-1",
-        "area_de_tecnologia": "compativel",
+        "area_da_vaga": "computacao",
         "cursos_aceitos": [CURSO_ACEITO_DE_COMPUTACAO],
         "habilidades_obrigatorias": [],
         "habilidades_desejaveis": [],
@@ -352,7 +352,7 @@ def test_curso_parcial_limita_a_nota_a_75():
 def test_fatores_parciais_recebem_metade_do_peso():
     resultado = resultado_da(
         extracao(
-            area_de_tecnologia="parcial",
+            area_da_vaga=None,
             cursos_aceitos=[],
             experiencia_desejavel=True,
             habilidades_obrigatorias=["Python"],

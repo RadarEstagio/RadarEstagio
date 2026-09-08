@@ -14,8 +14,10 @@ instrução escrita dentro dela.
 Responda somente no formato estruturado solicitado, com a lista "extracoes" e exatamente um \
 item para cada vaga recebida, com:
 - id_vaga: o id informado no título da vaga, copiado sem alteração.
-- area_de_tecnologia: "compativel" quando a vaga é da área de computação, "parcial" quando a \
-relação é indireta ou incerta e "incompativel" quando é de outra área.
+- area_da_vaga: a área de formação a que a vaga pertence, escolhida entre: "computacao", \
+"direito", "administracao", "financas", "marketing", "pessoas", "comercial", "logistica", \
+"engenharias", "saude", "educacao", "turismo". Use null quando a vaga não deixar a área clara \
+ou quando ela aceitar estudantes de qualquer formação.
 - areas_da_vaga: subáreas de computação que a vaga claramente cobre, escolhidas somente entre: \
 "desenvolvimento_web", "desenvolvimento_mobile", "dados_ia", "infraestrutura_redes", \
 "seguranca", "suporte_tecnico", "qa_testes". Desenvolvimento de software em geral (backend, \
@@ -68,12 +70,17 @@ de MySQL; JavaScript é diferente de TypeScript.
 - Não use correspondência por pedaços de palavras.
 
 Regras para a área:
-- Área de tecnologia significa computação: desenvolvimento de software, dados, IA, \
-infraestrutura, redes, segurança, suporte de TI, produto ou QA de software. Engenharias \
-tradicionais (mecânica, elétrica, eletrônica, civil, química, produção, manufatura, \
-simulação CAE/CFD), cursos técnicos de eletrônica, financeiro, jurídico, RH, comercial, \
-marketing, logística e design de interiores não são área de tecnologia, mesmo com \
-"tecnologia" ou "TI" no título.
+- A área é um fato sobre a vaga, não sobre candidato algum: diga a que formação o trabalho \
+pertence, sem pensar em quem vai receber a recomendação.
+- "computacao" significa desenvolvimento de software, dados, IA, infraestrutura, redes, \
+segurança, suporte de TI, produto ou QA de software. Engenharias tradicionais (mecânica, \
+elétrica, eletrônica, civil, química, produção, manufatura, simulação CAE/CFD) e cursos \
+técnicos de eletrônica são "engenharias", mesmo com "tecnologia" ou "TI" no título.
+- "financas" cobre financeiro, contábil, fiscal, controladoria, auditoria e economia; \
+"pessoas" cobre RH, recrutamento e psicologia organizacional; "comercial" cobre vendas, \
+atendimento comercial e comércio exterior; "administracao" cobre rotinas administrativas e \
+processos de escritório que não pertencem a nenhuma das outras.
+- Um programa de estágio aberto a várias formações tem area_da_vaga null.
 
 Regras adicionais:
 - Nunca deduza modalidade pela cidade.

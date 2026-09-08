@@ -5,6 +5,7 @@ from uuid import UUID
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+from pydantic import ValidationError
 
 from radar.domain.models import (
     AreaDeInteresse,
@@ -242,10 +243,7 @@ class RepositorioPostgres:
                 linhas = cursor.execute(SQL_EXTRACOES_EXISTENTES, parametros).fetchall()
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao ler as extrações: {descrever(erro)}") from erro
-        return {
-            linha["id_externo"]: ExtracaoDaVaga.model_validate(linha["extracao"])
-            for linha in linhas
-        }
+        return dict(filter(None, (interpretar_extracao(linha) for linha in linhas)))
 
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
         if not extracoes:
@@ -467,6 +465,14 @@ def guardar_envio(cursor: psycopg.Cursor, perfil_id: UUID, vaga_id: int, token: 
 
 def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:
     return cursor.execute(SQL_REGISTRAR_ATIVACAO, {"perfil_id": perfil_id}).fetchone() is not None
+
+
+def interpretar_extracao(linha: dict) -> tuple[str, ExtracaoDaVaga] | None:
+    try:
+        return linha["id_externo"], ExtracaoDaVaga.model_validate(linha["extracao"])
+    except ValidationError:
+        logger.info("extração guardada da vaga %s está em formato antigo", linha["id_externo"])
+        return None
 
 
 def converter_em_vaga_enviada(linha: dict) -> Vaga:

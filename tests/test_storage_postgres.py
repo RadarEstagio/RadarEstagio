@@ -4,19 +4,19 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
     Modalidade,
-    NivelCompatibilidade,
     Perfil,
     Recomendacao,
     ResultadoMatch,
     Usuario,
     Vaga,
 )
-from radar.storage.postgres import RepositorioPostgres
+from radar.storage.postgres import RepositorioPostgres, guardar_vaga
 
 DATABASE_URL_TESTE = os.environ.get("DATABASE_URL_TESTE", "")
 
@@ -214,11 +214,22 @@ def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
     assert depois.silencio_avisado_em is not None
 
 
+def test_extracao_em_formato_antigo_e_ignorada_em_vez_de_quebrar(conexao: psycopg.Connection):
+    repositorio = RepositorioPostgres(conexao)
+    guardar_vaga(conexao.cursor(), vaga(1))
+    conexao.execute(
+        "update vagas set extracao = %s, extraida_em = now() where id_externo = 'teste-1'",
+        (Jsonb({"id_vaga": "teste-1", "area_de_tecnologia": "compativel"}),),
+    )
+
+    assert repositorio.extracoes_existentes([vaga(1)]) == {}
+
+
 def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection):
     repositorio = RepositorioPostgres(conexao)
     extracao = ExtracaoDaVaga(
         id_vaga="teste-1",
-        area_de_tecnologia=NivelCompatibilidade.COMPATIVEL,
+        area_da_vaga="computacao",
         cursos_aceitos=["Ciência da Computação"],
         habilidades_obrigatorias=["Python"],
         periodo_minimo=3,

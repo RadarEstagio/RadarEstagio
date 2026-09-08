@@ -74,7 +74,7 @@ def erro_da_api(codigo: int, mensagem: str) -> errors.APIError:
 def extracao(numero: str, **alteracoes) -> dict:
     dados = {
         "id_vaga": numero,
-        "area_de_tecnologia": "compativel",
+        "area_da_vaga": "computacao",
         "cursos_aceitos": ["Ciência da Computação"],
         "aceita_qualquer_curso": False,
         "periodo_minimo": None,
@@ -96,7 +96,7 @@ def test_converte_json_do_gemini_em_extracoes_na_ordem_da_resposta():
         resposta_com(
             extracao(
                 "2",
-                area_de_tecnologia="incompativel",
+                area_da_vaga="direito",
                 cursos_aceitos=["Engenharia Elétrica"],
                 periodo_minimo=6,
                 habilidades_obrigatorias=["Java"],
@@ -110,7 +110,7 @@ def test_converte_json_do_gemini_em_extracoes_na_ordem_da_resposta():
     extracoes = extrator.extrair([vaga_exemplo(1), vaga_exemplo(2)])
 
     assert [item.id_vaga for item in extracoes] == ["2", "1"]
-    assert extracoes[0].area_de_tecnologia == "incompativel"
+    assert extracoes[0].area_da_vaga == "direito"
     assert extracoes[0].cursos_aceitos == ["Engenharia Elétrica"]
     assert extracoes[0].periodo_minimo == 6
     assert extracoes[0].habilidades_obrigatorias == ["Java"]
@@ -154,7 +154,7 @@ def test_extracao_de_vaga_desconhecida_e_devolvida_para_o_pipeline_descartar():
         "isso não é json",
         '{"extracoes": [{"id_vaga": "1", "area_de_tecnologia": "talvez"}]}',
         '{"extracoes": [{"id_vaga": "1"}]}',
-        '{"area_de_tecnologia": "compativel", "cursos_aceitos": ["formato antigo"]}',
+        '{"area_da_vaga": "computacao", "cursos_aceitos": ["formato antigo"]}',
         "",
         None,
     ],

@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Vaga
+from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 from radar.matching.lotes import ExtratorEmLotes
 
@@ -56,7 +56,7 @@ class ExtratorDeLoteFalso:
         return [
             ExtracaoDaVaga(
                 id_vaga=vaga.id_externo,
-                area_de_tecnologia=NivelCompatibilidade.COMPATIVEL,
+                area_da_vaga="computacao",
             )
             for vaga in lote
             if vaga.id_externo not in omitidos

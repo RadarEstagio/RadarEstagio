@@ -83,14 +83,14 @@ def test_usuario_exige_chat_id_preenchido():
 
 
 def test_modalidade_reconhecida_aceita_acentos_e_caixa():
-    extracao = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel", modalidade="Híbrido")
+    extracao = ExtracaoDaVaga(id_vaga="1", area_da_vaga="computacao", modalidade="Híbrido")
 
     assert extracao.modalidade_reconhecida() is Modalidade.HIBRIDO
 
 
 def test_modalidade_desconhecida_ou_ausente_vira_nenhuma():
-    sem = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel")
-    invalida = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel", modalidade="a combinar")
+    sem = ExtracaoDaVaga(id_vaga="1", area_da_vaga="computacao")
+    invalida = ExtracaoDaVaga(id_vaga="1", area_da_vaga="computacao", modalidade="a combinar")
 
     assert sem.modalidade_reconhecida() is None
     assert invalida.modalidade_reconhecida() is None
