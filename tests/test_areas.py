@@ -113,3 +113,19 @@ def test_termos_de_busca_saem_das_areas_pedidas():
 
 def test_sem_area_alguma_nao_ha_termos():
     assert termos_de_busca(set()) == ()
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "estagio em gestao de projetos de software",
+        "estagio em gestao de desenvolvimento android",
+    ],
+)
+def test_vaga_de_software_nao_vaza_para_administracao(titulo: str):
+    assert titulo_e_de_outra_area(titulo, "administracao")
+
+
+def test_treinamento_e_desenvolvimento_continua_sendo_de_pessoas():
+    assert not titulo_e_de_outra_area("estagio em treinamento e desenvolvimento", "pessoas")
+    assert titulo_e_da_area("estagio em treinamento e desenvolvimento", "pessoas")

@@ -50,7 +50,7 @@ AREAS = (
             r"ti|t\.i\.?|desenvolvedor[a]?|developer|programacao|programador[a]?"
             r"|engenharia de software|ciencia da computacao|sistemas de informacao"
             r"|analise de sistemas|desenvolvimento de (?:software|sistemas|aplicacoes)"
-            r"|front-?end|back-?end|full-?stack|devops|cyber\w*"
+            r"|software|android|ios|front-?end|back-?end|full-?stack|devops|cyber\w*"
             r"|banco de dados|seguranca da informacao|help-? ?desk"
         ),
         descricao=(
