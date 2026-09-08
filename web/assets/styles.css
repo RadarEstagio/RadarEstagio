@@ -182,10 +182,13 @@ p, h1, h2, h3 { margin-top: 0; }
 .final-card h2 { max-width: 750px; }
 .final-card .button-primary { border-color: var(--white); background: var(--white); color: var(--accent-deep); }
 .final-card .button-primary:hover { border-color: var(--paper-deep); background: var(--paper-deep); }.final-action { text-align: center; }.final-action p { margin: 17px 0 0; color: rgba(255,255,255,.74); font-size: 11px; }
-.site-footer { padding: 34px 0; color: rgba(255,255,255,.6); background: var(--ink); }
+.wave-divider { line-height: 0; background: var(--paper); }
+.wave-divider svg { display: block; width: 100%; height: clamp(48px, 7vw, 96px); }
+.site-footer { padding: 34px 0; color: rgba(255,255,255,.62); background: var(--ink); }
 .footer-inner { display: flex; align-items: center; gap: 35px; }.brand-footer { color: var(--white); }.footer-inner p { margin: 0; font-size: 11px; }.footer-inner p:nth-child(2) { margin-left: auto; }
-.footer-privacy { margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); }.footer-privacy p { max-width: 780px; margin: 0; font-size: 11px; line-height: 1.75; }.footer-privacy strong { color: var(--white); }
+.footer-privacy { margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); }.footer-privacy p { max-width: 780px; margin: 0; font-size: 11px; line-height: 1.75; }.footer-privacy strong { color: var(--accent-light); }
 .legal-links { display: flex; flex-wrap: wrap; gap: 16px 28px; padding-top: 22px; color: var(--white); font-size: 14px; }
+.legal-links a:hover { color: var(--accent-light); }
 .legal-links a, .legal-document a, .privacy-note a { text-decoration: underline; text-underline-offset: 4px; }
 .legal-document { max-width: 860px; padding-block: 64px 88px; overflow-wrap: anywhere; }
 .legal-document h1 { font-size: clamp(34px, 7vw, 56px); line-height: 1.12; letter-spacing: -.04em; }
