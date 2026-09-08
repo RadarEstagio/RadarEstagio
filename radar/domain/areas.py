@@ -288,7 +288,7 @@ AREAS = (
             r"fisioterapia|enfermagem|nutricao|farmacia|biomedicina|odontologia|laboratorio"
             r"|clinic[ao]|hospitalar"
         ),
-        exclusao=r"fisioterapia|enfermagem|nutricao|farmacia|laboratorio",
+        exclusao=r"fisioterapia|enfermagem|nutricao|farmacia",
         descricao=r"enfermagem|fisioterapia|nutricao|farmacia|laboratorio|area da saude|clinica",
         termos_de_busca=("saúde", "enfermagem", "laboratório"),
         subareas=(

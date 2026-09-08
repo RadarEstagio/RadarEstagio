@@ -158,3 +158,8 @@ def test_titulo_generico_de_tecnologia_nao_entra_para_quem_e_de_outra_area(titul
 )
 def test_nome_parcial_nao_inventa_area(curso, esperada):
     assert area_do_curso(curso) == esperada
+
+
+def test_laboratorio_continua_reconhecido_como_titulo_de_saude():
+    assert titulo_e_da_area("estagio em laboratorio de analises clinicas", "saude")
+    assert not titulo_e_de_outra_area("estagio em laboratorio de inovacao", COMPUTACAO)

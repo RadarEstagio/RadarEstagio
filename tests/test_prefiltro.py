@@ -396,3 +396,12 @@ def test_filtrar_preserva_ordem_e_aceita_lista_vazia():
 )
 def test_titulo_de_outra_area_nao_veta_curso_mencionado(curso, titulo, descricao):
     assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    ["Desenvolvimento de Software para Laboratório", "Estágio em Laboratório de Inovação"],
+)
+def test_laboratorio_no_titulo_nao_veta_vaga_de_computacao(titulo: str):
+    descricao = "Desenvolver sistemas em Python e APIs web para a equipe de pesquisa."
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil())
