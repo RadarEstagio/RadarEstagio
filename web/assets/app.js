@@ -100,6 +100,7 @@ const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
 let catalogoDeAreas = null;
 let areasEscolhidas = new Set();
+let areasSalvas = [];
 
 function normalizarTexto(texto) {
   return texto
@@ -165,6 +166,15 @@ async function montarAreasDoCurso() {
     rotulo.append(campo, texto);
     gradeDeAreas.append(rotulo);
   }
+}
+
+function areasDeInteresseDoFormulario(data) {
+  const marcadas = data.getAll("areas");
+  if (!catalogoDeAreas) return [...areasSalvas];
+  const area = areaDoCurso(data.get("curso") ?? "", catalogoDeAreas);
+  if (!area) return [];
+  const permitidas = new Set(area.subareas.map((subarea) => subarea.valor));
+  return marcadas.filter((valor) => permitidas.has(valor));
 }
 
 function lembrarAreasEscolhidas() {
@@ -560,7 +570,7 @@ function profileFromForm() {
       .filter(Boolean),
     cidade: data.get("cidade").trim(),
     modalidade: data.get("modalidade"),
-    areas_de_interesse: data.getAll("areas"),
+    areas_de_interesse: areasDeInteresseDoFormulario(data),
   };
   if (!profile.curso) throw validationError(mensagensValidacao.curso);
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
@@ -701,7 +711,8 @@ function preencherFormularioCom(profile) {
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
   renderSkills();
-  areasEscolhidas = new Set(profile.areas_de_interesse ?? []);
+  areasSalvas = [...(profile.areas_de_interesse ?? [])];
+  areasEscolhidas = new Set(areasSalvas);
   void montarAreasDoCurso();
 }
 
