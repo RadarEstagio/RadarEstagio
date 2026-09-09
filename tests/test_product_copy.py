@@ -9,7 +9,8 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert "Encontre estágios que combinam com seu curso e seu momento." in html
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
-    assert "Gratuito durante o piloto" in html
+    assert "100% automático" in html
+    assert "Vagas que atendem seu perfil" in html
     assert "Pare de procurar estágio" not in html
     assert "A IA compara" not in html
 
