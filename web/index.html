@@ -14,10 +14,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260909-3" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260909-4" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js" defer></script>
+    <script src="assets/app.js?v=20260909-1" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -377,10 +377,26 @@
             <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
-            <p class="eyebrow">Sua conta</p>
-            <h2 id="account-title" tabindex="-1">Seu Radar</h2>
-            <p id="account-summary"></p>
-            <p class="account-schedule" id="account-schedule"></p>
+            <div class="account-heading">
+              <p class="eyebrow">Sua conta</p>
+              <h2 id="account-title" tabindex="-1">Seu Radar</h2>
+              <p>Confira seu perfil de busca e controle como o Radar entrega suas recomendações.</p>
+            </div>
+            <div class="account-overview">
+              <section class="account-profile-card" aria-labelledby="account-profile-title">
+                <div class="account-card-heading">
+                  <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span>
+                  <div><p>Perfil de busca</p><h3 id="account-profile-title">O que o Radar procura</h3></div>
+                </div>
+                <p id="account-summary"></p>
+                <div class="account-skills" id="account-skills" aria-label="Habilidades do perfil"></div>
+              </section>
+              <section class="account-delivery-card" id="account-delivery-card" aria-labelledby="account-delivery-title">
+                <span class="account-status-icon" id="account-status-icon" aria-hidden="true">✓</span>
+                <div><p>Telegram</p><h3 id="account-delivery-title">Entregas ativas</h3></div>
+                <p class="account-schedule" id="account-schedule"></p>
+              </section>
+            </div>
             <p class="form-message" id="account-message" role="alert"></p>
             <p class="form-message form-message-aviso" id="account-notice" role="status"></p>
             <fieldset class="account-confirm pause-reason" id="pause-reason" hidden>
@@ -399,28 +415,39 @@
                 <button class="button button-ghost" type="button" id="skip-pause-reason">Pular</button>
               </div>
             </fieldset>
-            <div class="account-actions">
-              <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
-              <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
+            <div class="account-settings-grid">
+              <section class="account-settings" aria-labelledby="account-preferences-title">
+                <div class="account-section-heading"><p>Preferências</p><h3 id="account-preferences-title">Perfil e entregas</h3></div>
+                <div class="account-actions">
+                  <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
+                  <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
+                </div>
+                <label class="consent-fields account-email-setting"><span><input type="checkbox" id="account-emails" /> <span>Receber e-mails ocasionais do Radar</span></span></label>
+              </section>
+              <section class="account-settings" aria-labelledby="account-data-title">
+                <div class="account-section-heading"><p>Seus dados</p><h3 id="account-data-title">Dados e acesso</h3></div>
+                <div class="account-actions account-actions-secondary">
+                  <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
+                  <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
+                  <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
+                </div>
+              </section>
             </div>
-            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
-            <div class="account-actions account-actions-secondary">
-              <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
-              <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-              <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
-            </div>
-            <div class="account-danger">
-              <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
-              <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
-              <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
-            </div>
-            <div class="account-confirm" id="account-confirm" hidden>
-              <p id="account-confirm-copy"></p>
-              <div class="account-actions">
-                <button class="button button-primary" type="button" id="account-confirm-yes">Confirmar</button>
-                <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+            <section class="account-danger" aria-labelledby="account-danger-title">
+              <div class="account-section-heading"><p>Ações sensíveis</p><h3 id="account-danger-title">Controle da conta</h3><span>Estas ações interrompem as entregas ou removem seus dados.</span></div>
+              <div class="account-danger-actions">
+                <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
+                <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
               </div>
-            </div>
+              <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
+              <div class="account-confirm" id="account-confirm" hidden>
+                <p id="account-confirm-copy"></p>
+                <div class="account-actions">
+                  <button class="button button-primary" type="button" id="account-confirm-yes">Confirmar</button>
+                  <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+                </div>
+              </div>
+            </section>
           </section>
         </div>
       </div>

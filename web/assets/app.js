@@ -789,10 +789,31 @@ function resumoDoPerfil(profile) {
     hibrido: "híbrido",
     indiferente: "qualquer modalidade",
   };
-  const habilidades = profile.habilidades.length
-    ? profile.habilidades.join(", ")
-    : "Habilidades ainda não informadas";
-  return `${profile.curso}, ${profile.periodo}º período · ${profile.cidade} · ${modalidades[profile.modalidade]}\n${habilidades}`;
+  return `${profile.curso} · ${profile.periodo}º período\n${profile.cidade} · ${modalidades[profile.modalidade]}`;
+}
+
+function mostrarHabilidadesDaConta(habilidades) {
+  const lista = document.querySelector("#account-skills");
+  lista.replaceChildren();
+  if (!habilidades.length) {
+    const vazia = document.createElement("span");
+    vazia.className = "account-skills-empty";
+    vazia.textContent = "Habilidades ainda não informadas";
+    lista.append(vazia);
+    return;
+  }
+  habilidades.forEach((habilidade) => {
+    const item = document.createElement("span");
+    item.textContent = habilidade;
+    lista.append(item);
+  });
+}
+
+function visualDasEntregas(profile) {
+  if (profile.excluida_em) return { estado: "deletion", titulo: "Exclusão agendada", simbolo: "!" };
+  if (!profile.telegram_chat_id) return { estado: "unlinked", titulo: "Telegram pendente", simbolo: "↗" };
+  if (!profile.ativo) return { estado: "paused", titulo: "Entregas pausadas", simbolo: "Ⅱ" };
+  return { estado: "active", titulo: "Entregas ativas", simbolo: "✓" };
 }
 
 function estadoDasEntregas(profile) {
@@ -820,7 +841,12 @@ function showAccount(profile) {
   accountState.hidden = false;
   setAccountMessage();
   document.querySelector("#account-summary").textContent = resumoDoPerfil(profile);
+  mostrarHabilidadesDaConta(profile.habilidades);
   document.querySelector("#account-schedule").textContent = estadoDasEntregas(profile);
+  const visual = visualDasEntregas(profile);
+  document.querySelector("#account-delivery-card").dataset.status = visual.estado;
+  document.querySelector("#account-delivery-title").textContent = visual.titulo;
+  document.querySelector("#account-status-icon").textContent = visual.simbolo;
   const emExclusao = Boolean(profile.excluida_em);
   toggleDeliveries.textContent = profile.ativo ? "Pausar entregas" : "Retomar entregas";
   toggleDeliveries.hidden = !profile.telegram_chat_id || emExclusao;
@@ -907,7 +933,12 @@ function dataDoApagamento(marcadaEm) {
 }
 
 function pedirConfirmacao(copy, acao) {
+  const rotulos = {
+    desvincular: "Desvincular Telegram",
+    excluir: "Excluir conta",
+  };
   document.querySelector("#account-confirm-copy").textContent = copy;
+  document.querySelector("#account-confirm-yes").textContent = rotulos[acao];
   accountConfirm.hidden = false;
   accountConfirm.dataset.acao = acao;
   document.querySelector("#account-confirm-yes").focus();
@@ -1210,7 +1241,9 @@ document.querySelector("#cancel-deletion").addEventListener("click", async () =>
 });
 
 document.querySelector("#account-confirm-no").addEventListener("click", () => {
+  const origem = accountConfirm.dataset.acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
   accountConfirm.hidden = true;
+  document.querySelector(origem).focus();
 });
 
 document.querySelector("#account-confirm-yes").addEventListener("click", async () => {
