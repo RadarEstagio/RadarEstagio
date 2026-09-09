@@ -423,6 +423,13 @@ sondas executáveis. O que mudou:
 - **Falha ao ler o histórico de um usuário derrubava o run.** `ErroDeArmazenamento` em
   `ids_ja_enviadas`, `recusas_do_usuario` ou `vagas_enviadas_recentemente` subia até `executar`.
   Vira aviso do usuário afetado, como já era para gravar e enviar.
+- **Perfil híbrido ou indiferente recebia vaga presencial de outra cidade** (achado numa rodada
+  de ponta a ponta com coleta real: pedagogia híbrida do Rio recebeu estágio em Palhoça/SC com
+  nota 61 e sem aviso). O pré-filtro só conferia cidade para perfil presencial, e a logística
+  vale 5 pontos. Agora, para quem não é remoto, vaga de outra cidade só fica se admite remoto
+  (modalidade da fonte ou "remoto"/"home office" no texto); depois da extração, vaga presencial
+  ou híbrida em outra cidade fica limitada a 30 com aviso próprio, como já acontecia com perfil
+  remoto. Perfil presencial continua exigindo a própria cidade mesmo para vaga remota.
 
 Conferido e correto: as 20 constantes SQL e o `metricas.sql` passam por `EXPLAIN` contra o
 schema real; mensagem com 7 vagas longas e `<`, `&` nos textos divide em partes abaixo de 4096

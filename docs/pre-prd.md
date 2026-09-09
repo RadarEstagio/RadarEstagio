@@ -262,7 +262,9 @@ Regras vigentes em 08/09:
 - **Interesse** tem três níveis: subárea marcada vale cheio; outra subárea do mesmo campo vale
   metade e não avisa; vaga de outro campo zera, limita a 65 e avisa. Perfil sem interesses não
   é penalizado. Subárea com duas ou mais recusas "não é da minha área" em 30 dias perde o fator.
-- Vaga presencial ou híbrida para perfil remoto tem nota limitada a 30.
+- Vaga presencial ou híbrida para perfil remoto tem nota limitada a 30; para perfil híbrido ou
+  indiferente, vaga que exige presença em outra cidade recebe o mesmo teto, e o pré-filtro já a
+  descarta quando o anúncio não admite remoto.
 - Vaga com descrição incompleta (fonte truncada) tem nota limitada a 60.
 
 O histórico das calibrações de 31/08 (cobertura neutra, remoção das travas de 60/70) está na
