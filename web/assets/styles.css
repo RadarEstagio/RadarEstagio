@@ -97,10 +97,8 @@ p, h1, h2, h3 { margin-top: 0; }
 .hero-copy > .hero-actions { animation-delay: 270ms; }
 .hero-copy > .trust-list { animation-delay: 350ms; }
 @keyframes surgir { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-.eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 20px; color: var(--ink-soft); font-size: 12px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
-.eyebrow > span:first-child { display: inline-block; flex: 0 0 auto; width: 24px; height: 3px; background: var(--accent); }
-.eyebrow-light { color: rgba(255, 255, 255, 0.72); }
-.eyebrow-light > span:first-child { background: var(--accent-light); }
+.eyebrow { margin-bottom: 18px; color: var(--accent); font-size: 14px; font-weight: 500; }
+.eyebrow-light { color: var(--accent-light); }
 .hero h1 { max-width: 940px; margin: 0 auto 26px; font-size: clamp(38px, 4.4vw, 60px); font-weight: 600; line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
 .continuacao { color: var(--muted); }
 .how-frame .continuacao, .final-card .continuacao { color: rgba(255, 255, 255, .55); }
