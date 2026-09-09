@@ -516,8 +516,25 @@ function setSubmitting(submitting) {
     : "Entrar e continuar";
 }
 
+const COPY_DA_CONTA = {
+  signup: {
+    titulo: "Comece pela sua conta",
+    ajuda: "O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.",
+    senha: "Pelo menos 8 caracteres",
+  },
+  login: {
+    titulo: "Entre na sua conta",
+    ajuda: "Use o e-mail e a senha que você cadastrou. Seu perfil continua salvo.",
+    senha: "Sua senha",
+  },
+};
+
 function setAuthMode(mode) {
   authMode = mode;
+  const copy = COPY_DA_CONTA[mode];
+  document.querySelector("#conta-titulo").textContent = copy.titulo;
+  document.querySelector("#conta-ajuda").textContent = copy.ajuda;
+  form.elements.senha.placeholder = copy.senha;
   document.querySelector("#signup-consent").hidden = mode !== "signup";
   form.elements.aceitou_termos.required = mode === "signup";
   const password = form.elements.senha;

@@ -534,6 +534,7 @@ Deno.test("botão de entrar abre a conta sem passar pela triagem", async () => {
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     assert.equal(doc.querySelector("#submit-label").textContent, "Entrar e continuar");
     assert.equal(doc.querySelector("#signup-consent").hidden, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
     assert.equal(doc.querySelector("#toggle-auth-mode").textContent, "Criar conta");
   } finally { a.close(); }
 });
@@ -547,6 +548,7 @@ Deno.test("botão de cadastrar continua abrindo na triagem", async () => {
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
     assert.equal(doc.querySelector("#submit-label").textContent, "Criar conta e continuar");
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Comece pela sua conta");
   } finally { a.close(); }
 });
 
