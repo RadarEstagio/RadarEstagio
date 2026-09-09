@@ -96,7 +96,7 @@ const PASSO_MOMENTO = 2;
 const PASSO_HABILIDADES = 3;
 const PASSO_PREFERENCIAS = 4;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
-let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
+let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
@@ -323,8 +323,9 @@ function showStep(step) {
 function atualizarPassosAtivos() {
   const consentimento = document.querySelector("#signup-consent");
   if (authMode === "login") passosAtivos = [PASSO_CONTA];
-  else if (credenciais.hidden && consentimento.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
-  else passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
+  else if (editandoPerfilExistente || (credenciais.hidden && consentimento.hidden)) {
+    passosAtivos = [...PASSOS_DO_PERFIL];
+  } else passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
   showStep(currentStep);
 }
 
@@ -553,6 +554,17 @@ function resetDialogView() {
   setSubmitting(false);
   continuarSemHabilidades = false;
   showStep(PASSO_CONTA);
+}
+
+function limparRascunhoDoCadastro() {
+  form.reset();
+  selectedSkills.clear();
+  continuarSemHabilidades = false;
+  esquecerPerfilCarregado();
+  gradeDeAreas.replaceChildren();
+  campoDeAreas.hidden = true;
+  document.querySelector("#skills-catalog-notice").hidden = true;
+  renderSkills();
 }
 
 function openAccountPage() {
@@ -881,11 +893,15 @@ async function refreshActivationStatus() {
 
 async function openSignup() {
   resetDialogView();
+  if (!usuarioAutenticado && authMode === "signup") showStep(PASSO_MOMENTO);
   if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
     mostrarChamadaDeConta(Boolean(session));
     if (!session) {
+      limparRascunhoDoCadastro();
+      setAuthMode("signup");
+      showStep(PASSO_MOMENTO);
       openDialog();
       return;
     }
@@ -1115,6 +1131,7 @@ form.addEventListener("change", limparErroSeCorrigido);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (submitProfile.disabled) return;
   if (!validarFluxo()) return;
   void registerEvent("etapa_preferencias_concluida");
   const email = form.elements.email.value.trim();
@@ -1395,11 +1412,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   clearPendingProfile();
   mostrarChamadaDeConta(false);
   closeSignup();
-  form.reset();
-  selectedSkills.clear();
-  renderSkills();
-  esquecerPerfilCarregado();
-  void montarAreasDoCurso();
+  limparRascunhoDoCadastro();
   resetDialogView();
   setAuthMode("login");
   showStep(PASSO_CONTA);

@@ -1,14 +1,14 @@
 # Registro de execução
 
-Estado em 08/09/2026: plano sincronizado com `40ed28c`. O00 foi implementado nesta branch;
-C04 já possui implementação parcial anterior. As correções da auditoria estão na main.
-Não reaplicar entregas existentes.
+Estado em 08/09/2026: plano sincronizado com `40ed28c`. O00–C05 foram implementados nesta
+branch; as correções anteriores foram preservadas e revalidadas. Não reaplicar entregas
+existentes.
 
 ## Ponto de retomada
 
-- ID atual: C05.
-- Próximo passo: mover conta para depois do perfil no novo cadastro, preservando login e edição.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C04 pronto para commit.
+- ID atual: L01.
+- Próximo passo: corrigir a promessa, os metadados e os CTAs da landing sem alterar o fluxo já fechado.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C05 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -21,7 +21,7 @@ Não reaplicar entregas existentes.
 | C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
 | C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
 | C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
-| C04 | Parcial | Catálogo e sugestões já existem na base | Falta concluir fallback e integração conforme ficha | Publicação não verificada |
+| C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -74,6 +74,16 @@ Não reaplicar entregas existentes.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C04 após suíte Python completa. Nenhuma publicação externa.
 - Pendência real/próximo comando: publicar catálogo/JSON junto do frontend quando a equipe executar a sequência; seguir para C05.
 
+## C05
+
+- Comportamento antes → depois: todo cadastro começava na conta; novo cadastro agora começa por momento, habilidades e preferências e pede e-mail, senha, consentimento e CAPTCHA somente no fim. Login continua na conta e edição continua somente no perfil.
+- Arquivos/símbolos: `web/assets/app.js` (`passosAtivos`, `atualizarPassosAtivos`, `openSignup`, `setAuthMode`, `form submit`), `web/index.html` (progresso 1 de 4), `tests/web/cadastro_test.ts`.
+- Casos obrigatórios: transições não chamam `signup`; alternância login/cadastro preserva curso, habilidades e cidade; logout limpa rascunho; perfil vazio segue aceito; envio duplicado durante autenticação gera uma tentativa; eventos existentes não foram renomeados.
+- Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 40 aprovados, 0 ignorados.
+- Inspeção visual: Safari local em desktop (~1280 px) mostrou o novo cadastro abrindo na etapa de perfil, com `Etapa 1 de 4` e foco no curso. A viewport exata de 375 px não foi disponibilizada nesta sessão.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C05 será criado após a suíte Python completa. Nenhuma publicação externa.
+- Pendência real/próximo comando: validar L01 na landing; publicação, CAPTCHA real e viewport móvel continuam dependentes da equipe/ambiente.
+
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas
 do status de teste ou merge. Detalhes ficam aqui; estado resumido fica no índice do plano.
@@ -109,4 +119,4 @@ Copiar para cada ID em execução; não preencher resultados antes de verificar.
 - Commit/branch e publicação:
 - Pendência real/próximo comando:
 
-A ordem de retomada segue os blocos do índice. Após O00, iniciar C01; landing vem após C05.
+A ordem de retomada segue os blocos do índice. Após C05, iniciar L01; a landing vem antes de L02 e C06.

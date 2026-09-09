@@ -478,29 +478,82 @@ Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
   } finally { a.close(); }
 });
 
-Deno.test("cadastro começa pela conta e só depois pede o perfil", async () => {
+Deno.test("cadastro começa pelo perfil e só no final pede a conta", async () => {
   const a = app();
   try {
     await settle();
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const passoAtivo = () =>
-      doc.querySelector(".form-step.is-active").dataset.step;
-    assert.equal(passoAtivo(), "1");
+    const form = fill(a.w);
+    const passoAtivo = () => doc.querySelector(".form-step.is-active").dataset.step;
+    assert.equal(passoAtivo(), "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 4");
     assert.equal(doc.querySelector("#previous-step").hidden, true);
     assert.equal(doc.querySelector("#submit-profile").hidden, true);
     doc.querySelector("#next-step").click();
-    assert.equal(passoAtivo(), "1");
-    const form = doc.querySelector("#signup-form");
-    form.elements.email.value = user.email;
-    form.elements.senha.value = "uma-senha-forte";
-    form.elements.aceitou_termos.checked = true;
-    doc.querySelector("#next-step").click();
-    assert.equal(passoAtivo(), "2");
+    assert.equal(passoAtivo(), "3");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
-    assert.equal(doc.querySelector("#previous-step").hidden, false);
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "4");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 3 de 4");
+    doc.querySelector("#next-step").click();
+    assert.equal(passoAtivo(), "1");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
+    assert.equal(a.calls.filter(([name]) => name === "signup").length, 0);
+    assert.equal(form.elements.senha.value, "uma-senha-forte");
+    await settle();
+  } finally { a.close(); }
+});
+
+Deno.test("alternar para login e voltar preserva o rascunho do perfil", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    doc.querySelector("#toggle-auth-mode").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    doc.querySelector("#toggle-auth-mode").click();
+    assert.equal(form.elements.curso.value, "Computação");
+    assert.equal(form.elements.habilidades.value, "Python");
+    assert.equal(form.elements.cidade.value, "Recife, PE");
+    assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
+    await settle();
+  } finally { a.close(); }
+});
+
+Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
+  const a = app();
+  let liberarCadastro = () => {};
+  const cadastroLiberado = new Promise<void>((resolve) => { liberarCadastro = resolve; });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    a.client.auth.signUp = async (args: Signup) => {
+      a.calls.push(["signup", args]);
+      await cadastroLiberado;
+      return { data: { session: null } };
+    };
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.calls.filter(([name]) => name === "signup").length, 1);
+    assert.equal(doc.querySelector("#submit-profile").disabled, true);
+    liberarCadastro();
+    await settle();
   } finally { a.close(); }
 });
 
@@ -891,11 +944,13 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const form = fill(a.w);
+    const form = fill(a.w, false);
+    a.w.fetch = async () => { throw new Error("offline"); };
     doc.querySelector("#next-step").click();
     await settle();
-    a.w.catalogoDeAreas = null;
-    a.w.fetch = async () => { throw new Error("offline"); };
+    const input = doc.querySelector("#custom-skill");
+    input.value = "Python";
+    input.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     await a.w.montarHabilidadesDoCurso();
     assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
     assert.equal(form.elements.habilidades.value, "Python");

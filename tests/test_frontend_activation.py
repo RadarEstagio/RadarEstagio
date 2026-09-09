@@ -23,13 +23,14 @@ def test_cadastro_persiste_perfil_e_monta_vinculo():
     assert 'localStorage.setItem("radar-perfil"' not in javascript
 
 
-def test_funil_pede_a_conta_antes_de_montar_o_perfil():
+def test_funil_novo_monta_perfil_antes_de_pedir_a_conta():
     html = (RAIZ / "web/index.html").read_text()
+    javascript = (RAIZ / "web/assets/app.js").read_text()
 
     assert html.count('class="form-step') == 4
-    assert html.index('name="email"') < html.index('name="curso"')
-    assert html.index('name="email"') < html.index('name="habilidades"')
-    assert html.index('name="senha"') < html.index('name="cidade"')
+    assert "else passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA]" in javascript
+    assert "if (authMode === \"login\") passosAtivos = [PASSO_CONTA]" in javascript
+    assert "editandoPerfilExistente" in javascript
     assert 'id="cursos-sugeridos"' in html
     assert 'data-skill="Python"' in html
 
