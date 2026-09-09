@@ -39,7 +39,7 @@ cobertura. As linhas reais precisam de janela e paginação antes de serem somad
 | Descrição truncada | não medido em fonte real | marcar informação insuficiente, não reprovar como incompatível | comparar detalhe com resultado resumido | pendente de amostra |
 | Alias ausente | não medido em fonte real | registrar o termo desconhecido antes de propor catálogo | caso anonimizado e decisão D01 | pendente de amostra |
 
-Os casos A01–A06 do histórico de auditoria são regressões já corrigidas e não serão refeitos
+Os casos A01–A06, resumidos na [arquitetura](arquitetura.md#correções-e-limites-preservados-da-auditoria-de-0809), são regressões já corrigidas e não serão refeitos
 como mudança de ranking nesta ficha. Qualquer defeito novo deve ganhar uma entrada própria e um
 teste ligado ao exemplo; não ajustar pesos para fazer uma amostra parecer melhor.
 
