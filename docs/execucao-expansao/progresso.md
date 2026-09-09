@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: C06.
-- Próximo passo: alinhar estados pós-cadastro e mensagens de ausência de vagas à observabilidade real.
-- Branch/HEAD: `codex/expansao-revenue-centric` / L02 pronto para commit.
+- ID atual: M01.
+- Próximo passo: mapear eventos de cadastro e lacunas sem alterar nomes existentes nem criar métricas inventadas.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C06 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -24,6 +24,7 @@ existentes.
 | C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
 | L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até cinco recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
 | L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
+| C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -105,6 +106,16 @@ existentes.
 - Inspeção visual: Safari local com query de cache exibiu o cartão e a FAQ atualizados; abrir “Preciso vincular o Telegram?” por controle nativo mostrou a resposta e estado expandido. Viewport exato de 375 px não foi disponibilizado.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L02 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: executar C06 e conferir mensagens de sucesso/espera sem alegar execução do job.
+
+## C06
+
+- Comportamento antes → depois: perfil com Telegram vinculado mostrava apenas horário operacional; agora informa que as recomendações chegarão quando houver vagas compatíveis e que a primeira busca pode aguardar a próxima execução diária. O caminho sem vínculo continua exibindo o CTA de ativação.
+- Arquivos/símbolos: `web/assets/app.js` (`estadoDasEntregas`, `showActivation`), `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py`; `radar/notification/formatador.py` foi conferido e permaneceu com a mensagem factual de ausência/continuidade.
+- Casos obrigatórios: conta vinculada, perfil sem vínculo, conta pausada, erro de consulta de vínculo e confirmação de e-mail continuam em estados separados; o texto não afirma que a busca iniciou ou concluiu. Proteções do pipeline A03 não foram alteradas.
+- Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 41 aprovados, 0 ignorados; P — `uv run pytest -q tests/test_frontend_activation.py tests/test_formatador.py tests/test_pipeline.py` — exit 0, 91 aprovados, 0 ignorados.
+- Inspeção visual: estado da conta foi coberto no harness; sem validação de vínculo ou job real no ambiente externo.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C06 será criado após `git diff --check`. Nenhuma publicação externa.
+- Pendência real/próximo comando: mapear o funil de eventos em M01; a equipe precisa validar comportamento no Supabase/Telegram publicados.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

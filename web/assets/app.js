@@ -63,7 +63,6 @@ const rotulosDeCadastro = new Map(
 let usuarioAutenticado = false;
 const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
-const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const DIAS_ATE_APAGAR = 60;
@@ -701,15 +700,6 @@ function mostrarEstadoDoPerfil(profile) {
 
 function showActivation(profile) {
   openAccountPage();
-  if (profile.telegram_chat_id) {
-    showSuccess({
-      kicker: "Radar ativado",
-      title: "As vagas certas já podem chegar até você.",
-      copy: "Seu Telegram está vinculado. O Radar enviará as oportunidades compatíveis nas próximas execuções.",
-      linked: true,
-    });
-    return;
-  }
   showSuccess({
     kicker: "Perfil salvo",
     title: "Agora, ative as entregas.",
@@ -745,7 +735,7 @@ function estadoDasEntregas(profile) {
   }
   if (!profile.telegram_chat_id) return "Telegram ainda não vinculado.";
   if (!profile.ativo) return "Entregas pausadas. Nada chega até você retomar.";
-  return `Entregas ativas: o Radar procura ${HORARIO_DA_BUSCA}.`;
+  return "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis. A primeira busca pode aguardar a próxima execução diária.";
 }
 
 function showAccount(profile) {

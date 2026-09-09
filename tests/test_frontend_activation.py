@@ -155,3 +155,11 @@ def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
 
     assert "mostrarEstadoDoPerfil(profile)" in handler
     assert "showAccount(profile)" not in handler
+
+
+def test_perfil_vinculado_explica_a_espera_sem_prometer_execucao():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis." in javascript
+    assert "A primeira busca pode aguardar a próxima execução diária." in javascript
+    assert "busca iniciou" not in javascript

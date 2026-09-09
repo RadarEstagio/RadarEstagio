@@ -616,6 +616,21 @@ Deno.test("quem já entrou vai para a conta sem piscar o modal", async () => {
   } finally { a.close(); }
 });
 
+Deno.test("conta vinculada explica a espera sem afirmar que a busca rodou", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    a.w.document.querySelector('[data-event-origin="cabecalho"]').click();
+    await settle();
+    const texto = a.w.document.querySelector("#account-schedule").textContent;
+    assert.equal(texto.includes("Telegram vinculado"), true);
+    assert.equal(texto.includes("quando houver vagas compatíveis"), true);
+    assert.equal(texto.includes("pode aguardar a próxima execução diária"), true);
+    assert.equal(texto.includes("busca iniciou"), false);
+    assert.equal(texto.includes("concluída"), false);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },
