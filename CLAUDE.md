@@ -496,6 +496,46 @@ o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com
 `julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
 primeiro arquivo está em `docs/gabarito-2026-09-09.json`, com 20 entregas de 08 e 09/09.
 
+### Quarta rodada: auditoria após a reescrita do `main` (09/09/2026)
+
+O `main` foi reescrito por force push (rebase sobre a PR de estilo e o README). Antes de
+auditar, os 13 commits locais foram conferidos por patch-id contra o novo histórico (todos
+presentes), o site publicado já servia a nova versão e as quatro suítes passaram. O que a rodada
+achou, com coleta real (823 vagas), banco e juiz:
+
+- **Rótulo de subárea entrava no regex de título.** `PADROES_DE_TITULO` junta marcadores, nomes
+  de curso e rótulos das subáreas; o rótulo "Segurança" de computação aceitava "Estágio Técnico em
+  Segurança do Trabalho" para Engenharia de Software (nota 58, sem menção a curso). Nove títulos
+  da coleta, todos de segurança do trabalho. O rótulo virou "Segurança da informação", que já era
+  o marcador da área; os outros rótulos só aceitavam títulos coerentes com a área.
+- **Contexto de formação atravessava o fim da frase.** "Estagiário na área de gestão financeira
+  (Barra). O grupo atende marketing e comunicação" contava "marketing" como curso citado, porque
+  "área de" estava a 20 palavras. A janela de contexto (formação e atuação) agora começa no último
+  ". " antes do termo. Medido: zero pares (curso, vaga) mudaram em 12 cursos × 823 vagas; só o
+  caso encontrado deixa de passar. "; " e quebra de linha não são fronteira porque listas de
+  cursos usam os dois.
+- **Perfil remoto recebia vaga de outra cidade sem modalidade a 88, sem aviso.** O pré-filtro
+  ignorava a cidade para perfil remoto e a logística vale pouco; Administração remota no Rio
+  recebeu Fortaleza, Belo Horizonte e Itajaí "modalidade não informada" nas primeiras posições.
+  Agora perfil remoto segue a mesma regra do híbrido: vaga de outra cidade só fica se admite remoto.
+  Medido para um perfil remoto do Rio em 11 cursos: 947 → 265 candidatas; das 260 descartadas com
+  descrição truncada que puderam ser completadas, 18 (7%) citam remoto só no texto completo — a
+  mesma limitação que o híbrido já tinha, registrada abaixo. Nenhum usuário atual é remoto.
+- **`julgar --gabarito` com arquivo ausente ou inválido** estourava traceback; vira
+  `ErroDeArmazenamento` com mensagem e saída 1.
+
+O que foi verificado e não precisou de regra: os 8 envios de outra cidade para perfis presenciais
+são todos do run das 07:23 de 08/09, antes da trava das 23:47; o run de 09/09 não tem nenhum. O
+juiz (14 de 48 entregas de 2 dias) reprovou com nota alta só casos de 08/09 pela mesma razão,
+mais "Estágio em TI" de infraestrutura para Engenharia de Software (subárea de computação; o
+interesse do perfil decide) e um anúncio que lista Informática, Computação e ADS sem citar
+Engenharia de Software (cursos intercambiáveis por decisão).
+
+Pendências que esta rodada deixou anotadas: (1) refiltrar as candidatas depois do enriquecimento
+e antes da extração recuperaria os 7% de vagas remotas que só dizem isso após os 500 caracteres da
+Adzuna, sem gastar extração; (2) "Banco de Talentos" não é vaga aberta e chega como estágio;
+(3) a Adzuna informa região, não cidade.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`

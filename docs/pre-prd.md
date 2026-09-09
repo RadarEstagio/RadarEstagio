@@ -271,8 +271,9 @@ Regras vigentes, atualizadas com as mudanças de 09/09:
   metade e não avisa; vaga de outro campo zera, limita a 65 e avisa. Perfil sem interesses não
   é penalizado. Subárea com duas ou mais recusas "não é da minha área" em 30 dias perde o fator.
 - Vaga presencial ou híbrida para perfil remoto tem nota limitada a 30; para perfil híbrido ou
-  indiferente, vaga que exige presença em outra cidade recebe o mesmo teto, e o pré-filtro já a
-  descarta quando o anúncio não admite remoto.
+  indiferente, vaga que exige presença em outra cidade recebe o mesmo teto. Para qualquer perfil
+  que não seja presencial, o pré-filtro já descarta vaga de outra cidade quando o anúncio não
+  admite remoto; perfil presencial só recebe vaga da própria cidade.
 - Vaga com descrição incompleta (fonte truncada) tem nota limitada a 60.
 
 O histórico das calibrações de 31/08 (cobertura neutra, remoção das travas de 60/70) está na
