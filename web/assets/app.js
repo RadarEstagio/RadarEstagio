@@ -1020,6 +1020,7 @@ function avancarPasso() {
   if (currentStep === PASSO_HABILIDADES) {
     void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
   }
+  if (currentStep === PASSO_PREFERENCIAS) void registerEvent("etapa_preferencias_concluida");
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) + 1]);
 }
 
@@ -1211,7 +1212,9 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (submitProfile.disabled) return;
   if (!validarFluxo()) return;
-  void registerEvent("etapa_preferencias_concluida");
+  if (currentStep === PASSO_PREFERENCIAS && authMode !== "login") {
+    void registerEvent("etapa_preferencias_concluida");
+  }
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
   let profileSaveStarted = false;

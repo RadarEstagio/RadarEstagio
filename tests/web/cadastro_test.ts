@@ -221,7 +221,7 @@ Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha loca
       a.calls.some(([name, , payload]) =>
         name === "insert" && (payload as Payload)?.nome === "etapa_preferencias_concluida"
       ),
-      true,
+      false,
     );
     assert.equal(
       a.calls.some(([name, , payload]) => name === "insert" && (payload as Payload)?.nome === "conta_criada"),
@@ -1152,5 +1152,84 @@ Deno.test("sair da conta nao deixa as areas de interesse da pessoa anterior no p
     assert.deepEqual(Array.from(marcadas), []);
   } finally {
     a.close();
+  }
+});
+
+Deno.test("preferências são registradas ao avançar, antes de criar conta", async () => {
+  const a = app();
+  try {
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    const eventos = () =>
+      a.calls.filter(([name, , payload]) =>
+        name === "insert" &&
+        (payload as Payload)?.nome === "etapa_preferencias_concluida"
+      );
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    form.elements.cidade.value = "";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    assert.equal(eventos().length, 0);
+    form.elements.cidade.value = "Recife, PE";
+    form.elements.aceitou_termos.checked = false;
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    assert.equal(eventos().length, 1);
+    assert.equal(a.calls.filter(([name]) => name === "signup").length, 0);
+    form.elements.aceitou_termos.checked = true;
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(eventos().length, 1);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("login não emite conclusão de preferências e edição emite ao salvar", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(
+      a.calls.filter(([name, , payload]) =>
+        name === "insert" &&
+        (payload as Payload)?.nome === "etapa_preferencias_concluida"
+      ).length,
+      1,
+    );
+  } finally {
+    a.close();
+  }
+  const b = app({ savedProfile: profile });
+  try {
+    fill(b.w);
+    b.w.document.querySelector("#toggle-auth-mode").click();
+    b.w.document.querySelector("#signup-form").dispatchEvent(
+      new b.w.Event("submit", { cancelable: true }),
+    );
+    await settle();
+    assert.equal(b.calls.filter(([name]) => name === "login").length, 1);
+    assert.equal(
+      b.calls.filter(([name, , payload]) =>
+        name === "insert" &&
+        (payload as Payload)?.nome === "etapa_preferencias_concluida"
+      ).length,
+      0,
+    );
+  } finally {
+    b.close();
   }
 });
