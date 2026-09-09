@@ -1,5 +1,9 @@
 # Fichas — entrega, landing e cadastro
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../contrato-front.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Leia o protocolo e execute a ficha ativa; ao concluir, registre e siga o próximo ID elegível. Caminhos relativos à raiz.
 
 ## O00
