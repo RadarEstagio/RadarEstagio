@@ -42,6 +42,16 @@ def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():
     assert ".chat-typing { display: none; }" in regra_reduzida
 
 
+def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert 'class="hero-demo is-waiting"' in html
+    assert ".hero-demo.is-waiting .chat-typing { opacity: 1; }" in css
+    assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
+
+
 def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
     css = (RAIZ / "web/assets/styles.css").read_text()
 

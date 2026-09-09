@@ -31,21 +31,21 @@ if (cabecalhoDaLanding) {
 
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const ROLAGEM_MINIMA_ATE_CHAT = 80;
 
 if (demonstracaoDoChat && !reduzirMovimento) {
-  demonstracaoDoChat.classList.add("is-waiting");
-  if ("IntersectionObserver" in window) {
-    const observadorDoChat = new IntersectionObserver((entradas) => {
-      if (!entradas.some((entrada) => entrada.isIntersecting)) return;
-      demonstracaoDoChat.classList.remove("is-waiting");
-      demonstracaoDoChat.classList.add("is-playing");
-      observadorDoChat.disconnect();
-    }, { threshold: 0.4 });
-    observadorDoChat.observe(demonstracaoDoChat);
-  } else {
+  const reproduzirChatAoRolar = () => {
+    const limitesDoChat = demonstracaoDoChat.getBoundingClientRect();
+    const chatEntrouNaAreaUtil = limitesDoChat.top <= window.innerHeight * 0.82 && limitesDoChat.bottom >= 0;
+    if (window.scrollY < ROLAGEM_MINIMA_ATE_CHAT || !chatEntrouNaAreaUtil) return;
     demonstracaoDoChat.classList.remove("is-waiting");
     demonstracaoDoChat.classList.add("is-playing");
-  }
+    window.removeEventListener("scroll", reproduzirChatAoRolar);
+  };
+  window.addEventListener("scroll", reproduzirChatAoRolar, { passive: true });
+} else if (demonstracaoDoChat) {
+  demonstracaoDoChat.classList.remove("is-waiting");
+  demonstracaoDoChat.classList.add("is-playing");
 }
 
 const dialog = document.querySelector("#signup-dialog");

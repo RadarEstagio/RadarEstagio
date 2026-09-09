@@ -148,19 +148,18 @@ p, h1, h2, h3 { margin-top: 0; }
 .chat-message-footer time { color: var(--muted); font-weight: 500; }
 .chat-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 4px; }
 .chat-feedback span { display: grid; min-height: 34px; place-items: center; border-radius: 8px; color: var(--chat-link); background: rgba(255,255,255,.86); font-size: 12px; font-weight: 700; }
-.hero-demo.is-waiting .chat-typing, .hero-demo.is-waiting .chat-message, .hero-demo.is-waiting .chat-feedback { opacity: 0; }
-.hero-demo.is-playing .telegram-chat { animation: chat-enter 480ms cubic-bezier(0.2, 0, 0, 1) 120ms both; }
-.hero-demo.is-playing .chat-typing { animation: chat-typing 1450ms cubic-bezier(0.2, 0, 0, 1) 680ms both; }
-.hero-demo.is-playing .chat-typing i { animation: chat-dot 600ms ease-in-out 760ms 3; }
-.hero-demo.is-playing .chat-typing i:nth-child(2) { animation-delay: 860ms; }
-.hero-demo.is-playing .chat-typing i:nth-child(3) { animation-delay: 960ms; }
-.hero-demo.is-playing .chat-message { animation: chat-message-in 520ms cubic-bezier(0.2, 0, 0, 1) 1980ms both; }
-.hero-demo.is-playing .chat-vacancy-first { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 2260ms both; }
-.hero-demo.is-playing .chat-vacancy-second { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 2420ms both; }
-.hero-demo.is-playing .chat-message-footer { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 2580ms both; }
-.hero-demo.is-playing .chat-feedback { animation: chat-feedback-in 420ms cubic-bezier(0.2, 0, 0, 1) 2740ms both; }
-@keyframes chat-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes chat-typing { 0% { opacity: 0; transform: translateY(8px); } 14%, 78% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-4px); } }
+.hero-demo.is-waiting .chat-typing { opacity: 1; }
+.hero-demo.is-waiting .chat-typing i { animation: chat-dot 600ms ease-in-out infinite; }
+.hero-demo.is-waiting .chat-typing i:nth-child(2) { animation-delay: 100ms; }
+.hero-demo.is-waiting .chat-typing i:nth-child(3) { animation-delay: 200ms; }
+.hero-demo.is-waiting .chat-message, .hero-demo.is-waiting .chat-feedback { opacity: 0; }
+.hero-demo.is-playing .chat-typing { animation: chat-typing-out 220ms ease-out both; }
+.hero-demo.is-playing .chat-message { animation: chat-message-in 520ms cubic-bezier(0.2, 0, 0, 1) 250ms both; }
+.hero-demo.is-playing .chat-vacancy-first { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 530ms both; }
+.hero-demo.is-playing .chat-vacancy-second { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 690ms both; }
+.hero-demo.is-playing .chat-message-footer { animation: chat-part-in 360ms cubic-bezier(0.2, 0, 0, 1) 850ms both; }
+.hero-demo.is-playing .chat-feedback { animation: chat-feedback-in 420ms cubic-bezier(0.2, 0, 0, 1) 1010ms both; }
+@keyframes chat-typing-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-4px); } }
 @keyframes chat-dot { 0%, 100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-3px); opacity: 1; } }
 @keyframes chat-message-in { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes chat-part-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

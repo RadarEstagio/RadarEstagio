@@ -85,6 +85,10 @@ function app(
   const dom = new JSDOM(html, { url, runScripts: "outside-only" });
   const w = dom.window;
   w.scrollTo = () => {};
+  w.requestAnimationFrame = (callback: (timestamp: number) => void) => {
+    callback(0);
+    return 1;
+  };
   w.fetch = async (caminho: string) => ({
     ok: String(caminho).includes("areas.json"),
     json: async () => areasJson,
@@ -191,6 +195,11 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     await settle();
     const demo = a.w.document.querySelector("[data-chat-demo]");
     assert.ok(demo);
+    assert.equal(demo.classList.contains("is-waiting"), true);
+    assert.equal(demo.classList.contains("is-playing"), false);
+    Object.defineProperty(a.w, "scrollY", { value: 120, configurable: true });
+    a.w.dispatchEvent(new a.w.Event("scroll"));
+    assert.equal(demo.classList.contains("is-waiting"), false);
     assert.equal(demo.classList.contains("is-playing"), true);
     assert.equal(demo.querySelectorAll(".chat-vacancy").length, 2);
     assert.ok(demo.querySelector(".chat-typing"));
