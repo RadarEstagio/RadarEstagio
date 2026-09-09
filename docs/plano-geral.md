@@ -31,8 +31,8 @@ ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continua
   Telegram e banco continuam sendo operações separadas.
 - **Coleta e ranking:** Adzuna e Gupy por padrão, extração de fatos compartilhada, nota em Python,
   deduplicação e personalização v1 por recusas. Jooble pronto, mas desligado por padrão.
-- **Mensagens:** listas longas resumidas; habilidades desejáveis ausentes não aparecem como
-  exigências não atendidas.
+- **Mensagens:** listas longas resumidas; desde 09/09, habilidades desejáveis ausentes aparecem
+  como “Diferenciais que a vaga cita”, separadas dos requisitos a conferir e sem virar veto.
 - **Métricas:** funil, vagas abertas distintas, utilidade semanal e recusas com denominadores.
   Abertura com token real e relatório foram conferidos; falta confirmar o teste de feedback do Igor.
 - **Contato e e-mail:** `contato@radarestagio.com` com recebimento confirmado; Resend verificado
