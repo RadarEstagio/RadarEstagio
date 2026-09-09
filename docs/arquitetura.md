@@ -137,8 +137,12 @@ o vigésimo usuário não custa nada.
   contra são montados da comparação, não escritos pela IA. Mesmos dados, mesma nota, sempre.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
   área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
-  habilidades é comparada por tecnologias normalizadas e exatas; `Java` não corresponde a
-  `JavaScript`.
+  habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos:
+  SQL pode atender “banco de dados”, mas Java não atende JavaScript. O nível exigido
+  continua sendo comparado com o nível informado do melhor membro da família presente.
+  Desde 09/09, a cobertura neutra sem stack é 0,25; Office, idiomas e soft skills ficam
+  fora da cobertura apenas para computação. Desejáveis ausentes aparecem como
+  “Diferenciais que a vaga cita”, separados dos requisitos a conferir, sem virar veto.
 - **A extração fica em `vagas.extracao`** (JSONB). Reexecução no mesmo dia, usuário novo
   entrando ou coorte crescendo não gastam cota de novo.
 - **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração.
