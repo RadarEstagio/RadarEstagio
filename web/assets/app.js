@@ -635,6 +635,7 @@ function openAccountPage() {
   accountContent.append(dialogShell);
   landingPage.hidden = true;
   accountPage.hidden = false;
+  document.body.classList.add("account-page-open");
   document.body.style.overflow = "";
   document.title = "Minha conta — Radar de Estágio";
   const url = new URL(window.location.href);
@@ -650,6 +651,7 @@ function leaveAccountPage() {
   dialog.append(dialogShell);
   accountPage.hidden = true;
   landingPage.hidden = false;
+  document.body.classList.remove("account-page-open");
   document.title = landingTitle;
   const url = new URL(window.location.href);
   url.searchParams.delete("conta");
