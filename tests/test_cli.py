@@ -26,3 +26,15 @@ def test_cli_oferece_o_julgamento_por_segundo_modelo():
     assert processo.returncode == 0
     assert "--dias" in processo.stdout
     assert "--amostra" in processo.stdout
+
+
+def test_julgar_recusa_amostra_zero():
+    processo = subprocess.run(
+        [sys.executable, "-m", "radar", "julgar", "--amostra", "0"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert processo.returncode == 2
+    assert "maior que zero" in processo.stderr

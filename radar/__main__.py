@@ -282,6 +282,13 @@ def configurar_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+def inteiro_positivo(valor: str) -> int:
+    numero = int(valor)
+    if numero < 1:
+        raise argparse.ArgumentTypeError("precisa ser um inteiro maior que zero")
+    return numero
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="radar", description="Radar de Estágio")
     subcomandos = parser.add_subparsers(dest="comando")
@@ -307,8 +314,8 @@ def main() -> None:
         "julgar",
         help="pede a um segundo modelo que julgue uma amostra das entregas recentes",
     )
-    comando_julgar.add_argument("--dias", type=int, default=DIAS_DO_JULGAMENTO)
-    comando_julgar.add_argument("--amostra", type=int, default=AMOSTRA_DO_JULGAMENTO)
+    comando_julgar.add_argument("--dias", type=inteiro_positivo, default=DIAS_DO_JULGAMENTO)
+    comando_julgar.add_argument("--amostra", type=inteiro_positivo, default=AMOSTRA_DO_JULGAMENTO)
     comando_julgar.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     subcomandos.add_parser(

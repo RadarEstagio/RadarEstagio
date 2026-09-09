@@ -90,7 +90,8 @@ def linhas_de_reprovadas(julgadas: list[EntregaJulgada]) -> list[str]:
     if not reprovadas:
         return ["  nenhuma"]
     return [
-        f"  {item.entrega.nota_do_radar:>3} · {item.entrega.vaga.titulo[:50]}"
+        f"  {item.entrega.nota_do_radar:>3} · {item.entrega.enviada_em:%d/%m}"
+        f" · {item.entrega.vaga.titulo[:50]}"
         f" · {item.julgamento.problema.value}: {item.julgamento.motivo}"
         for item in sorted(reprovadas, key=lambda i: -(i.entrega.nota_do_radar or 0))[
             :LIMITE_DE_EXEMPLOS

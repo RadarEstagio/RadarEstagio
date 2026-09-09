@@ -151,7 +151,7 @@ def test_relatorio_mede_relevancia_concordancia_e_reprovadas_com_nota_alta():
     assert "1/3 concordam (33%)" in texto
     assert "discorda: Estágio 2 · pessoa disse vaga_irrelevante · juiz relevante" in texto
     assert "discorda: Estágio 3 · pessoa disse vaga_util · juiz irrelevante" in texto
-    assert " 95 · Estágio 4 · outra_area: motivo" in texto
+    assert " 95 · 09/09 · Estágio 4 · outra_area: motivo" in texto
     assert "Radar —" in texto
 
 
