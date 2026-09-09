@@ -10,7 +10,8 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
 - Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
-- Landing page e decisões de frontend: [`web/README.md`](web/README.md)
+- Cadastro e decisões de frontend: [contrato](docs/contrato-front.md)
+- Publicação e configuração externa: [guia](docs/guia-publicacao-e-piloto.md)
 
 ## Como funciona
 
@@ -46,8 +47,8 @@ Decisões atuais:
 
 - HTML, CSS e JavaScript, sem framework ou etapa de build;
 - conta por e-mail e senha com Supabase Auth;
-- formulário com curso, período, habilidades, cidade e modalidade preferida, salvo diretamente
-  na tabela `perfis` sob RLS;
+- perfil preenchido antes da conta, com curso, período, habilidades opcionais, cidade,
+  modalidade e interesses; criação pelo banco após confirmação e edição sob RLS;
 - vínculo com o Telegram por link do bot contendo token aleatório, sem pedir `@username` ou
   `chat_id` no formulário;
 - eventos do funil registrados no Supabase com uma sessão anônima que é ligada à conta após o
@@ -55,9 +56,28 @@ Decisões atuais:
 - React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
   de interface mais complexa.
 
-O perfil é persistido no Supabase depois da autenticação. Quando a confirmação de e-mail está
-ativada, o navegador guarda temporariamente apenas os campos do perfil até o usuário voltar pelo
-link de confirmação. Veja a configuração em [`web/README.md`](web/README.md).
+O banco preserva uma cópia protegida do cadastro até a confirmação, inclusive entre aparelhos.
+Novos cadastros não guardam perfil no `localStorage`. O painel permite editar, pausar/retomar,
+desvincular Telegram, exportar dados e solicitar ou cancelar a exclusão com carência de 60 dias.
+Aceite dos termos e preferência opcional de e-mails são controles separados.
+
+Para abrir o site localmente, depois de instalar as dependências:
+
+```bash
+uv run python -m http.server 8000 -d web
+```
+
+Acesse `http://localhost:8000`; autenticação exige HTTP, não abertura direta do HTML.
+Em `web/config.js`, preencha `supabasePublishableKey` com a chave publicável ou `anon`.
+A site key do Turnstile também é pública; `service_role`, senha de banco e secrets ficam
+no servidor. URLs autorizadas, SMTP, CAPTCHA e ordem de migrations estão no
+[guia de publicação](docs/guia-publicacao-e-piloto.md). Termos e Privacidade continuam em
+revisão, sem vigência, até aprovação e sincronização da versão aceita.
+
+`deno task --config tests/web/deno.json test` verifica os fluxos com JSDOM e migrations
+em PostgreSQL isolado via PGlite. Não usa o banco real nem envia e-mails. Inspeção visual
+e jornada publicada são verificações separadas; o [contrato](docs/contrato-front.md)
+detalha Auth, RPCs, eventos e limites de escrita.
 
 ## 1. Instalar (na ordem)
 
