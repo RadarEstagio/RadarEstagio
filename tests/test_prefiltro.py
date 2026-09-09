@@ -588,3 +588,26 @@ def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
 @pytest.mark.parametrize("titulo", ["Estágio em Economia", "Estágio em Direito - Graduação"])
 def test_estagio_de_graduacao_nao_e_confundido_com_pos(titulo: str):
     assert not exige_pos_graduacao(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize("titulo", ["Estágio: Administrativa", "Estágio Administrativo"])
+def test_titulo_administrativo_sem_sinal_da_area_do_perfil_e_descartado(titulo: str):
+    descricao = "Apoio em rotinas administrativas; conhecimento em informática."
+
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil())
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso="Direito"))
+
+
+@pytest.mark.parametrize(
+    ("titulo", "curso"),
+    [
+        ("Pessoa Estagiária Administrativa de Tecnologia", "Engenharia de Software"),
+        ("Estágio Administrativo Financeiro", "Ciências Econômicas"),
+        ("Estágio Administrativo - RH", "Recursos Humanos"),
+        ("Estágio Administrativo", "Administração"),
+    ],
+)
+def test_titulo_administrativo_com_sinal_da_propria_area_continua(titulo: str, curso: str):
+    assert not fora_da_area_do_curso(
+        vaga(titulo=titulo, descricao="Sem detalhes."), perfil(curso=curso)
+    )

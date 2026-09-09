@@ -179,7 +179,7 @@ AREAS = (
             r"|gestao(?! de (?:pessoas|trafego|redes sociais|marketing|conteudo)\b)|planejamento"
             r"|pmo|secretariado|processos gerenciais|projetos|processos e qualidade"
         ),
-        exclusao=r"back[- ]?office|processos administrativos",
+        exclusao=r"back[- ]?office|processos administrativos|administrativ[ao]",
         descricao=(
             r"rotinas administrativas|processos administrativos|area administrativa"
             r"|apoio administrativo|suporte administrativo|assistente administrativ[ao]"
