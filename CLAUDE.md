@@ -272,9 +272,12 @@ Engenharia de Alimentos" e "Produção de Material Didático" contam sem lista e
 
 Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à noite):
 1. Descrição que cita o curso do perfil **com contexto de formação** ("cursando X", "estudantes
-   de X", "aceita X") ou que abre a qualquer formação mantém. Sem o contexto, "terá direito a
-   vale-transporte" mantinha toda vaga para Direito e "boa comunicação" mantinha tudo para
-   Comunicação — 19 de 20 casos falsos numa auditoria.
+   de X", "aceita X", "cursos: X") ou que abre a qualquer formação mantém. Sem o contexto, "terá
+   direito a vale-transporte" mantinha toda vaga para Direito e "boa comunicação" mantinha tudo
+   para Comunicação — 19 de 20 casos falsos numa auditoria. Desde a noite de 08/09 a exigência
+   vale também para nome composto ("consultoria em recursos humanos" mantinha tudo para RH), a
+   janela é de 24 palavras (listas longas de cursos aceitos) e o contexto não atravessa rótulo
+   "campo:" — anúncio de agência traz "formação: não informado … ramo: recursos humanos".
 2. Curso sem área conhecida: mantém só título sem marcador forte de área alguma ("Programa de
    Estágio", "Estagiário"). Sem isso, um perfil de Agronomia passava 96% das vagas (641 de 667)
    para a extração.
@@ -384,6 +387,41 @@ falhava antes da correção:
 Lição de método: os quatro pontos do Igor e a auditoria anterior foram verificados lendo o
 código e rodando a suíte que já existia — que só cobria o que já se sabia. Falha nova se
 procura escrevendo o teste que a reproduz **antes** de mexer no código.
+
+### Terceira rodada: auditoria com as vagas reais do banco (08/09/2026, noite)
+
+Feita rodando pré-filtro, normalização de curso e nota sobre as 415 vagas e 202 extrações
+guardadas, com 12 perfis sintéticos de áreas distintas, e validando SQL, Telegram e funções com
+sondas executáveis. O que mudou:
+
+- **"Tecnologia da Informação" virava `informacao`.** `normalizar_curso` tirava todos os prefixos
+  de formação de uma vez, e "tecnologia" + "da" é prefixo. É o nome de curso mais citado nos
+  anúncios reais (36 de 202 extrações); anúncio que aceitava só ele ficava incompatível (teto 35)
+  para todo estudante de computação. A normalização agora tira um prefixo por vez e para no
+  primeiro nome que o catálogo ou os sinônimos conhecem; o site espelha a regra, e
+  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (48 formas de escrever
+  o curso). Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
+  Science, T.I, Gestão da TI, Processamento de Dados.
+- **Termo de área na descrição exige contexto.** Título genérico era mantido por "com direito a
+  bolsas" (Direito), "ramo: recursos humanos" na assinatura de agências (RH), "mercado
+  financeiro" no blurb da empresa (Economia), "farmácia online" nos benefícios (Saúde). Nos dados
+  reais, 7 de 7 vazamentos de Direito e 4 de 4 de RH eram assim. `descricao_e_da_area` aceita o
+  termo só depois de contexto de formação ou de atuação ("área de", "rotinas de", "conhecimento
+  em"); `menciona_o_curso` exige contexto de formação, inclusive para nome composto. Efeito
+  medido: RH 19 → 11 candidatas, Enfermagem 5 → 2, computação 303 → 290, sem perder as listas
+  "cursando engenharia mecânica ou produção".
+- **Falha ao ler o histórico de um usuário derrubava o run.** `ErroDeArmazenamento` em
+  `ids_ja_enviadas`, `recusas_do_usuario` ou `vagas_enviadas_recentemente` subia até `executar`.
+  Vira aviso do usuário afetado, como já era para gravar e enviar.
+
+Conferido e correto: as 20 constantes SQL e o `metricas.sql` passam por `EXPLAIN` contra o
+schema real; mensagem com 7 vagas longas e `<`, `&` nos textos divide em partes abaixo de 4096
+com tags fechadas; janela da entrega imediata é 09:23–10:23 UTC (06:23–07:23 de Brasília);
+suítes das Edge Functions (8 + 24) e do cadastro (38) verdes; nenhuma ref remota alcança commit
+do Claude.
+
+**Decisão pendente:** o workflow manda até **7** vagas (`QUANTIDADE_VAGAS_ENVIADAS: "7"`, commit
+de 03/09) e a landing de 08/09 promete "até cinco" em três lugares. Um dos dois tem que mudar.
 
 ### Cobertura das fontes (30/08/2026)
 
