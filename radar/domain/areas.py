@@ -653,9 +653,22 @@ SINONIMOS_DE_CURSO = {
     "ads": "analise e desenvolvimento de sistemas",
     "comunicacao social": "comunicacao",
     "engenharia da computacao": "engenharia de computacao",
+    "t.i": "tecnologia da informacao",
+    "t.i.": "tecnologia da informacao",
+    "processamento de dados": "tecnologia da informacao",
+    "sistemas da informacao": "sistemas de informacao",
+    "sistema da informacao": "sistemas de informacao",
+    "sistema de informacao": "sistemas de informacao",
+    "si": "sistemas de informacao",
+    "redes": "redes de computadores",
+    "data science": "ciencia de dados",
+    "gestao da ti": "gestao da tecnologia da informacao",
+    "gestao de ti": "gestao da tecnologia da informacao",
+    "gestao de rh": "recursos humanos",
 }
-_PREFIXO_DE_FORMACAO = re.compile(
-    rf"^(?:(?:{'|'.join(PREFIXOS_DE_FORMACAO)})(?: (?:{'|'.join(CONECTORES_DE_FORMACAO)}))?\s+)+"
+CURSOS_CONHECIDOS = frozenset(nome for area in AREAS for nome in area.cursos)
+_UM_PREFIXO_DE_FORMACAO = re.compile(
+    rf"^(?:{'|'.join(PREFIXOS_DE_FORMACAO)})(?: (?:{'|'.join(CONECTORES_DE_FORMACAO)}))?\s+"
 )
 _SUFIXO_DE_FORMACAO = re.compile(rf"(?:\s*[-–|:]\s*|\s+)(?:{'|'.join(SUFIXOS_DE_FORMACAO)})$")
 
@@ -665,12 +678,17 @@ _COMPLEMENTO_DO_NOME = re.compile(r"\s*(?:\(.*\)|[-–|/].*)$")
 
 def normalizar_curso(curso: str) -> str:
     texto = _SUFIXO_DE_FORMACAO.sub("", _COMPLEMENTO_DO_NOME.sub("", normalizar(curso)))
-    if texto in TERMOS_GENERICOS_DE_FORMACAO:
-        return ""
-    texto = _PREFIXO_DE_FORMACAO.sub("", texto)
-    if texto in TERMOS_GENERICOS_DE_FORMACAO:
-        return ""
-    return SINONIMOS_DE_CURSO.get(texto, texto)
+    while True:
+        if texto in TERMOS_GENERICOS_DE_FORMACAO:
+            return ""
+        if texto in SINONIMOS_DE_CURSO:
+            return SINONIMOS_DE_CURSO[texto]
+        if texto in CURSOS_CONHECIDOS:
+            return texto
+        prefixo = _UM_PREFIXO_DE_FORMACAO.match(texto)
+        if prefixo is None:
+            return texto
+        texto = texto[prefixo.end() :]
 
 
 def curso_e_generico(curso: str) -> bool:

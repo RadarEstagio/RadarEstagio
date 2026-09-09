@@ -1,7 +1,7 @@
 import pytest
 
 from radar.domain.models import ExtracaoDaVaga, Modalidade, NivelCompatibilidade, Perfil
-from radar.matching.compatibilidade import derivar_niveis, montar_pontos
+from radar.matching.compatibilidade import derivar_niveis, montar_pontos, nivel_do_curso
 
 
 def perfil(curso: str = "Engenharia de Software", periodo: int = 4) -> Perfil:
@@ -240,4 +240,14 @@ def test_termo_generico_sozinho_nao_comprova_curso(generico):
     assert (
         curso_de(extracao(cursos_aceitos=[generico]), perfil(curso="Direito"))
         is NivelCompatibilidade.PARCIAL
+    )
+
+
+def test_anuncio_que_aceita_tecnologia_da_informacao_e_compativel_com_computacao():
+    extracao = ExtracaoDaVaga(
+        id_vaga="v", area_da_vaga="computacao", cursos_aceitos=["Tecnologia da Informação"]
+    )
+
+    assert (
+        nivel_do_curso(extracao, perfil("Ciência da Computação")) is NivelCompatibilidade.COMPATIVEL
     )

@@ -262,3 +262,24 @@ def test_toda_area_sugere_habilidades_proprias_e_computacao_mantem_as_de_sempre(
     assert HABILIDADES_GERAIS and catalogo_do_site()["habilidades_gerais"] == list(
         HABILIDADES_GERAIS
     )
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperada"),
+    [
+        ("Tecnologia da Informação", "computacao"),
+        ("Bacharelado em Tecnologia da Informação", "computacao"),
+        ("Sistemas da Informação", "computacao"),
+        ("Sistema da Informação", "computacao"),
+        ("SI", "computacao"),
+        ("Redes", "computacao"),
+        ("Tecnólogo de Redes", "computacao"),
+        ("Data Science", "computacao"),
+        ("Técnico em T.I", "computacao"),
+        ("Gestão da TI", "computacao"),
+        ("Processamento de Dados", "computacao"),
+        ("Tecnólogo em Gestão de RH", "pessoas"),
+    ],
+)
+def test_nomes_de_curso_dos_anuncios_reais_sao_reconhecidos(curso: str, esperada: str):
+    assert area_do_curso(curso) == esperada
