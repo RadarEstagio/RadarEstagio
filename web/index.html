@@ -274,7 +274,7 @@
               <p class="step-help" id="conta-ajuda">O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.</p>
               <div class="field-grid" id="credenciais">
                 <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" spellcheck="false" required placeholder="voce@email.com" /></label>
-                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
+                <div class="field field-full"><label for="signup-password">Senha</label><span class="password-field"><input id="signup-password" name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button class="password-toggle" type="button" data-toggle-password="senha" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.75"></circle><path class="password-eye-slash" d="m4 4 16 16"></path></svg></button></span></div>
               </div>
               <div id="signup-consent" class="consent-fields">
                 <label><input type="checkbox" name="aceitou_termos" required /> <span>Aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> (abrem em outra aba).</span></label>
@@ -350,7 +350,7 @@
             <p id="assistance-copy"></p>
             <form id="assistance-form">
               <label class="field" id="assistance-email-field"><span>E-mail</span><input id="assistance-email" type="email" autocomplete="email" spellcheck="false" required /></label>
-              <label class="field" id="assistance-password-field" hidden><span>Nova senha</span><input id="assistance-password" type="password" autocomplete="new-password" minlength="8" /><button type="button" data-toggle-password="assistance-password" aria-pressed="false">Mostrar senha</button></label>
+              <div class="field" id="assistance-password-field" hidden><label for="assistance-password">Nova senha</label><span class="password-field"><input id="assistance-password" type="password" autocomplete="new-password" minlength="8" /><button class="password-toggle" type="button" data-toggle-password="assistance-password" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.75"></circle><path class="password-eye-slash" d="m4 4 16 16"></path></svg></button></span></div>
               <p class="form-message" id="assistance-message" role="alert"></p>
               <p class="form-message form-message-aviso" id="assistance-notice" role="status"></p>
               <button class="button button-primary" id="assistance-submit" type="submit">Reenviar confirmação</button>

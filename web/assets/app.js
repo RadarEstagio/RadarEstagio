@@ -1479,7 +1479,9 @@ document.querySelectorAll("[data-toggle-password]").forEach((button) => {
       ? form.elements.senha : document.querySelector("#assistance-password");
     const showing = input.type === "password";
     input.type = showing ? "text" : "password";
-    button.textContent = showing ? "Ocultar senha" : "Mostrar senha";
+    const label = showing ? "Ocultar senha" : "Mostrar senha";
+    button.setAttribute("aria-label", label);
+    button.title = label;
     button.setAttribute("aria-pressed", String(showing));
   });
 });

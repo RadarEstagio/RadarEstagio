@@ -539,6 +539,30 @@ Deno.test("botão de entrar abre a conta sem passar pela triagem", async () => {
   } finally { a.close(); }
 });
 
+Deno.test("controle de senha usa ícone e anuncia mostrar e ocultar", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const password = doc.querySelector('input[name="senha"]');
+    const toggle = doc.querySelector('[data-toggle-password="senha"]');
+    assert.ok(password);
+    assert.ok(toggle);
+    assert.ok(toggle.querySelector("svg"));
+    assert.equal(toggle.textContent.trim(), "");
+    assert.equal(toggle.getAttribute("aria-label"), "Mostrar senha");
+    assert.equal(password.getAttribute("type"), "password");
+    toggle.click();
+    assert.equal(password.getAttribute("type"), "text");
+    assert.equal(toggle.getAttribute("aria-label"), "Ocultar senha");
+    assert.equal(toggle.getAttribute("aria-pressed"), "true");
+    toggle.click();
+    assert.equal(password.getAttribute("type"), "password");
+    assert.equal(toggle.getAttribute("aria-label"), "Mostrar senha");
+    assert.equal(toggle.getAttribute("aria-pressed"), "false");
+  } finally { a.close(); }
+});
+
 Deno.test("botão de cadastrar continua abrindo na triagem", async () => {
   const a = app();
   try {

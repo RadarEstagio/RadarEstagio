@@ -309,9 +309,15 @@ p, h1, h2, h3 { margin-top: 0; }
 .consent-fields label { display: flex; align-items: flex-start; gap: 10px; }
 .consent-fields input { flex-shrink: 0; margin-top: 4px; }
 .consent-fields a { text-decoration: underline; }
-.password-field { display: flex; gap: 8px; }
-.password-field input { min-width: 0; }
-.password-field button, .auth-help button { border: 0; background: transparent; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
+.password-field { position: relative; display: block; width: 100%; }
+.password-field input { min-width: 0; padding-inline-end: 58px; }
+.password-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 9px; color: var(--ink-soft); background: transparent; cursor: pointer; }
+.password-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.password-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.password-eye-slash { opacity: 0; transition: opacity 120ms ease; }
+.password-toggle[aria-pressed="true"] .password-eye-slash { opacity: 1; }
+.auth-help button { border: 0; background: transparent; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
+@media (hover: hover) { .password-toggle:hover { color: var(--accent-deep); background: var(--paper); } }
 .auth-help { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 20px; }
 .auth-help button { min-height: 28px; }
 #assistance-form { display: grid; gap: 24px; margin-block: 24px; }
