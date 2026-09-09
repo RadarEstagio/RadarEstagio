@@ -183,10 +183,12 @@ Deno.test("medianas de entrega e abertura usam somente ocorrências observadas",
       insert into envios values
         (1,1,'2026-09-03 00:01Z'),
         (1,1,'2026-09-03 00:02Z'),
-        (2,2,'2026-09-03 00:03Z');
+        (2,2,'2026-09-03 00:03Z'),
+        (2,1,'2026-09-03 00:04Z');
       insert into eventos_produto(nome,perfil_id,vaga_id,ocorrido_em) values
         ('vaga_aberta',1,1,'2026-09-03 00:00:30Z'),
-        ('vaga_aberta',2,2,'2026-09-03 00:05Z'),
+        ('vaga_aberta',2,1,'2026-09-03 00:03:30Z'),
+        ('vaga_aberta',2,1,'2026-09-03 00:05Z'),
         ('vaga_aberta',1,1,'2026-09-05 00:05Z');
     `);
     const sql = (await Deno.readTextFile(

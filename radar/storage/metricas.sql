@@ -37,9 +37,11 @@ with limites as (
 ), primeiras_aberturas as (
   select distinct on(t.perfil_id)
     t.perfil_id, e.ocorrido_em
-  from primeiras_entregas t
+  from entregas t
+  join coorte c on c.id = t.perfil_id
   join eventos e on e.perfil_id = t.perfil_id and e.vaga_id = t.vaga_id
-  where e.nome = 'vaga_aberta' and e.ocorrido_em >= t.enviada_em
+  where t.enviada_em >= c.criado_em
+    and e.nome = 'vaga_aberta' and e.ocorrido_em >= t.enviada_em
   order by t.perfil_id, e.ocorrido_em, e.id
 ), interacoes as (
   select e.* from eventos e join entregas t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
