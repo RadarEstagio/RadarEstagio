@@ -4,7 +4,7 @@ import subprocess
 from collections.abc import Callable
 from tempfile import TemporaryDirectory
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.matching.errors import ErroDeAvaliacao
@@ -21,14 +21,11 @@ VARIAVEIS_SENSIVEIS_DO_RADAR = frozenset(
         "TELEGRAM_CHAT_ID",
     }
 )
+Executor = Callable[..., subprocess.CompletedProcess[str]]
 
 
 class ExtratorAgy:
-    def __init__(
-        self,
-        settings: Settings,
-        executor: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
-    ) -> None:
+    def __init__(self, settings: Settings, executor: Executor = subprocess.run) -> None:
         self._modelo = settings.agy_modelo
         self._timeout_segundos = settings.agy_timeout_segundos
         self._executor = executor
@@ -36,58 +33,72 @@ class ExtratorAgy:
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
+        return pedir_saida_estruturada(
+            montar_prompt(vagas),
+            ExtracoesDeVagas,
+            self._modelo,
+            self._timeout_segundos,
+            self._executor,
+        ).extracoes
 
-        schema = json.dumps(ExtracoesDeVagas.model_json_schema(), ensure_ascii=False)
-        ambiente = os.environ.copy()
-        for variavel in VARIAVEIS_SENSIVEIS_DO_RADAR:
-            ambiente.pop(variavel, None)
-        try:
-            with TemporaryDirectory(prefix="radar-agy-") as diretorio:
-                processo = self._executor(
-                    [
-                        "agy",
-                        "--print",
-                        montar_prompt(vagas),
-                        "--model",
-                        self._modelo,
-                        "--output-format",
-                        "json",
-                        "--json-schema",
-                        schema,
-                        "--sandbox",
-                        "--disable-slash-commands",
-                        "--print-timeout",
-                        f"{self._timeout_segundos}s",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    cwd=diretorio,
-                    check=False,
-                    timeout=self._timeout_segundos,
-                    env=ambiente,
-                )
-        except subprocess.TimeoutExpired:
-            raise ErroDeAvaliacao(
-                f"AGY excedeu o tempo limite de {self._timeout_segundos} segundos"
-            ) from None
-        except OSError as erro:
-            raise ErroDeAvaliacao(f"não foi possível executar o AGY: {erro}") from None
 
-        if processo.returncode != 0:
-            detalhe = processo.stderr.strip() or "processo terminou sem detalhes"
-            raise ErroDeAvaliacao(f"AGY falhou: {detalhe}")
+def pedir_saida_estruturada[T: BaseModel](
+    prompt: str,
+    formato: type[T],
+    modelo: str,
+    timeout_segundos: int,
+    executor: Executor = subprocess.run,
+) -> T:
+    schema = json.dumps(formato.model_json_schema(), ensure_ascii=False)
+    ambiente = os.environ.copy()
+    for variavel in VARIAVEIS_SENSIVEIS_DO_RADAR:
+        ambiente.pop(variavel, None)
+    try:
+        with TemporaryDirectory(prefix="radar-agy-") as diretorio:
+            processo = executor(
+                [
+                    "agy",
+                    "--print",
+                    prompt,
+                    "--model",
+                    modelo,
+                    "--output-format",
+                    "json",
+                    "--json-schema",
+                    schema,
+                    "--sandbox",
+                    "--disable-slash-commands",
+                    "--print-timeout",
+                    f"{timeout_segundos}s",
+                ],
+                capture_output=True,
+                text=True,
+                cwd=diretorio,
+                check=False,
+                timeout=timeout_segundos,
+                env=ambiente,
+            )
+    except subprocess.TimeoutExpired:
+        raise ErroDeAvaliacao(
+            f"AGY excedeu o tempo limite de {timeout_segundos} segundos"
+        ) from None
+    except OSError as erro:
+        raise ErroDeAvaliacao(f"não foi possível executar o AGY: {erro}") from None
 
-        try:
-            envelope = json.loads(processo.stdout)
-        except json.JSONDecodeError as erro:
-            raise ErroDeAvaliacao(f"AGY devolveu saída inválida: {erro}") from None
-        if envelope.get("status") != "SUCCESS":
-            detalhe = envelope.get("error") or f"status {envelope.get('status', 'desconhecido')}"
-            raise ErroDeAvaliacao(f"AGY falhou: {detalhe}")
-        if "structured_output" not in envelope:
-            raise ErroDeAvaliacao("AGY devolveu saída estruturada ausente")
-        try:
-            extracoes = ExtracoesDeVagas.model_validate(envelope["structured_output"])
-        except ValidationError as erro:
-            raise ErroDeAvaliacao(f"AGY devolveu saída estruturada inválida: {erro}") from None
-        return extracoes.extracoes
+    if processo.returncode != 0:
+        detalhe = processo.stderr.strip() or "processo terminou sem detalhes"
+        raise ErroDeAvaliacao(f"AGY falhou: {detalhe}")
+
+    try:
+        envelope = json.loads(processo.stdout)
+    except json.JSONDecodeError as erro:
+        raise ErroDeAvaliacao(f"AGY devolveu saída inválida: {erro}") from None
+    if envelope.get("status") != "SUCCESS":
+        detalhe = envelope.get("error") or f"status {envelope.get('status', 'desconhecido')}"
+        raise ErroDeAvaliacao(f"AGY falhou: {detalhe}")
+    if "structured_output" not in envelope:
+        raise ErroDeAvaliacao("AGY devolveu saída estruturada ausente")
+    try:
+        return formato.model_validate(envelope["structured_output"])
+    except ValidationError as erro:
+        raise ErroDeAvaliacao(f"AGY devolveu saída estruturada inválida: {erro}") from None
