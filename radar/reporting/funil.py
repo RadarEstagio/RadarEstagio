@@ -1,4 +1,5 @@
-from radar.domain.models import FunilDaCoorte
+from radar.domain.areas import area_do_curso
+from radar.domain.models import FatoUtilidadeSemanal, FunilDaCoorte, UtilidadePorArea
 
 LARGURA_DO_ROTULO = 26
 
@@ -64,6 +65,18 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         linhas.append(
             f"  {semana.semana}{parcial}: {semana.com_utilidade}/{semana.ativados} — {taxa}"
         )
+    linhas.extend(["", "Utilidade semanal por área — agrupado pelo curso atual:"])
+    if not funil.utilidade_por_area:
+        linhas.append("  nenhuma área com perfis ativados")
+    for grupo in funil.utilidade_por_area:
+        percentual = grupo.percentual()
+        taxa = "sem denominador" if percentual is None else f"{percentual:.1f}%"
+        parcial = " (em andamento)" if grupo.parcial else ""
+        linhas.append(
+            f"  {grupo.semana}{parcial} · {grupo.area}: "
+            f"{grupo.com_utilidade}/{grupo.ativados} — {taxa}"
+        )
+    linhas.append("  Mudança de curso pode mudar agrupamentos passados; não é histórico de curso.")
     linhas.extend(["", "Recusas por tecnologias declaradas — entregas no período:"])
     for grupo in funil.recusas_por_grupo:
         taxa = (
@@ -119,3 +132,30 @@ def linha_do_tempo(
 ) -> str:
     valor = "indisponível" if mediana is None else f"{mediana:.1f} s"
     return f"  {rotulo}: {valor} ({observados} observados; {faltantes} {rotulo_faltante})"
+
+
+def agrupar_utilidade_por_area(fatos: list[dict]) -> list[UtilidadePorArea]:
+    grupos: dict[tuple[str, bool, str], dict[str, int | str | bool]] = {}
+    for bruto in fatos:
+        fato = FatoUtilidadeSemanal(**bruto)
+        area = area_do_curso(fato.curso) or "Não classificado"
+        chave = (fato.semana, fato.parcial, area)
+        grupo = grupos.setdefault(
+            chave,
+            {
+                "semana": fato.semana,
+                "parcial": fato.parcial,
+                "area": area,
+                "ativados": 0,
+                "com_utilidade": 0,
+            },
+        )
+        grupo["ativados"] = int(grupo["ativados"]) + 1
+        grupo["com_utilidade"] = int(grupo["com_utilidade"]) + int(fato.com_utilidade)
+    return [
+        UtilidadePorArea(**grupo)
+        for _, grupo in sorted(
+            grupos.items(),
+            key=lambda item: (item[0][0], item[0][1], item[0][2] == "Não classificado", item[0][2]),
+        )
+    ]

@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: M04.
-- Próximo passo: agregar utilidade semanal por área do curso atual sem duplicar perfis.
-- Branch/HEAD: `codex/expansao-revenue-centric` / M03 pronto para commit.
+- ID atual: R01.
+- Próximo passo: persistir motivo opcional da pausa em migration incremental, sem obrigar a resposta.
+- Branch/HEAD: `codex/expansao-revenue-centric` / M04 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -28,6 +28,7 @@ existentes.
 | M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
 | M02 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Denominador deduplica primeira entrega por par; feedback só após entrega, última resposta por timestamp/ID; CLI exibe contagens e percentual ou sem denominador | Dados reais e respostas do piloto não verificados; métrica não é utilidade nem candidatura |
 | M03 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Coorte criada na janela; primeira entrega após criação; primeira abertura após qualquer entrega; medianas contínuas em segundos, nulos e faltantes explícitos | Não é prazo prometido; timestamps e execução reais dependem da publicação |
+| M04 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `radar/storage/postgres.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | SQL retorna fatos mínimos; Python classifica curso atual com `area_do_curso`, agrupa uma vez por perfil/semana e mostra área desconhecida como Não classificado | Dados reais e histórico de alterações de curso não verificados; não é histórico acadêmico |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -149,6 +150,16 @@ existentes.
 - Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M03 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: executar M04 com classificação pelo curso atual e sem matriz combinatória.
+
+## M04
+
+- Comportamento antes → depois: a utilidade semanal existia apenas no total; agora o SQL também entrega fatos mínimos por perfil/semana e o caminho Python classifica pelo catálogo único e agrega por área atual, sem explodir interesses ou duplicar perfis.
+- Arquivos/símbolos: `radar/storage/metricas.sql` (`utilidade_por_perfil_semana`, `utilidade_semanal_fatos`), `radar/domain/models.py` (`FatoUtilidadeSemanal`, `UtilidadePorArea`), `radar/reporting/funil.py` (`agrupar_utilidade_por_area`), `radar/storage/postgres.py`, testes e `docs/metricas.md`.
+- Casos obrigatórios: oráculo Python com Computação 2/1, Direito 1/1 e desconhecido 1/0 passou; schema SQL reduzido agora inclui curso; fatos SQL preservam as duas semanas e o total anterior; nenhum identificador é impresso no relatório.
+- Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 2 aprovados, 0 ignorados; Q — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py tests/test_areas.py` — exit 0, 107 aprovados, 25 ignorados por Postgres; lint `uv run ruff check radar tests/test_funil.py` — exit 0; formatação foi ajustada e conferida.
+- Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M04 será criado após `git diff --check`. Nenhuma publicação externa.
+- Pendência real/próximo comando: iniciar R01; migration de motivo de pausa ainda não aplicada remotamente.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

@@ -132,6 +132,13 @@ As semanas que intersectam os 30 dias são mostradas completas; a atual é ident
   seguinte não reescreve o resultado fechado da anterior.
 - Sem ativados, o relatório mostra “sem denominador”, em vez de interpretar como 0%.
 
+O mesmo cálculo também é agrupado por `area_do_curso` em Python usando o curso atual do
+perfil. O SQL retorna apenas semana, parcialidade, identificador interno, curso e sinal de
+utilidade; o relatório não imprime o identificador. Cada perfil entra uma vez em cada semana
+em que está no denominador. Curso não reconhecido fica em “Não classificado”. A soma dos grupos
+reproduz o total semanal, mas a alteração posterior do curso pode mudar a leitura de semanas
+passadas; isso não é histórico acadêmico.
+
 Ativação operacional é a primeira recomendação entregue (`perfis.ativado_em`). Ativação de
 produto é a primeira abertura observada; criar conta ou receber aviso sem vaga não ativa.
 O apagamento definitivo pode remover dados históricos e mudar agregados; não há arquivo

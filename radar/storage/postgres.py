@@ -20,6 +20,7 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
+from radar.reporting.funil import agrupar_utilidade_por_area
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
@@ -392,6 +393,9 @@ class RepositorioPostgres:
                 totais = cursor.execute(SQL_FUNIL_DA_COORTE, {"dias": dias}).fetchone()
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao ler o funil: {descrever(erro)}") from erro
+        totais = dict(totais)
+        fatos = totais.pop("utilidade_semanal_fatos", [])
+        totais["utilidade_por_area"] = agrupar_utilidade_por_area(fatos)
         return FunilDaCoorte(dias=dias, **totais)
 
     def pausar(self, usuario: Usuario) -> None:

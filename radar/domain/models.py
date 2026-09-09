@@ -143,6 +143,27 @@ class UtilidadeSemanal(BaseModel):
         return 100 * self.com_utilidade / self.ativados if self.ativados else None
 
 
+class UtilidadePorArea(BaseModel):
+    semana: str
+    parcial: bool
+    area: str
+    ativados: int
+    com_utilidade: int
+
+    def percentual(self) -> float | None:
+        if not self.ativados:
+            return None
+        return 100 * self.com_utilidade / self.ativados
+
+
+class FatoUtilidadeSemanal(BaseModel):
+    semana: str
+    parcial: bool
+    perfil_id: str
+    curso: str
+    com_utilidade: bool
+
+
 class RecusasPorGrupo(BaseModel):
     grupo: str
     entregas: int
@@ -153,6 +174,7 @@ class RecusasPorGrupo(BaseModel):
 class FunilDaCoorte(BaseModel):
     etapas: dict[str, int] = Field(default_factory=dict)
     utilidade_semanal: list[UtilidadeSemanal] = Field(default_factory=list)
+    utilidade_por_area: list[UtilidadePorArea] = Field(default_factory=list)
     recusas_por_grupo: list[RecusasPorGrupo] = Field(default_factory=list)
     dias: int = Field(ge=1)
     perfis_criados: int

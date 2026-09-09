@@ -1,5 +1,5 @@
 from radar.domain.models import FunilDaCoorte
-from radar.reporting.funil import formatar_funil
+from radar.reporting.funil import agrupar_utilidade_por_area, formatar_funil
 
 
 def funil(**mudancas) -> FunilDaCoorte:
@@ -57,11 +57,104 @@ def test_mostra_participacao_no_feedback_a_partir_das_contagens():
 
 
 def test_feedback_sem_entregas_mostra_ausencia_de_denominador():
-    texto = formatar_funil(
-        funil(recomendacoes_elegiveis_feedback=0, recomendacoes_com_feedback=0)
-    )
+    texto = formatar_funil(funil(recomendacoes_elegiveis_feedback=0, recomendacoes_com_feedback=0))
 
     assert "Respostas: 0 de 0 recomendações (sem denominador)" in texto
+
+
+def test_agrega_utilidade_por_area_do_curso_atual_sem_duplicar_perfil():
+    grupos = agrupar_utilidade_por_area(
+        [
+            {
+                "semana": "2026-09-07",
+                "parcial": False,
+                "perfil_id": "1",
+                "curso": "Computação",
+                "com_utilidade": True,
+            },
+            {
+                "semana": "2026-09-07",
+                "parcial": False,
+                "perfil_id": "2",
+                "curso": "Ciência da Computação",
+                "com_utilidade": False,
+            },
+            {
+                "semana": "2026-09-07",
+                "parcial": False,
+                "perfil_id": "3",
+                "curso": "Direito",
+                "com_utilidade": True,
+            },
+            {
+                "semana": "2026-09-07",
+                "parcial": False,
+                "perfil_id": "4",
+                "curso": "Curso livre",
+                "com_utilidade": False,
+            },
+        ]
+    )
+
+    assert [grupo.model_dump() for grupo in grupos] == [
+        {
+            "semana": "2026-09-07",
+            "parcial": False,
+            "area": "computacao",
+            "ativados": 2,
+            "com_utilidade": 1,
+        },
+        {
+            "semana": "2026-09-07",
+            "parcial": False,
+            "area": "direito",
+            "ativados": 1,
+            "com_utilidade": 1,
+        },
+        {
+            "semana": "2026-09-07",
+            "parcial": False,
+            "area": "Não classificado",
+            "ativados": 1,
+            "com_utilidade": 0,
+        },
+    ]
+
+
+def test_relatorio_mostra_utilidade_por_area_e_ressalva_curso_atual():
+    texto = formatar_funil(
+        funil(
+            utilidade_por_area=[
+                {
+                    "semana": "2026-09-07",
+                    "parcial": False,
+                    "area": "computacao",
+                    "ativados": 2,
+                    "com_utilidade": 1,
+                },
+                {
+                    "semana": "2026-09-07",
+                    "parcial": False,
+                    "area": "direito",
+                    "ativados": 1,
+                    "com_utilidade": 1,
+                },
+                {
+                    "semana": "2026-09-07",
+                    "parcial": False,
+                    "area": "Não classificado",
+                    "ativados": 1,
+                    "com_utilidade": 0,
+                },
+            ]
+        )
+    )
+
+    assert "Utilidade semanal por área — agrupado pelo curso atual:" in texto
+    assert "2026-09-07 · computacao: 1/2 — 50.0%" in texto
+    assert "2026-09-07 · direito: 1/1 — 100.0%" in texto
+    assert "2026-09-07 · Não classificado: 0/1 — 0.0%" in texto
+    assert "Mudança de curso pode mudar agrupamentos passados" in texto
 
 
 def test_mostra_mediana_e_faltantes_sem_chamar_isso_de_prazo():

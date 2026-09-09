@@ -123,7 +123,7 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | M01 | Mapear eventos e lacunas do cadastro | P1 | Implementado/testado | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
 | M02 | Participação no feedback | P1 | Implementado/testado | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |
 | M03 | Tempo até entrega e abertura | P1 | Implementado/testado | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m03) |
-| M04 | Utilidade por área do curso | P1 | Pendente | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
+| M04 | Utilidade por área do curso | P1 | Implementado/testado | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
 | R01 | Persistir motivo opcional da pausa | P1 | Pronta | — | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r01) |
 | R02 | Perguntar motivo após pausar | P1 | Pendente | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
 | R03 | Relatar motivos de pausa | P1 | Pendente | R02 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r03) |

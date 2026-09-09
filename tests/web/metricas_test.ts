@@ -13,6 +13,13 @@ interface Metricas {
   mediana_segundos_ate_entrega: number | null;
   perfis_sem_abertura: number;
   mediana_segundos_ate_abertura: number | null;
+  utilidade_semanal_fatos: {
+    semana: string;
+    parcial: boolean;
+    perfil_id: number | string;
+    curso: string;
+    com_utilidade: boolean;
+  }[];
   recusas_por_motivo: Record<string, number>;
   utilidade_semanal: {
     semana: string;
@@ -27,11 +34,11 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
   const db = new PGlite();
   try {
     await db.exec(`
-      create table perfis(id int primary key, user_id text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text);
+      create table perfis(id int primary key, user_id text, curso text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text);
       create table vagas(id int primary key, extracao jsonb, extraida_em timestamptz);
       create table envios(perfil_id int, vaga_id int, enviada_em timestamptz);
       create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int, user_id text, sessao_id text, propriedades jsonb default '{}', ocorrido_em timestamptz);
-      insert into perfis values (1,'dono','2026-09-03','2026-09-03','123'), (2,'antigo','2026-08-01','2026-08-02',null);
+      insert into perfis values (1,'dono','Computação','2026-09-03','2026-09-03','123'), (2,'antigo','Direito','2026-08-01','2026-08-02',null);
       insert into vagas values (1,'{"habilidades_obrigatorias":["Python"]}','2026-09-03'), (2,'{"habilidades_obrigatorias":["Python","SQL","Git"]}','2026-09-03'), (3,null,null);
       insert into envios values (1,1,'2026-09-03'),(1,1,'2026-09-03 00:00:30'),(1,2,'2026-09-03'),(1,3,'2026-09-04'),(2,1,'2026-09-08');
       insert into eventos_produto(nome,user_id,sessao_id,ocorrido_em) values
@@ -73,6 +80,15 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     assert.equal(result.mediana_segundos_ate_entrega, 0);
     assert.equal(result.perfis_sem_abertura, 0);
     assert.equal(result.mediana_segundos_ate_abertura, 86400);
+    assert.equal(result.utilidade_semanal_fatos.length, 4);
+    assert.equal(
+      result.utilidade_semanal_fatos.filter((fato) => fato.curso === "Computação" && fato.com_utilidade).length,
+      1,
+    );
+    assert.equal(
+      result.utilidade_semanal_fatos.filter((fato) => fato.curso === "Direito" && fato.com_utilidade).length,
+      1,
+    );
     assert.equal(result.recusas_por_motivo.motivo_nota, 1);
     assert.deepEqual(result.utilidade_semanal, [
       { semana: "2026-08-31", parcial: false, ativados: 2, com_utilidade: 1 },
@@ -129,14 +145,14 @@ Deno.test("medianas de entrega e abertura usam somente ocorrências observadas",
   const db = new PGlite();
   try {
     await db.exec(`
-      create table perfis(id int primary key, user_id text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text);
+      create table perfis(id int primary key, user_id text, curso text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text);
       create table vagas(id int primary key, extracao jsonb, extraida_em timestamptz);
       create table envios(perfil_id int, vaga_id int, enviada_em timestamptz);
       create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int, user_id text, sessao_id text, propriedades jsonb default '{}', ocorrido_em timestamptz);
       insert into perfis values
-        (1,'a','2026-09-03 00:00Z',null,'1'),
-        (2,'b','2026-09-03 00:00Z',null,'2'),
-        (3,'c','2026-09-03 00:00Z',null,'3');
+        (1,'a','Computação','2026-09-03 00:00Z',null,'1'),
+        (2,'b','Direito','2026-09-03 00:00Z',null,'2'),
+        (3,'c','Curso livre','2026-09-03 00:00Z',null,'3');
       insert into vagas values
         (1,'{"habilidades_obrigatorias":[]}','2026-09-03'),
         (2,'{"habilidades_obrigatorias":["Python"]}','2026-09-03');

@@ -71,6 +71,33 @@ with limites as (
     ) u join perfis p on p.id = u.perfil_id
       where p.ativado_em < s.ate and p.ativado_em <= l.fim) as com_utilidade
   from semanas s cross join limites l
+), respostas_de_utilidade_semana as (
+  select distinct on (s.semana, e.perfil_id, e.vaga_id)
+    s.semana::date as semana, e.perfil_id, e.vaga_id, e.nome
+  from semanas s
+  join eventos e on e.ocorrido_em >= s.de and e.ocorrido_em < s.ate
+  join envios t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
+  where e.nome in ('vaga_util', 'vaga_irrelevante') and e.ocorrido_em >= t.enviada_em
+  order by s.semana, e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
+), candidaturas_de_utilidade_semana as (
+  select distinct s.semana::date as semana, e.perfil_id
+  from semanas s
+  join eventos e on e.ocorrido_em >= s.de and e.ocorrido_em < s.ate
+  join envios t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
+  where e.nome = 'candidatura_iniciada' and e.ocorrido_em >= t.enviada_em
+), utilidade_na_semana as (
+  select semana, perfil_id from respostas_de_utilidade_semana where nome = 'vaga_util'
+  union
+  select semana, perfil_id from candidaturas_de_utilidade_semana
+), utilidade_por_perfil_semana as (
+  select s.semana::date as semana, s.ate > l.fim as parcial,
+    p.id as perfil_id, p.curso,
+    exists(
+      select 1 from utilidade_na_semana u
+      where u.semana = s.semana::date and u.perfil_id = p.id
+    ) as com_utilidade
+  from semanas s cross join limites l
+  join perfis p on p.ativado_em < s.ate and p.ativado_em <= l.fim
 ), entregas_do_periodo as (
   select distinct on(e.perfil_id, e.vaga_id)
     e.perfil_id, e.vaga_id, e.enviada_em,
@@ -131,4 +158,5 @@ select
   coalesce((select jsonb_object_agg(nome, total) from etapas), '{}') as etapas,
   coalesce((select jsonb_object_agg(motivo, total) from motivos), '{}') as recusas_por_motivo,
   coalesce((select jsonb_agg(to_jsonb(s) order by semana) from semanais s), '[]') as utilidade_semanal,
+  coalesce((select jsonb_agg(to_jsonb(u) order by u.semana, u.perfil_id) from utilidade_por_perfil_semana u), '[]') as utilidade_semanal_fatos,
   coalesce((select jsonb_agg(to_jsonb(g) order by grupo) from grupos g), '[]') as recusas_por_grupo
