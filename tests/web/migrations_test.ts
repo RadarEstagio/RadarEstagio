@@ -144,21 +144,34 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     ]);
     await db.exec("set role authenticated");
     assert.equal(await count("perfis"), 1);
-    await db.query("update perfis set habilidades = '{}' where user_id = $1", [dono]);
-    await assert.rejects(() => db.exec(
-      "update perfis set habilidades = null where user_id = '00000000-0000-4000-8000-000000000001'",
-    ));
-    await assert.rejects(() => db.exec(
-      "update perfis set habilidades = '{NULL}' where user_id = '00000000-0000-4000-8000-000000000001'",
-    ));
-    await assert.rejects(() => db.exec(
-      "update perfis set habilidades = ARRAY[' '] where user_id = '00000000-0000-4000-8000-000000000001'",
-    ));
-    const habilidadesDemais = Array.from({ length: 51 }, (_, index) => `habilidade-${index}`);
-    await assert.rejects(() => db.query(
-      "update perfis set habilidades = $1::text[] where user_id = $2",
-      [habilidadesDemais, dono],
-    ));
+    await db.query("update perfis set habilidades = '{}' where user_id = $1", [
+      dono,
+    ]);
+    await assert.rejects(() =>
+      db.exec(
+        "update perfis set habilidades = null where user_id = '00000000-0000-4000-8000-000000000001'",
+      )
+    );
+    await assert.rejects(() =>
+      db.exec(
+        "update perfis set habilidades = '{NULL}' where user_id = '00000000-0000-4000-8000-000000000001'",
+      )
+    );
+    await assert.rejects(() =>
+      db.exec(
+        "update perfis set habilidades = ARRAY[' '] where user_id = '00000000-0000-4000-8000-000000000001'",
+      )
+    );
+    const habilidadesDemais = Array.from(
+      { length: 51 },
+      (_, index) => `habilidade-${index}`,
+    );
+    await assert.rejects(() =>
+      db.query(
+        "update perfis set habilidades = $1::text[] where user_id = $2",
+        [habilidadesDemais, dono],
+      )
+    );
     const outroUpdate = await db.query(
       "update perfis set habilidades = '{Outra}' where user_id = $1 returning id",
       [outro],
@@ -183,16 +196,49 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       )
     );
     await db.exec("update perfis set aceita_emails = true");
+    for (
+      const motivo of [
+        "conseguiu_estagio",
+        "interrompeu_busca",
+        "sem_vagas_uteis",
+        "frequencia",
+        "outro",
+      ]
+    ) {
+      await db.query("update perfis set motivo_pausa = $1", [motivo]);
+      const savedMotivo = (await db.query<{ motivo_pausa: string }>(
+        "select motivo_pausa from perfis where user_id = $1",
+        [dono],
+      )).rows[0];
+      assert.equal(savedMotivo.motivo_pausa, motivo);
+    }
+    await db.exec("update perfis set motivo_pausa = null");
+    await assert.rejects(() =>
+      db.exec(
+        "update perfis set motivo_pausa = 'causa_inventada'",
+      )
+    );
+    const outroMotivo = await db.query(
+      "update perfis set motivo_pausa = 'outro' where user_id = $1 returning id",
+      [outro],
+    );
+    assert.equal(outroMotivo.rows.length, 0);
+    await db.exec("update perfis set motivo_pausa = 'outro'");
     const download = (await db.query<
       {
         dados: {
           conta: { email: string };
-          perfil: { aceita_emails: boolean; token_vinculo?: string };
+          perfil: {
+            aceita_emails: boolean;
+            motivo_pausa: string | null;
+            token_vinculo?: string;
+          };
         };
       }
     >("select baixar_meus_dados() dados")).rows[0].dados;
     assert.equal(download.conta.email, "dono@example.com");
     assert.equal(download.perfil.aceita_emails, true);
+    assert.equal(download.perfil.motivo_pausa, "outro");
     assert.equal(download.perfil.token_vinculo, undefined);
     assert.ok(!JSON.stringify(download).includes("Cidade privada"));
     await db.exec("select excluir_minha_conta()");
@@ -200,6 +246,10 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       "update perfis set aceita_emails = false returning id",
     );
     assert.equal(changed.rows.length, 0);
+    const deletedMotivo = await db.query(
+      "update perfis set motivo_pausa = 'frequencia' returning id",
+    );
+    assert.equal(deletedMotivo.rows.length, 0);
     await db.exec("reset role");
     await assert.rejects(feedback);
     const outroHabilidades = (await db.query<{ habilidades: string[] }>(
@@ -218,7 +268,10 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
           ...cadastro,
           perfil: {
             ...cadastro.perfil,
-            habilidades: Array.from({ length: 51 }, (_, index) => `habilidade-${index}`),
+            habilidades: Array.from(
+              { length: 51 },
+              (_, index) => `habilidade-${index}`,
+            ),
           },
         },
         {
@@ -242,6 +295,11 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       [legado],
     )).rows[0];
     assert.deepEqual(perfilLegado.habilidades, ["Excel"]);
+    const motivoLegado = (await db.query<{ motivo_pausa: string | null }>(
+      "select motivo_pausa from perfis where user_id = $1",
+      [legado],
+    )).rows[0];
+    assert.equal(motivoLegado.motivo_pausa, null);
     for (const versao of ["", "qualquer", "2026-02-31", 20260905, null]) {
       await assert.rejects(() =>
         db.query("select validar_cadastro_radar($1)", [{

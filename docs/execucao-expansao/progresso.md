@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: R01.
-- Próximo passo: persistir motivo opcional da pausa em migration incremental, sem obrigar a resposta.
-- Branch/HEAD: `codex/expansao-revenue-centric` / M04 pronto para commit.
+- ID atual: R02.
+- Próximo passo: implementar pergunta opcional após pausa, usando a coluna publicada localmente em R01.
+- Branch/HEAD: `codex/expansao-revenue-centric` / R01 pronto; publicação remota não verificada.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -29,6 +29,7 @@ existentes.
 | M02 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Denominador deduplica primeira entrega por par; feedback só após entrega, última resposta por timestamp/ID; CLI exibe contagens e percentual ou sem denominador | Dados reais e respostas do piloto não verificados; métrica não é utilidade nem candidatura |
 | M03 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Coorte criada na janela; primeira entrega após criação; primeira abertura após qualquer entrega; medianas contínuas em segundos, nulos e faltantes explícitos | Não é prazo prometido; timestamps e execução reais dependem da publicação |
 | M04 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `radar/storage/postgres.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | SQL retorna fatos mínimos; Python classifica curso atual com `area_do_curso`, agrupa uma vez por perfil/semana e mostra área desconhecida como Não classificado | Dados reais e histórico de alterações de curso não verificados; não é histórico acadêmico |
+| R01 | Implementado/testado | `supabase/migrations/0019_motivo_pausa.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Coluna nullable com cinco valores, grant aditivo, legado nulo, dono/null, inválido, outro usuário, exportação e conta excluída cobertos no harness | Migration ainda não aplicada no projeto remoto; R02 depende da publicação da coluna |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -158,8 +159,18 @@ existentes.
 - Casos obrigatórios: oráculo Python com Computação 2/1, Direito 1/1 e desconhecido 1/0 passou; schema SQL reduzido agora inclui curso; fatos SQL preservam as duas semanas e o total anterior; nenhum identificador é impresso no relatório.
 - Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 2 aprovados, 0 ignorados; Q — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py tests/test_areas.py` — exit 0, 107 aprovados, 25 ignorados por Postgres; lint `uv run ruff check radar tests/test_funil.py` — exit 0; formatação foi ajustada e conferida.
 - Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
-- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M04 será criado após `git diff --check`. Nenhuma publicação externa.
-- Pendência real/próximo comando: iniciar R01; migration de motivo de pausa ainda não aplicada remotamente.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit `b4a0280` (`feat(metricas): agrupa utilidade por area do curso`). Nenhuma publicação externa.
+- Pendência real/próximo comando: R01 concluído localmente; seguir para R02. Dados reais e histórico de curso ainda não verificados.
+
+## R01
+
+- Comportamento antes → depois: não havia campo para motivo; a migration `0019` adiciona `motivo_pausa text null` com catálogo fechado de cinco valores e sem obrigar resposta ao pausar.
+- Arquivos/símbolos: `supabase/migrations/0019_motivo_pausa.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md`.
+- Casos obrigatórios: perfil legado recebe nulo; dono grava cada valor e nulo; valor inválido é rejeitado; outro usuário não altera; exportação inclui o campo; perfil excluído continua sem atualização.
+- Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/migrations_test.ts` — exit 0, 1 aprovado, 0 ignorados; `git diff --check` — exit 0.
+- Inspeção visual: não aplicável; mudança é schema, permissões e contrato.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R01 será criado após revisão do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: aplicar `0019` no projeto remoto antes de publicar R02; seguir para R02 sem aguardar essa etapa externa.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

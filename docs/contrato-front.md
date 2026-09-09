@@ -1,6 +1,6 @@
 # Contrato entre o site e o radar
 
-Revisado em 08/09/2026 contra `web/assets/app.js` e migrations até `0018`.
+Revisado em 08/09/2026 contra `web/assets/app.js` e migrations até `0019`.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
 A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).
@@ -45,6 +45,7 @@ o token do Turnstile é passado nas operações suportadas e descartado após a 
 | `id`, `user_id`, `criado_em` | Criação pelo banco; identidade não editável pelo formulário |
 | `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse` | Dados validados no cadastro e editáveis pelo dono |
 | `ativo` | Pausar/retomar pelo painel; sistema também pode pausar por falhas de entrega |
+| `motivo_pausa` | Motivo opcional da pausa atual; fica nulo ao retomar e não é histórico |
 | `aceita_emails` | Preferência reversível pelo dono |
 | `atualizado_em` | Atualizado ao salvar o perfil |
 | `termos_aceitos_em`, `versao_dos_termos` | Registro protegido do aceite; não atualizar diretamente |
@@ -78,6 +79,11 @@ solta o chat e rotaciona o token; não altera `ativo`. O painel mantém sessão 
 cancelamento, apresenta a data prevista e bloqueia controles incompatíveis com a exclusão.
 A policy também rejeita updates de perfil marcado. Cancelar preserva a pausa anterior e
 exige novo vínculo. O job executa a limpeza após a carência configurada de 60 dias.
+
+O motivo da pausa é opcional e aceita somente `conseguiu_estagio`, `interrompeu_busca`,
+`sem_vagas_uteis`, `frequencia` ou `outro`. A coluna representa a situação atual, não registra
+histórico e não é preenchida para pausas técnicas pelo sistema. O frontend limpa o motivo no
+mesmo update que retoma as entregas.
 
 ## Telegram e entrega
 
