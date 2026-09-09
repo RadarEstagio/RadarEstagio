@@ -19,11 +19,11 @@ existentes.
 | O00 | Implementado/testado | `.github/workflows/radar-diario.yml`, `.env.example`, `radar/settings.py`, `README.md` | Decisão revisada: workflow, padrão Python e documentação usam 7; nenhum parâmetro de fonte, cron ou filtro foi alterado | Workflow versionado nesta branch; nenhuma execução remota verificada |
 | C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
 | C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
-| C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
+| C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; nenhuma inspeção visual foi executada nesta sessão, em 1280 px ou em 375 px |
 | C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
 | C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
 | L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até sete recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
-| L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
+| L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura da FAQ usa `details/summary` nativo, sem JS próprio; publicação e inspeção visual em qualquer viewport não verificadas |
 | C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
 | M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
 | M02 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Denominador deduplica primeira entrega por par; feedback só após entrega, última resposta por timestamp/ID; CLI exibe contagens e percentual ou sem denominador | Dados reais e respostas do piloto não verificados; métrica não é utilidade nem candidatura |
@@ -76,7 +76,7 @@ existentes.
 - Arquivos/símbolos: `web/index.html`, `web/assets/app.js` (`continuarSemHabilidades`, `validateStep`, `profileFromForm`, `preencherFormularioCom`, `renderSkills`), `web/assets/styles.css`, `tests/web/cadastro_test.ts`.
 - Casos obrigatórios: novo cadastro vazio até o payload; edição de perfil salvo com `[]`; adicionar/remover última habilidade; Enter; logout/nova inscrição; erro de rede com dados preservados. O teste também confirma que o booleano não aparece nos eventos.
 - Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 36 aprovados, 0 ignorados.
-- Inspeção visual: Safari local em viewport de desktop (~1280 px), landing e modal/foco inicial conferidos; foco migra para e-mail e o botão novo é nativo. Verificação exata a 375 px não foi possível porque não havia viewport responsivo/browser controlável disponível; CSS de `@media (max-width: 760px)` foi revisado.
+- Inspeção visual: não executada. Não havia navegador controlável nesta sessão; o CSS de `@media (max-width: 760px)` foi lido, o que não substitui ver a tela. Pendente em 375 px e em 1280 px.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C03 após suíte Python completa. Frontend não publicado.
 - Pendência real/próximo comando: aplicar C01 somente depois de C02 publicado e C03 depois da migration; seguir para C04.
 
@@ -96,7 +96,7 @@ existentes.
 - Arquivos/símbolos: `web/assets/app.js` (`passosAtivos`, `atualizarPassosAtivos`, `openSignup`, `setAuthMode`, `form submit`), `web/index.html` (progresso 1 de 4), `tests/web/cadastro_test.ts`.
 - Casos obrigatórios: transições não chamam `signup`; alternância login/cadastro preserva curso, habilidades e cidade; logout limpa rascunho; perfil vazio segue aceito; envio duplicado durante autenticação gera uma tentativa; eventos existentes não foram renomeados.
 - Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 40 aprovados, 0 ignorados.
-- Inspeção visual: Safari local em desktop (~1280 px) mostrou o novo cadastro abrindo na etapa de perfil, com `Etapa 1 de 4` e foco no curso. A viewport exata de 375 px não foi disponibilizada nesta sessão.
+- Inspeção visual: não executada. O harness web cobre a abertura na etapa de perfil e o rótulo `Etapa 1 de 4`; foco e layout em 375 px e 1280 px seguem pendentes.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C05 será criado após a suíte Python completa. Nenhuma publicação externa.
 - Pendência real/próximo comando: validar L01 na landing; publicação, CAPTCHA real e viewport móvel continuam dependentes da equipe/ambiente.
 
@@ -106,7 +106,7 @@ existentes.
 - Arquivos/símbolos: `web/index.html` (title, description, Open Graph, Twitter, hero, trust strip, copy de comparação), `tests/test_product_copy.py`.
 - Casos obrigatórios: buscas textuais não encontram a promessa antiga, não há “Pare de procurar estágio” nem “A IA compara”, e o CTA conserva `.js-open-signup`, `data-event-origin` e o comportamento de conta existente.
 - Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_frontend_activation.py` — exit 0, 31 aprovados, 0 ignorados; `git diff --check` — exit 0.
-- Inspeção visual: Safari local recarregado em desktop (~1280 px) exibiu o novo título completo, CTA e os dois sinais de confiança sem rolagem horizontal aparente. Viewport exato de 375 px não foi disponibilizado.
+- Inspeção visual: não executada. Título, CTA e sinais de confiança foram conferidos no HTML e por teste de copy; rolagem horizontal e leitura em 375 px e 1280 px seguem pendentes.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L01 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: alinhar a demonstração e as cinco dúvidas prioritárias em L02; clique com sessão real não foi validado fora do harness.
 
@@ -116,7 +116,7 @@ existentes.
 - Arquivos/símbolos: `web/index.html` (demo, faixa de fontes/tecnologias e seis `details`), `tests/test_product_copy.py`.
 - Casos obrigatórios: demo não contém texto visível “match”, não apresenta parceiro/depoimento, informa que as fontes não cobrem tudo, explica limite de sete, dias sem vaga, candidatura na fonte, vínculo do Telegram e edição/pausa da conta.
 - Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_formatador.py` — exit 0, 46 aprovados, 0 ignorados; `git diff --check` — exit 0.
-- Inspeção visual: Safari local com query de cache exibiu o cartão e a FAQ atualizados; abrir “Preciso vincular o Telegram?” por controle nativo mostrou a resposta e estado expandido. Viewport exato de 375 px não foi disponibilizado.
+- Inspeção visual: não executada. A FAQ usa `details/summary` nativo, então teclado e estado expandido vêm do navegador; conferir na tela continua pendente.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L02 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: executar C06 e conferir mensagens de sucesso/espera sem alegar execução do job.
 
@@ -284,7 +284,7 @@ do status de teste ou merge. Detalhes ficam aqui; estado resumido fica no índic
 - Python: `uv run pytest -q` — exit 0, 665 aprovados, 25 ignorados por ambiente Postgres de teste, 1 warning de depreciação em dependência.
 - Web/banco: `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/` — exit 0, 49 aprovados, 0 falhos.
 - Lint/formatação: `uv run ruff check .` — exit 0; `uv run ruff format --check .` — exit 0, 101 arquivos formatados; `git diff --check` — exit 0.
-- Visual: landing, demo/FAQ e cadastro foram inspecionados anteriormente no Safari local em desktop (~1280 px); a viewport exata de 375 px e a integração publicada não foram verificadas.
+- Visual: nenhuma inspeção em navegador foi executada nesta sessão. Landing, demo/FAQ e cadastro têm cobertura de HTML, copy e DOM simulado; ver na tela, em 375 px e 1280 px, continua pendente com a equipe.
 - Versões remotas: não verificadas nesta fila; nenhum deploy, push ou aplicação remota foi declarado.
 
 ## Decisões e evidências externas pendentes
