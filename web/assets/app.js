@@ -31,7 +31,7 @@ if (cabecalhoDaLanding) {
 
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-const ROLAGEM_MINIMA_ATE_CHAT = 80;
+const ROLAGEM_MINIMA_ATE_CHAT = 90;
 
 if (demonstracaoDoChat && !reduzirMovimento) {
   const reproduzirChatAoRolar = () => {

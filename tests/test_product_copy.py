@@ -49,6 +49,7 @@ def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
 
     assert 'class="hero-demo is-waiting"' in html
     assert ".hero-demo.is-waiting .chat-typing { opacity: 1; }" in css
+    assert "const ROLAGEM_MINIMA_ATE_CHAT = 90;" in javascript
     assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
 
 

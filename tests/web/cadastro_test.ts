@@ -197,7 +197,10 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.ok(demo);
     assert.equal(demo.classList.contains("is-waiting"), true);
     assert.equal(demo.classList.contains("is-playing"), false);
-    Object.defineProperty(a.w, "scrollY", { value: 120, configurable: true });
+    Object.defineProperty(a.w, "scrollY", { value: 89, configurable: true });
+    a.w.dispatchEvent(new a.w.Event("scroll"));
+    assert.equal(demo.classList.contains("is-waiting"), true);
+    Object.defineProperty(a.w, "scrollY", { value: 90, configurable: true });
     a.w.dispatchEvent(new a.w.Event("scroll"));
     assert.equal(demo.classList.contains("is-waiting"), false);
     assert.equal(demo.classList.contains("is-playing"), true);
