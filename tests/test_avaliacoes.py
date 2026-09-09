@@ -703,3 +703,24 @@ def test_soft_skill_continua_contando_fora_de_computacao():
 
     assert resultado.requisitos_atendidos == ["Comunicação", "Redação"]
     assert resultado.requisitos_nao_atendidos == []
+
+
+def test_complemento_entre_parenteses_nao_esconde_a_familia_nem_o_nivel():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Front-end (React)", "Excel (avançado)"]),
+        perfil(["HTML", "CSS", "Excel básico"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Front-end (React)"]
+    assert resultado.requisitos_nao_atendidos == ["Excel (avançado)"]
+
+
+def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Bancos de dados relacionais", "IA generativa"]),
+        perfil(["PostgreSQL", "LLM"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == []
