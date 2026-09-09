@@ -3,6 +3,9 @@ from radar.domain.models import FunilDaCoorte
 LARGURA_DO_ROTULO = 26
 MOTIVO_SEM_RESPOSTA = "sem_motivo"
 ROTULO_SEM_RESPOSTA = "Não informado"
+SEGUNDOS_POR_MINUTO = 60
+SEGUNDOS_POR_HORA = 3600
+SEGUNDOS_POR_DIA = 86400
 
 
 def formatar_funil(funil: FunilDaCoorte) -> str:
@@ -147,5 +150,16 @@ def linha_do_feedback(funil: FunilDaCoorte) -> str:
 def linha_do_tempo(
     rotulo: str, mediana: float | None, observados: int, faltantes: int, rotulo_faltante: str
 ) -> str:
-    valor = "indisponível" if mediana is None else f"{mediana:.1f} s"
-    return f"  {rotulo}: {valor} ({observados} observados; {faltantes} {rotulo_faltante})"
+    valor = "indisponível" if mediana is None else duracao_legivel(mediana)
+    caso = "observado" if observados == 1 else "observados"
+    return f"  {rotulo}: {valor} ({observados} {caso}; {faltantes} {rotulo_faltante})"
+
+
+def duracao_legivel(segundos: float) -> str:
+    if segundos < SEGUNDOS_POR_MINUTO:
+        return f"{segundos:.0f} s"
+    if segundos < SEGUNDOS_POR_HORA:
+        return f"{segundos / SEGUNDOS_POR_MINUTO:.1f} min"
+    if segundos < SEGUNDOS_POR_DIA:
+        return f"{segundos / SEGUNDOS_POR_HORA:.1f} h"
+    return f"{segundos / SEGUNDOS_POR_DIA:.1f} d"

@@ -188,8 +188,17 @@ def test_mostra_mediana_e_faltantes_sem_chamar_isso_de_prazo():
     texto = formatar_funil(funil())
 
     assert "Tempo observado — não é prazo prometido:" in texto
-    assert "Até primeira entrega: 120.0 s (2 observados; 1 sem entrega)" in texto
-    assert "Até primeira abertura: 300.0 s (1 observados; 2 sem abertura)" in texto
+    assert "Até primeira entrega: 2.0 min (2 observados; 1 sem entrega)" in texto
+    assert "Até primeira abertura: 5.0 min (1 observado; 2 sem abertura)" in texto
+
+
+def test_mediana_longa_aparece_em_unidade_legivel():
+    texto = formatar_funil(
+        funil(mediana_segundos_ate_entrega=0, mediana_segundos_ate_abertura=90000)
+    )
+
+    assert "Até primeira entrega: 0 s" in texto
+    assert "Até primeira abertura: 1.0 d" in texto
 
 
 def test_tempo_sem_observacoes_fica_indisponivel():
