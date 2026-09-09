@@ -169,10 +169,12 @@ def test_relatorio_mostra_situacao_atual_das_contas_pausadas():
         )
     )
 
-    assert "Contas pausadas — situação atual:" in texto
-    assert "conseguiu_estagio" in texto
-    assert "sem_vagas_uteis" in texto
-    assert "sem_motivo" in texto
+    pausas = texto.split("Contas pausadas — situação atual:")[1]
+
+    assert "conseguiu_estagio" in pausas
+    assert "sem_vagas_uteis" in pausas
+    assert "Não informado" in pausas
+    assert "sem_motivo" not in pausas
     assert "Este quadro não é histórico mensal de churn." in texto
 
 

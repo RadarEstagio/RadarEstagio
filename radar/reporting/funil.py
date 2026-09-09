@@ -1,6 +1,8 @@
 from radar.domain.models import FunilDaCoorte
 
 LARGURA_DO_ROTULO = 26
+MOTIVO_SEM_RESPOSTA = "sem_motivo"
+ROTULO_SEM_RESPOSTA = "Não informado"
 
 
 def formatar_funil(funil: FunilDaCoorte) -> str:
@@ -116,8 +118,13 @@ def linhas_das_pausas(funil: FunilDaCoorte) -> list[str]:
     if not funil.pausas_atuais:
         return ["  nenhuma conta pausada"]
     return [
-        f"  {pausa.motivo:<{LARGURA_DO_ROTULO}}{pausa.total:>3}" for pausa in funil.pausas_atuais
+        f"  {rotulo_da_pausa(pausa.motivo):<{LARGURA_DO_ROTULO}}{pausa.total:>3}"
+        for pausa in funil.pausas_atuais
     ]
+
+
+def rotulo_da_pausa(motivo: str) -> str:
+    return ROTULO_SEM_RESPOSTA if motivo == MOTIVO_SEM_RESPOSTA else motivo
 
 
 def linha_do_custo(funil: FunilDaCoorte) -> str:
