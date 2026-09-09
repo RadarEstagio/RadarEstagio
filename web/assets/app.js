@@ -934,16 +934,43 @@ function dataDoApagamento(marcadaEm) {
   return marcada.toLocaleDateString("pt-BR");
 }
 
-function pedirConfirmacao(copy, acao) {
-  const rotulos = {
-    desvincular: "Desvincular Telegram",
-    excluir: "Excluir conta",
+function fecharConfirmacao(restaurarFoco = true) {
+  const acao = accountConfirm.dataset.acao;
+  if (accountConfirm.open && typeof accountConfirm.close === "function") accountConfirm.close();
+  accountConfirm.hidden = true;
+  delete accountConfirm.dataset.acao;
+  if (!restaurarFoco || !acao) return;
+  const origem = acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
+  document.querySelector(origem).focus();
+}
+
+function pedirConfirmacao(acao) {
+  const configuracoes = {
+    desvincular: {
+      titulo: "Desvincular o Telegram?",
+      aviso: "As entregas serão interrompidas",
+      detalhe: "O vínculo atual deixará de funcionar. Você poderá conectar o Telegram novamente depois.",
+      copy: "Nenhuma vaga será enviada até uma nova vinculação.",
+      confirmar: "Desvincular Telegram",
+    },
+    excluir: {
+      titulo: "Excluir sua conta?",
+      aviso: "Sua conta será marcada para exclusão",
+      detalhe: "As entregas param na hora. Seus dados serão apagados definitivamente depois de 60 dias.",
+      copy: "Até o prazo terminar, você pode entrar novamente e cancelar a exclusão.",
+      confirmar: "Excluir conta",
+    },
   };
-  document.querySelector("#account-confirm-copy").textContent = copy;
-  document.querySelector("#account-confirm-yes").textContent = rotulos[acao];
-  accountConfirm.hidden = false;
+  const configuracao = configuracoes[acao];
   accountConfirm.dataset.acao = acao;
-  document.querySelector("#account-confirm-yes").focus();
+  document.querySelector("#account-confirm-title").textContent = configuracao.titulo;
+  document.querySelector("#account-confirm-warning-title").textContent = configuracao.aviso;
+  document.querySelector("#account-confirm-warning-copy").textContent = configuracao.detalhe;
+  document.querySelector("#account-confirm-copy").textContent = configuracao.copy;
+  document.querySelector("#account-confirm-yes").textContent = configuracao.confirmar;
+  accountConfirm.hidden = false;
+  if (typeof accountConfirm.showModal === "function" && !accountConfirm.open) accountConfirm.showModal();
+  document.querySelector("#account-confirm-no").focus();
 }
 
 async function currentSession() {
@@ -1216,18 +1243,11 @@ skipPauseReason.addEventListener("click", () => {
 });
 
 document.querySelector("#unlink-telegram").addEventListener("click", () => {
-  pedirConfirmacao(
-    "Desvincular para de entregar vagas neste Telegram e invalida o link antigo. Você pode vincular de novo depois.",
-    "desvincular",
-  );
+  pedirConfirmacao("desvincular");
 });
 
 document.querySelector("#delete-account").addEventListener("click", () => {
-  pedirConfirmacao(
-    "As entregas param na hora. Sua conta e seus dados são apagados definitivamente 60 dias " +
-      "depois; até lá você pode cancelar entrando aqui de novo.",
-    "excluir",
-  );
+  pedirConfirmacao("excluir");
 });
 
 document.querySelector("#cancel-deletion").addEventListener("click", async () => {
@@ -1243,14 +1263,19 @@ document.querySelector("#cancel-deletion").addEventListener("click", async () =>
 });
 
 document.querySelector("#account-confirm-no").addEventListener("click", () => {
-  const origem = accountConfirm.dataset.acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
-  accountConfirm.hidden = true;
-  document.querySelector(origem).focus();
+  fecharConfirmacao();
+});
+
+document.querySelector("#account-confirm-close").addEventListener("click", () => fecharConfirmacao());
+
+accountConfirm.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  fecharConfirmacao();
 });
 
 document.querySelector("#account-confirm-yes").addEventListener("click", async () => {
   const acao = accountConfirm.dataset.acao;
-  accountConfirm.hidden = true;
+  fecharConfirmacao();
   setAccountMessage();
   try {
     if (acao === "desvincular") {

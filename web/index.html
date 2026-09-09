@@ -14,10 +14,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260909-7" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260909-8" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260909-2" defer></script>
+    <script src="assets/app.js?v=20260909-3" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -438,19 +438,31 @@
                 </div>
               </section>
               <section class="account-danger" aria-labelledby="account-danger-title">
-                <div class="account-section-heading"><p>Ações sensíveis</p><h2 id="account-danger-title">Privacidade e controle</h2><span>Estas ações interrompem as entregas ou removem seus dados.</span></div>
-                <div class="account-danger-actions">
-                  <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
-                  <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
+                <div class="account-section-heading account-danger-heading"><p>Privacidade</p><h2 id="account-danger-title">Ações sensíveis</h2><span>Revise as consequências antes de alterar o vínculo ou excluir sua conta.</span></div>
+                <div class="account-danger-list">
+                  <section class="account-danger-row" aria-labelledby="unlink-telegram-title">
+                    <div><h3 id="unlink-telegram-title">Desvincular o Telegram</h3><p>Interrompe as entregas neste chat. Você poderá vinculá-lo novamente depois.</p></div>
+                    <button class="button button-danger-ghost" type="button" id="unlink-telegram">Desvincular</button>
+                  </section>
+                  <section class="account-danger-row" aria-labelledby="delete-account-title">
+                    <div><h3 id="delete-account-title">Excluir minha conta</h3><p>Interrompe as entregas agora e agenda a remoção definitiva dos seus dados.</p></div>
+                    <button class="button button-danger" type="button" id="delete-account">Excluir conta</button>
+                    <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
+                  </section>
                 </div>
-                <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
-                <div class="account-confirm" id="account-confirm" hidden>
+                <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
+                  <div class="account-confirm-header">
+                    <span class="account-confirm-icon" aria-hidden="true">!</span>
+                    <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
+                    <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
+                  </div>
+                  <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
                   <p id="account-confirm-copy"></p>
                   <div class="account-actions">
-                    <button class="button button-primary" type="button" id="account-confirm-yes">Confirmar</button>
                     <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+                    <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
                   </div>
-                </div>
+                </dialog>
               </section>
             </div>
           </section>

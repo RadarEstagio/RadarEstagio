@@ -484,6 +484,35 @@ Deno.test("conta sai do modal e mantém edição na página autenticada", async 
   } finally { a.close(); }
 });
 
+Deno.test("ações sensíveis ficam separadas e exigem confirmação", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const rows = a.w.document.querySelectorAll(".account-danger-row");
+    const confirm = a.w.document.querySelector("#account-confirm");
+    assert.equal(rows.length, 2);
+
+    a.w.document.querySelector("#unlink-telegram").click();
+    assert.equal(confirm.hidden, false);
+    assert.equal(confirm.dataset.acao, "desvincular");
+    assert.equal(a.w.document.querySelector("#account-confirm-title").textContent, "Desvincular o Telegram?");
+    assert.equal(a.w.document.activeElement.id, "account-confirm-no");
+
+    a.w.document.querySelector("#account-confirm-no").click();
+    assert.equal(confirm.hidden, true);
+    assert.equal(a.w.document.activeElement.id, "unlink-telegram");
+
+    a.w.document.querySelector("#delete-account").click();
+    assert.equal(confirm.hidden, false);
+    assert.equal(confirm.dataset.acao, "excluir");
+    assert.equal(a.w.document.querySelector("#account-confirm-title").textContent, "Excluir sua conta?");
+
+    a.w.document.querySelector("#account-confirm-close").click();
+    assert.equal(confirm.hidden, true);
+    assert.equal(a.w.document.activeElement.id, "delete-account");
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
   const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
   try {
