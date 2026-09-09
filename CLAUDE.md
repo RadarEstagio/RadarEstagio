@@ -57,8 +57,11 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   título e empresa com uma opção positiva e cinco recusas, incluindo `motivo_nota`. A última
   resposta por recomendação vale nas métricas; cliques repetidos não multiplicam vagas.
 - **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
-  últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
-  definições estão em `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql`.
+  últimos 30 dias, a participação no feedback, as medianas observadas até a primeira entrega e a
+  primeira abertura, a utilidade semanal e por área do curso, as contas pausadas por motivo, a
+  quebra das recusas por motivo e o custo de extração por usuário ativado. As definições estão em
+  `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql` e o agrupamento por área,
+  que é regra de domínio, em `radar/domain/metricas.py`. Mediana é tempo observado, nunca prazo.
 - **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
   dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
   (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
@@ -135,7 +138,11 @@ de perfil são estruturados (lista de habilidades, período, modalidade) e um fo
 mais claro que uma conversa; o bot continua sem estado e sem máquina de conversa; o Supabase já
 resolve conta (Auth) e banco de uma vez.
 
-Fluxo: o usuário cria a conta no site → preenche o perfil → clica no botão do
+A conta ficou por último no formulário: pedir e-mail e senha antes de qualquer valor entregue
+cobra o preço antes de mostrar o produto. `signup` só é chamado no envio do último passo, nunca
+ao avançar entre etapas, e login e edição continuam com seus próprios passos.
+
+Fluxo: o usuário preenche o perfil no site → cria a conta no último passo → clica no botão do
 Telegram, que abre `t.me/RadarEstagio_bot?start=<token>` com um token único da conta →
 o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → a função
 grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
@@ -342,10 +349,13 @@ Três revisores independentes e uma medição em produção depois da expansão.
   mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
   total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
 
-As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`, com
-`HABILIDADES_GERAIS` para curso desconhecido) e são montadas ao entrar na etapa de habilidades;
-a lista de computação é a mesma de antes. O aviso "Área que você recusou" nomeia as subáreas
-pelo rótulo do catálogo.
+As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`) e são montadas
+ao entrar na etapa de habilidades; a lista de computação é a mesma de antes. Curso sem área
+conhecida não recebe sugestão alguma desde a expansão: oferecer `HABILIDADES_GERAIS` a quem o
+catálogo não reconhece era sugerir a área errada, e o campo continua no catálogo sem leitor no
+site. Habilidade também deixou de ser obrigatória — lista vazia significa "não informou", nunca
+incapacidade, e o site limita 50 itens de 100 caracteres porque a `0018` cobra isso no banco.
+O aviso "Área que você recusou" nomeia as subáreas pelo rótulo do catálogo.
 
 Sabidos e não corrigidos: republicação por outra fonte com descrição curta pode reenviar;
 extrações e enriquecimento são chaveados por `id_externo` sem `fonte` (colisão improvável entre
@@ -420,11 +430,10 @@ com tags fechadas; janela da entrega imediata é 09:23–10:23 UTC (06:23–07:2
 suítes das Edge Functions (8 + 24) e do cadastro (38) verdes; nenhuma ref remota alcança commit
 do Claude.
 
-**Sete ou cinco:** o workflow manda até **7** vagas (`QUANTIDADE_VAGAS_ENVIADAS: "7"`, commit de
-03/09) e a landing de 08/09 prometia "até cinco". Ian decidiu na noite de 08/09 manter 7 e a
-landing passou a dizer "até sete". O plano de expansão do Igor (`docs/execucao-expansao/`,
-tarefas O00 e L01) registra a decisão oposta — reduzir o workflow para 5 — e ainda precisa ser
-alinhado entre os dois.
+**Sete:** o workflow manda até **7** vagas (`QUANTIDADE_VAGAS_ENVIADAS: "7"`, commit de 03/09,
+porque com 5 slots vaga boa saía da janela sem ser enviada). A landing de 08/09 prometia "até
+cinco"; Ian decidiu manter 7, a landing passou a dizer "até sete" e o PR #22 do Igor adotou o
+mesmo valor no padrão do código, na copy e no plano de expansão.
 
 ### Cobertura das fontes (30/08/2026)
 

@@ -168,8 +168,7 @@ vagas novas com nota igual ou superior ao limite configurado. Cada vaga contém:
 - alerta de possível inconsistência quando a IA a detecta;
 - link rastreado para a oportunidade e um teclado numerado para dar feedback.
 
-Produção envia até **7 vagas** (workflow desde 03/09; o padrão do código é 5) com nota mínima
-**40**, ambos configuráveis; a landing passou a prometer "até sete" em 08/09. Em dia sem vaga
+O padrão atual envia até **7 vagas** com nota mínima **40**, ambos configuráveis. Em dia sem vaga
 adequada, o estudante recebe um aviso curto; após 7 dias seguidos sem recomendação, o mesmo
 aviso ganha um parágrafo sugerindo ampliar cidade ou modalidade.
 
@@ -378,8 +377,6 @@ conversa produzem sinal melhor que teste A/B.
 7. Ativar o Turnstile antes de divulgar?
 8. Quais evidências o professor espera na próxima entrega: arquitetura, demonstração, métricas
    ou validação com estudantes?
-9. O plano de expansão do Igor (tarefas O00 e L01) previa reduzir a produção para cinco; Ian
-   decidiu em 08/09 manter sete e alinhar a landing. Confirmar com o Igor e ajustar o plano.
 
 ## 11. Vulnerabilidades e riscos
 

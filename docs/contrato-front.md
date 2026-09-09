@@ -1,6 +1,6 @@
 # Contrato entre o site e o radar
 
-Revisado em 07/09/2026 contra `web/assets/app.js` e migrations até `0016`.
+Revisado em 08/09/2026 contra `web/assets/app.js` e migrations até `0019`.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
 A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).
@@ -45,6 +45,7 @@ o token do Turnstile é passado nas operações suportadas e descartado após a 
 | `id`, `user_id`, `criado_em` | Criação pelo banco; identidade não editável pelo formulário |
 | `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse` | Dados validados no cadastro e editáveis pelo dono |
 | `ativo` | Pausar/retomar pelo painel; sistema também pode pausar por falhas de entrega |
+| `motivo_pausa` | Motivo opcional da pausa atual; fica nulo ao retomar e não é histórico |
 | `aceita_emails` | Preferência reversível pelo dono |
 | `atualizado_em` | Atualizado ao salvar o perfil |
 | `termos_aceitos_em`, `versao_dos_termos` | Registro protegido do aceite; não atualizar diretamente |
@@ -56,6 +57,12 @@ Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `pres
 `hibrido`, `indiferente`. O catálogo de áreas está no domínio e na validação da `0014`.
 Editar perfil e preferências usa `update` na própria linha, limitado por grants e RLS.
 Não usar `upsert` como substituto do fluxo de criação.
+
+`habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
+após retirar espaços nas pontas. Lista vazia significa que o estudante ainda não informou
+habilidades; não é convertida em texto sentinela nem implica incapacidade. O caminho de publicação
+compatível é: disponibilizar o Python que lê lista vazia (C02), aplicar a migration `0018`
+preservando perfis e permissões, e só então liberar o frontend que oferece esse caminho (C03).
 
 ## Controles da conta
 
@@ -72,6 +79,44 @@ solta o chat e rotaciona o token; não altera `ativo`. O painel mantém sessão 
 cancelamento, apresenta a data prevista e bloqueia controles incompatíveis com a exclusão.
 A policy também rejeita updates de perfil marcado. Cancelar preserva a pausa anterior e
 exige novo vínculo. O job executa a limpeza após a carência configurada de 60 dias.
+
+O motivo da pausa é opcional e aceita somente `conseguiu_estagio`, `interrompeu_busca`,
+`sem_vagas_uteis`, `frequencia` ou `outro`. A coluna representa a situação atual, não registra
+histórico e não é preenchida para pausas técnicas pelo sistema. O frontend limpa o motivo no
+mesmo update que retoma as entregas.
+
+## Elegibilidade acadêmica — decisão D01 em aberto
+
+Preparado em 08/09/2026 a partir do contrato atual e dos casos pedidos em E02. O código mantém
+`periodo` como inteiro maior ou igual a 1, uma área principal por curso, subáreas do catálogo e
+as exceções já existentes de computação. Nenhuma equivalência nova, migration ou ajuste de peso
+foi criado nesta preparação.
+
+| Caso | Entrada atual/limitação | Opção A | Opção B | Impacto que a equipe precisa escolher |
+|---|---|---|---|---|
+| Curso técnico por módulo | `periodo` aceita inteiro, mas módulo não significa semestre automaticamente | preservar o número como módulo e exibir o rótulo informado | mapear módulo para uma etapa acadêmica mediante catálogo por instituição | altera cadastro, texto de comparação e compatibilidade de perfis antigos |
+| Graduação por ano | o formulário chama o campo de período e não conhece duração do curso | manter ano/período como ordem declarada, sem conversão | cadastrar duração/escala da formação e converter apenas com fonte confiável | adiciona campos e regra de migração; não decidir por suposição |
+| Anúncio exige curso exato | o match usa curso/área atual e pode ter informação incompleta | exigir correspondência exata quando o anúncio declarar isso | aceitar correlatos definidos por catálogo revisado | altera ranking e elegibilidade; precisa de exemplos públicos |
+| Anúncio aceita correlatos | não há contrato geral de equivalência entre formações | tratar correlato como desconhecido até ser declarado | manter catálogo de correlatos com versão e responsável | afeta perfis antigos, avaliação e explicação da recomendação |
+| Interesse em atividade de outra área | interesses dependem da área do curso no frontend | permitir interesse declarado, sem transformar em formação elegível | criar subárea transversal com regra explícita | afeta catálogo e comparação, mas não deve falsificar curso |
+| Curso/alias ausente | curso desconhecido não recebe sugestões de outra área | preservar curso livre e registrar desconhecido | aprovar alias em catálogo versionado antes de classificar | exige revisão de domínio; não deve apagar seleção do usuário |
+| Profissão fora das áreas atuais | catálogo não cobre todos os cursos e profissões | grupo “Não classificado” até evidência suficiente | adicionar área/subáreas após caso observado e revisão | migration, frontend e pontuação separados; não ampliar agora |
+| Frequência, pesos e fontes | decisões não são consequência automática do curso | manter contrato vigente e abrir tarefa específica | mudar somente após caso medido e decisão registrada | não misturar com equivalência acadêmica |
+
+### Decisões solicitadas
+
+1. Para técnico e graduação, qual escala deve ser armazenada e mostrada sem converter módulo,
+   ano ou semestre por inferência?
+2. Em que condições um anúncio declarado como “correlato” pode aceitar outro curso, e quem
+   mantém esse catálogo?
+3. O grupo “Não classificado” é suficiente enquanto aliases e novas profissões não tiverem
+   casos reais? A resposta deve incluir os exemplos de E02.
+4. Quais termos de uma fonte podem ser guardados como alias e qual será a versão do catálogo?
+
+Até a decisão, o frontend deve manter o contrato executável atual: período inteiro, curso
+declarado, área do catálogo quando reconhecida e desconhecido sem equivalência inventada.
+Implementação posterior deve ser dividida em contrato/migration, leitura e avaliação Python,
+interface e verificação integrada, com compatibilidade explícita para perfis existentes.
 
 ## Telegram e entrega
 

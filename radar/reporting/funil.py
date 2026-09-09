@@ -1,6 +1,11 @@
 from radar.domain.models import FunilDaCoorte
 
 LARGURA_DO_ROTULO = 26
+MOTIVO_SEM_RESPOSTA = "sem_motivo"
+ROTULO_SEM_RESPOSTA = "Não informado"
+SEGUNDOS_POR_MINUTO = 60
+SEGUNDOS_POR_HORA = 3600
+SEGUNDOS_POR_DIA = 86400
 
 
 def formatar_funil(funil: FunilDaCoorte) -> str:
@@ -20,9 +25,29 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         etapa("Marcadas como irrelevantes", funil.vagas_irrelevantes, funil.vagas_enviadas),
         etapa("Candidaturas", funil.candidaturas, funil.vagas_enviadas),
         "",
+        linha_do_feedback(funil),
+        "",
+        "Tempo observado — não é prazo prometido:",
+        linha_do_tempo(
+            "Até primeira entrega",
+            funil.mediana_segundos_ate_entrega,
+            funil.perfis_na_coorte - funil.perfis_sem_entrega,
+            funil.perfis_sem_entrega,
+            "sem entrega",
+        ),
+        linha_do_tempo(
+            "Até primeira abertura",
+            funil.mediana_segundos_ate_abertura,
+            funil.perfis_na_coorte - funil.perfis_sem_abertura,
+            funil.perfis_sem_abertura,
+            "sem abertura",
+        ),
         "Motivo da recusa:",
     ]
     linhas.extend(linhas_dos_motivos(funil))
+    linhas.extend(["", "Contas pausadas — situação atual:"])
+    linhas.extend(linhas_das_pausas(funil))
+    linhas.append("Este quadro não é histórico mensal de churn.")
     linhas.extend(["", linha_do_custo(funil)])
     etapas = [
         "landing_visualizada",
@@ -47,6 +72,18 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         linhas.append(
             f"  {semana.semana}{parcial}: {semana.com_utilidade}/{semana.ativados} — {taxa}"
         )
+    linhas.extend(["", "Utilidade semanal por área — agrupado pelo curso atual:"])
+    if not funil.utilidade_por_area:
+        linhas.append("  nenhuma área com perfis ativados")
+    for grupo in funil.utilidade_por_area:
+        percentual = grupo.percentual()
+        taxa = "sem denominador" if percentual is None else f"{percentual:.1f}%"
+        parcial = " (em andamento)" if grupo.parcial else ""
+        linhas.append(
+            f"  {grupo.semana}{parcial} · {grupo.area}: "
+            f"{grupo.com_utilidade}/{grupo.ativados} — {taxa}"
+        )
+    linhas.append("  Mudança de curso pode mudar agrupamentos passados; não é histórico de curso.")
     linhas.extend(["", "Recusas por tecnologias declaradas — entregas no período:"])
     for grupo in funil.recusas_por_grupo:
         taxa = (
@@ -80,9 +117,49 @@ def linhas_dos_motivos(funil: FunilDaCoorte) -> list[str]:
     ]
 
 
+def linhas_das_pausas(funil: FunilDaCoorte) -> list[str]:
+    if not funil.pausas_atuais:
+        return ["  nenhuma conta pausada"]
+    return [
+        f"  {rotulo_da_pausa(pausa.motivo):<{LARGURA_DO_ROTULO}}{pausa.total:>3}"
+        for pausa in funil.pausas_atuais
+    ]
+
+
+def rotulo_da_pausa(motivo: str) -> str:
+    return ROTULO_SEM_RESPOSTA if motivo == MOTIVO_SEM_RESPOSTA else motivo
+
+
 def linha_do_custo(funil: FunilDaCoorte) -> str:
     extraidas = funil.vagas_extraidas
     por_ativado = funil.vagas_extraidas_por_ativado()
     if por_ativado is None:
         return f"Custo: {extraidas} vagas extraídas, nenhum usuário ativado no período"
     return f"Custo: {extraidas} vagas extraídas, {por_ativado:.1f} por usuário ativado"
+
+
+def linha_do_feedback(funil: FunilDaCoorte) -> str:
+    elegiveis = funil.recomendacoes_elegiveis_feedback
+    respondidas = funil.recomendacoes_com_feedback
+    if not elegiveis:
+        return "Respostas: 0 de 0 recomendações (sem denominador)"
+    percentual = 100 * respondidas / elegiveis
+    return f"Respostas: {respondidas} de {elegiveis} recomendações ({percentual:.1f}%)"
+
+
+def linha_do_tempo(
+    rotulo: str, mediana: float | None, observados: int, faltantes: int, rotulo_faltante: str
+) -> str:
+    valor = "indisponível" if mediana is None else duracao_legivel(mediana)
+    caso = "observado" if observados == 1 else "observados"
+    return f"  {rotulo}: {valor} ({observados} {caso}; {faltantes} {rotulo_faltante})"
+
+
+def duracao_legivel(segundos: float) -> str:
+    if segundos < SEGUNDOS_POR_MINUTO:
+        return f"{segundos:.0f} s"
+    if segundos < SEGUNDOS_POR_HORA:
+        return f"{segundos / SEGUNDOS_POR_MINUTO:.1f} min"
+    if segundos < SEGUNDOS_POR_DIA:
+        return f"{segundos / SEGUNDOS_POR_HORA:.1f} h"
+    return f"{segundos / SEGUNDOS_POR_DIA:.1f} d"

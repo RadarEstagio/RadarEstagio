@@ -71,6 +71,27 @@ def test_lista_apenas_perfis_ativos_com_chat_id(conexao: psycopg.Connection, usu
     assert usuario.perfil.areas_de_interesse == [AreaDeInteresse.DESENVOLVIMENTO_WEB]
 
 
+def test_lista_perfil_iniciante_com_habilidades_vazias(conexao: psycopg.Connection):
+    user_id = uuid4()
+    conexao.execute(
+        "insert into auth.users (id, instance_id, aud, role, email) "
+        "values (%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+        (user_id, f"{user_id}@teste.local"),
+    )
+    perfil_id = conexao.execute(
+        "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
+        "telegram_chat_id) values (%s, 'Direito', 2, '{}', 'Recife, PE', 'remoto', %s) "
+        "returning id",
+        (user_id, str(uuid4().int)[:9]),
+    ).fetchone()[0]
+
+    usuario = next(
+        item for item in RepositorioPostgres(conexao).listar_ativos() if item.id == perfil_id
+    )
+
+    assert usuario.perfil.habilidades == []
+
+
 def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, usuario: Usuario):
     repositorio = RepositorioPostgres(conexao)
     avaliadas = [

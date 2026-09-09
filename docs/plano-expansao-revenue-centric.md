@@ -93,7 +93,7 @@ Prompt pronto para copiar:
 > `docs/execucao-expansao/00-protocolo.md`. Implemente o plano completo, executando um ID por
 > vez na ordem de dependências e continuando automaticamente após cada entrega. Confira o
 > código atual para não refazer o que já existe. Preserve as decisões fechadas nas fichas,
-> em especial o limite de sete recomendações para usuários. Teste as mudanças e registre o
+> em especial o limite revisado de sete recomendações para usuários. Teste as mudanças e registre o
 > progresso em `docs/execucao-expansao/progresso.md`. Prepare os documentos das tarefas externas
 > com evidências disponíveis e explicite o que depende da equipe, sem bloquear as demais.
 > Não pare na primeira tarefa nem somente em planejamento. Ao terminar, entregue o resumo de
@@ -111,28 +111,28 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 
 | ID | Tarefa | Prioridade | Estado | Depende de | Especificação |
 |---|---|---|---|---|---|
-| O00 | Manter limite de sete no workflow | P0 | Concluída em 08/09 | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
-| C01 | Permitir habilidades vazias no banco | P0 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
-| C02 | Aceitar perfil iniciante no Python | P0 | Pendente | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
-| C03 | Oferecer caminho sem habilidades no site | P1 | Pendente | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
-| C04 | Concluir sugestões existentes e fallback | P1 | Parcial | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
-| C05 | Colocar conta após o perfil | P1 | Pendente | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
-| L01 | Corrigir promessa e copy da landing | P1 | Pendente | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
-| L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
-| C06 | Explicar vínculo, espera e ausência de vagas | P1 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c06) |
-| M01 | Mapear eventos e lacunas do cadastro | P1 | Pendente | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
-| M02 | Participação no feedback | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |
-| M03 | Tempo até entrega e abertura | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m03) |
-| M04 | Utilidade por área do curso | P1 | Pendente | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
-| R01 | Persistir motivo opcional da pausa | P1 | Pronta | — | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r01) |
-| R02 | Perguntar motivo após pausar | P1 | Pendente | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
-| R03 | Relatar motivos de pausa | P1 | Pendente | R02 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r03) |
-| E01 | Verificar publicação e jornada real | P0 | Externa | Versão a publicar definida | [Operação](execucao-expansao/03-evidencias-e-decisoes.md#e01) |
-| E02 | Registrar cobertura e casos de qualidade | P1 | Externa | Acesso às fontes/dados | [Cobertura](execucao-expansao/03-evidencias-e-decisoes.md#e02) |
-| E03 | Escolher canal e obter prova real | P2 | Externa | E01 | [Aquisição](execucao-expansao/03-evidencias-e-decisoes.md#e03) |
-| E04 | Levantar custos da operação | P2 | Externa | Dados de custo disponíveis | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e04) |
-| E05 | Definir oferta e teste de pagamento | P2 | Externa | E02, E04, decisão da equipe | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e05) |
-| D01 | Resolver elegibilidade e formatos acadêmicos | P1 | Decisão | Casos de E02 | [Decisões](execucao-expansao/03-evidencias-e-decisoes.md#d01) |
+| O00 | Atualizar limite de sete no workflow | P0 | Implementado/testado | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
+| C01 | Permitir habilidades vazias no banco | P0 | Implementado/testado | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
+| C02 | Aceitar perfil iniciante no Python | P0 | Implementado/testado | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
+| C03 | Oferecer caminho sem habilidades no site | P1 | Implementado/testado | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
+| C04 | Concluir sugestões existentes e fallback | P1 | Implementado/testado | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
+| C05 | Colocar conta após o perfil | P1 | Implementado/testado | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
+| L01 | Corrigir promessa e copy da landing | P1 | Implementado/testado | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
+| L02 | Demonstração fiel e dúvidas frequentes | P1 | Implementado/testado | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
+| C06 | Explicar vínculo, espera e ausência de vagas | P1 | Implementado/testado | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c06) |
+| M01 | Mapear eventos e lacunas do cadastro | P1 | Implementado/testado | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
+| M02 | Participação no feedback | P1 | Implementado/testado | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |
+| M03 | Tempo até entrega e abertura | P1 | Implementado/testado | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m03) |
+| M04 | Utilidade por área do curso | P1 | Implementado/testado | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
+| R01 | Persistir motivo opcional da pausa | P1 | Implementado/testado | — | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r01) |
+| R02 | Perguntar motivo após pausar | P1 | Implementado/testado | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
+| R03 | Relatar motivos de pausa | P1 | Implementado/testado | R02 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r03) |
+| E01 | Verificar publicação e jornada real | P0 | Preparado, falta evidência externa | Versão a publicar definida | [Operação](execucao-expansao/03-evidencias-e-decisoes.md#e01) |
+| E02 | Registrar cobertura e casos de qualidade | P1 | Preparado, falta evidência externa | Acesso às fontes/dados | [Cobertura](execucao-expansao/03-evidencias-e-decisoes.md#e02) |
+| E03 | Escolher canal e obter prova real | P2 | Preparado, falta evidência externa | E01 | [Aquisição](execucao-expansao/03-evidencias-e-decisoes.md#e03) |
+| E04 | Levantar custos da operação | P2 | Preparado, falta evidência externa | Dados de custo disponíveis | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e04) |
+| E05 | Definir oferta e teste de pagamento | P2 | Preparado, falta decisão | E02, E04, decisão da equipe | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e05) |
+| D01 | Resolver elegibilidade e formatos acadêmicos | P1 | Preparado, falta decisão | Casos de E02 | [Decisões](execucao-expansao/03-evidencias-e-decisoes.md#d01) |
 
 Sequência obrigatória de implementação local: **O00 → C01 → C02 → C03 → C04 → C05 → L01 →
 L02 → C06 → M01 → M02 → M03 → M04 → R01 → R02 → R03**. Depois preparar os seis artefatos
@@ -142,9 +142,9 @@ externos. Acesso/decisão ausente não autoriza inventar resultados nem bloqueia
 
 - A expansão básica e as correções do PR #21 estão concluídas no código; não são o primeiro lote.
 - Recálculo atual substitui o pedido genérico de versionar notas. Não invalidar dados ou reenviar vagas.
-- Decisão de Ian em 08/09/2026: usuários recebem até **7** recomendações, valor de produção
-  desde 03/09. O00 fica concluída mantendo o workflow; L01 comunica até sete. O parâmetro local
-  continua configurável para testes sem alterar o workflow de produção.
+- Decisão revisada pelo Igor nesta execução: usuários recebem até **7** recomendações. O00,
+  padrão Python, workflow e copy devem permanecer sincronizados; o parâmetro continua configurável
+  para testes locais.
 - Formações sem semestres, interesses entre grandes áreas e equivalência de cursos precisam de
   contrato específico (D01). Não resolver com defaults inventados ou curso automaticamente equivalente.
 - Frequência, pesos por área, fontes novas, páginas por curso, indicação com recompensa e planos

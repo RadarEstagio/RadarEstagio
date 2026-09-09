@@ -1,3 +1,4 @@
+import math
 from datetime import UTC, datetime
 
 from radar.domain.models import AreaDeInteresse, ExtracaoDaVaga, Modalidade, Perfil, Vaga
@@ -547,6 +548,51 @@ def extracao_juridica(obrigatorias: list[str]) -> ExtracaoDaVaga:
         cursos_aceitos=["Direito"],
         habilidades_obrigatorias=obrigatorias,
     )
+
+
+def test_perfis_iniciantes_de_computacao_e_direito_recebem_nota_finita_sem_requisito_atendido():
+    casos = [
+        (
+            Perfil(
+                curso="Engenharia de Software",
+                periodo=4,
+                habilidades=[],
+                cidade="Rio de Janeiro, RJ",
+                modalidade=Modalidade.PRESENCIAL,
+            ),
+            extracao(habilidades_obrigatorias=["Python"]),
+        ),
+        (
+            perfil_de_direito([]),
+            extracao_juridica(["Excel"]),
+        ),
+    ]
+
+    for candidato, vaga_extraida in casos:
+        resultado = pontuar(vaga(), vaga_extraida, candidato)
+
+        assert math.isfinite(resultado.nota)
+        assert 0 <= resultado.nota <= 100
+        assert resultado.requisitos_atendidos == []
+        assert resultado.requisitos_nao_atendidos
+
+
+def test_perfil_iniciante_preserva_limites_de_curso_e_modalidade():
+    candidato = Perfil(
+        curso="Direito",
+        periodo=4,
+        habilidades=[],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.REMOTO,
+    )
+    resultado = pontuar(
+        vaga(modalidade=Modalidade.PRESENCIAL),
+        extracao(cursos_aceitos=["Engenharia de Software"], habilidades_obrigatorias=["Python"]),
+        candidato,
+    )
+
+    assert resultado.nota <= 35
+    assert resultado.requisitos_atendidos == []
 
 
 def test_nivel_basico_nao_satisfaz_requisito_avancado():

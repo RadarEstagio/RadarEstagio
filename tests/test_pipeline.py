@@ -200,7 +200,7 @@ class RepositorioFalso(RepositorioEmMemoria):
 
 
 def parametros(
-    quantidade: int = 5,
+    quantidade: int = 7,
     nota_minima: int = 0,
     falhas_ate_pausar: int = 3,
     dias_de_silencio_ate_avisar: int = 7,
@@ -268,7 +268,7 @@ def test_vaga_enriquecida_e_pontuada_com_a_descricao_completa():
 def rodar(
     vagas: list[Vaga],
     notas: dict[str, int],
-    quantidade: int = 5,
+    quantidade: int = 7,
     nota_minima: int = 0,
     repositorio: RepositorioFalso | None = None,
     notificador: NotificadorFalso | None = None,

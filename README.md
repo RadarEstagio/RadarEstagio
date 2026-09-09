@@ -21,7 +21,7 @@ Adzuna + Gupy (vagas dos últimos 3 dias)
   → Gemini extrai fatores e justificativas em lotes
   → Python calcula a nota 0–100: habilidades 45%, curso 10%, área 10%,
     período/experiência 15%, logística 10% e áreas de interesse 10%
-  → ranqueia e pega as 5 melhores
+  → ranqueia e pega as 7 melhores
   → envia a mensagem no Telegram
 ```
 
@@ -183,7 +183,7 @@ Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatóri
 | `AGY_TIMEOUT_SEGUNDOS` | `300` | tempo máximo de uma execução do AGY |
 | `FONTES` | `adzuna,gupy` | fontes consultadas, separadas por vírgula |
 | `DIAS_RECENTES` | `3` | busca vagas publicadas nos últimos N dias |
-| `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
+| `QUANTIDADE_VAGAS_ENVIADAS` | `7` | quantas vagas vão na mensagem |
 | `NOTA_MINIMA` | `40` | vaga com nota abaixo disso não entra na mensagem |
 | `FALHAS_DE_ENVIO_ATE_PAUSAR` | `3` | falhas seguidas no Telegram que pausam o perfil |
 | `DIAS_DE_SILENCIO_ATE_AVISAR` | `7` | dias sem recomendação até sugerir ampliar o perfil |

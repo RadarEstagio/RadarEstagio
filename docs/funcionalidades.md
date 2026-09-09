@@ -23,18 +23,22 @@ O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de 
 
 #### 01. Cadastro por e-mail e senha
 
-Informar e-mail e senha no primeiro passo e, em seguida, curso, período, habilidades, áreas,
-cidade e modalidade. Quem já tem conta escolhe "Entrar" e vê só o passo da conta; quem edita o
-perfil depois do login não passa por ele.
+Informar curso, período, habilidades, áreas, cidade e modalidade e, no último passo, e-mail e
+senha. Quem já tem conta escolhe "Entrar" e vê só o passo da conta; quem edita o perfil depois
+do login não passa por ele.
 
-**Condições e limites:** Confirmação de e-mail mantida; a conta só é criada ao enviar o
-formulário completo; interface pública depende da hospedagem.
+**Condições e limites:** Confirmação de e-mail mantida; a conta só é criada no envio do último
+passo, nunca ao avançar entre etapas; interface pública depende da hospedagem.
 
 #### 02. Preferências
 
-Selecionar uma cidade e uma modalidade; várias habilidades e áreas. As áreas oferecidas são as do curso informado.
+Selecionar uma cidade e uma modalidade; várias habilidades e áreas. As áreas oferecidas são as do
+curso informado, e "Ainda não quero informar habilidades" segue sem nenhuma.
 
-**Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente.
+**Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente. Até 50
+habilidades de até 100 caracteres. Lista vazia significa habilidade não informada, não incapacidade:
+a vaga continua sendo avaliada pelos demais critérios. Curso sem área conhecida não recebe
+sugestões de habilidade; a digitação livre continua valendo.
 
 #### 03. Aceite e e-mails opcionais
 
@@ -126,9 +130,12 @@ Atualizar informações e preferências para novas recomendações.
 
 #### 17. Pausar e retomar
 
-Controlar futuras entregas.
+Controlar futuras entregas. Depois de pausar, uma pergunta opcional oferece cinco motivos e a
+opção de pular.
 
 **Condições e limites:** Links antigos continuam navegáveis sem registrar eventos enquanto pausado.
+A resposta é opcional, não bloqueia a pausa e não é pedida para pausa automática por falha de
+envio. O motivo guarda só a pausa atual e é apagado ao retomar.
 
 #### 18. Desvincular Telegram
 
@@ -316,9 +323,11 @@ Workflow manual disparado pelo cron-job.org ou pelo vínculo.
 
 #### 21. Relatório CLI
 
-Aquisição, coorte, utilidade semanal e recusas com denominadores.
+Aquisição, coorte, participação no feedback, tempo observado até a primeira entrega e abertura,
+utilidade semanal e por área do curso, contas pausadas por motivo e recusas com denominadores.
 
-**Código de referência:** `radar/reporting/funil.py`, `radar/storage/metricas.sql`.
+**Código de referência:** `radar/reporting/funil.py`, `radar/domain/metricas.py`,
+`radar/storage/metricas.sql`.
 
 #### 22. Testes
 

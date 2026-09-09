@@ -331,6 +331,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .account-danger .text-link { padding-block: 4px 6px; color: var(--ink-soft); font-size: 13px; }
 .account-confirm { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .account-confirm p { font-size: 14px; }
+.pause-reason { margin: 0; }
+.pause-reason legend { padding: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
+.pause-reason .option-grid { grid-template-columns: repeat(2, 1fr); }
+.pause-reason .form-message { margin: 0; }
 .privacy-note { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: 11px; }.privacy-note span { color: var(--accent-light); }
 .dialog-form-area { overflow-y: auto; padding: 46px 54px 36px; }
 .progress-wrap { margin-bottom: 39px; }.progress-meta { display: flex; justify-content: space-between; margin-bottom: 9px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
@@ -350,12 +354,14 @@ p, h1, h2, h3 { margin-top: 0; }
 .field-error::before { width: 15px; height: 15px; font-size: 10px; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
 .skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
 .skill-picker { margin-bottom: 22px; }
+.catalog-notice { margin: -8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .skill-picker button:hover, .skill-picker button.is-selected { border-color: var(--accent); color: var(--accent); background: rgba(62,124,89,.08); }
 .selected-skills { min-height: 0; margin-top: 14px; }
 .selected-skills:empty { display: none; }
 .selected-skills button { border-color: var(--accent-deep); color: var(--accent-deep); background: var(--paper-deep); }
 .skill-picker button:focus-visible, .selected-skills button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.skill-empty-action { margin-top: 20px; padding: 8px 0; border-bottom-color: var(--accent); color: var(--accent-deep); font-size: 13px; text-align: left; }
 .account-switch { margin: 18px 0 0; color: var(--muted); font-size: 12px; text-align: right; }
 .account-switch button { padding: 0; border: 0; color: var(--accent); background: transparent; font-weight: 800; cursor: pointer; }
 .account-switch button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

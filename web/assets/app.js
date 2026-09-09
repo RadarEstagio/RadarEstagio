@@ -55,6 +55,10 @@ const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
+const pauseReason = document.querySelector("#pause-reason");
+const pauseReasonMessage = document.querySelector("#pause-reason-message");
+const savePauseReason = document.querySelector("#save-pause-reason");
+const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
 const rotulosDeCadastro = new Map(
@@ -63,11 +67,19 @@ const rotulosDeCadastro = new Map(
 let usuarioAutenticado = false;
 const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
-const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
+const MAXIMO_DE_HABILIDADES = 50;
+const TAMANHO_MAXIMO_DA_HABILIDADE = 100;
+const MOTIVOS_PAUSA = new Set([
+  "conseguiu_estagio",
+  "interrompeu_busca",
+  "sem_vagas_uteis",
+  "frequencia",
+  "outro",
+]);
 let assistanceMode = null;
 let recoverySession = false;
 let resendAvailableAt = 0;
@@ -87,20 +99,25 @@ let currentStep = 1;
 let authMode = "signup";
 let radarClient = null;
 const selectedSkills = new Set();
+let continuarSemHabilidades = false;
 const previousStep = document.querySelector("#previous-step");
 const nextStep = document.querySelector("#next-step");
+const continuarSemHabilidadesButton = document.querySelector("#continue-without-skills");
 const PASSO_CONTA = 1;
 const PASSO_MOMENTO = 2;
 const PASSO_HABILIDADES = 3;
 const PASSO_PREFERENCIAS = 4;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
-let passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
+let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
 let catalogoDeAreas = null;
 let areasEscolhidas = new Set();
 let areasSalvas = [];
+let identidadeDoFormulario = 0;
+let requisicaoDeHabilidades = 0;
+let requisicaoDeAreas = 0;
 
 function normalizarTexto(texto) {
   return texto
@@ -154,8 +171,16 @@ function areaDoCurso(curso, catalogo) {
 }
 
 async function montarAreasDoCurso() {
+  const requisicao = ++requisicaoDeAreas;
+  const identidade = identidadeDoFormulario;
+  const cursoSolicitado = form.elements.curso?.value ?? "";
   const catalogo = await carregarAreas();
-  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
+  if (
+    requisicao !== requisicaoDeAreas
+    || identidade !== identidadeDoFormulario
+    || (form.elements.curso?.value ?? "") !== cursoSolicitado
+  ) return;
+  const area = areaDoCurso(cursoSolicitado, catalogo);
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = !area;
   if (!area) return;
@@ -188,11 +213,26 @@ function areasDeInteresseDoFormulario(data) {
 }
 
 async function montarHabilidadesDoCurso() {
-  const catalogo = await carregarAreas();
-  if (!catalogo) return;
-  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
-  const sugeridas = area?.habilidades?.length ? area.habilidades : catalogo.habilidades_gerais;
+  const requisicao = ++requisicaoDeHabilidades;
+  const identidade = identidadeDoFormulario;
+  const cursoSolicitado = form.elements.curso?.value ?? "";
   const picker = document.querySelector("#skill-picker");
+  const aviso = document.querySelector("#skills-catalog-notice");
+  const catalogo = await carregarAreas();
+  if (
+    requisicao !== requisicaoDeHabilidades
+    || identidade !== identidadeDoFormulario
+    || (form.elements.curso?.value ?? "") !== cursoSolicitado
+  ) return;
+  if (!catalogo) {
+    picker.replaceChildren();
+    aviso.hidden = false;
+    renderSkills();
+    return;
+  }
+  aviso.hidden = true;
+  const area = areaDoCurso(cursoSolicitado, catalogo);
+  const sugeridas = area?.habilidades ?? [];
   picker.replaceChildren(...sugeridas.map((habilidade) => {
     const botao = document.createElement("button");
     botao.type = "button";
@@ -300,8 +340,9 @@ function showStep(step) {
 function atualizarPassosAtivos() {
   const consentimento = document.querySelector("#signup-consent");
   if (authMode === "login") passosAtivos = [PASSO_CONTA];
-  else if (credenciais.hidden && consentimento.hidden) passosAtivos = [...PASSOS_DO_PERFIL];
-  else passosAtivos = [PASSO_CONTA, ...PASSOS_DO_PERFIL];
+  else if (editandoPerfilExistente || (credenciais.hidden && consentimento.hidden)) {
+    passosAtivos = [...PASSOS_DO_PERFIL];
+  } else passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
   showStep(currentStep);
 }
 
@@ -314,7 +355,7 @@ function limparErroSeCorrigido(event) {
 
 function validateStep(step) {
   limparErroDoCampo();
-  if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
+  if (step === PASSO_HABILIDADES && selectedSkills.size === 0 && !continuarSemHabilidades) {
     showStep(step);
     marcarErroNoCampo(document.querySelector("#custom-skill"), "Escolha ou digite pelo menos uma habilidade.");
     return false;
@@ -357,17 +398,24 @@ function renderSkills() {
     chip.setAttribute("aria-label", `Remover ${skill}`);
     chip.addEventListener("click", () => {
       selectedSkills.delete(skill);
+      if (selectedSkills.size === 0) continuarSemHabilidades = false;
       renderSkills();
     });
     return chip;
   }));
+  continuarSemHabilidadesButton.hidden = selectedSkills.size > 0;
 }
 
 function addCustomSkill() {
   const input = document.querySelector("#custom-skill");
-  const skill = input.value.trim();
+  const skill = input.value.trim().slice(0, TAMANHO_MAXIMO_DA_HABILIDADE);
   if (!skill) return;
+  if (selectedSkills.size >= MAXIMO_DE_HABILIDADES && !selectedSkills.has(skill)) {
+    marcarErroNoCampo(input, `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+    return;
+  }
   selectedSkills.add(skill);
+  continuarSemHabilidades = false;
   input.value = "";
   renderSkills();
   setFormMessage();
@@ -509,6 +557,7 @@ function entrarNoModoEdicao() {
 }
 
 function resetDialogView() {
+  identidadeDoFormulario += 1;
   assistanceMode = null;
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = false;
@@ -518,13 +567,27 @@ function resetDialogView() {
   successState.hidden = true;
   accountState.hidden = true;
   accountConfirm.hidden = true;
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
   setAccountMessage();
   progressWrap.hidden = false;
   telegramLink.hidden = true;
   setFormMessage();
   limparErroDoCampo();
   setSubmitting(false);
+  continuarSemHabilidades = false;
   showStep(PASSO_CONTA);
+}
+
+function limparRascunhoDoCadastro() {
+  form.reset();
+  selectedSkills.clear();
+  continuarSemHabilidades = false;
+  esquecerPerfilCarregado();
+  gradeDeAreas.replaceChildren();
+  campoDeAreas.hidden = true;
+  document.querySelector("#skills-catalog-notice").hidden = true;
+  renderSkills();
 }
 
 function openAccountPage() {
@@ -603,8 +666,11 @@ function profileFromForm() {
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
     throw validationError(mensagensValidacao.periodo);
   }
-  if (profile.habilidades.length === 0) {
+  if (profile.habilidades.length === 0 && !continuarSemHabilidades) {
     throw validationError("Escolha ou digite pelo menos uma habilidade.");
+  }
+  if (profile.habilidades.length > MAXIMO_DE_HABILIDADES) {
+    throw validationError(`Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
   }
   if (profile.cidade.length < 2) throw validationError(mensagensValidacao.cidade);
   if (!modalidadesAceitas.has(profile.modalidade)) {
@@ -661,15 +727,6 @@ function mostrarEstadoDoPerfil(profile) {
 
 function showActivation(profile) {
   openAccountPage();
-  if (profile.telegram_chat_id) {
-    showSuccess({
-      kicker: "Radar ativado",
-      title: "As vagas certas já podem chegar até você.",
-      copy: "Seu Telegram está vinculado. O Radar enviará as oportunidades compatíveis nas próximas execuções.",
-      linked: true,
-    });
-    return;
-  }
   showSuccess({
     kicker: "Perfil salvo",
     title: "Agora, ative as entregas.",
@@ -677,7 +734,6 @@ function showActivation(profile) {
     token: profile.token_vinculo,
   });
 }
-
 
 function setAccountMessage(message = "", tom = "erro") {
   const regiao = tom === "aviso" ? accountNotice : accountMessage;
@@ -693,7 +749,9 @@ function resumoDoPerfil(profile) {
     hibrido: "híbrido",
     indiferente: "qualquer modalidade",
   };
-  const habilidades = profile.habilidades.join(", ");
+  const habilidades = profile.habilidades.length
+    ? profile.habilidades.join(", ")
+    : "Habilidades ainda não informadas";
   return `${profile.curso}, ${profile.periodo}º período · ${profile.cidade} · ${modalidades[profile.modalidade]}\n${habilidades}`;
 }
 
@@ -703,7 +761,7 @@ function estadoDasEntregas(profile) {
   }
   if (!profile.telegram_chat_id) return "Telegram ainda não vinculado.";
   if (!profile.ativo) return "Entregas pausadas. Nada chega até você retomar.";
-  return `Entregas ativas: o Radar procura ${HORARIO_DA_BUSCA}.`;
+  return "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis. A primeira busca pode aguardar a próxima execução diária.";
 }
 
 function showAccount(profile) {
@@ -717,6 +775,8 @@ function showAccount(profile) {
   progressWrap.hidden = true;
   successState.hidden = true;
   accountConfirm.hidden = true;
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
   accountState.hidden = false;
   setAccountMessage();
   document.querySelector("#account-summary").textContent = resumoDoPerfil(profile);
@@ -737,6 +797,7 @@ function preencherFormularioCom(profile) {
   form.elements.modalidade.value = profile.modalidade;
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
+  continuarSemHabilidades = profile.habilidades.length === 0;
   renderSkills();
   void montarHabilidadesDoCurso();
   areasSalvas = [...(profile.areas_de_interesse ?? [])];
@@ -755,11 +816,48 @@ async function perfilAtual() {
 async function alternarEntregas(profile) {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  const updates = profile.ativo
+    ? { ativo: false, atualizado_em: new Date().toISOString() }
+    : { ativo: true, motivo_pausa: null, atualizado_em: new Date().toISOString() };
   const { error } = await getClient()
     .from("perfis")
-    .update({ ativo: !profile.ativo, atualizado_em: new Date().toISOString() })
+    .update(updates)
     .eq("user_id", session.user.id);
   if (error) throw error;
+}
+
+function mostrarPerguntaMotivoPausa() {
+  pauseReason.hidden = false;
+  pauseReasonMessage.textContent = "";
+  pauseReason.querySelectorAll('input[name="motivo-pausa"]').forEach((input) => {
+    input.checked = false;
+  });
+  document.querySelector("#pause-reason-title").focus();
+}
+
+function esconderPerguntaMotivoPausa() {
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
+}
+
+async function salvarMotivoPausa(motivo) {
+  if (!MOTIVOS_PAUSA.has(motivo)) {
+    throw validationError("Escolha um dos motivos ou pule esta pergunta.");
+  }
+  const session = await currentSession();
+  if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  const { data, error } = await getClient()
+    .from("perfis")
+    .update({ motivo_pausa: motivo, atualizado_em: new Date().toISOString() })
+    .eq("user_id", session.user.id)
+    .eq("ativo", false)
+    .select("user_id,ativo,motivo_pausa")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || data.ativo !== false) {
+    throw validationError("A conta não está mais pausada. Atualize o estado da conta e tente novamente.");
+  }
+  return data;
 }
 
 function dataDoApagamento(marcadaEm) {
@@ -784,7 +882,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -850,11 +948,15 @@ async function refreshActivationStatus() {
 
 async function openSignup() {
   resetDialogView();
+  if (!usuarioAutenticado && authMode === "signup") showStep(PASSO_MOMENTO);
   if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
     mostrarChamadaDeConta(Boolean(session));
     if (!session) {
+      limparRascunhoDoCadastro();
+      setAuthMode("signup");
+      showStep(PASSO_MOMENTO);
       openDialog();
       return;
     }
@@ -931,6 +1033,7 @@ function avancarPasso() {
   if (currentStep === PASSO_HABILIDADES) {
     void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
   }
+  if (currentStep === PASSO_PREFERENCIAS) void registerEvent("etapa_preferencias_concluida");
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) + 1]);
 }
 
@@ -980,14 +1083,50 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
 });
 
 toggleDeliveries.addEventListener("click", async () => {
+  if (toggleDeliveries.disabled) return;
+  toggleDeliveries.disabled = true;
   setAccountMessage();
   try {
     const profile = await perfilAtual();
+    const wasActive = profile.ativo;
     await alternarEntregas(profile);
-    showAccount({ ...profile, ativo: !profile.ativo });
+    const updatedProfile = { ...profile, ativo: !wasActive, motivo_pausa: null };
+    showAccount(updatedProfile);
+    if (wasActive) mostrarPerguntaMotivoPausa();
   } catch (error) {
     setAccountMessage(humanizeError(error));
+  } finally {
+    toggleDeliveries.disabled = false;
   }
+});
+
+savePauseReason.addEventListener("click", async () => {
+  if (savePauseReason.disabled) return;
+  const selected = pauseReason.querySelector('input[name="motivo-pausa"]:checked');
+  if (!selected) {
+    pauseReasonMessage.textContent = "Escolha um motivo ou clique em “Pular”.";
+    pauseReason.querySelector('input[name="motivo-pausa"]').focus();
+    return;
+  }
+  marcarOcupado(savePauseReason, true);
+  skipPauseReason.disabled = true;
+  try {
+    await salvarMotivoPausa(selected.value);
+    const profile = await perfilAtual();
+    showAccount(profile);
+    setAccountMessage("Motivo salvo.", "aviso");
+  } catch (error) {
+    pauseReasonMessage.textContent = humanizeError(error);
+  } finally {
+    marcarOcupado(savePauseReason, false);
+    skipPauseReason.disabled = false;
+  }
+});
+
+skipPauseReason.addEventListener("click", () => {
+  if (skipPauseReason.disabled) return;
+  esconderPerguntaMotivoPausa();
+  document.querySelector("#account-title").focus();
 });
 
 document.querySelector("#unlink-telegram").addEventListener("click", () => {
@@ -1055,10 +1194,20 @@ document.querySelector("#skill-picker").addEventListener("click", (event) => {
   const button = event.target.closest("[data-skill]");
   if (!button) return;
   const skill = button.dataset.skill;
-  if (selectedSkills.has(skill)) selectedSkills.delete(skill);
-  else selectedSkills.add(skill);
+  if (selectedSkills.has(skill)) {
+    selectedSkills.delete(skill);
+    if (selectedSkills.size === 0) continuarSemHabilidades = false;
+  } else {
+    selectedSkills.add(skill);
+    continuarSemHabilidades = false;
+  }
   renderSkills();
   setFormMessage();
+});
+continuarSemHabilidadesButton.addEventListener("click", () => {
+  if (selectedSkills.size > 0) return;
+  continuarSemHabilidades = true;
+  avancarPasso();
 });
 document.querySelector("#custom-skill").addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
@@ -1074,8 +1223,11 @@ form.addEventListener("change", limparErroSeCorrigido);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (submitProfile.disabled) return;
   if (!validarFluxo()) return;
-  void registerEvent("etapa_preferencias_concluida");
+  if (currentStep === PASSO_PREFERENCIAS && authMode !== "login") {
+    void registerEvent("etapa_preferencias_concluida");
+  }
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
   let profileSaveStarted = false;
@@ -1354,11 +1506,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   clearPendingProfile();
   mostrarChamadaDeConta(false);
   closeSignup();
-  form.reset();
-  selectedSkills.clear();
-  renderSkills();
-  esquecerPerfilCarregado();
-  void montarAreasDoCurso();
+  limparRascunhoDoCadastro();
   resetDialogView();
   setAuthMode("login");
   showStep(PASSO_CONTA);

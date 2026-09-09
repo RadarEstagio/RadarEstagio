@@ -3,6 +3,51 @@ from pathlib import Path
 RAIZ = Path(__file__).parent.parent
 
 
+def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "Encontre estágios que combinam com seu curso e seu momento." in html
+    assert "diferentes áreas" in html
+    assert "até sete recomendações explicadas no Telegram" in html
+    assert "Gratuito durante o piloto" in html
+    assert "Pare de procurar estágio" not in html
+    assert "A IA compara" not in html
+
+
+def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert '<meta name="twitter:card" content="summary_large_image" />' in html
+    assert html.count("até sete recomendações explicadas no Telegram") >= 3
+    assert "As vagas certas chegam até você" not in html
+
+
+def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "EXEMPLO ILUSTRATIVO" in html
+    assert "não é uma vaga real" in html.lower()
+    assert "nota / 100" in html
+    assert "Requisitos atendidos:" in html
+    assert "Requisitos a conferir no seu perfil:" in html
+    assert ">match<" not in html.lower()
+    assert "Fontes e tecnologias do Radar" in html
+
+
+def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
+    html = (RAIZ / "web/index.html").read_text()
+
+    for trecho in (
+        "não cobrem todo o mercado",
+        "até sete recomendações",
+        "Dias sem vaga podem acontecer",
+        "candidatura continua sendo sua",
+        "Preciso vincular o Telegram?",
+        "Posso pausar ou apagar minha conta?",
+    ):
+        assert trecho in html
+
+
 def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
     html = (RAIZ / "web/index.html").read_text()
 

@@ -11,11 +11,13 @@ como equivalentes.
 - **Implementar o plano em tarefas sequenciais:** [Índice de expansão](plano-expansao-revenue-centric.md) e
   [protocolo de execução](execucao-expansao/00-protocolo.md).
 - **Correções da expansão e revalidação:** [Auditoria](auditorias/2026-09-08-expansao-adversarial.md).
+- **O que a revisão do PR decidiu por conta própria:** [Decisões da revisão](execucao-expansao/decisoes-da-revisao.md).
 - **Como publicar e testar:** [Guia de publicação e piloto](guia-publicacao-e-piloto.md).
 - **Como contribuir:** [README do projeto](../README.md), [arquitetura](arquitetura.md) e
   [contrato do frontend](contrato-front.md).
 - **Como interpretar resultados:** [Métricas](metricas.md).
 - **Definição, hipóteses e viabilidade para a disciplina:** [Pré-PRD](pre-prd.md).
+- **Artefatos externos preparados:** [cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md), [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md).
 
 ## Revisão: o que faz sentido manter
 

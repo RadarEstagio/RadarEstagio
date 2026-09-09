@@ -75,7 +75,7 @@ class ExtracaoDaVaga(BaseModel):
 class Perfil(BaseModel):
     curso: str
     periodo: int = Field(ge=1)
-    habilidades: list[str] = Field(min_length=1)
+    habilidades: list[str]
     cidade: str
     modalidade: Modalidade
     areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
@@ -143,6 +143,32 @@ class UtilidadeSemanal(BaseModel):
         return 100 * self.com_utilidade / self.ativados if self.ativados else None
 
 
+class UtilidadePorArea(BaseModel):
+    semana: str
+    parcial: bool
+    area: str
+    ativados: int
+    com_utilidade: int
+
+    def percentual(self) -> float | None:
+        if not self.ativados:
+            return None
+        return 100 * self.com_utilidade / self.ativados
+
+
+class FatoUtilidadeSemanal(BaseModel):
+    semana: str
+    parcial: bool
+    perfil_id: str
+    curso: str
+    com_utilidade: bool
+
+
+class PausaAtual(BaseModel):
+    motivo: str
+    total: int
+
+
 class RecusasPorGrupo(BaseModel):
     grupo: str
     entregas: int
@@ -153,6 +179,8 @@ class RecusasPorGrupo(BaseModel):
 class FunilDaCoorte(BaseModel):
     etapas: dict[str, int] = Field(default_factory=dict)
     utilidade_semanal: list[UtilidadeSemanal] = Field(default_factory=list)
+    utilidade_por_area: list[UtilidadePorArea] = Field(default_factory=list)
+    pausas_atuais: list[PausaAtual] = Field(default_factory=list)
     recusas_por_grupo: list[RecusasPorGrupo] = Field(default_factory=list)
     dias: int = Field(ge=1)
     perfis_criados: int
@@ -167,6 +195,13 @@ class FunilDaCoorte(BaseModel):
     vagas_irrelevantes: int
     candidaturas: int
     vagas_extraidas: int
+    recomendacoes_elegiveis_feedback: int = 0
+    recomendacoes_com_feedback: int = 0
+    perfis_na_coorte: int = 0
+    perfis_sem_entrega: int = 0
+    mediana_segundos_ate_entrega: float | None = None
+    perfis_sem_abertura: int = 0
+    mediana_segundos_ate_abertura: float | None = None
     recusas_por_motivo: dict[str, int] = Field(default_factory=dict)
 
     def vagas_extraidas_por_ativado(self) -> float | None:

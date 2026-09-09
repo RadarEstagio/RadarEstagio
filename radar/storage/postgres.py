@@ -8,6 +8,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from radar.domain.areas import subareas_do_curso
+from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -392,6 +393,9 @@ class RepositorioPostgres:
                 totais = cursor.execute(SQL_FUNIL_DA_COORTE, {"dias": dias}).fetchone()
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao ler o funil: {descrever(erro)}") from erro
+        totais = dict(totais)
+        fatos = totais.pop("utilidade_semanal_fatos", [])
+        totais["utilidade_por_area"] = agrupar_utilidade_por_area(fatos)
         return FunilDaCoorte(dias=dias, **totais)
 
     def pausar(self, usuario: Usuario) -> None:
