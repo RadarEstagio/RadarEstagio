@@ -8,7 +8,7 @@ existentes.
 
 - ID atual: E01–E05/D01.
 - Próximo passo: equipe executar as verificações externas e decisões registradas nos seis artefatos; código local e documentação da fila concluídos.
-- Branch/HEAD: `codex/expansao-revenue-centric` / `a49a207`; publicação remota não verificada.
+- Branch/HEAD: `codex/expansao-revenue-centric` / registro local final após as verificações; publicação remota não verificada.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
