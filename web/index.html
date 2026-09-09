@@ -14,10 +14,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260909-8" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260909-10" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260909-3" defer></script>
+    <script src="assets/app.js?v=20260909-5" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -247,10 +247,10 @@
             <button class="account-back" type="button" id="back-to-site"><span aria-hidden="true">←</span> Voltar ao site</button>
             <nav class="account-nav" aria-label="Seções da conta">
               <p>Configurações</p>
-              <a href="#account-overview-section">Visão geral</a>
-              <a href="#account-delivery-card">Entregas</a>
-              <a href="#account-data-section">Dados e acesso</a>
-              <a href="#account-danger-title">Privacidade</a>
+              <a class="is-active" href="#account-overview-panel" aria-current="location">Visão geral</a>
+              <a href="#account-delivery-panel">Entregas</a>
+              <a href="#account-data-panel">Dados e acesso</a>
+              <a href="#account-privacy-panel">Privacidade</a>
             </nav>
           </div>
         </aside>
@@ -391,53 +391,60 @@
               <p>Confira seu perfil de busca e controle como o Radar entrega suas recomendações.</p>
             </div>
             <div class="account-panel">
-              <section class="account-profile-card account-row" id="account-overview-section" aria-labelledby="account-profile-title">
-                <div class="account-row-content">
-                  <div class="account-card-heading">
-                    <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span>
-                    <div><p>Perfil de busca</p><h2 id="account-profile-title">Seu Radar</h2></div>
-                  </div>
-                  <p id="account-summary"></p>
-                  <div class="account-skills" id="account-skills" aria-label="Habilidades do perfil"></div>
-                </div>
-                <button class="button button-primary" type="button" id="edit-profile">Editar perfil</button>
-              </section>
-              <section class="account-delivery-card account-row" id="account-delivery-card" aria-labelledby="account-delivery-title">
-                <span class="account-status-icon" id="account-status-icon" aria-hidden="true">✓</span>
-                <div class="account-row-content"><p>Telegram</p><h2 id="account-delivery-title">Entregas ativas</h2><p class="account-schedule" id="account-schedule"></p></div>
-                <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
-              </section>
               <p class="form-message" id="account-message" role="alert"></p>
               <p class="form-message form-message-aviso" id="account-notice" role="status"></p>
-              <fieldset class="account-confirm pause-reason" id="pause-reason" hidden>
-                <legend id="pause-reason-title" tabindex="-1">Por que você pausou as entregas?</legend>
-                <p>Responder é opcional e ajuda a entender o momento do seu perfil.</p>
-                <div class="option-grid">
-                  <label><input type="radio" name="motivo-pausa" value="conseguiu_estagio" /><span>Consegui um estágio</span></label>
-                  <label><input type="radio" name="motivo-pausa" value="interrompeu_busca" /><span>Interrompi a busca</span></label>
-                  <label><input type="radio" name="motivo-pausa" value="sem_vagas_uteis" /><span>Não encontrei vagas úteis</span></label>
-                  <label><input type="radio" name="motivo-pausa" value="frequencia" /><span>Minha frequência mudou</span></label>
-                  <label><input type="radio" name="motivo-pausa" value="outro" /><span>Outro</span></label>
-                </div>
-                <p class="form-message" id="pause-reason-message" role="alert"></p>
-                <div class="account-actions">
-                  <button class="button button-primary" type="button" id="save-pause-reason">Salvar motivo</button>
-                  <button class="button button-ghost" type="button" id="skip-pause-reason">Pular</button>
-                </div>
-              </fieldset>
-              <section class="account-settings account-row" id="account-preferences-section" aria-labelledby="account-preferences-title">
-                <div class="account-section-heading"><p>Preferências</p><h2 id="account-preferences-title">Comunicações</h2><span>Escolha se o Radar também pode falar com você por e-mail.</span></div>
-                <label class="consent-fields account-email-setting"><span><input type="checkbox" id="account-emails" /> <span>Receber e-mails ocasionais do Radar</span></span></label>
-              </section>
-              <section class="account-settings account-row" id="account-data-section" aria-labelledby="account-data-title">
-                <div class="account-section-heading"><p>Seus dados</p><h2 id="account-data-title">Dados e acesso</h2><span>Baixe uma cópia das suas informações ou encerre esta sessão.</span></div>
-                <div class="account-actions account-actions-secondary">
-                  <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
-                  <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-                  <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
-                </div>
-              </section>
-              <section class="account-danger" aria-labelledby="account-danger-title">
+              <div class="account-tab-panel" id="account-overview-panel">
+                <section class="account-profile-card account-row" id="account-overview-section" aria-labelledby="account-profile-title">
+                  <div class="account-row-content">
+                    <div class="account-card-heading">
+                      <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span>
+                      <div><p>Perfil de busca</p><h2 id="account-profile-title">Seu Radar</h2></div>
+                    </div>
+                    <p id="account-summary"></p>
+                    <div class="account-skills" id="account-skills" aria-label="Habilidades do perfil"></div>
+                  </div>
+                  <button class="button button-primary" type="button" id="edit-profile">Editar perfil</button>
+                </section>
+              </div>
+              <div class="account-tab-panel" id="account-delivery-panel" hidden>
+                <section class="account-delivery-card account-row" id="account-delivery-card" aria-labelledby="account-delivery-title">
+                  <span class="account-status-icon" id="account-status-icon" aria-hidden="true">✓</span>
+                  <div class="account-row-content"><p>Telegram</p><h2 id="account-delivery-title">Entregas ativas</h2><p class="account-schedule" id="account-schedule"></p></div>
+                  <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
+                </section>
+                <fieldset class="account-confirm pause-reason" id="pause-reason" hidden>
+                  <legend id="pause-reason-title" tabindex="-1">Por que você pausou as entregas?</legend>
+                  <p>Responder é opcional e ajuda a entender o momento do seu perfil.</p>
+                  <div class="option-grid">
+                    <label><input type="radio" name="motivo-pausa" value="conseguiu_estagio" /><span>Consegui um estágio</span></label>
+                    <label><input type="radio" name="motivo-pausa" value="interrompeu_busca" /><span>Interrompi a busca</span></label>
+                    <label><input type="radio" name="motivo-pausa" value="sem_vagas_uteis" /><span>Não encontrei vagas úteis</span></label>
+                    <label><input type="radio" name="motivo-pausa" value="frequencia" /><span>Minha frequência mudou</span></label>
+                    <label><input type="radio" name="motivo-pausa" value="outro" /><span>Outro</span></label>
+                  </div>
+                  <p class="form-message" id="pause-reason-message" role="alert"></p>
+                  <div class="account-actions">
+                    <button class="button button-primary" type="button" id="save-pause-reason">Salvar motivo</button>
+                    <button class="button button-ghost" type="button" id="skip-pause-reason">Pular</button>
+                  </div>
+                </fieldset>
+                <section class="account-settings account-row" id="account-preferences-section" aria-labelledby="account-preferences-title">
+                  <div class="account-section-heading"><p>Preferências</p><h2 id="account-preferences-title">Comunicações</h2><span>Escolha se o Radar também pode falar com você por e-mail.</span></div>
+                  <label class="consent-fields account-email-setting"><span><input type="checkbox" id="account-emails" /> <span>Receber e-mails ocasionais do Radar</span></span></label>
+                </section>
+              </div>
+              <div class="account-tab-panel" id="account-data-panel" hidden>
+                <section class="account-settings account-row" id="account-data-section" aria-labelledby="account-data-title">
+                  <div class="account-section-heading"><p>Seus dados</p><h2 id="account-data-title">Dados e acesso</h2><span>Baixe uma cópia das suas informações ou encerre esta sessão.</span></div>
+                  <div class="account-actions account-actions-secondary">
+                    <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
+                    <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
+                    <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
+                  </div>
+                </section>
+              </div>
+              <div class="account-tab-panel" id="account-privacy-panel" hidden>
+                <section class="account-danger" id="account-danger-section" aria-labelledby="account-danger-title">
                 <div class="account-section-heading account-danger-heading"><p>Privacidade</p><h2 id="account-danger-title">Ações sensíveis</h2><span>Revise as consequências antes de alterar o vínculo ou excluir sua conta.</span></div>
                 <div class="account-danger-list">
                   <section class="account-danger-row" aria-labelledby="unlink-telegram-title">
@@ -463,7 +470,8 @@
                     <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
                   </div>
                 </dialog>
-              </section>
+                </section>
+              </div>
             </div>
           </section>
         </div>

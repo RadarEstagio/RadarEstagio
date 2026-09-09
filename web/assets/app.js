@@ -74,6 +74,11 @@ const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
+const accountNavLinks = [...document.querySelectorAll(".account-nav a")];
+const accountNavEntries = accountNavLinks.map((link) => ({
+  link,
+  target: document.querySelector(link.hash),
+}));
 const pauseReason = document.querySelector("#pause-reason");
 const pauseReasonMessage = document.querySelector("#pause-reason-message");
 const savePauseReason = document.querySelector("#save-pause-reason");
@@ -138,6 +143,66 @@ let areasSalvas = [];
 let identidadeDoFormulario = 0;
 let requisicaoDeHabilidades = 0;
 let requisicaoDeAreas = 0;
+
+function ativarSecaoDaConta(linkAtivo) {
+  accountNavLinks.forEach((link) => {
+    const ativo = link === linkAtivo;
+    link.classList.toggle("is-active", ativo);
+    if (ativo) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+
+const conteudoDasSecoesDaConta = {
+  "#account-overview-panel": {
+    titulo: "Conta",
+    descricao: "Confira seu perfil de busca e controle como o Radar entrega suas recomendações.",
+  },
+  "#account-delivery-panel": {
+    titulo: "Entregas",
+    descricao: "Controle o envio das vagas e as comunicações do Radar.",
+  },
+  "#account-data-panel": {
+    titulo: "Dados e acesso",
+    descricao: "Baixe suas informações ou encerre a sessão atual.",
+  },
+  "#account-privacy-panel": {
+    titulo: "Privacidade",
+    descricao: "Gerencie o vínculo com o Telegram e as ações permanentes da sua conta.",
+  },
+};
+
+function mostrarSecaoDaConta(linkAtivo, atualizarEndereco = true) {
+  const entradaAtiva = accountNavEntries.find(({ link }) => link === linkAtivo) ?? accountNavEntries[0];
+  accountNavEntries.forEach(({ target }) => {
+    if (target) target.hidden = target !== entradaAtiva.target;
+  });
+  ativarSecaoDaConta(entradaAtiva.link);
+  const conteudo = conteudoDasSecoesDaConta[entradaAtiva.link.hash];
+  document.querySelector("#account-title").textContent = conteudo.titulo;
+  document.querySelector(".account-heading > p:last-child").textContent = conteudo.descricao;
+  if (atualizarEndereco) {
+    const url = new URL(window.location.href);
+    url.hash = entradaAtiva.link.hash;
+    window.history.replaceState(null, "", url);
+  }
+  window.scrollTo(0, 0);
+}
+
+accountNavEntries.forEach(({ link, target }) => {
+  if (!target) return;
+  link.addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    mostrarSecaoDaConta(link);
+  });
+});
+
+window.addEventListener("hashchange", () => {
+  if (accountPage.hidden || accountState.hidden) return;
+  const entrada = accountNavEntries.find(({ link }) => link.hash === window.location.hash);
+  if (entrada) mostrarSecaoDaConta(entrada.link, false);
+});
 
 function normalizarTexto(texto) {
   return texto
@@ -655,6 +720,7 @@ function leaveAccountPage() {
   document.title = landingTitle;
   const url = new URL(window.location.href);
   url.searchParams.delete("conta");
+  url.hash = "";
   window.history.replaceState(null, "", url);
   document.querySelector(".js-open-signup").focus();
 }
@@ -855,6 +921,8 @@ function showAccount(profile) {
   document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#delete-account").hidden = emExclusao;
   document.querySelector("#cancel-deletion").hidden = !emExclusao;
+  const entradaAtual = accountNavEntries.find(({ link }) => link.hash === window.location.hash);
+  mostrarSecaoDaConta(entradaAtual?.link ?? accountNavEntries[0].link, false);
   document.querySelector("#account-title").focus();
 }
 

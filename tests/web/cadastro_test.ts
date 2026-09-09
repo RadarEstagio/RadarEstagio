@@ -513,6 +513,40 @@ Deno.test("ações sensíveis ficam separadas e exigem confirmação", async () 
   } finally { a.close(); }
 });
 
+Deno.test("navegação da conta atualiza a seção ativa", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const overview = a.w.document.querySelector('.account-nav a[href="#account-overview-panel"]');
+    const deliveries = a.w.document.querySelector('.account-nav a[href="#account-delivery-panel"]');
+    const privacy = a.w.document.querySelector('.account-nav a[href="#account-privacy-panel"]');
+
+    assert.equal(overview.getAttribute("aria-current"), "location");
+    deliveries.click();
+    await settle();
+    assert.equal(overview.classList.contains("is-active"), false);
+    assert.equal(deliveries.classList.contains("is-active"), true);
+    assert.equal(deliveries.getAttribute("aria-current"), "location");
+    assert.equal(a.w.location.hash, "#account-delivery-panel");
+    assert.equal(a.w.document.querySelector("#account-overview-panel").hidden, true);
+    assert.equal(a.w.document.querySelector("#account-delivery-panel").hidden, false);
+    assert.equal(a.w.document.querySelector("#account-title").textContent, "Entregas");
+
+    privacy.click();
+    await settle();
+    assert.equal(deliveries.hasAttribute("aria-current"), false);
+    assert.equal(privacy.classList.contains("is-active"), true);
+    assert.equal(a.w.location.hash, "#account-privacy-panel");
+    assert.equal(a.w.document.querySelector("#account-delivery-panel").hidden, true);
+    assert.equal(a.w.document.querySelector("#account-privacy-panel").hidden, false);
+    assert.equal(a.w.document.querySelector("#account-title").textContent, "Privacidade");
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
   const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
   try {
