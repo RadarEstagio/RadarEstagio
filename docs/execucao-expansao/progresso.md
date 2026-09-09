@@ -1,5 +1,9 @@
 # Registro de execução
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../guia-publicacao-e-piloto.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Estado em 08/09/2026: plano sincronizado com `40ed28c`. O00–C05 foram implementados nesta
 branch; as correções anteriores foram preservadas e revalidadas. Não reaplicar entregas
 existentes.
