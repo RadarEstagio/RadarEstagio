@@ -24,6 +24,7 @@ def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
 
 def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
     html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
 
     assert "exemplo ilustrativo" in html.lower()
     assert "não é uma vaga real" in html.lower()
@@ -32,6 +33,7 @@ def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
     assert "Requisitos a conferir no seu perfil:" in html
     assert ">match<" not in html.lower()
     assert "Fontes e tecnologias do Radar" in html
+    assert ".chat-message-kicker span { color: var(--muted); font-size: 8px; font-weight: 500;" in css
 
 
 def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():
