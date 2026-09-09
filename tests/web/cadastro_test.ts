@@ -843,3 +843,18 @@ Deno.test("curso escrito como tecnologia da informacao abre as areas de computac
     a.close();
   }
 });
+
+Deno.test("normalizacao de curso do site bate com a do backend", async () => {
+  const a = app({ session: null, savedProfile: null });
+  try {
+    await settle();
+    const catalogo = JSON.parse(Deno.readTextFileSync("../../web/assets/areas.json"));
+    const esperado = JSON.parse(Deno.readTextFileSync("../fixtures/cursos_normalizados.json"));
+    for (const [curso, [normalizado, area]] of Object.entries(esperado) as [string, [string, string | null]][]) {
+      assert.equal(a.w.normalizarCurso(curso, catalogo), normalizado, curso);
+      assert.equal(a.w.areaDoCurso(curso, catalogo)?.nome ?? null, area, curso);
+    }
+  } finally {
+    a.close();
+  }
+});
