@@ -1,342 +1,239 @@
 # Radar de Estágio
 
-Documentação: [índice e revisão](docs/README.md) · [funcionalidades para usuários e devs](docs/funcionalidades.md).
+Busca vagas de estágio, extrai fatos com IA e calcula em Python a compatibilidade com cada
+perfil. Entrega até sete recomendações explicadas no Telegram quando encontra oportunidades
+compatíveis. A candidatura acontece na fonte da vaga.
 
-Agente que busca vagas de estágio todos os dias, extrai fatos com IA e calcula em Python a
-compatibilidade com o perfil. Entrega no Telegram as recomendações ranqueadas e explicadas.
+O estudante preenche o perfil no site, cria a conta e confirma o e-mail, depois vincula o
+Telegram. Pode editar o perfil, pausar entregas, exportar dados e solicitar exclusão da conta.
+O piloto é gratuito. A disponibilidade de cada recurso depende da versão publicada;
+o [guia de publicação](docs/guia-publicacao-e-piloto.md) registra evidências e pendências.
 
-- Funcionalidades: [`docs/funcionalidades.md`](docs/funcionalidades.md)
-- Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
-- Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
-- Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
-- Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
-- Cadastro e decisões de frontend: [contrato](docs/contrato-front.md)
-- Publicação e configuração externa: [guia](docs/guia-publicacao-e-piloto.md)
+[Documentação](docs/README.md) · [Funcionalidades](docs/funcionalidades.md) ·
+[Pendências](docs/plano-geral.md)
 
 ## Como funciona
 
-```
-Adzuna + Gupy (vagas dos últimos 3 dias)
-  → remove duplicatas entre as fontes (título + empresa)
-  → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
-  → Gemini extrai fatos das vagas em lotes
-  → Python calcula a nota 0–100: habilidades 45%, curso 10%, área 10%,
-    período/experiência 15%, logística 10% e áreas de interesse 10%
-  → ranqueia e pega as 7 melhores
-  → envia a mensagem no Telegram
-```
+1. Adzuna e Gupy fornecem anúncios; Jooble é uma fonte opcional, desligada por padrão.
+2. O pipeline remove duplicatas e aplica filtros de formação, localização e outros requisitos.
+3. A IA extrai fatos dos anúncios em lotes; extrações compatíveis são reaproveitadas entre perfis.
+4. Python recalcula as notas, seleciona até sete vagas e prepara as explicações.
+5. O Telegram entrega as recomendações e recebe feedback; o banco preserva o histórico.
 
-Com banco configurado (`DATABASE_URL`), o mesmo fluxo roda **para cada usuário** cadastrado
-no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, reutilizando
-extrações compatíveis e recalculando notas em Python. A mensagem vai para o Telegram dele. Sem banco, usa o
-perfil fixo do código e o `TELEGRAM_CHAT_ID` do `.env`.
+O padrão local considera anúncios dos últimos **três dias**. O workflow usa **cinco dias**.
+A extração compartilhada evita repetir trabalho por usuário, mas lotes, retries, anúncios
+novos e mudanças na versão da extração podem exigir novas chamadas de IA. Quantidade de
+vagas não equivale a quantidade de requisições.
 
-Roda de duas formas:
+## Início rápido local
 
-- **No seu computador**, com as suas chaves, mandando para o **seu** Telegram.
-- **Sozinho no GitHub Actions**, todo dia às 07:23 (Brasília), com as chaves cadastradas nos
-  secrets do repositório.
+Para trabalhar apenas no código, basta instalar as dependências e executar os testes.
+Para consultar fontes e enviar mensagens, configure suas credenciais nos passos seguintes.
 
-## Frontend
+### 1. Instalar
 
-O escopo confirmado do frontend é uma landing page que apresenta o Radar e coleta o perfil do
-estudante. Não há dashboard planejado no momento: a experiência recorrente continua concentrada
-no Telegram.
-
-Decisões atuais:
-
-- HTML, CSS e JavaScript, sem framework ou etapa de build;
-- conta por e-mail e senha com Supabase Auth;
-- perfil preenchido antes da conta, com curso, período, habilidades opcionais, cidade,
-  modalidade e interesses; criação pelo banco após confirmação e edição sob RLS;
-- vínculo com o Telegram por link do bot contendo token aleatório, sem pedir `@username` ou
-  `chat_id` no formulário;
-- eventos do funil registrados no Supabase com uma sessão anônima que é ligada à conta após o
-  perfil ser salvo;
-- React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
-  de interface mais complexa.
-
-O banco preserva uma cópia protegida do cadastro até a confirmação, inclusive entre aparelhos.
-Novos cadastros não guardam perfil no `localStorage`. O painel permite editar, pausar/retomar,
-desvincular Telegram, exportar dados e solicitar ou cancelar a exclusão com carência de 60 dias.
-Aceite dos termos e preferência opcional de e-mails são controles separados.
-
-Para abrir o site localmente, depois de instalar as dependências:
-
-```bash
-uv run python -m http.server 8000 -d web
-```
-
-Acesse `http://localhost:8000`; autenticação exige HTTP, não abertura direta do HTML.
-Em `web/config.js`, preencha `supabasePublishableKey` com a chave publicável ou `anon`.
-A site key do Turnstile também é pública; `service_role`, senha de banco e secrets ficam
-no servidor. URLs autorizadas, SMTP, CAPTCHA e ordem de migrations estão no
-[guia de publicação](docs/guia-publicacao-e-piloto.md). Termos e Privacidade continuam em
-revisão, sem vigência, até aprovação e sincronização da versão aceita.
-
-`deno task --config tests/web/deno.json test` verifica os fluxos com JSDOM e migrations
-em PostgreSQL isolado via PGlite. Não usa o banco real nem envia e-mails. Inspeção visual
-e jornada publicada são verificações separadas; o [contrato](docs/contrato-front.md)
-detalha Auth, RPCs, eventos e limites de escrita.
-
-## 1. Instalar (na ordem)
-
-### 1.1 Git e o repositório
+É necessário Git e [uv](https://docs.astral.sh/uv/). O projeto exige Python 3.12 ou superior;
+o uv pode provisionar o Python e não exige ativação manual do ambiente virtual.
 
 ```bash
 git clone https://github.com/RadarEstagio/RadarEstagio.git
 cd RadarEstagio
-```
-
-### 1.2 `uv` (gerenciador de Python e dependências)
-
-Não precisa instalar Python antes: o `uv` baixa a versão certa sozinho.
-
-macOS / Linux:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Windows (PowerShell):
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Feche e abra o terminal de novo. Confira com `uv --version`.
-
-### 1.3 Dependências do projeto
-
-```bash
 uv sync
 ```
 
-Cria a pasta `.venv` e instala tudo. Não precisa ativar o ambiente: todo comando é rodado
-com `uv run ...`.
+### 2. Configurar o ambiente
 
-## 2. Pegar as chaves
-
-Cada pessoa cria as **suas** chaves. Nunca compartilhe chave no chat do grupo nem
-commite o `.env`.
-
-### 2.1 Adzuna (fonte das vagas)
-
-1. Crie uma conta em <https://developer.adzuna.com/signup>.
-2. Em *Dashboard* aparecem **Application ID** e **Application Key**.
-
-A **Gupy**, a segunda fonte, não precisa de chave: o projeto usa a API pública do portal.
-
-### 2.2 Extrator por IA
-
-A IA lê cada vaga uma vez e extrai os requisitos dela — cursos aceitos, período mínimo,
-experiência e stack. A comparação com o perfil e a nota são calculadas em Python, sem IA, o que
-faz uma mesma vaga custar uma única requisição por mais usuários que o Radar tenha.
-
-O projeto aceita dois adapters, escolhidos por `AVALIADOR`:
-
-- `gemini_api`: chama a Gemini Developer API diretamente; é o padrão e funciona no CI.
-- `agy`: executa o Antigravity CLI local em modo headless; indicado para testes locais.
-
-Para usar a API direta:
-
-1. Acesse <https://aistudio.google.com/app/apikey> com uma conta Google.
-2. **Create API key** → copie a chave.
-
-Os limites dependem do modelo e do projeto e podem incluir requisições por minuto e por dia.
-
-Para usar AGY, instale o comando `agy`, autentique uma vez em uma sessão interativa e confirme
-o modelo com `agy models`. Esse modo usa as cotas/créditos do Antigravity, não a cota da Gemini
-Developer API.
-
-### 2.3 Telegram (bot + seu chat)
-
-Você cria o **seu próprio bot** — cada pessoa tem o seu, com o próprio token.
-
-1. No Telegram, abra o **@BotFather** e mande `/newbot`.
-2. Ele pede um nome de exibição (qualquer um) e um username terminando em `bot`
-   (ex.: `meu_radar_estagio_bot`).
-3. Ele responde com o **token**, no formato `123456789:AAF...`. Esse é o
-   `TELEGRAM_BOT_TOKEN`.
-4. Abra a conversa com o bot que você acabou de criar e mande **`/start`**. Sem isso o
-   bot não consegue te enviar mensagem.
-5. Descubra o seu **chat id** abrindo no navegador (troque `<TOKEN>` pelo token):
-
-   ```
-   https://api.telegram.org/bot<TOKEN>/getUpdates
-   ```
-
-   Procure `"chat":{"id":123456789,...}`. Esse número é o `TELEGRAM_CHAT_ID`.
-   Se aparecer `"result":[]`, mande `/start` de novo e recarregue a página.
-   Se aparecer erro 409, é porque esse bot tem webhook registrado (seção 7); nesse caso o
-   `chat_id` vem pelo vínculo, não por aqui.
-
-## 3. Configurar o `.env`
-
-Na raiz do projeto, copie o modelo e preencha:
+Copie o modelo se ainda não tiver um `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-O `.env` fica assim (sem aspas, sem espaço em volta do `=`):
+Edite o arquivo local. Para o primeiro teste, use um bot próprio e deixe `DATABASE_URL`
+vazio: o Radar usará o [perfil sintético de exemplo](radar/domain/perfil_fixo.py), sem histórico.
 
-```
-ADZUNA_APP_ID=seu_application_id
-ADZUNA_APP_KEY=sua_application_key
-AVALIADOR=agy
-AGY_MODELO=gemini-3.6-flash-low
-GEMINI_API_KEY=
-TELEGRAM_BOT_TOKEN=123456789:AAF...
-TELEGRAM_CHAT_ID=123456789
-```
+| Variável | Como preencher |
+|---|---|
+| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Credenciais da [Adzuna](https://developer.adzuna.com/signup); exigidas pela configuração atual |
+| `AVALIADOR` | `gemini_api` para API direta ou `agy` para Antigravity CLI local |
+| `GEMINI_API_KEY` | Chave do [Google AI Studio](https://aistudio.google.com/app/apikey), obrigatória com `gemini_api` |
+| `TELEGRAM_BOT_TOKEN` | Token do bot criado pelo `@BotFather` no Telegram |
+| `TELEGRAM_CHAT_ID` | Seu chat com o bot; obrigatório no modo local sem banco |
+| `DATABASE_URL` | Vazio para o teste local; conexão Postgres para usar perfis persistidos |
 
-Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatória quando
-`AVALIADOR=gemini_api`. As demais variáveis têm valor padrão:
+O `.env.example` seleciona `agy`. Se usar a API direta, altere para `AVALIADOR=gemini_api`
+e preencha a chave. O padrão de `Settings` e o workflow usam `gemini_api`.
+Para `agy`, é necessário ter o CLI instalado e autenticado; o modelo vem de `AGY_MODELO`.
+Gupy não exige chave; Jooble exige `JOOBLE_API_KEY` quando incluído em `FONTES`.
 
-| Variável | Padrão | O que faz |
-|---|---|---|
-| `AVALIADOR` | `gemini_api` | seleciona `gemini_api` ou `agy` |
-| `GEMINI_MODELO` | `gemini-3.6-flash` | modelo do Gemini |
-| `GEMINI_VAGAS_POR_LOTE` | `10` | vagas avaliadas por requisição |
-| `AGY_MODELO` | `gemini-3.6-flash-low` | modelo usado pelo Antigravity CLI |
-| `AGY_TIMEOUT_SEGUNDOS` | `300` | tempo máximo de uma execução do AGY |
-| `FONTES` | `adzuna,gupy` | fontes consultadas, separadas por vírgula |
-| `DIAS_RECENTES` | `3` | busca vagas publicadas nos últimos N dias |
-| `QUANTIDADE_VAGAS_ENVIADAS` | `7` | quantas vagas vão na mensagem |
-| `NOTA_MINIMA` | `40` | vaga com nota abaixo disso não entra na mensagem |
-| `FALHAS_DE_ENVIO_ATE_PAUSAR` | `3` | falhas seguidas no Telegram que pausam o perfil |
-| `DIAS_DE_SILENCIO_ATE_AVISAR` | `7` | dias sem recomendação até sugerir ampliar o perfil |
-| `DIAS_ATE_APAGAR_CONTA_EXCLUIDA` | `60` | carência entre pedir exclusão e o apagamento definitivo |
-| `DATABASE_URL` | vazio | string do Supabase; vazio = perfil fixo, sem histórico (seção 6) |
+No Telegram, crie o bot com `/newbot` no `@BotFather` e envie `/start` ao seu novo bot.
+Para descobrir o chat ID de um bot sem webhook, consulte `getUpdates` na API do Telegram
+e procure o campo `message.chat.id`. Bots com webhook usam o fluxo de vínculo descrito
+no [contrato](docs/contrato-front.md#telegram-e-entrega).
 
-O `.env` está no `.gitignore` e nunca vai para o GitHub.
+Credenciais ficam no `.env`, ignorado pelo Git. Não coloque tokens ou dados pessoais no
+perfil sintético, em commits ou em mensagens do grupo.
 
-## 4. Rodar
-
-Confira a configuração primeiro:
+### 3. Conferir e executar
 
 ```bash
 uv run python -m radar verificar
+uv run python -m radar coletar
 ```
 
-Se faltar alguma variável, ele lista quais. Depois, teste cada parte:
+O primeiro comando valida a configuração; se houver `DATABASE_URL`, também consulta o banco.
+O segundo consulta fontes reais e lista anúncios, sem enviar mensagens.
 
-| Comando | O que faz | Usa IA? |
-|---|---|---|
-| `uv run python -m radar testar-telegram` | manda "Radar OK" para o seu chat | não |
-| `uv run python -m radar coletar` | lista as vagas de todas as fontes, sem duplicatas | não |
-| `uv run python -m radar avaliar` | avalia 3 vagas e imprime as notas | sim |
-| `uv run python -m radar testar-local` | executa o fluxo completo sem banco ou histórico e envia ao Telegram | sim |
-| `uv run python -m radar` | **fluxo completo**: coleta → avalia → envia no Telegram | sim |
-
-Testes automatizados e lint (não usam chave nenhuma):
+Para testar o bot e depois o fluxo local completo:
 
 ```bash
-uv run pytest
-uv run ruff check . && uv run ruff format --check .
+uv run python -m radar testar-telegram
+uv run python -m radar testar-local
 ```
 
-## 5. Execução automática no GitHub
+Esses dois comandos enviam mensagens ao `TELEGRAM_CHAT_ID`. O fluxo completo também usa IA.
+`testar-local` ignora banco e histórico, mesmo se houver conexão configurada, e exige chat ID.
+Os botões de feedback desse modo não funcionam como no ambiente persistido: seus tokens não
+são gravados no banco.
 
-O arquivo [`.github/workflows/radar-diario.yml`](.github/workflows/radar-diario.yml)
-roda o fluxo completo. Quem dispara todo dia às 07:23 (Brasília) é um cron externo no
-[cron-job.org](https://cron-job.org), que chama a API do GitHub
-(`POST /repos/RadarEstagio/RadarEstagio/actions/workflows/radar-diario.yml/dispatches`, body
-`{"ref":"main"}`) com um *fine-grained token* de permissão **Actions: Read and write**.
-O `schedule` nativo do GitHub Actions foi removido: ficou dois dias sem disparar nenhuma vez.
+## Comandos
 
-As chaves vêm dos **secrets do repositório** (Settings → Secrets and variables →
-Actions), com exatamente os mesmos nomes do `.env`: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`,
-`GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` e, com banco, `DATABASE_URL`.
-Sem `DATABASE_URL`, a mensagem diária vai para o Telegram de quem cadastrou o
-`TELEGRAM_CHAT_ID`; com ele, vai para cada usuário do banco.
+Execute a partir da raiz, com `uv run python -m radar` seguido do comando:
 
-Com banco, o `TELEGRAM_CHAT_ID` passa a ser o **chat de operação**: ao fim de cada execução ele
-recebe um resumo com usuários ativos, quantos receberam recomendação, vagas enviadas e
-requisições ao avaliador. Se o job falhar antes disso — inclusive por estourar o timeout, quando
-o Python nem chega a reportar — um passo do workflow avisa no mesmo chat com o link do run.
-Deixe o `TELEGRAM_CHAT_ID` vazio para não receber esses resumos.
+| Comando | Comportamento | Efeitos externos |
+|---|---|---|
+| `verificar` | Confere configuração e, com banco, conta perfis ativos vinculados | Leitura do banco quando configurado |
+| `coletar` | Lista anúncios coletados após deduplicação | Consulta fontes e, com banco, perfis |
+| `avaliar` | Extrai e pontua até três vagas; usa o primeiro perfil ativo disponível ou o exemplo | Consulta fontes, banco quando configurado e IA; não envia mensagens |
+| `testar-telegram` | Envia “Radar OK” ao chat configurado | Envio real ao Telegram |
+| `testar-local` | Executa com perfil sintético, sem banco nem histórico | Fontes, IA e Telegram |
+| `rodar --perfil UUID` | Direciona o atendimento a um perfil ativo vinculado | Banco, fontes, Telegram e IA quando necessária |
+| `rodar` ou nenhum comando | Executa para todos os perfis elegíveis; sem banco, usa o exemplo | Banco quando configurado, fontes, Telegram e IA quando necessária |
+| `metricas` | Imprime o relatório de produto dos últimos 30 dias | Leitura do banco; exige `DATABASE_URL` |
+| `julgar --dias 7 --amostra 30 --semente 1` | Pede a um segundo modelo que avalie uma amostra das entregas recentes | Leitura do banco e chamada de IA com perfil e anúncios; não grava nem envia mensagens |
 
-Para disparar na hora (teste ou demo):
+`julgar` exige `DATABASE_URL` e usa `AVALIADOR` para escolher o provedor. Configure
+`JUIZ_MODELO` com um modelo disponível nesse provedor: o padrão `claude-sonnet-4-6` é
+destinado ao caminho AGY, não à Gemini Developer API. `--dias` e `--amostra` aceitam
+inteiros positivos; a semente torna a seleção reproduzível para a mesma lista de entregas.
+O julgamento é uma estimativa do modelo, não validação feita por estudantes.
 
-1. Abra <https://github.com/RadarEstagio/RadarEstagio/actions>.
-2. No menu da esquerda, clique em **Radar diário**.
-3. **Run workflow** → **Run workflow**.
-4. Em ~1 minuto o job fica verde e a mensagem chega no Telegram. Se ficar vermelho, abra
-   o passo **Executar o radar** para ver o erro.
+Para uma verificação com conta da equipe, use `rodar --perfil UUID` com `DATABASE_URL`
+e substitua `UUID` por `perfis.id`, não por `auth.users.id`.
+Esse argumento limita os destinatários das recomendações, mas não transforma o pipeline em
+simulação: ainda há persistência, resumo operacional e rotina de apagamento de contas cuja
+carência venceu. Use ambiente de teste para validar exclusão.
 
-## 6. Banco de dados e contas (Supabase)
+Com banco, `TELEGRAM_CHAT_ID` recebe o resumo operacional e pode ficar vazio para omitir
+esse resumo no Python. Sem banco, o chat ID é obrigatório.
 
-O Supabase já está integrado ao site e ao job. Ele guarda os perfis dos usuários (com o
-`chat_id` de cada um), as vagas, as notas e o que já foi enviado. É o que permite vários
-usuários e evita repetir vaga entre dias.
+## Frontend local
 
-1. Crie um projeto em <https://supabase.com> (região São Paulo) e guarde a senha do banco.
-2. Instale a CLI e ligue-a ao projeto:
+O site usa HTML, CSS e JavaScript estáticos, com Supabase Auth e acesso ao banco por RLS/RPCs.
+Não há etapa de build. O perfil é preenchido antes da conta, e o banco preserva uma cópia
+protegida até a confirmação, inclusive entre aparelhos; não depende de perfil no `localStorage`.
 
-   ```bash
-   brew install supabase/tap/supabase
-   supabase login
-   supabase link --project-ref <ref do projeto>
-   supabase db push
-   ```
+Para desenvolver com seu próprio ambiente, ajuste os campos de [web/config.js](web/config.js):
 
-   O `db push` aplica [`supabase/migrations/`](supabase/migrations/) e cria as tabelas
-   `perfis`, `vagas`, `avaliacoes` e `envios`. Nunca crie ou altere tabelas pelo painel:
-   a migration é o contrato entre o site e o radar.
-3. Em **Project Settings → Database**, copie a string **Session pooler** (o GitHub Actions só
-   tem IPv4) e coloque em `DATABASE_URL` no `.env`.
-4. Abra o site em `http://localhost:8000`, crie a conta, preencha o perfil e vincule o
-   Telegram. O webhook grava o `chat_id`; perfil sem vínculo ou com `ativo = false` é ignorado.
-5. `uv run python -m radar verificar` deve mostrar `Banco: conectado, N usuários ativos`.
-6. Para o Actions usar o banco, mantenha o secret `DATABASE_URL` configurado.
+| Campo | Valor do seu ambiente |
+|---|---|
+| `supabaseUrl` | URL do seu projeto Supabase |
+| `supabasePublishableKey` | Chave publicável ou `anon` desse mesmo projeto |
+| `telegramBot` | Username, sem `@`, do bot correspondente ao token usado no servidor |
+| `turnstileSiteKey` | Site key pública do widget, quando configurado |
 
-## 7. Webhook do vínculo com o Telegram
+O arquivo versionado aponta para o ambiente do Radar. Criar bot e banco próprios exige
+trocar essas referências em conjunto. Senha do banco, `service_role` e secrets ficam no
+servidor. Siga o [guia](docs/guia-publicacao-e-piloto.md) para migrations, webhook,
+URLs autorizadas do Auth, SMTP e CAPTCHA antes de testar cadastro e vínculo.
 
-O site já abre o link do bot, e o webhook grava o vínculo no perfil correto. O contrato entre
-as partes está em [`docs/contrato-front.md`](docs/contrato-front.md).
-
-Com o banco, o `chat_id` de cada usuário passa a ser gravado pelo próprio Telegram: o site
-abre `t.me/RadarEstagio_bot?start=<token_vinculo>` e o bot chama a Edge Function
-[`supabase/functions/telegram-webhook/`](supabase/functions/telegram-webhook/), que grava o
-`chat_id` no perfil daquele token. A função já está publicada no projeto Supabase atual; estes
-passos servem para configurar outro ambiente:
-
-1. Invente um segredo (`openssl rand -hex 24`) e coloque em `TELEGRAM_WEBHOOK_SECRET` no
-   `.env`. O Telegram manda esse valor em toda chamada e a função rejeita quem não o tem.
-2. Publique a função e os segredos:
-
-   ```bash
-   supabase functions deploy telegram-webhook
-   supabase secrets set TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=...
-   ```
-
-3. Registre o webhook (troque `<TOKEN>`, `<REF>` e `<SEGREDO>`):
-
-   ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D
-   ```
-
-   `getWebhookInfo` no lugar de `setWebhook` mostra se ficou registrado.
-4. Para testar, crie o perfil pelo site, abra o botão de vínculo e aperte Start no Telegram.
-   O bot responde "Telegram vinculado!" e a coluna volta preenchida.
-
-Os testes da função rodam com `deno test` dentro da pasta (`brew install deno`).
-
-## Estrutura do código
-
+```bash
+uv run python -m http.server 8000 -d web
 ```
+
+Abra `http://localhost:8000`; autenticação precisa de HTTP, não de abrir o HTML diretamente.
+O [contrato frontend](docs/contrato-front.md) detalha cadastro, permissões, eventos e controles
+da conta. Termos e Privacidade seguem em revisão até aprovação e sincronização da vigência.
+
+## Testes e qualidade
+
+A suíte Python padrão e o lint não precisam de chaves de serviços:
+
+```bash
+uv run pytest -q
+uv run ruff check .
+uv run ruff format --check .
+```
+
+Os testes de integração Postgres dependem de `DATABASE_URL_TESTE` e são ignorados quando o
+ambiente não está disponível. Não use o banco de produção como banco de teste.
+
+Com [Deno](https://deno.com/) instalado, execute os testes do frontend e banco isolado:
+
+```bash
+deno test --config tests/web/deno.json --allow-read --allow-env tests/web/
+```
+
+Essa suíte usa JSDOM e PGlite; não testa layout nem entrega real de e-mails.
+Os testes das Edge Functions usam a configuração do próprio diretório. A partir da raiz:
+
+```bash
+(cd supabase/functions/telegram-webhook && deno test)
+(cd supabase/functions/ir && deno test)
+```
+
+Inspeção visual e jornada publicada têm roteiro próprio no guia de publicação.
+
+## Configuração e operação
+
+Os parâmetros e valores padrão estão em [radar/settings.py](radar/settings.py), e o modelo de
+ambiente em [.env.example](.env.example). Entre eles: fontes, modelos, tamanho dos lotes,
+nota mínima, limite de recomendações, pausa por falhas e carência de exclusão.
+Com banco, `URL_DE_RASTREIO` habilita links pela função `ir`; vazio ou no modo sem banco,
+usa links diretos para a fonte.
+
+O [workflow](.github/workflows/radar-diario.yml) recebe disparos do cron-job.org às 07:23 de
+Brasília, conforme a configuração operacional registrada. O código não usa `schedule`
+nativo. O workflow configura cinco dias de anúncios, até sete recomendações e timeout de
+15 minutos; isso não é promessa de tempo até receber uma mensagem.
+
+Para um teste direcionado pelo GitHub Actions, abra **Radar diário → Run workflow** e
+preencha `perfil` com o `perfis.id` da conta de teste. Deixar esse campo vazio executa o
+fluxo para toda a base elegível quando há banco. Confira logs e resumo do run para saber
+se houve entrega; término do job não garante existência de vaga compatível.
+
+Banco, deploy, secrets, webhook, rastreio, cron e reversão são tratados no
+[guia de publicação e piloto](docs/guia-publicacao-e-piloto.md). Para o ambiente compartilhado,
+confira o projeto existente e o histórico de migrations antes de aplicar mudanças.
+O [plano geral](docs/plano-geral.md) é o acompanhamento das pendências.
+
+## Estrutura
+
+```text
 radar/
-  domain/        entidades (Vaga, Perfil, Usuario, ResultadoMatch), contratos e perfil fixo
-  collectors/    coleta de vagas (Adzuna, Gupy) e o composto que soma as fontes
-  filtering/     remoção de duplicatas e pré-filtro por regras, antes da IA
-  matching/      prompt, cliente do Gemini e avaliação em lotes
-  notification/  formatação da mensagem e envio no Telegram
-  storage/       repositórios: Postgres (Supabase) ou em memória (perfil fixo)
-  pipeline.py    orquestra coleta → filtro → avaliação → envio, por usuário
-  __main__.py    comandos de linha de comando
-supabase/        migrations do banco (schema versionado) e a Edge Function do webhook
-tests/           testes automatizados (pytest)
-web/             landing page e cadastro integrado ao Supabase (HTML/CSS/JS estático)
+  domain/        entidades, catálogo de áreas, regras de domínio e interfaces
+  collectors/    Adzuna, Gupy, Jooble opcional e composição de fontes
+  filtering/     deduplicação e pré-filtro antes da IA
+  matching/      extração em lotes, enriquecimento e pontuação determinística
+  avaliacao/     julgamento de entregas por um segundo modelo
+  notification/  formatação e envio ao Telegram
+  reporting/     apresentação das métricas no terminal
+  storage/       persistência Postgres, modo em memória e consultas de métricas
+  pipeline.py    orquestra coleta, seleção, extração, pontuação e entrega
+  __main__.py    comandos da CLI
+supabase/
+  migrations/    schema e permissões versionados
+  functions/     webhook do Telegram e redirecionamento rastreável ir
+tests/           testes Python, fixtures e testes web/banco em Deno
+web/             site estático com cadastro e controles da conta
+docs/            documentação de produto, arquitetura e operação
 ```
+
+## Referências
+
+- [Índice](docs/README.md): papel de cada documento e consolidação dos históricos.
+- [Funcionalidades](docs/funcionalidades.md): capacidades e limites do produto.
+- [Arquitetura](docs/arquitetura.md): camadas, matching e decisões técnicas.
+- [Métricas](docs/metricas.md): eventos, denominadores e interpretação do relatório.
+- [Vocabulário](CONTEXT.md): conceitos do produto.
+- [Regras do projeto](CLAUDE.md): orientações para contribuição e manutenção.
