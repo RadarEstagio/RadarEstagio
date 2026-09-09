@@ -12,12 +12,11 @@ def test_formulario_carrega_supabase_antes_da_aplicacao():
     assert 'id="telegram-link"' in html
 
 
-def test_campo_de_senha_separa_o_olho_do_autofill_do_safari():
+def test_campo_de_senha_mantem_o_olho_a_direita_do_autofill_do_safari():
     css = (RAIZ / "web/assets/styles.css").read_text()
 
-    assert "@supports selector(input::-webkit-credentials-auto-fill-button)" in css
-    assert ".password-field:focus-within input { padding-inline-end: 102px; }" in css
-    assert '.password-field:focus-within .password-toggle { inset-inline-end: 44px; }' in css
+    assert ".password-field input::-webkit-credentials-auto-fill-button" in css
+    assert "position: absolute; inset-inline-end: 52px" in css
 
 
 def test_cadastro_persiste_perfil_e_monta_vinculo():
