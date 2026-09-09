@@ -300,13 +300,16 @@ def pontuar_vagas(
 def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMatch:
     vaga = _com_modalidade_extraida(vaga, extracao)
     niveis = derivar_niveis(extracao, perfil)
-    requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(extracao, perfil)
+    requisitos_atendidos, requisitos_nao_atendidos, diferenciais = _classificar_habilidades(
+        extracao, perfil
+    )
     pontos_a_favor, pontos_contra = montar_pontos(extracao, niveis)
     return ResultadoMatch(
         vaga=vaga,
         nota=_calcular_nota(extracao, niveis, vaga, perfil),
         requisitos_atendidos=requisitos_atendidos,
         requisitos_nao_atendidos=requisitos_nao_atendidos,
+        diferenciais_nao_atendidos=diferenciais,
         requisitos_tecnicos_analisados=True,
         avisos_objetivos=_avisos_objetivos(extracao, niveis, perfil),
         pontos_a_favor=_juntar_sem_repetir(pontos_a_favor),
@@ -526,19 +529,25 @@ def _conta_para_a_nota(requisito_normalizado: str) -> bool:
 
 def _classificar_habilidades(
     extracao: ExtracaoDaVaga, perfil: Perfil
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], list[str]]:
     niveis_do_perfil = _niveis_do_perfil(perfil)
     requisitos_atendidos = [
         habilidade
         for habilidade in _juntar_habilidades_da_vaga(extracao)
         if _perfil_atende(habilidade, niveis_do_perfil)
     ]
+    exigidas = _exigidas_pela_vaga(extracao)
     requisitos_nao_atendidos = [
-        habilidade
-        for habilidade in _exigidas_pela_vaga(extracao)
-        if not _perfil_atende(habilidade, niveis_do_perfil)
+        habilidade for habilidade in exigidas if not _perfil_atende(habilidade, niveis_do_perfil)
     ]
-    return requisitos_atendidos, requisitos_nao_atendidos
+    nomes_exigidos = {_normalizar_habilidade(habilidade) for habilidade in exigidas}
+    diferenciais_nao_atendidos = [
+        habilidade
+        for habilidade in _juntar_sem_repetir(extracao.habilidades_desejaveis)
+        if _normalizar_habilidade(habilidade) not in nomes_exigidos
+        and not _perfil_atende(habilidade, niveis_do_perfil)
+    ]
+    return requisitos_atendidos, requisitos_nao_atendidos, diferenciais_nao_atendidos
 
 
 def _exigidas_pela_vaga(extracao: ExtracaoDaVaga) -> list[str]:

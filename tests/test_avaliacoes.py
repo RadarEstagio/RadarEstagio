@@ -724,3 +724,29 @@ def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
     )
 
     assert resultado.requisitos_nao_atendidos == []
+
+
+def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["Java"],
+            habilidades_desejaveis=["Angular", "Spring", "Java", "Python"],
+        ),
+        perfil(["Java", "Python"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Java", "Python"]
+    assert resultado.requisitos_nao_atendidos == []
+    assert resultado.diferenciais_nao_atendidos == ["Angular", "Spring"]
+
+
+def test_diferencial_nao_entra_nos_requisitos_a_conferir():
+    com_desejaveis = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Java"], habilidades_desejaveis=["Angular"]),
+        perfil(["Java"]),
+    )
+
+    assert com_desejaveis.requisitos_nao_atendidos == []
+    assert com_desejaveis.diferenciais_nao_atendidos == ["Angular"]
