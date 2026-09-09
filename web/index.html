@@ -56,29 +56,44 @@
             </ul>
           </div>
 
-          <div class="hero-demo" aria-label="Exemplo de recomendação enviada pelo Radar">
+          <div class="hero-demo" data-chat-demo role="group" aria-label="Simulação de recomendações chegando no Telegram">
             <div class="orbit orbit-one" aria-hidden="true"></div>
             <div class="orbit orbit-two" aria-hidden="true"></div>
-            <article class="telegram-card">
-              <header class="telegram-header">
+            <div class="telegram-chat">
+              <header class="chat-header">
                 <div class="bot-avatar"><span class="radar-mark radar-mark-small" aria-hidden="true"><i></i></span></div>
-                <div><strong>Radar de Estágio</strong><span>bot</span></div>
-                <time>08:00</time>
+                <div class="chat-contact"><strong>RadarEstagio</strong><span>bot</span></div>
+                <div class="chat-platform" aria-label="Telegram"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m21.4 3.5-3.1 16.1c-.2 1.1-.9 1.3-1.8.8l-4.8-3.6-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.9 8.9-8c.4-.4-.1-.6-.6-.2L6 13.3l-4.7-1.5c-1-.3-1-1 .2-1.5L20 3.2c.9-.3 1.7.2 1.4.3Z"></path></svg><span>Telegram</span></div>
               </header>
-              <div class="message-bubble">
-                <div class="message-kicker">Exemplo ilustrativo · não é uma vaga real</div>
-                <div class="match-row">
-                  <div><h2>Estágio em suporte de TI</h2><p>Empresa ilustrativa · Recife, PE · Híbrido</p></div>
-                  <div class="score"><strong>92</strong><span>nota / 100</span></div>
+              <div class="chat-stage">
+                <span class="chat-date">Hoje</span>
+                <div class="chat-typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                <div class="chat-message">
+                  <div class="chat-message-kicker"><strong>📡 Radar de Estágio</strong><span>Exemplo ilustrativo · não é uma vaga real</span></div>
+                  <div class="chat-vacancy chat-vacancy-first">
+                    <strong class="chat-vacancy-title">1. Estágio em desenvolvimento back-end</strong>
+                    <span class="chat-company">Empresa ilustrativa</span>
+                    <p>📍 Rio de Janeiro · Híbrido</p>
+                    <p>🏷️ Fonte: Gupy · Publicada hoje</p>
+                    <p>⭐ <strong>Nota 83/100</strong></p>
+                    <p>✅ <strong>Requisitos atendidos:</strong> Java · SQL</p>
+                    <p>🔎 <strong>Requisitos a conferir no seu perfil:</strong> Spring</p>
+                    <p class="chat-link">🔗 Ver vaga em gupy.com.br</p>
+                  </div>
+                  <div class="chat-vacancy chat-vacancy-second">
+                    <strong class="chat-vacancy-title">2. Estágio em análise de dados</strong>
+                    <span class="chat-company">Empresa ilustrativa</span>
+                    <p>📍 Recife · Remoto</p>
+                    <p>🏷️ Fonte: Adzuna · Publicada hoje</p>
+                    <p>⭐ <strong>Nota 79/100</strong></p>
+                    <p>✅ <strong>Requisitos atendidos:</strong> Excel · Power BI</p>
+                    <p class="chat-link">🔗 Ver vaga em adzuna.com.br</p>
+                  </div>
+                  <footer class="chat-message-footer"><strong>Deixe seu feedback ↓</strong><time>07:23</time></footer>
                 </div>
-                <div class="match-reason"><span aria-hidden="true">✓</span><p><strong>Requisitos atendidos:</strong> Comunicação · Organização<br /><strong>Requisitos a conferir no seu perfil:</strong> Excel intermediário<br /><strong>Diferenciais que a vaga cita:</strong> Power BI</p></div>
-                <div class="message-tags"><span>Fonte: Gupy</span><span>Publicada hoje</span></div>
-                <div class="fake-link">Ver vaga em gupy.com.br <span aria-hidden="true">↗</span></div>
+                <div class="chat-feedback" aria-hidden="true"><span>1</span><span>2</span></div>
               </div>
-              <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
-            </article>
-            <div class="floating-note note-top"><strong>2 fontes</strong><span>em um só lugar</span></div>
-            <div class="floating-note note-bottom"><strong>0–100</strong><span>nota explicada</span></div>
+            </div>
           </div>
         </div>
       </section>

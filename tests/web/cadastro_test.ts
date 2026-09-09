@@ -185,6 +185,19 @@ function fill(w: TestWindow, incluirHabilidade = true) {
   return form;
 }
 
+Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () => {
+  const a = app();
+  try {
+    await settle();
+    const demo = a.w.document.querySelector("[data-chat-demo]");
+    assert.ok(demo);
+    assert.equal(demo.classList.contains("is-playing"), true);
+    assert.equal(demo.querySelectorAll(".chat-vacancy").length, 2);
+    assert.ok(demo.querySelector(".chat-typing"));
+    assert.ok(demo.querySelector(".chat-feedback"));
+  } finally { a.close(); }
+});
+
 Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha localmente", async () => {
   const a = app();
   try {

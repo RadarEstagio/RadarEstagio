@@ -27,11 +27,19 @@ def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
 
     assert "exemplo ilustrativo" in html.lower()
     assert "não é uma vaga real" in html.lower()
-    assert "nota / 100" in html
+    assert "Nota 83/100" in html
     assert "Requisitos atendidos:" in html
     assert "Requisitos a conferir no seu perfil:" in html
     assert ">match<" not in html.lower()
     assert "Fontes e tecnologias do Radar" in html
+
+
+def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    regra_reduzida = css[css.index("@media (prefers-reduced-motion: reduce)") :]
+    assert "animation-delay: 0ms !important" in regra_reduzida
+    assert ".chat-typing { display: none; }" in regra_reduzida
 
 
 def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():

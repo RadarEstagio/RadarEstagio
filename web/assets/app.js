@@ -29,6 +29,25 @@ if (cabecalhoDaLanding) {
   }, { passive: true });
 }
 
+const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
+const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+if (demonstracaoDoChat && !reduzirMovimento) {
+  demonstracaoDoChat.classList.add("is-waiting");
+  if ("IntersectionObserver" in window) {
+    const observadorDoChat = new IntersectionObserver((entradas) => {
+      if (!entradas.some((entrada) => entrada.isIntersecting)) return;
+      demonstracaoDoChat.classList.remove("is-waiting");
+      demonstracaoDoChat.classList.add("is-playing");
+      observadorDoChat.disconnect();
+    }, { threshold: 0.4 });
+    observadorDoChat.observe(demonstracaoDoChat);
+  } else {
+    demonstracaoDoChat.classList.remove("is-waiting");
+    demonstracaoDoChat.classList.add("is-playing");
+  }
+}
+
 const dialog = document.querySelector("#signup-dialog");
 const accountPage = document.querySelector("#account-page");
 const accountContent = document.querySelector("#account-content");
