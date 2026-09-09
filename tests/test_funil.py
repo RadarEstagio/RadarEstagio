@@ -157,6 +157,30 @@ def test_relatorio_mostra_utilidade_por_area_e_ressalva_curso_atual():
     assert "Mudança de curso pode mudar agrupamentos passados" in texto
 
 
+def test_relatorio_mostra_situacao_atual_das_contas_pausadas():
+    texto = formatar_funil(
+        funil(
+            pausas_atuais=[
+                {"motivo": "conseguiu_estagio", "total": 1},
+                {"motivo": "sem_vagas_uteis", "total": 1},
+                {"motivo": "sem_motivo", "total": 2},
+            ]
+        )
+    )
+
+    assert "Contas pausadas — situação atual:" in texto
+    assert "conseguiu_estagio" in texto
+    assert "sem_vagas_uteis" in texto
+    assert "sem_motivo" in texto
+    assert "Este quadro não é histórico mensal de churn." in texto
+
+
+def test_relatorio_indica_quando_nao_ha_contas_pausadas():
+    texto = formatar_funil(funil(pausas_atuais=[]))
+
+    assert "nenhuma conta pausada" in texto
+
+
 def test_mostra_mediana_e_faltantes_sem_chamar_isso_de_prazo():
     texto = formatar_funil(funil())
 

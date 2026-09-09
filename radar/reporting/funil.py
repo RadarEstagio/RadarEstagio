@@ -41,6 +41,9 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         "Motivo da recusa:",
     ]
     linhas.extend(linhas_dos_motivos(funil))
+    linhas.extend(["", "Contas pausadas — situação atual:"])
+    linhas.extend(linhas_das_pausas(funil))
+    linhas.append("Este quadro não é histórico mensal de churn.")
     linhas.extend(["", linha_do_custo(funil)])
     etapas = [
         "landing_visualizada",
@@ -107,6 +110,14 @@ def linhas_dos_motivos(funil: FunilDaCoorte) -> list[str]:
     return [
         f"  {motivo:<{LARGURA_DO_ROTULO}}{total:>3}"
         for motivo, total in funil.recusas_por_motivo.items()
+    ]
+
+
+def linhas_das_pausas(funil: FunilDaCoorte) -> list[str]:
+    if not funil.pausas_atuais:
+        return ["  nenhuma conta pausada"]
+    return [
+        f"  {pausa.motivo:<{LARGURA_DO_ROTULO}}{pausa.total:>3}" for pausa in funil.pausas_atuais
     ]
 
 

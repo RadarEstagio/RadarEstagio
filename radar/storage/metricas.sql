@@ -2,6 +2,11 @@ with limites as (
   select now() as fim, now() - make_interval(days => %(dias)s) as inicio
 ), coorte as (
   select p.* from perfis p, limites l where p.criado_em >= l.inicio and p.criado_em <= l.fim
+), pausas_atuais as (
+  select coalesce(p.motivo_pausa, 'sem_motivo') as motivo, count(*) as total
+  from perfis p
+  where p.ativo = false and p.excluida_em is null
+  group by 1
 ), eventos as (
   select e.* from eventos_produto e, limites l where e.ocorrido_em <= l.fim
 ), sessoes as (
@@ -159,4 +164,5 @@ select
   coalesce((select jsonb_object_agg(motivo, total) from motivos), '{}') as recusas_por_motivo,
   coalesce((select jsonb_agg(to_jsonb(s) order by semana) from semanais s), '[]') as utilidade_semanal,
   coalesce((select jsonb_agg(to_jsonb(u) order by u.semana, u.perfil_id) from utilidade_por_perfil_semana u), '[]') as utilidade_semanal_fatos,
-  coalesce((select jsonb_agg(to_jsonb(g) order by grupo) from grupos g), '[]') as recusas_por_grupo
+  coalesce((select jsonb_agg(to_jsonb(g) order by grupo) from grupos g), '[]') as recusas_por_grupo,
+  coalesce((select jsonb_agg(to_jsonb(p) order by motivo) from pausas_atuais p), '[]') as pausas_atuais

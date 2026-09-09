@@ -147,6 +147,17 @@ perfis que ainda existem: apagar um perfil ativado pode mudar o percentual de um
 passada. Comparações em reuniões devem registrar a data da consulta; semanas anteriores
 não são snapshots imutáveis.
 
+## Contas pausadas — situação atual
+
+O relatório também mostra perfis não excluídos com `ativo=false`, agrupados por
+`motivo_pausa`. O denominador inclui quem não respondeu, exibido como “Não informado”, e a
+soma das categorias fecha com o total de contas pausadas no momento da consulta. Uma conta
+retomada sai do quadro; uma pausa técnica sem resposta não recebe uma intenção presumida.
+
+Esse quadro não é churn mensal, não reconstrói pausas anteriores e não permite inferir
+tendência histórica. `conseguiu_estagio` permanece separado de `sem_vagas_uteis`; a coluna
+guarda somente o motivo atual e pode voltar a nulo na retomada.
+
 ## Recusas com denominador
 
 Outro bloco considera **todas as recomendações entregues nos últimos 30 dias**, inclusive a

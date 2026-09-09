@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: R02.
-- Próximo passo: implementar pergunta opcional após pausa, usando a coluna publicada localmente em R01.
-- Branch/HEAD: `codex/expansao-revenue-centric` / R01 pronto; publicação remota não verificada.
+- ID atual: E01–E05/D01.
+- Próximo passo: preparar os seis artefatos externos com evidências locais e dependências explícitas, sem declarar execução remota.
+- Branch/HEAD: `codex/expansao-revenue-centric` / R03 pronto; publicação remota não verificada.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -31,6 +31,7 @@ existentes.
 | M04 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `radar/storage/postgres.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | SQL retorna fatos mínimos; Python classifica curso atual com `area_do_curso`, agrupa uma vez por perfil/semana e mostra área desconhecida como Não classificado | Dados reais e histórico de alterações de curso não verificados; não é histórico acadêmico |
 | R01 | Implementado/testado | `supabase/migrations/0019_motivo_pausa.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Coluna nullable com cinco valores, grant aditivo, legado nulo, dono/null, inválido, outro usuário, exportação e conta excluída cobertos no harness | Migration ainda não aplicada no projeto remoto; R02 depende da publicação da coluna |
 | R02 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Pergunta opcional só após pausa OK; cinco motivos e Pular; resposta separada filtrada por dono/pausado; corrida/erro preserva pausa; retomada limpa motivo | Frontend e migration 0019 ainda não publicados; integração real com Supabase não verificada |
+| R03 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Situação atual de pausas não excluídas por motivo/null; ativo e excluído fora; retomada remove; vazio sem divisão por zero; CLI ressalva que não é churn | Dados reais e aplicação remota de 0019 não verificados |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -182,6 +183,16 @@ existentes.
 - Inspeção visual: controles são nativos, labels de rádio recebem foco visual pelo estilo existente e a pergunta usa fieldset/legend; viewport exato de 375 px permanece não verificável nesta sessão.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R02 será criado após `git diff --check`. Nenhuma publicação externa.
 - Pendência real/próximo comando: publicar 0019 antes do frontend; seguir para R03, que só consulta o estado atual das contas pausadas.
+
+## R03
+
+- Comportamento antes → depois: o relatório não mostrava as pausas atuais; agora agrega perfis não excluídos com `ativo=false` por motivo e exibe “sem_motivo” como “Não informado” no texto, sem janela de criação.
+- Arquivos/símbolos: `radar/storage/metricas.sql` (`pausas_atuais`), `radar/domain/models.py` (`PausaAtual`, `FunilDaCoorte.pausas_atuais`), `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md`.
+- Casos obrigatórios: cinco motivos + dois nulos fecham 7; ativo com motivo residual e excluído pausado não entram; retomada reduz a 6; dataset vazio não divide por zero; saída não chama o quadro de churn mensal.
+- Comandos/exit code/aprovados/ignorados: Q — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 2 aprovados, 0 ignorados; Python — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py tests/test_areas.py` — exit 0, 109 aprovados, 25 ignorados por Postgres; lint `uv run ruff check radar tests/test_funil.py` — exit 0; formatação `uv run ruff format --check radar tests/test_funil.py` — exit 0; `git diff --check` — exit 0.
+- Inspeção visual: não aplicável; mudança é agregação e saída textual do relatório.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R03 será criado após `git diff --check`. Nenhuma publicação externa.
+- Pendência real/próximo comando: iniciar artefatos E01–E05/D01. O quadro só poderá ser comparado com situação real depois de aplicar 0019 e publicar a versão correspondente.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

@@ -164,6 +164,11 @@ class FatoUtilidadeSemanal(BaseModel):
     com_utilidade: bool
 
 
+class PausaAtual(BaseModel):
+    motivo: str
+    total: int
+
+
 class RecusasPorGrupo(BaseModel):
     grupo: str
     entregas: int
@@ -175,6 +180,7 @@ class FunilDaCoorte(BaseModel):
     etapas: dict[str, int] = Field(default_factory=dict)
     utilidade_semanal: list[UtilidadeSemanal] = Field(default_factory=list)
     utilidade_por_area: list[UtilidadePorArea] = Field(default_factory=list)
+    pausas_atuais: list[PausaAtual] = Field(default_factory=list)
     recusas_por_grupo: list[RecusasPorGrupo] = Field(default_factory=list)
     dias: int = Field(ge=1)
     perfis_criados: int
