@@ -1,6 +1,6 @@
 # Contrato entre o site e o radar
 
-Revisado em 07/09/2026 contra `web/assets/app.js` e migrations até `0016`.
+Revisado em 08/09/2026 contra `web/assets/app.js` e migrations até `0018`.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
 A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).
@@ -56,6 +56,12 @@ Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `pres
 `hibrido`, `indiferente`. O catálogo de áreas está no domínio e na validação da `0014`.
 Editar perfil e preferências usa `update` na própria linha, limitado por grants e RLS.
 Não usar `upsert` como substituto do fluxo de criação.
+
+`habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
+após retirar espaços nas pontas. Lista vazia significa que o estudante ainda não informou
+habilidades; não é convertida em texto sentinela nem implica incapacidade. O caminho de publicação
+compatível é: disponibilizar o Python que lê lista vazia (C02), aplicar a migration `0018`
+preservando perfis e permissões, e só então liberar o frontend que oferece esse caminho (C03).
 
 ## Controles da conta
 

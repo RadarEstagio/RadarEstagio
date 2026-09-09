@@ -6,9 +6,9 @@ Não reaplicar entregas existentes.
 
 ## Ponto de retomada
 
-- ID atual: C01.
-- Próximo passo: identificar a constraint de `habilidades` e preparar a migration incremental.
-- Branch/HEAD: `codex/expansao-revenue-centric` / após O00, conferir com Git antes do commit.
+- ID atual: C02.
+- Próximo passo: permitir `Perfil(habilidades=[])` no Python e cobrir pontuação/leitura sem mudar pesos.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C01 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -17,6 +17,7 @@ Não reaplicar entregas existentes.
 | ID | Estado | Arquivos/commit | Verificações e resultado | Pendência externa |
 |---|---|---|---|---|
 | O00 | Implementado/testado | `.github/workflows/radar-diario.yml` | `QUANTIDADE_VAGAS_ENVIADAS` mudou de 7 para 5; Python já tinha padrão 5 | Workflow versionado nesta branch; nenhuma execução remota verificada |
+| C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
 | C04 | Parcial | Catálogo e sugestões já existem na base | Falta concluir fallback e integração conforme ficha | Publicação não verificada |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
@@ -29,6 +30,16 @@ Não reaplicar entregas existentes.
 - Inspeção visual: não aplicável.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit após a verificação final do ID. Sem deploy/publicação remota.
 - Pendência real/próximo comando: nenhuma no código local; iniciar C01 e manter a sequência de publicação C02 → migration C01 → frontend C03.
+
+## C01
+
+- Comportamento antes → depois: `perfis.habilidades` exigia pelo menos um item e a RPC rejeitava lista vazia; `0018` aceita lista vazia e mantém validação de 0–50 strings não vazias, inclusive no update direto.
+- Arquivos/símbolos: `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md`.
+- Casos obrigatórios: cadastro via confirmação com `[]` salvo; update do dono com `[]`; array nulo, elemento nulo, item em branco e 51 itens rejeitados; update de outro usuário sem alteração; perfil legado com `Excel` preservado.
+- Comandos/exit code/aprovados/ignorados: `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/migrations_test.ts` — exit 0, 1 aprovado, 0 ignorados.
+- Inspeção visual: não aplicável.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C01 após a suíte Python completa. Migration não aplicada remotamente.
+- Pendência real/próximo comando: disponibilizar C02 antes de aplicar `0018`; seguir para C02.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

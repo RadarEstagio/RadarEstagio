@@ -22,17 +22,33 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     for await (const entry of Deno.readDir(directory)) {
       if (entry.name.endsWith(".sql")) files.push(entry.name);
     }
-    for (const file of files.sort()) {
-      await db.exec(await Deno.readTextFile(new URL(file, directory)));
-    }
+    const ordenados = files.sort();
+    const indiceC01 = ordenados.findIndex((file) => file.startsWith("0018_"));
+    assert.notEqual(indiceC01, -1);
     const dono = "00000000-0000-4000-8000-000000000001";
     const outro = "00000000-0000-4000-8000-000000000002";
+    const legado = "00000000-0000-4000-8000-000000000004";
     const sessao = "00000000-0000-4000-8000-000000000003";
+    for (const file of ordenados.slice(0, indiceC01)) {
+      await db.exec(await Deno.readTextFile(new URL(file, directory)));
+    }
+    await db.query(
+      "insert into auth.users(id,email,email_confirmed_at) values ($1,$2,now())",
+      [legado, "legado@example.com"],
+    );
+    await db.query(
+      `insert into perfis(user_id,curso,periodo,habilidades,cidade,modalidade,areas_de_interesse)
+       values ($1,'Administração',2,$2,'Recife, PE','presencial','{rotinas_administrativas}')`,
+      [legado, ["Excel"]],
+    );
+    for (const file of ordenados.slice(indiceC01)) {
+      await db.exec(await Deno.readTextFile(new URL(file, directory)));
+    }
     const cadastro = {
       perfil: {
         curso: "Computação",
         periodo: 3,
-        habilidades: ["Python"],
+        habilidades: [],
         cidade: "Recife, PE",
         modalidade: "remoto",
         areas_de_interesse: ["dados_ia"],
@@ -52,7 +68,7 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       "insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3)",
       [dono, "dono@example.com", { cadastro_radar: cadastro }],
     );
-    assert.equal(await count("perfis"), 0);
+    assert.equal(await count("perfis"), 1);
     assert.equal(await count("cadastros_pendentes"), 1);
     await db.query(
       "update auth.users set raw_user_meta_data = '{}' where id = $1",
@@ -62,12 +78,13 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       "update auth.users set email_confirmed_at = now() where id = $1",
       [dono],
     );
-    assert.equal(await count("perfis"), 1);
+    assert.equal(await count("perfis"), 2);
     assert.equal(await count("cadastros_pendentes"), 0);
     let saved = (await db.query<
       {
         id: string;
         cidade: string;
+        habilidades: string[];
         aceita_emails: boolean;
         versao_dos_termos: string;
         termos_aceitos_em: string;
@@ -78,6 +95,7 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     assert.equal(saved.aceita_emails, false);
     assert.equal(saved.versao_dos_termos, "2026-09-05");
     assert.ok(saved.termos_aceitos_em);
+    assert.deepEqual(saved.habilidades, []);
     const events = (await db.query<{ nome: string; sessao_id: string }>(
       "select nome, sessao_id from eventos_produto where user_id = $1",
       [dono],
@@ -88,7 +106,7 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       "update auth.users set email_confirmed_at = now() where id = $1",
       [dono],
     );
-    assert.equal(await count("perfis"), 1);
+    assert.equal(await count("perfis"), 2);
     await db.query(
       "insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values ($1,$2,now(),$3)",
       [outro, "outro@example.com", {
@@ -126,6 +144,31 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     ]);
     await db.exec("set role authenticated");
     assert.equal(await count("perfis"), 1);
+    await db.query("update perfis set habilidades = '{}' where user_id = $1", [dono]);
+    await assert.rejects(() => db.exec(
+      "update perfis set habilidades = null where user_id = '00000000-0000-4000-8000-000000000001'",
+    ));
+    await assert.rejects(() => db.exec(
+      "update perfis set habilidades = '{NULL}' where user_id = '00000000-0000-4000-8000-000000000001'",
+    ));
+    await assert.rejects(() => db.exec(
+      "update perfis set habilidades = ARRAY[' '] where user_id = '00000000-0000-4000-8000-000000000001'",
+    ));
+    const habilidadesDemais = Array.from({ length: 51 }, (_, index) => `habilidade-${index}`);
+    await assert.rejects(() => db.query(
+      "update perfis set habilidades = $1::text[] where user_id = $2",
+      [habilidadesDemais, dono],
+    ));
+    const outroUpdate = await db.query(
+      "update perfis set habilidades = '{Outra}' where user_id = $1 returning id",
+      [outro],
+    );
+    assert.equal(outroUpdate.rows.length, 0);
+    const outroVisivel = await db.query<{ habilidades: string[] }>(
+      "select habilidades from perfis where user_id = $1",
+      [outro],
+    );
+    assert.equal(outroVisivel.rows.length, 0);
     await assert.rejects(() => db.exec("select * from cadastros_pendentes"));
     await assert.rejects(() =>
       db.exec("update perfis set versao_dos_termos = 'forjada'")
@@ -159,11 +202,25 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     assert.equal(changed.rows.length, 0);
     await db.exec("reset role");
     await assert.rejects(feedback);
+    const outroHabilidades = (await db.query<{ habilidades: string[] }>(
+      "select habilidades from perfis where user_id = $1",
+      [outro],
+    )).rows[0].habilidades;
+    assert.deepEqual(outroHabilidades, []);
     for (
       const invalid of [
         { ...cadastro, aceitou_termos: false },
         { ...cadastro, sessao_id: "inválida" },
+        { ...cadastro, perfil: { ...cadastro.perfil, habilidades: null } },
         { ...cadastro, perfil: { ...cadastro.perfil, habilidades: [123] } },
+        { ...cadastro, perfil: { ...cadastro.perfil, habilidades: [" "] } },
+        {
+          ...cadastro,
+          perfil: {
+            ...cadastro.perfil,
+            habilidades: Array.from({ length: 51 }, (_, index) => `habilidade-${index}`),
+          },
+        },
         {
           ...cadastro,
           perfil: { ...cadastro.perfil, areas_de_interesse: ["inventada"] },
@@ -180,6 +237,11 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       [outro],
     )).rows[0].versao_dos_termos;
     assert.equal(versaoNova, "2026-09-06");
+    const perfilLegado = (await db.query<{ habilidades: string[] }>(
+      "select habilidades from perfis where user_id = $1",
+      [legado],
+    )).rows[0];
+    assert.deepEqual(perfilLegado.habilidades, ["Excel"]);
     for (const versao of ["", "qualquer", "2026-02-31", 20260905, null]) {
       await assert.rejects(() =>
         db.query("select validar_cadastro_radar($1)", [{
