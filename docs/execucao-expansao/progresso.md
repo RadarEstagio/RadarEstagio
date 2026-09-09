@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: L01.
-- Próximo passo: corrigir a promessa, os metadados e os CTAs da landing sem alterar o fluxo já fechado.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C05 pronto para commit.
+- ID atual: L02.
+- Próximo passo: alinhar demonstração e FAQ ao formato real das recomendações.
+- Branch/HEAD: `codex/expansao-revenue-centric` / L01 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -22,6 +22,7 @@ existentes.
 | C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
 | C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
 | C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
+| L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até cinco recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -83,6 +84,16 @@ existentes.
 - Inspeção visual: Safari local em desktop (~1280 px) mostrou o novo cadastro abrindo na etapa de perfil, com `Etapa 1 de 4` e foco no curso. A viewport exata de 375 px não foi disponibilizada nesta sessão.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C05 será criado após a suíte Python completa. Nenhuma publicação externa.
 - Pendência real/próximo comando: validar L01 na landing; publicação, CAPTCHA real e viewport móvel continuam dependentes da equipe/ambiente.
+
+## L01
+
+- Comportamento antes → depois: a primeira dobra prometia que as vagas certas chegariam e usava linguagem genérica; agora nomeia curso e momento, oportunidades de diferentes áreas, até cinco recomendações explicadas no Telegram e gratuidade durante o piloto.
+- Arquivos/símbolos: `web/index.html` (title, description, Open Graph, Twitter, hero, trust strip, copy de comparação), `tests/test_product_copy.py`.
+- Casos obrigatórios: buscas textuais não encontram a promessa antiga, não há “Pare de procurar estágio” nem “A IA compara”, e o CTA conserva `.js-open-signup`, `data-event-origin` e o comportamento de conta existente.
+- Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_frontend_activation.py` — exit 0, 31 aprovados, 0 ignorados; `git diff --check` — exit 0.
+- Inspeção visual: Safari local recarregado em desktop (~1280 px) exibiu o novo título completo, CTA e os dois sinais de confiança sem rolagem horizontal aparente. Viewport exato de 375 px não foi disponibilizado.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L01 será criado após a verificação do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: alinhar a demonstração e as cinco dúvidas prioritárias em L02; clique com sessão real não foi validado fora do harness.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

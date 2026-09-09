@@ -3,6 +3,25 @@ from pathlib import Path
 RAIZ = Path(__file__).parent.parent
 
 
+def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "Encontre estágios que combinam com seu curso e seu momento." in html
+    assert "diferentes áreas" in html
+    assert "até cinco recomendações explicadas no Telegram" in html
+    assert "Gratuito durante o piloto" in html
+    assert "Pare de procurar estágio" not in html
+    assert "A IA compara" not in html
+
+
+def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert '<meta name="twitter:card" content="summary_large_image" />' in html
+    assert html.count("até cinco recomendações explicadas no Telegram") >= 3
+    assert "As vagas certas chegam até você" not in html
+
+
 def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
     html = (RAIZ / "web/index.html").read_text()
 
