@@ -17,7 +17,7 @@ Sucesso do check Cloudflare no PR não comprova que cron e Supabase estão atual
 Primeiro consultar estado sem mutação. Para publicar, preparar ordem exata conforme diferenças
 observadas; não reaplicar migrations registradas. Testes com conta da equipe: cadastro,
 confirmação/recuperação, vínculo, entrega, abertura, feedback, edição, pausa/retomada e controles
-de dados. Verificar limite de cinco no workflow; não disparar vagas para toda a base para testar.
+de dados. Verificar limite de sete no workflow; não disparar vagas para toda a base para testar.
 Usar `rodar --perfil` somente com conta apropriada e autorização da sessão.
 
 Aceite: cada item tem evidência ou está explicitamente pendente; segredos e identificadores
@@ -35,7 +35,7 @@ compatíveis. Preparar reversão da aplicação sem apagar dados. Não declarar 
    alteradas. Consultar histórico antes de propor aplicação; frontend não pode escrever campos
    que o banco ainda rejeita. Registrar eventual deploy automático ligado à main.
 4. Preparar roteiro de conta da equipe, com resultado esperado por passo: salvar perfil,
-   confirmar e-mail, vincular chat, receber até cinco, abrir link, responder feedback e pausar.
+   confirmar e-mail, vincular chat, receber até sete, abrir link, responder feedback e pausar.
    Execução com efeitos externos depende de acesso/autorização; roteiro sozinho é entrega local.
 
 Saída obrigatória: tabela de versões, roteiro, ordem de publicação, reversão compatível e

@@ -6,8 +6,8 @@ Confirmar HEAD/main antes de iniciar; não reaplicar entregas existentes.
 
 ## Ponto de retomada
 
-- ID atual: O00.
-- Próximo passo: ler protocolo, conferir base e restaurar cinco no workflow.
+- ID atual: C01 (O00 concluída em 08/09: limite mantido em sete por decisão de Ian).
+- Próximo passo: ler protocolo, conferir base e iniciar C01.
 - Branch/HEAD: preencher ao iniciar.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.

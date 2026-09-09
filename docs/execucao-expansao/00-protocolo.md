@@ -41,8 +41,8 @@ são relativos à raiz. Use `rg`; se indisponível, use `grep`/`find`.
 
 ## Limites e decisões já resolvidas
 
-Manter HTML/CSS/JS estático, Python e Supabase. Usuários recebem **até cinco vagas**; sete é
-somente configuração de teste local. Não introduzir framework, dashboard, checkout, outra fonte,
+Manter HTML/CSS/JS estático, Python e Supabase. Usuários recebem **até sete vagas** (decisão de Ian em
+08/09/2026; cinco é só o padrão local do código). Não introduzir framework, dashboard, checkout, outra fonte,
 recompensa ou pesos por área sem a tarefa específica. Não reintroduzir cache de notas.
 
 Migrations novas são incrementais. Escolher o próximo número disponível, sem editar 0001–0017.

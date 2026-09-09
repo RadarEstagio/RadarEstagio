@@ -31,7 +31,7 @@ Não maximizar quantidade de funcionalidades ou prometer cobertura universal.
 
 | Bloco | IDs, nesta ordem | Resultado necessário para fechar |
 |---|---|---|
-| 1. Cadastro e confiança | O00 → C01 → C02 → C03 → C04 → C05 | Limite cinco, iniciante aceito de ponta a ponta, navegação e isolamento entre contas preservados |
+| 1. Cadastro e confiança | O00 → C01 → C02 → C03 → C04 → C05 | Limite sete, iniciante aceito de ponta a ponta, navegação e isolamento entre contas preservados |
 | 2. Compreensão da entrega | L01 → L02 → C06 | Promessa, demonstração e estados coerentes com o que o sistema sabe |
 | 3. Aprendizado | M01 → M02 → M03 → M04 | Eventos interpretáveis, contagens e tempos corretos, utilidade por área sem duplicação |
 | 4. Motivo da pausa | R01 → R02 → R03 | Pausa continua livre; resposta opcional é persistida e relatada corretamente |
@@ -93,7 +93,7 @@ Prompt pronto para copiar:
 > `docs/execucao-expansao/00-protocolo.md`. Implemente o plano completo, executando um ID por
 > vez na ordem de dependências e continuando automaticamente após cada entrega. Confira o
 > código atual para não refazer o que já existe. Preserve as decisões fechadas nas fichas,
-> em especial o limite de cinco recomendações para usuários. Teste as mudanças e registre o
+> em especial o limite de sete recomendações para usuários. Teste as mudanças e registre o
 > progresso em `docs/execucao-expansao/progresso.md`. Prepare os documentos das tarefas externas
 > com evidências disponíveis e explicite o que depende da equipe, sem bloquear as demais.
 > Não pare na primeira tarefa nem somente em planejamento. Ao terminar, entregue o resumo de
@@ -111,7 +111,7 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 
 | ID | Tarefa | Prioridade | Estado | Depende de | Especificação |
 |---|---|---|---|---|---|
-| O00 | Restaurar limite de cinco no workflow | P0 | Pronta | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
+| O00 | Manter limite de sete no workflow | P0 | Concluída em 08/09 | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
 | C01 | Permitir habilidades vazias no banco | P0 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
 | C02 | Aceitar perfil iniciante no Python | P0 | Pendente | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
 | C03 | Oferecer caminho sem habilidades no site | P1 | Pendente | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
@@ -142,8 +142,8 @@ externos. Acesso/decisão ausente não autoriza inventar resultados nem bloqueia
 
 - A expansão básica e as correções do PR #21 estão concluídas no código; não são o primeiro lote.
 - Recálculo atual substitui o pedido genérico de versionar notas. Não invalidar dados ou reenviar vagas.
-- Decisão explícita do Igor: usuários recebem até **5** recomendações; **7** era teste local.
-  O00 corrige o workflow ainda configurado em sete; L01 comunica até cinco. O parâmetro local
+- Decisão de Ian em 08/09/2026: usuários recebem até **7** recomendações, valor de produção
+  desde 03/09. O00 fica concluída mantendo o workflow; L01 comunica até sete. O parâmetro local
   continua configurável para testes sem alterar o workflow de produção.
 - Formações sem semestres, interesses entre grandes áreas e equivalência de cursos precisam de
   contrato específico (D01). Não resolver com defaults inventados ou curso automaticamente equivalente.
