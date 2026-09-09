@@ -60,9 +60,12 @@ p, h1, h2, h3 { margin-top: 0; }
 .radar-mark::before { content: ""; width: 17px; height: 17px; border: 2px solid currentColor; border-radius: 50%; }
 .radar-mark::after { content: ""; position: absolute; width: 16px; height: 2px; background: currentColor; transform: rotate(-42deg); transform-origin: right; right: 15px; top: 15px; }
 .radar-mark i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-light); box-shadow: 0 0 0 3px var(--ink); }
-.desktop-nav { display: flex; align-items: center; gap: 34px; margin-right: auto; }
+.desktop-nav { display: flex; align-items: center; gap: 34px; }
 .desktop-nav a { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
 .desktop-nav a:hover { color: var(--accent); }
+.header-login { margin-left: auto; padding: 0 6px; border: 0; background: none; color: var(--ink-soft); font-size: 14px; font-weight: 600; cursor: pointer; }
+.header-login[hidden] + .button { margin-left: auto; }
+.header-login:hover { color: var(--accent); }
 
 .button {
   display: inline-flex; align-items: center; justify-content: center; gap: 12px;
