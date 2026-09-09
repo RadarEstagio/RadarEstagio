@@ -85,6 +85,39 @@ O motivo da pausa é opcional e aceita somente `conseguiu_estagio`, `interrompeu
 histórico e não é preenchida para pausas técnicas pelo sistema. O frontend limpa o motivo no
 mesmo update que retoma as entregas.
 
+## Elegibilidade acadêmica — decisão D01 em aberto
+
+Preparado em 08/09/2026 a partir do contrato atual e dos casos pedidos em E02. O código mantém
+`periodo` como inteiro maior ou igual a 1, uma área principal por curso, subáreas do catálogo e
+as exceções já existentes de computação. Nenhuma equivalência nova, migration ou ajuste de peso
+foi criado nesta preparação.
+
+| Caso | Entrada atual/limitação | Opção A | Opção B | Impacto que a equipe precisa escolher |
+|---|---|---|---|---|
+| Curso técnico por módulo | `periodo` aceita inteiro, mas módulo não significa semestre automaticamente | preservar o número como módulo e exibir o rótulo informado | mapear módulo para uma etapa acadêmica mediante catálogo por instituição | altera cadastro, texto de comparação e compatibilidade de perfis antigos |
+| Graduação por ano | o formulário chama o campo de período e não conhece duração do curso | manter ano/período como ordem declarada, sem conversão | cadastrar duração/escala da formação e converter apenas com fonte confiável | adiciona campos e regra de migração; não decidir por suposição |
+| Anúncio exige curso exato | o match usa curso/área atual e pode ter informação incompleta | exigir correspondência exata quando o anúncio declarar isso | aceitar correlatos definidos por catálogo revisado | altera ranking e elegibilidade; precisa de exemplos públicos |
+| Anúncio aceita correlatos | não há contrato geral de equivalência entre formações | tratar correlato como desconhecido até ser declarado | manter catálogo de correlatos com versão e responsável | afeta perfis antigos, avaliação e explicação da recomendação |
+| Interesse em atividade de outra área | interesses dependem da área do curso no frontend | permitir interesse declarado, sem transformar em formação elegível | criar subárea transversal com regra explícita | afeta catálogo e comparação, mas não deve falsificar curso |
+| Curso/alias ausente | curso desconhecido não recebe sugestões de outra área | preservar curso livre e registrar desconhecido | aprovar alias em catálogo versionado antes de classificar | exige revisão de domínio; não deve apagar seleção do usuário |
+| Profissão fora das áreas atuais | catálogo não cobre todos os cursos e profissões | grupo “Não classificado” até evidência suficiente | adicionar área/subáreas após caso observado e revisão | migration, frontend e pontuação separados; não ampliar agora |
+| Frequência, pesos e fontes | decisões não são consequência automática do curso | manter contrato vigente e abrir tarefa específica | mudar somente após caso medido e decisão registrada | não misturar com equivalência acadêmica |
+
+### Decisões solicitadas
+
+1. Para técnico e graduação, qual escala deve ser armazenada e mostrada sem converter módulo,
+   ano ou semestre por inferência?
+2. Em que condições um anúncio declarado como “correlato” pode aceitar outro curso, e quem
+   mantém esse catálogo?
+3. O grupo “Não classificado” é suficiente enquanto aliases e novas profissões não tiverem
+   casos reais? A resposta deve incluir os exemplos de E02.
+4. Quais termos de uma fonte podem ser guardados como alias e qual será a versão do catálogo?
+
+Até a decisão, o frontend deve manter o contrato executável atual: período inteiro, curso
+declarado, área do catálogo quando reconhecida e desconhecido sem equivalência inventada.
+Implementação posterior deve ser dividida em contrato/migration, leitura e avaliação Python,
+interface e verificação integrada, com compatibilidade explícita para perfis existentes.
+
 ## Telegram e entrega
 
 O botão abre `https://t.me/RadarEstagio_bot?start=<token_vinculo>`. O usuário confirma Start;

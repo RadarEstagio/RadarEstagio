@@ -16,13 +16,13 @@ existentes.
 
 | ID | Estado | Arquivos/commit | Verificações e resultado | Pendência externa |
 |---|---|---|---|---|
-| O00 | Implementado/testado | `.github/workflows/radar-diario.yml` | `QUANTIDADE_VAGAS_ENVIADAS` mudou de 7 para 5; Python já tinha padrão 5 | Workflow versionado nesta branch; nenhuma execução remota verificada |
+| O00 | Implementado/testado | `.github/workflows/radar-diario.yml`, `.env.example`, `radar/settings.py`, `README.md` | Decisão revisada: workflow, padrão Python e documentação usam 7; nenhum parâmetro de fonte, cron ou filtro foi alterado | Workflow versionado nesta branch; nenhuma execução remota verificada |
 | C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
 | C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
 | C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
 | C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
 | C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
-| L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até cinco recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
+| L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até sete recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
 | L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
 | C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
 | M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
@@ -32,17 +32,23 @@ existentes.
 | R01 | Implementado/testado | `supabase/migrations/0019_motivo_pausa.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Coluna nullable com cinco valores, grant aditivo, legado nulo, dono/null, inválido, outro usuário, exportação e conta excluída cobertos no harness | Migration ainda não aplicada no projeto remoto; R02 depende da publicação da coluna |
 | R02 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Pergunta opcional só após pausa OK; cinco motivos e Pular; resposta separada filtrada por dono/pausado; corrida/erro preserva pausa; retomada limpa motivo | Frontend e migration 0019 ainda não publicados; integração real com Supabase não verificada |
 | R03 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Situação atual de pausas não excluídas por motivo/null; ativo e excluído fora; retomada remove; vazio sem divisão por zero; CLI ressalva que não é churn | Dados reais e aplicação remota de 0019 não verificados |
+| E01 | Preparado, falta evidência externa | `docs/guia-publicacao-e-piloto.md` | Tabela de versões, ordem `0018` → `0019` → frontend, roteiro controlado, reversão e responsáveis a definir | Cloudflare, Supabase, Auth, Telegram, cron e job não consultados nesta sessão |
+| E02 | Preparado, falta evidência externa | `docs/cobertura-estagios.md` | Matriz reproduzível, fixtures rotuladas sintéticas e casos de qualidade; campos reais “não medido” | Acesso a fontes e janela de coleta dependem da equipe |
+| E03 | Preparado, falta evidência externa | `docs/aquisicao-e-prova.md` | Três canais comparados, canal inicial proposto, mensagem para revisão e modelo de autorização | Autorização, URL pública revalidada e qualquer envio dependem da equipe |
+| E04 | Preparado, falta evidência externa | `docs/custos-operacao.md` | Tabela por serviço, fórmulas e cenários sem inventar preço, franquia ou CAC/LTV | Faturas, uso, suporte e billing dependem da equipe |
+| E05 | Preparado, falta decisão | `docs/hipotese-comercial.md` | Assinatura versus acesso por período, pagador hipotético, campos de decisão e teste futuro sem cobrança | Preço, duração, renovação, elegibilidade e provedor dependem da equipe |
+| D01 | Preparado, falta decisão | `docs/contrato-front.md` | Matriz de formações, curso/área, desconhecido, aliases e impacto em dados/ranking sem alterar código | Escolha de contrato acadêmico depende dos casos de E02 e da equipe |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
 
-- Comportamento antes → depois: o workflow sobrescrevia a configuração com 7; diário e dispatch por perfil agora recebem 5.
-- Arquivos/símbolos: `.github/workflows/radar-diario.yml`, `radar/settings.py` conferido; padrão Python continua 5.
-- Casos obrigatórios: busca textual confirmou um único override de produção; nenhum parâmetro de fonte, cron ou filtro foi alterado.
+- Comportamento antes → depois: após a decisão revisada, o workflow e o padrão Python passam de 5 para 7; diário e dispatch por perfil recebem a mesma configuração.
+- Arquivos/símbolos: `.github/workflows/radar-diario.yml`, `.env.example`, `radar/settings.py`, `README.md` e copy da landing.
+- Casos obrigatórios: busca textual confirmou o limite sete nas superfícies de produção/documentação; nenhum parâmetro de fonte, cron ou filtro foi alterado.
 - Comandos/exit code: `git diff --check` será executado no fechamento do commit; inspeção YAML/diff concluída. Pipeline real não foi executado.
 - Inspeção visual: não aplicável.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit após a verificação final do ID. Sem deploy/publicação remota.
-- Pendência real/próximo comando: nenhuma no código local; iniciar C01 e manter a sequência de publicação C02 → migration C01 → frontend C03.
+- Pendência real/próximo comando: nenhum deploy remoto foi verificado; a equipe deve conferir a configuração publicada antes de enviar a base.
 
 ## C01
 
@@ -96,7 +102,7 @@ existentes.
 
 ## L01
 
-- Comportamento antes → depois: a primeira dobra prometia que as vagas certas chegariam e usava linguagem genérica; agora nomeia curso e momento, oportunidades de diferentes áreas, até cinco recomendações explicadas no Telegram e gratuidade durante o piloto.
+- Comportamento antes → depois: a primeira dobra prometia que as vagas certas chegariam e usava linguagem genérica; agora nomeia curso e momento, oportunidades de diferentes áreas, até sete recomendações explicadas no Telegram e gratuidade durante o piloto.
 - Arquivos/símbolos: `web/index.html` (title, description, Open Graph, Twitter, hero, trust strip, copy de comparação), `tests/test_product_copy.py`.
 - Casos obrigatórios: buscas textuais não encontram a promessa antiga, não há “Pare de procurar estágio” nem “A IA compara”, e o CTA conserva `.js-open-signup`, `data-event-origin` e o comportamento de conta existente.
 - Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_frontend_activation.py` — exit 0, 31 aprovados, 0 ignorados; `git diff --check` — exit 0.
@@ -108,7 +114,7 @@ existentes.
 
 - Comportamento antes → depois: o cartão parecia uma vaga real, usava “match” e não mostrava o estado de requisitos a conferir; agora é explicitamente ilustrativo, usa “nota / 100”, fonte/data, requisitos atendidos e a conferir, sem link de candidatura real. A FAQ responde as cinco dúvidas fechadas.
 - Arquivos/símbolos: `web/index.html` (demo, faixa de fontes/tecnologias e seis `details`), `tests/test_product_copy.py`.
-- Casos obrigatórios: demo não contém texto visível “match”, não apresenta parceiro/depoimento, informa que as fontes não cobrem tudo, explica limite de cinco, dias sem vaga, candidatura na fonte, vínculo do Telegram e edição/pausa da conta.
+- Casos obrigatórios: demo não contém texto visível “match”, não apresenta parceiro/depoimento, informa que as fontes não cobrem tudo, explica limite de sete, dias sem vaga, candidatura na fonte, vínculo do Telegram e edição/pausa da conta.
 - Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_formatador.py` — exit 0, 46 aprovados, 0 ignorados; `git diff --check` — exit 0.
 - Inspeção visual: Safari local com query de cache exibiu o cartão e a FAQ atualizados; abrir “Preciso vincular o Telegram?” por controle nativo mostrou a resposta e estado expandido. Viewport exato de 375 px não foi disponibilizado.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L02 será criado após a verificação do diff. Nenhuma publicação externa.
@@ -132,7 +138,7 @@ existentes.
 - Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 41 aprovados, 0 ignorados; P — `uv run pytest -q tests/test_product_events.py tests/test_funil.py` — exit 0, 17 aprovados, 0 ignorados; `git diff --check` — exit 0.
 - Inspeção visual: não aplicável; a mudança é documentação e cobertura de emissão de eventos.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M01 será criado após a verificação do diff. Nenhuma publicação externa.
-- Pendência real/próximo comando: executar M02 com o oráculo de feedback; não usar dados reais nem alterar o limite de cinco.
+- Pendência real/próximo comando: executar M02 com o oráculo de feedback; não usar dados reais nem alterar o limite revisado de sete.
 
 ## M02
 
@@ -171,7 +177,7 @@ existentes.
 - Casos obrigatórios: perfil legado recebe nulo; dono grava cada valor e nulo; valor inválido é rejeitado; outro usuário não altera; exportação inclui o campo; perfil excluído continua sem atualização.
 - Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/migrations_test.ts` — exit 0, 1 aprovado, 0 ignorados; `git diff --check` — exit 0.
 - Inspeção visual: não aplicável; mudança é schema, permissões e contrato.
-- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R01 será criado após revisão do diff. Nenhuma publicação externa.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit `4dded5a` (`feat(retencao): persiste motivo atual da pausa`). Nenhuma publicação externa.
 - Pendência real/próximo comando: aplicar `0019` no projeto remoto antes de publicar R02; seguir para R02 sem aguardar essa etapa externa.
 
 ## R02
@@ -181,7 +187,7 @@ existentes.
 - Casos obrigatórios: falha ao pausar não mostra pergunta; pausa + Pular; resposta separada sem alterar `ativo`; erro/corrida com outra aba mantém pausa e permite pular; retomada limpa motivo; foco chega ao título da pergunta/estado.
 - Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 45 aprovados, 0 ignorados; `git diff --check` — exit 0.
 - Inspeção visual: controles são nativos, labels de rádio recebem foco visual pelo estilo existente e a pergunta usa fieldset/legend; viewport exato de 375 px permanece não verificável nesta sessão.
-- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R02 será criado após `git diff --check`. Nenhuma publicação externa.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit `b114b4a` (`feat(retencao): coleta motivo opcional da pausa`). Nenhuma publicação externa.
 - Pendência real/próximo comando: publicar 0019 antes do frontend; seguir para R03, que só consulta o estado atual das contas pausadas.
 
 ## R03
@@ -191,8 +197,83 @@ existentes.
 - Casos obrigatórios: cinco motivos + dois nulos fecham 7; ativo com motivo residual e excluído pausado não entram; retomada reduz a 6; dataset vazio não divide por zero; saída não chama o quadro de churn mensal.
 - Comandos/exit code/aprovados/ignorados: Q — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 2 aprovados, 0 ignorados; Python — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py tests/test_areas.py` — exit 0, 109 aprovados, 25 ignorados por Postgres; lint `uv run ruff check radar tests/test_funil.py` — exit 0; formatação `uv run ruff format --check radar tests/test_funil.py` — exit 0; `git diff --check` — exit 0.
 - Inspeção visual: não aplicável; mudança é agregação e saída textual do relatório.
-- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit R03 será criado após `git diff --check`. Nenhuma publicação externa.
-- Pendência real/próximo comando: iniciar artefatos E01–E05/D01. O quadro só poderá ser comparado com situação real depois de aplicar 0019 e publicar a versão correspondente.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit `539e08a` (`feat(metricas): relata pausas atuais por motivo`). Nenhuma publicação externa.
+- Pendência real/próximo comando: preparar/registrar E01–E05/D01. O quadro só poderá ser comparado com situação real depois de aplicar 0019 e publicar a versão correspondente.
+
+## Revisão da decisão do limite
+
+- Data: 08/09/2026, após a implementação local de O00–R03.
+- Decisão anterior: até cinco recomendações por usuário; sete apenas em teste local.
+- Decisão revisada pelo Igor: até sete recomendações por usuário.
+- Superfícies sincronizadas: workflow, `.env.example`, padrão `Settings`, helpers de teste,
+  README, pré-PRD, protocolo, ficha O00, plano, guia, mensagem de aquisição e landing/SEO.
+- Verificação local: `uv run pytest -q tests/test_product_copy.py tests/test_settings.py tests/test_pipeline.py` — exit 0, 77 aprovados; `uv run ruff check ...` e formatação — exit 0; `git diff --check` — exit 0.
+- Pendência: nenhuma execução remota foi feita; a equipe deve conferir que o workflow publicado
+  e qualquer variável de ambiente efetiva usam sete antes de enviar recomendações.
+
+## E01
+
+- Comportamento antes → depois: o guia agora separa evidência remota datada de 05–06/09,
+  código local de 08/09 e itens não verificados nesta sessão.
+- Arquivos/símbolos: `docs/guia-publicacao-e-piloto.md`, tabela de componentes, ordem `0018` →
+  `0019` → frontend, roteiro controlado, reversão aditiva e pendências com responsável a definir.
+- Evidência disponível: YAML local com limite revisado de sete, testes locais dos blocos, guia
+  com registros anteriores de funções e projeto Supabase; não houve consulta ou mutação remota.
+- Pendência real: equipe precisa conferir Cloudflare, Supabase/Auth/Turnstile, Telegram,
+  cron-job.org, domínio e job; não declarar publicação a partir deste documento.
+
+## E02
+
+- Comportamento antes → depois: não havia matriz de cobertura externa; agora há método, campos,
+  fixtures sintéticas rotuladas, casos de Administração, software/laboratório, desconhecido,
+  saúde, engenharia e computação, além de erros/limites.
+- Arquivo: `docs/cobertura-estagios.md`.
+- Evidência disponível: `tests/fixtures/adzuna_resposta.json`, `gupy_resposta.json`,
+  `adzuna_detalhe.html` e regressões locais; nenhuma contagem foi apresentada como observada.
+- Pendência real: acesso autorizado, janela/paginação, referências públicas/anonimizadas e
+  responsável pela coleta dependem da equipe; cobertura de mercado continua não medida.
+
+## E03
+
+- Comportamento antes → depois: a proposta de aquisição agora compara três canais, recomenda
+  colegas/comunidades apenas como hipótese, prepara mensagem sem disparo e define registro de
+  origem/utilidade sem transformar desconhecido em zero.
+- Arquivo: `docs/aquisicao-e-prova.md`.
+- Evidência disponível: copy L01 com limite revisado de sete, URL pública registrada no guia e
+  eventos/métricas locais; não houve compartilhamento nem relato autorizado.
+- Pendência real: autorização da equipe, URL revalidada, canal, exposições e qualquer relato
+  dependem da equipe; não implementar tracking ou indicação nesta tarefa.
+
+## E04
+
+- Comportamento antes → depois: não havia planilha lógica para custos; agora há tabela por
+  serviço, período, moeda, franquia, uso, fórmula de custo por usuário e cenário de crescimento.
+- Arquivo: `docs/custos-operacao.md`.
+- Evidência disponível: configuração local, workflow, guia e registros operacionais do pré-PRD;
+  nenhuma fatura, franquia ou preço foi inventado.
+- Pendência real: billing, faturas, uso, suporte e taxa/hora dependem da equipe; CAC, LTV e
+  margem permanecem não medidos.
+
+## E05
+
+- Comportamento antes → depois: a comparação entre assinatura e acesso por período foi preparada
+  sem escolher preço, renovação, pagador ou provedor e sem criar checkout/paywall.
+- Arquivo: `docs/hipotese-comercial.md`.
+- Evidência disponível: benefício da landing e fórmulas de métricas/custos locais; não há
+  compradores nem pagamento real.
+- Pendência real: decisão da equipe sobre oferta, preço, duração, elegibilidade, cancelamento,
+  aceite e provedor; E05 não autoriza cobrança.
+
+## D01
+
+- Comportamento antes → depois: o contrato agora registra opções e perguntas para técnico por
+  módulo, graduação por ano, curso exato/correlato, interesse fora da área, aliases e profissões
+  fora do catálogo, sem escolher equivalência nem gerar migration.
+- Arquivo: `docs/contrato-front.md`, seção “Elegibilidade acadêmica — decisão D01 em aberto”.
+- Evidência disponível: contrato executável atual, catálogo de áreas, limitações de E02 e testes
+  locais; não há casos reais suficientes para concluir regra acadêmica.
+- Pendência real: equipe precisa decidir escala, equivalências, aliases, responsável/versionamento
+  e exemplos. Só depois abrir tarefas separadas de schema, Python, interface e integração.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

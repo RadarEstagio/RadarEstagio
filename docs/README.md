@@ -16,6 +16,7 @@ como equivalentes.
   [contrato do frontend](contrato-front.md).
 - **Como interpretar resultados:** [Métricas](metricas.md).
 - **Definição, hipóteses e viabilidade para a disciplina:** [Pré-PRD](pre-prd.md).
+- **Artefatos externos preparados:** [cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md), [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md).
 
 ## Revisão: o que faz sentido manter
 

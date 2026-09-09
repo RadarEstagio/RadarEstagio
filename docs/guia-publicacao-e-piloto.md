@@ -245,6 +245,72 @@ Use dados sintéticos e seus próprios endereços e Telegram:
 **Concluído quando:** resultados registrados e falhas corrigidas. Identifique as contas e
 sessões de teste para separá-las das métricas do piloto.
 
+## 12. Registro de preparação da expansão — 08/09/2026
+
+Este registro reúne a evidência disponível no repositório e a diferença entre o código local
+da branch `codex/expansao-revenue-centric` e o ambiente remoto. A sessão não teve acesso para
+consultar Cloudflare, Supabase, Telegram, cron-job.org ou GitHub; portanto, “não verificado”
+é um impedimento explícito, não uma conclusão negativa. A evidência remota abaixo é a já
+registrada neste guia em 05–06/09 e não foi repetida como se fosse atual.
+
+| Componente | Versão esperada nesta expansão | Observada/evidência disponível | Data | Resultado e pendência |
+|---|---|---|---|---|
+| Frontend Cloudflare Pages | `web/` com C03–C06, L01–L02 e R02 | Não verificado remotamente; HTML/CSS/JS testados localmente na branch | 08/09 | Publicar após `0019`; conferir domínio, HTTPS, mobile e retorno do Auth |
+| Auth, redirects e CAPTCHA | Código local C05/R02; Redirect URLs e Turnstile conforme seções 5–6 | Configuração remota não consultada; integração local coberta sem provedor real | 08/09 | Equipe deve testar confirmação, recuperação, CAPTCHA válido/expirado e login |
+| Migrations | Histórico até `0019_motivo_pausa.sql`; `0018` aceita habilidades vazias e `0019` motivo opcional | Guia registra `0014`–`0016` aplicadas/reparadas em 06/09; `0017`–`0019` não têm evidência remota nesta sessão | 08/09 | Conferir `supabase migration list --linked`; aplicar somente pendentes, nesta ordem |
+| Edge Function `ir` | Versão publicada compatível com rastreio atual | Guia registra publicação e comparação de `ir` em 05/09; não reconsultado | 05/09 (registro anterior) | Revalidar somente se secrets/domínio mudarem; não há arquivo de função alterado nesta expansão |
+| Edge Function `telegram-webhook` | Vínculo, feedback e segredo preservados | Guia registra publicação e comparação em 05/09; webhook sem erro pendente no registro anterior | 05/09 (registro anterior) | Revalidar `getWebhookInfo`, vínculo e retorno de conta após publicar frontend |
+| Rastreio | `URL_DA_LANDING` pública e `URL_DE_RASTREIO` do projeto correto | Guia registra `https://radarestagio.pages.dev` e função do projeto `xrhvjwemmylwbqgluebc`; não reconsultado | 06/09 (registro anterior) | Confirmar domínio final e eventos `vaga_aberta`/feedback sem expor tokens |
+| Cron externo | cron-job.org às 07:23 BRT, sem `schedule` nativo | Não verificado nesta sessão; guia manda preservar o cron existente | 08/09 | Responsável a definir deve conferir token, horário e último dispatch; não criar outro agendador |
+| Job diário | Workflow com `QUANTIDADE_VAGAS_ENVIADAS=7`, `DIAS_RECENTES=5`, timeout de 15 min | YAML local confere limite de sete; execução remota não verificada | 08/09 | Rodar somente com autorização e conta controlada; confirmar alerta de falha |
+
+### Ordem de publicação preparada
+
+1. Confirmar a branch e os testes locais; não publicar documentos legais como vigentes sem a
+   revisão de Ian/Miguel.
+2. Publicar o Python compatível com perfil sem habilidades e, no Supabase, conferir histórico
+   antes de aplicar `0018_habilidades_vazias.sql`.
+3. Aplicar `0019_motivo_pausa.sql` depois de `0018`, conferir grants/RLS e `migration list`.
+4. Publicar `web/` com R02 somente depois de a coluna existir no banco; confirmar as URLs do
+   Auth e o estado da site key do Turnstile no ambiente escolhido.
+5. Publicar/validar as funções apenas se a equipe alterar sua versão ou secrets; a expansão
+   local não alterou `supabase/functions`.
+6. Rodar o roteiro controlado abaixo com uma conta da equipe, registrar IDs de teste fora das
+   métricas do piloto e verificar novamente o limite de sete no workflow sem atender a base inteira.
+
+### Roteiro de verificação controlada
+
+| Passo | Resultado esperado |
+|---|---|
+| Abrir landing e iniciar cadastro | CTA abre cadastro; nenhuma senha ou habilidade é enviada antes do momento previsto |
+| Salvar perfil com ou sem habilidades | Perfil válido; limite de recomendações continua sete |
+| Confirmar e-mail em outro aparelho | Perfil aparece após confirmação; não depende de estado local do primeiro aparelho |
+| Recuperar senha | Link retorna ao domínio autorizado e permite trocar senha |
+| Vincular Telegram | Webhook confirma o perfil; dispatch é só do perfil, respeitando janela do diário |
+| Receber recomendações | No máximo sete; abrir link grava `vaga_aberta` e feedback grava evento correto |
+| Editar e pausar | Edição preserva contrato; pausa confirma antes da pergunta opcional |
+| Responder ou pular motivo | Cinco valores fechados, update separado; “Pular” mantém pausa |
+| Retomar | Update ativa e limpa `motivo_pausa`; pergunta não reaparece obrigatoriamente ao reabrir |
+| Desvincular, exportar e excluir/cancelar | Controles afetam apenas a conta de teste; exportação não contém token; exclusão bloqueia novas interações |
+
+### Reversão compatível
+
+Se o frontend apresentar erro, reverter o artefato estático para a versão anterior e manter as
+migrations aditivas `0018`/`0019`; não editar nem apagar migration aplicada. Se o relatório
+R03 precisar ser retirado, usar a versão anterior do código do job/CLI enquanto a coluna
+nullable permanece no banco. Corrigir depois em nova migration, se necessário; não executar
+`drop column`, apagar dados ou reverter a coluna durante o piloto. A equipe deve registrar o
+SHA publicado, horário, responsável e motivo da reversão.
+
+### Pendências e responsáveis
+
+- A definir: acesso e aprovação da equipe para publicar a branch e conferir Cloudflare Pages.
+- A definir: aplicação remota de `0018` e `0019`, conferência de RLS/grants e `migration list`.
+- A definir: Redirect URLs, SMTP/Resend, Turnstile e textos legais vigentes.
+- A definir: conta/Telegram de teste, acompanhamento de `contato@radarestagio.com` e confirmação
+  do cron-job.org.
+- A definir: domínio público final e autorização para qualquer relato de uso.
+
 ## 11. Divulgar e ouvir colegas
 
 O plano formal de piloto foi retirado por decisão do Igor em 07/09. Depois de conferir os
