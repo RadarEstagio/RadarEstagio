@@ -8,6 +8,11 @@ interface Metricas {
   vagas_irrelevantes: number;
   recomendacoes_elegiveis_feedback: number;
   recomendacoes_com_feedback: number;
+  perfis_na_coorte: number;
+  perfis_sem_entrega: number;
+  mediana_segundos_ate_entrega: number | null;
+  perfis_sem_abertura: number;
+  mediana_segundos_ate_abertura: number | null;
   recusas_por_motivo: Record<string, number>;
   utilidade_semanal: {
     semana: string;
@@ -63,6 +68,11 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     assert.equal(result.vagas_irrelevantes, 1);
     assert.equal(result.recomendacoes_elegiveis_feedback, 4);
     assert.equal(result.recomendacoes_com_feedback, 3);
+    assert.equal(result.perfis_na_coorte, 1);
+    assert.equal(result.perfis_sem_entrega, 0);
+    assert.equal(result.mediana_segundos_ate_entrega, 0);
+    assert.equal(result.perfis_sem_abertura, 0);
+    assert.equal(result.mediana_segundos_ate_abertura, 86400);
     assert.equal(result.recusas_por_motivo.motivo_nota, 1);
     assert.deepEqual(result.utilidade_semanal, [
       { semana: "2026-08-31", parcial: false, ativados: 2, com_utilidade: 1 },
@@ -90,6 +100,11 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     assert.equal(empty.vagas_uteis, 0);
     assert.equal(empty.recomendacoes_elegiveis_feedback, 0);
     assert.equal(empty.recomendacoes_com_feedback, 0);
+    assert.equal(empty.perfis_na_coorte, 0);
+    assert.equal(empty.perfis_sem_entrega, 0);
+    assert.equal(empty.mediana_segundos_ate_entrega, null);
+    assert.equal(empty.perfis_sem_abertura, 0);
+    assert.equal(empty.mediana_segundos_ate_abertura, null);
     await db.exec(
       `insert into eventos_produto(nome,user_id,sessao_id,ocorrido_em) values
       ('landing_visualizada',null,'compartilhada','2026-08-01'),
@@ -105,6 +120,48 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
         s.ativados === 0 && s.com_utilidade === 0
       ),
     );
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("medianas de entrega e abertura usam somente ocorrências observadas", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`
+      create table perfis(id int primary key, user_id text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text);
+      create table vagas(id int primary key, extracao jsonb, extraida_em timestamptz);
+      create table envios(perfil_id int, vaga_id int, enviada_em timestamptz);
+      create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int, user_id text, sessao_id text, propriedades jsonb default '{}', ocorrido_em timestamptz);
+      insert into perfis values
+        (1,'a','2026-09-03 00:00Z',null,'1'),
+        (2,'b','2026-09-03 00:00Z',null,'2'),
+        (3,'c','2026-09-03 00:00Z',null,'3');
+      insert into vagas values
+        (1,'{"habilidades_obrigatorias":[]}','2026-09-03'),
+        (2,'{"habilidades_obrigatorias":["Python"]}','2026-09-03');
+      insert into envios values
+        (1,1,'2026-09-03 00:01Z'),
+        (1,1,'2026-09-03 00:02Z'),
+        (2,2,'2026-09-03 00:03Z');
+      insert into eventos_produto(nome,perfil_id,vaga_id,ocorrido_em) values
+        ('vaga_aberta',1,1,'2026-09-03 00:00:30Z'),
+        ('vaga_aberta',2,2,'2026-09-03 00:05Z'),
+        ('vaga_aberta',1,1,'2026-09-05 00:05Z');
+    `);
+    const sql = (await Deno.readTextFile(
+      new URL("../../radar/storage/metricas.sql", import.meta.url),
+    ))
+      .replaceAll("%(dias)s", "7").replaceAll(
+        "now()",
+        "timestamptz '2026-09-04 00:00Z'",
+      );
+    const result = (await db.query<Metricas>(sql)).rows[0];
+    assert.equal(result.perfis_na_coorte, 3);
+    assert.equal(result.perfis_sem_entrega, 1);
+    assert.equal(result.mediana_segundos_ate_entrega, 120);
+    assert.equal(result.perfis_sem_abertura, 2);
+    assert.equal(result.mediana_segundos_ate_abertura, 300);
   } finally {
     await db.close();
   }

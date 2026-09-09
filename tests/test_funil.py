@@ -19,6 +19,11 @@ def funil(**mudancas) -> FunilDaCoorte:
         "vagas_extraidas": 210,
         "recomendacoes_elegiveis_feedback": 10,
         "recomendacoes_com_feedback": 3,
+        "perfis_na_coorte": 3,
+        "perfis_sem_entrega": 1,
+        "mediana_segundos_ate_entrega": 120,
+        "perfis_sem_abertura": 2,
+        "mediana_segundos_ate_abertura": 300,
         "recusas_por_motivo": {"motivo_exigencia": 4, "motivo_area": 2, "sem_motivo": 1},
     }
     return FunilDaCoorte(**{**padrao, **mudancas})
@@ -57,6 +62,29 @@ def test_feedback_sem_entregas_mostra_ausencia_de_denominador():
     )
 
     assert "Respostas: 0 de 0 recomendações (sem denominador)" in texto
+
+
+def test_mostra_mediana_e_faltantes_sem_chamar_isso_de_prazo():
+    texto = formatar_funil(funil())
+
+    assert "Tempo observado — não é prazo prometido:" in texto
+    assert "Até primeira entrega: 120.0 s (2 observados; 1 sem entrega)" in texto
+    assert "Até primeira abertura: 300.0 s (1 observados; 2 sem abertura)" in texto
+
+
+def test_tempo_sem_observacoes_fica_indisponivel():
+    texto = formatar_funil(
+        funil(
+            perfis_na_coorte=2,
+            perfis_sem_entrega=2,
+            mediana_segundos_ate_entrega=None,
+            perfis_sem_abertura=2,
+            mediana_segundos_ate_abertura=None,
+        )
+    )
+
+    assert "Até primeira entrega: indisponível (0 observados; 2 sem entrega)" in texto
+    assert "Até primeira abertura: indisponível (0 observados; 2 sem abertura)" in texto
 
 
 def test_quebra_as_recusas_por_motivo_na_ordem_recebida():

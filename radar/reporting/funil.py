@@ -21,6 +21,22 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         etapa("Candidaturas", funil.candidaturas, funil.vagas_enviadas),
         "",
         linha_do_feedback(funil),
+        "",
+        "Tempo observado — não é prazo prometido:",
+        linha_do_tempo(
+            "Até primeira entrega",
+            funil.mediana_segundos_ate_entrega,
+            funil.perfis_na_coorte - funil.perfis_sem_entrega,
+            funil.perfis_sem_entrega,
+            "sem entrega",
+        ),
+        linha_do_tempo(
+            "Até primeira abertura",
+            funil.mediana_segundos_ate_abertura,
+            funil.perfis_na_coorte - funil.perfis_sem_abertura,
+            funil.perfis_sem_abertura,
+            "sem abertura",
+        ),
         "Motivo da recusa:",
     ]
     linhas.extend(linhas_dos_motivos(funil))
@@ -96,3 +112,10 @@ def linha_do_feedback(funil: FunilDaCoorte) -> str:
         return "Respostas: 0 de 0 recomendações (sem denominador)"
     percentual = 100 * respondidas / elegiveis
     return f"Respostas: {respondidas} de {elegiveis} recomendações ({percentual:.1f}%)"
+
+
+def linha_do_tempo(
+    rotulo: str, mediana: float | None, observados: int, faltantes: int, rotulo_faltante: str
+) -> str:
+    valor = "indisponível" if mediana is None else f"{mediana:.1f} s"
+    return f"  {rotulo}: {valor} ({observados} observados; {faltantes} {rotulo_faltante})"

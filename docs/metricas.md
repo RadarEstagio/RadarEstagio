@@ -49,6 +49,16 @@ Uma abertura sem resposta não conta, resposta anterior à entrega não conta e 
 aparece como “sem denominador”. O relatório imprime contagens e percentual derivado, sem
 persistir percentual.
 
+## Tempo observado até entrega e abertura
+
+Este bloco usa perfis criados na janela do relatório. Para cada perfil, considera a primeira
+entrega válida posterior à criação e, depois, a primeira `vaga_aberta` de qualquer par
+efetivamente entregue, sempre até o fim da consulta. As diferenças partem de `perfis.criado_em`
+e são calculadas em segundos UTC. O relatório mostra medianas contínuas somente dos casos
+observados, a contagem sem entrega e a contagem sem abertura; “sem abertura” inclui quem não
+recebeu entrega. Uma mediana indisponível é diferente de duração zero, que é legítima quando os
+timestamps coincidem. Isso é tempo observado no piloto, não prazo nem tempo até valor prometido.
+
 ## Aquisição: da visita à primeira recomendação
 
 Inclui visita, CTA, três etapas de perfil, conta criada, e-mail confirmado, perfil salvo,

@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: M03.
-- Próximo passo: medir tempo até primeira entrega e abertura com medianas em segundos e nulos honestos.
-- Branch/HEAD: `codex/expansao-revenue-centric` / M02 pronto para commit.
+- ID atual: M04.
+- Próximo passo: agregar utilidade semanal por área do curso atual sem duplicar perfis.
+- Branch/HEAD: `codex/expansao-revenue-centric` / M03 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -27,6 +27,7 @@ existentes.
 | C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
 | M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
 | M02 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Denominador deduplica primeira entrega por par; feedback só após entrega, última resposta por timestamp/ID; CLI exibe contagens e percentual ou sem denominador | Dados reais e respostas do piloto não verificados; métrica não é utilidade nem candidatura |
+| M03 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Coorte criada na janela; primeira entrega após criação; primeira abertura após qualquer entrega; medianas contínuas em segundos, nulos e faltantes explícitos | Não é prazo prometido; timestamps e execução reais dependem da publicação |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -138,6 +139,16 @@ existentes.
 - Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M02 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: executar M03 sem interpretar mediana como prazo prometido.
+
+## M03
+
+- Comportamento antes → depois: o relatório não mostrava o intervalo observado entre criação, entrega e abertura; agora retorna coorte, sem entrega, mediana até entrega, sem abertura e mediana até abertura, separando zero legítimo de ausência de observação.
+- Arquivos/símbolos: `radar/storage/metricas.sql` (`primeiras_entregas`, `primeiras_aberturas`, `percentile_cont`), `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md`.
+- Casos obrigatórios: oráculo de três perfis com entregas em 60/180 s e abertura em 300 s passou; entrega duplicada não altera a primeira; abertura anterior à entrega e evento futuro foram ignorados; perfil sem entrega entra também em sem abertura; coorte vazia retorna medianas nulas.
+- Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 2 aprovados, 0 ignorados; Q — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py` — exit 0, 13 aprovados, 25 ignorados por Postgres; `git diff --check` — exit 0.
+- Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M03 será criado após a verificação do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: executar M04 com classificação pelo curso atual e sem matriz combinatória.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

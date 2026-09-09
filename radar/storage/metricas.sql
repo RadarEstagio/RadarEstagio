@@ -22,6 +22,20 @@ with limites as (
 ), entregas as (
   select e.* from envios e join coorte c on c.id = e.perfil_id, limites l
   where e.enviada_em <= l.fim
+), primeiras_entregas as (
+  select distinct on(e.perfil_id)
+    e.perfil_id, e.vaga_id, e.enviada_em, c.criado_em
+  from envios e
+  join coorte c on c.id = e.perfil_id, limites l
+  where e.enviada_em >= c.criado_em and e.enviada_em <= l.fim
+  order by e.perfil_id, e.enviada_em, e.vaga_id
+), primeiras_aberturas as (
+  select distinct on(t.perfil_id)
+    t.perfil_id, e.ocorrido_em
+  from primeiras_entregas t
+  join eventos e on e.perfil_id = t.perfil_id and e.vaga_id = t.vaga_id
+  where e.nome = 'vaga_aberta' and e.ocorrido_em >= t.enviada_em
+  order by t.perfil_id, e.ocorrido_em, e.id
 ), interacoes as (
   select e.* from eventos e join entregas t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
   where e.ocorrido_em >= t.enviada_em
@@ -104,6 +118,16 @@ select
   (select count(*) from vagas, limites l where extraida_em >= l.inicio and extraida_em <= l.fim) as vagas_extraidas,
   (select count(*) from entregas_do_periodo) as recomendacoes_elegiveis_feedback,
   (select count(*) from respostas_do_periodo) as recomendacoes_com_feedback,
+  (select count(*) from coorte) as perfis_na_coorte,
+  (select count(*) from coorte c where not exists(
+    select 1 from primeiras_entregas e where e.perfil_id = c.id
+  )) as perfis_sem_entrega,
+  (select percentile_cont(0.5) within group(order by extract(epoch from (e.enviada_em - e.criado_em))) from primeiras_entregas e) as mediana_segundos_ate_entrega,
+  (select count(*) from coorte c where not exists(
+    select 1 from primeiras_aberturas a where a.perfil_id = c.id
+  )) as perfis_sem_abertura,
+  (select percentile_cont(0.5) within group(order by extract(epoch from (a.ocorrido_em - c.criado_em)))
+    from primeiras_aberturas a join coorte c on c.id = a.perfil_id) as mediana_segundos_ate_abertura,
   coalesce((select jsonb_object_agg(nome, total) from etapas), '{}') as etapas,
   coalesce((select jsonb_object_agg(motivo, total) from motivos), '{}') as recusas_por_motivo,
   coalesce((select jsonb_agg(to_jsonb(s) order by semana) from semanais s), '[]') as utilidade_semanal,

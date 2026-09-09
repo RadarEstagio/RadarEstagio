@@ -169,6 +169,11 @@ class FunilDaCoorte(BaseModel):
     vagas_extraidas: int
     recomendacoes_elegiveis_feedback: int = 0
     recomendacoes_com_feedback: int = 0
+    perfis_na_coorte: int = 0
+    perfis_sem_entrega: int = 0
+    mediana_segundos_ate_entrega: float | None = None
+    perfis_sem_abertura: int = 0
+    mediana_segundos_ate_abertura: float | None = None
     recusas_por_motivo: dict[str, int] = Field(default_factory=dict)
 
     def vagas_extraidas_por_ativado(self) -> float | None:
