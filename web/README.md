@@ -1,5 +1,9 @@
 # Landing page — Radar de Estágio
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../README.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Landing page responsiva do projeto, com apresentação da proposta e fluxo de cadastro do perfil.
 
 `termos.html` e `privacidade.html` estão disponíveis no rodapé, como versões para revisão e
