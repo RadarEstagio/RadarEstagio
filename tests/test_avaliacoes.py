@@ -637,3 +637,44 @@ def test_requisito_sem_nivel_aceita_habilidade_conhecida():
     )
     assert resultado.requisitos_atendidos == ["Inglês", "Office 365"]
     assert resultado.requisitos_nao_atendidos == []
+
+
+def test_requisito_generico_e_atendido_por_habilidade_especifica_da_familia():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["banco de dados", "front-end", "back-end", "ETL"]),
+        perfil(["SQL", "Java", "Spring Boot", "Python", "Django", "MySQL"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["banco de dados", "back-end", "ETL"]
+    assert resultado.requisitos_nao_atendidos == ["front-end"]
+
+
+def test_familia_respeita_o_nivel_exigido():
+    exigente = extracao(habilidades_obrigatorias=["banco de dados avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["SQL básico"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["SQL avançado"])).requisitos_atendidos == [
+        "banco de dados avançado"
+    ]
+
+
+def test_programacao_e_atendida_por_qualquer_linguagem():
+    generica = extracao(habilidades_obrigatorias=["Programação", "Lógica de programação"])
+
+    assert pontuar(vaga(), generica, perfil(["Lua"])).requisitos_nao_atendidos == []
+    assert pontuar(vaga(), generica, perfil(["Excel"])).requisitos_nao_atendidos == [
+        "Programação",
+        "Lógica de programação",
+    ]
+
+
+def test_pacote_office_e_atendido_por_excel_fora_de_computacao():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Pacote Office", "Inglês"]),
+        perfil_de_direito(["Excel", "Inglês"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Pacote Office", "Inglês"]
+    assert resultado.requisitos_nao_atendidos == []
