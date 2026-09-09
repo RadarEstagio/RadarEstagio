@@ -318,6 +318,35 @@ antes de ativá-los no piloto.
 
 ## Viés conhecido do ranking
 
+### Correções e limites preservados da auditoria de 08/09
+
+Síntese consolidada em 09/09 a partir da auditoria e da revisão do PR #22. Os cenários
+A01–A06 foram registrados como corrigidos localmente; isso não mede sua frequência real
+nem certifica produção. A01 foi fechado em `c2d6f96`; a lacuna final de A04 em `40ed28c`.
+
+| Caso | Regra preservada | Referência de regressão |
+|---|---|---|
+| A01 — lista mista de cursos | “Enfermagem, áreas afins” não libera Direito; termos genéricos não anulam curso específico e, sozinhos, não comprovam elegibilidade | `tests/test_compatibilidade.py` |
+| A02 — erro em item de lote | Acumular extrações válidas e repetir só pendências; falha temporária não descarta sucessos anteriores | `tests/test_lotes.py` |
+| A03 — extração parcial | Candidata sem extração impede concluir que não há vaga compatível; aprovadas disponíveis podem ser entregues | `tests/test_pipeline.py` |
+| A04 — proficiência | Básico ou nível desconhecido não comprova avançado; requisito sem nível aceita habilidade conhecida, preservando aliases e exceção de computação | `tests/test_avaliacoes.py`, `tests/test_formatador.py` |
+| A05 — troca de sessão | Limpar interesses no logout/troca de conta; preservar restauração intencional na edição da mesma conta | `tests/web/cadastro_test.ts` |
+| A06 — histórico antes da IA | Extrair apenas candidatas ainda úteis a algum perfil; manter trava e releitura antes de enviar. Falha de leitura não autoriza envio | `tests/test_pipeline.py` |
+
+Na revisão do PR #22, a agregação por área foi colocada em `radar/domain/metricas.py`:
+classificar curso é regra de domínio e `storage` não deve importar `reporting`. O repositório
+agrega antes de devolver o funil; entidades e catálogo não recebem essa responsabilidade.
+As decisões de cálculo e apresentação estão em [Métricas](metricas.md).
+
+Limites ainda registrados: republicação entre fontes com descrição curta pode passar pela
+deduplicação; extração/enriquecimento chaveados só por `id_externo` têm risco de colisão entre
+fontes, sem colisão real demonstrada nesta auditoria; banco aceita subárea de outro curso,
+mitigada no carregamento; Jooble multiplica consultas por termo e permanece opcional.
+Novos casos devem entrar na [matriz de cobertura](cobertura-estagios.md), com entrada,
+esperado, observado e teste por causa. Não reabrir os seis bugs apenas por ler o relatório antigo.
+
+### Calibração pendente
+
 Em 03/09/2026, um anúncio com uma tecnologia declarada e atendida recebia 100, enquanto
 outro com cinco e três atendidas recebia 85. A cobertura suavizada
 `(1 + atendidas) / (1 + exigidas)` pode favorecer anúncios pouco detalhados.
