@@ -491,6 +491,11 @@ a data de cada uma por isso. Limitação que o juiz expôs: a Adzuna informa a r
 cidade ("Estagiário de TI - São Gonçalo" vem como "Rio de Janeiro"); 1 caso em 168 envios,
 registrado, sem regra nova.
 
+O gabarito humano nasce de `python -m radar gabarito --dias 2 --amostra 20 --saida arquivo.json`:
+o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com true ou false;
+`julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
+primeiro arquivo está em `docs/gabarito-2026-09-09.json`, com 20 entregas de 08 e 09/09.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`

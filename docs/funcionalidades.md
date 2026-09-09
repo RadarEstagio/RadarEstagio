@@ -361,7 +361,8 @@ Prefixo: `uv run python -m radar`.
 - **`rodar`**: Executar para destinatários ativos do banco; sem `DATABASE_URL`, usa perfil fixo.
 - **`rodar --perfil UUID`**: Selecionar `perfis.id`, não `user_id`; exige banco para usar perfil real.
 - **`metricas`**: Consultar relatório; exige banco.
-- **`julgar --dias 7 --amostra 30`**: Pedir a um segundo modelo (`JUIZ_MODELO`) que julgue, às cegas, uma amostra das entregas recentes e imprimir relevância estimada, concordância com o feedback e reprovadas com nota alta; exige banco e não altera nada.
+- **`gabarito --dias 7 --amostra 20 --saida arquivo.json`**: Exportar uma amostra de entregas para as pessoas marcarem `relevante` com true ou false; exige banco.
+- **`julgar --dias 7 --amostra 30 [--gabarito arquivo.json]`**: Pedir a um segundo modelo (`JUIZ_MODELO`) que julgue, às cegas, uma amostra das entregas recentes e imprimir relevância estimada, concordância com o feedback e reprovadas com nota alta; exige banco e não altera nada. Com `--gabarito`, julga só as entregas rotuladas e mede a concordância do juiz com as pessoas.
 
 **Limitação do modo local:** os botões são gerados, mas os tokens não são persistidos. Portanto,
 feedback dessas mensagens não funciona no webhook. Use envios do fluxo com banco para testar.
