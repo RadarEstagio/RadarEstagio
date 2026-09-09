@@ -484,6 +484,13 @@ enviado — o juiz mede, não ranqueia. Antes de usar o número do juiz como evi
 ser validado contra o gabarito humano de 20 vagas (pré-PRD, H2); abaixo de 75% de concordância
 é ruído com cara de número.
 
+Primeira rodada real (09/09, `claude-sonnet-4-6` pelo `agy`, 24 de 168 entregas de 14 dias, 5
+minutos): 12 relevantes, mediana do juiz 39 contra 69 do Radar. As cinco reprovadas com nota
+alta eram todas de 28 a 31/08, antes das regras de área, interesse e cidade — o relatório mostra
+a data de cada uma por isso. Limitação que o juiz expôs: a Adzuna informa a região, não a
+cidade ("Estagiário de TI - São Gonçalo" vem como "Rio de Janeiro"); 1 caso em 168 envios,
+registrado, sem regra nova.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`

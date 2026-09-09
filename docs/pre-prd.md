@@ -209,6 +209,9 @@ Catálogo completo em [funcionalidades](funcionalidades.md). Em resumo:
 - primeira entrega disparada pelo vínculo; execução diária disparada externamente;
 - resumo de operação de cada execução no chat da equipe, incluindo vagas sem extração;
 - múltiplos usuários com trava por perfil e revalidação do destinatário antes do envio.
+- juiz de recomendações (LLM as a judge, 09/09): um segundo modelo, de outra família, julga às
+  cegas uma amostra das entregas e o relatório mede relevância, concordância com o feedback e
+  as reprovadas com nota alta; só lê o banco e nunca altera a nota.
 
 ### 5.4 Ainda não disponível
 
@@ -347,7 +350,7 @@ conversa produzem sinal melhor que teste A/B.
 | Hipótese | Teste mínimo | Sinal proposto |
 | --- | --- | --- |
 | H1 — A busca manual é uma dor relevante | Conversar com colegas que usaram por uma semana | A maioria relata busca repetitiva e quer delegar a triagem |
-| H2 — O matching orienta a triagem | 20 vagas por área, avaliadores da área sem ver a nota | Concordância de ao menos 75% com a decisão majoritária |
+| H2 — O matching orienta a triagem | 20 vagas por área, avaliadores da área sem ver a nota; o mesmo gabarito valida o juiz automático | Concordância de ao menos 75% com a decisão majoritária, das pessoas e do juiz |
 | H3 — As fontes têm cobertura útil por área | Ler o resumo diário por 7 dias com perfis de áreas distintas | Ao menos 1 recomendação relevante em 5 de 7 dias por perfil |
 | H4 — Telegram é um canal aceitável | Colegas vinculam o bot e recebem uma entrega | Quase todos concluem sem considerar o canal uma barreira |
 | H5 — A entrega gera ação útil | 2 semanas com link rastreado e feedback | Metade abre uma vaga; parte sinaliza "essa serviu" |
