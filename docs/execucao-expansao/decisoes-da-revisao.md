@@ -1,5 +1,9 @@
 # Decisões tomadas na revisão do PR #22
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../README.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Registrado em 08/09/2026, sobre a branch `codex/expansao-revenue-centric` depois de a fila
 O00–R03 estar entregue. A revisão comparou o PR com o plano e as fichas; estas são as decisões
 que **eu tomei** ao corrigir os achados, não decisões da equipe. Cada uma tem a alternativa
