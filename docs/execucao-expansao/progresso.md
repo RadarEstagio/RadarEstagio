@@ -7,8 +7,8 @@ existentes.
 ## Ponto de retomada
 
 - ID atual: E01–E05/D01.
-- Próximo passo: preparar os seis artefatos externos com evidências locais e dependências explícitas, sem declarar execução remota.
-- Branch/HEAD: `codex/expansao-revenue-centric` / R03 pronto; publicação remota não verificada.
+- Próximo passo: equipe executar as verificações externas e decisões registradas nos seis artefatos; código local e documentação da fila concluídos.
+- Branch/HEAD: `codex/expansao-revenue-centric` / `a49a207`; publicação remota não verificada.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -38,7 +38,7 @@ existentes.
 | E04 | Preparado, falta evidência externa | `docs/custos-operacao.md` | Tabela por serviço, fórmulas e cenários sem inventar preço, franquia ou CAC/LTV | Faturas, uso, suporte e billing dependem da equipe |
 | E05 | Preparado, falta decisão | `docs/hipotese-comercial.md` | Assinatura versus acesso por período, pagador hipotético, campos de decisão e teste futuro sem cobrança | Preço, duração, renovação, elegibilidade e provedor dependem da equipe |
 | D01 | Preparado, falta decisão | `docs/contrato-front.md` | Matriz de formações, curso/área, desconhecido, aliases e impacto em dados/ranking sem alterar código | Escolha de contrato acadêmico depende dos casos de E02 e da equipe |
-| Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
+| Demais IDs locais | Concluído nesta sessão | — | O00–R03 implementados/testados; E01–E05/D01 preparados | Evidência externa e decisões continuam com a equipe |
 
 ## O00
 
@@ -281,16 +281,20 @@ do status de teste ou merge. Detalhes ficam aqui; estado resumido fica no índic
 
 ## Verificação final
 
-- Python: não executado nesta fila.
-- Web/banco: não executado nesta fila.
-- Lint/formatação: não executado nesta fila.
-- Visual: não executado nesta fila.
-- Versões remotas: não verificadas nesta fila.
+- Python: `uv run pytest -q` — exit 0, 665 aprovados, 25 ignorados por ambiente Postgres de teste, 1 warning de depreciação em dependência.
+- Web/banco: `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/` — exit 0, 49 aprovados, 0 falhos.
+- Lint/formatação: `uv run ruff check .` — exit 0; `uv run ruff format --check .` — exit 0, 101 arquivos formatados; `git diff --check` — exit 0.
+- Visual: landing, demo/FAQ e cadastro foram inspecionados anteriormente no Safari local em desktop (~1280 px); a viewport exata de 375 px e a integração publicada não foram verificadas.
+- Versões remotas: não verificadas nesta fila; nenhum deploy, push ou aplicação remota foi declarado.
 
 ## Decisões e evidências externas pendentes
 
-Preencher durante E01–E05/D01, com link para os documentos produzidos. Não reproduzir chaves,
-tokens, dados pessoais ou informações de conta desnecessárias.
+Artefatos preparados: [guia e E01](../guia-publicacao-e-piloto.md), [E02](../cobertura-estagios.md),
+[E03](../aquisicao-e-prova.md), [E04](../custos-operacao.md), [E05](../hipotese-comercial.md)
+e [D01](../contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto). Não reproduzir
+chaves, tokens, dados pessoais ou informações de conta desnecessárias. Permanecem pendentes a
+consulta remota, a coleta real de cobertura, autorização de aquisição/relato, billing e decisões
+comercial/acadêmica da equipe.
 
 ## Referência anterior à execução da fila
 
