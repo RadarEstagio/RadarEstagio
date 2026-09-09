@@ -61,6 +61,7 @@ const savePauseReason = document.querySelector("#save-pause-reason");
 const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
+const chamadasDeLogin = [...document.querySelectorAll(".js-open-login")];
 const rotulosDeCadastro = new Map(
   chamadasDeCadastro.map((botao) => [botao, botao.firstChild.textContent]),
 );
@@ -627,6 +628,9 @@ function mostrarChamadaDeConta(autenticado) {
       ? `${botao.dataset.rotuloConta} `
       : rotulosDeCadastro.get(botao);
   });
+  chamadasDeLogin.forEach((botao) => {
+    botao.hidden = autenticado;
+  });
 }
 
 function rotularDialogo(idDoTitulo) {
@@ -946,6 +950,13 @@ async function refreshActivationStatus() {
   }
 }
 
+function abrirLogin() {
+  resetDialogView();
+  setAuthMode("login");
+  showStep(PASSO_CONTA);
+  openDialog();
+}
+
 async function openSignup() {
   resetDialogView();
   if (!usuarioAutenticado && authMode === "signup") showStep(PASSO_MOMENTO);
@@ -985,12 +996,7 @@ async function resumeConfirmedSignup() {
       return;
     }
     if (!session) {
-      if (authQuery.has("conta")) {
-        resetDialogView();
-        setAuthMode("login");
-        showStep(PASSO_CONTA);
-        openDialog();
-      }
+      if (authQuery.has("conta")) abrirLogin();
       return;
     }
     const profile = await loadProfile(session.user.id);
@@ -1041,6 +1047,17 @@ function voltarPasso() {
   if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
 }
+
+chamadasDeLogin.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (usuarioAutenticado) {
+      openSignup();
+      return;
+    }
+    limparRascunhoDoCadastro();
+    abrirLogin();
+  });
+});
 
 chamadasDeCadastro.forEach((button) => {
   button.addEventListener("click", () => {

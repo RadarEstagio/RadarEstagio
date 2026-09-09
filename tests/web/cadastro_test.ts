@@ -524,6 +524,32 @@ Deno.test("cadastro começa pelo perfil e só no final pede a conta", async () =
   } finally { a.close(); }
 });
 
+Deno.test("botão de entrar abre a conta sem passar pela triagem", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector(".js-open-login").click();
+    await settle();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.equal(doc.querySelector("#submit-label").textContent, "Entrar e continuar");
+    assert.equal(doc.querySelector("#signup-consent").hidden, true);
+    assert.equal(doc.querySelector("#toggle-auth-mode").textContent, "Criar conta");
+  } finally { a.close(); }
+});
+
+Deno.test("botão de cadastrar continua abrindo na triagem", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.equal(doc.querySelector("#submit-label").textContent, "Criar conta e continuar");
+  } finally { a.close(); }
+});
+
 Deno.test("alternar para login e voltar preserva o rascunho do perfil", async () => {
   const a = app();
   try {
