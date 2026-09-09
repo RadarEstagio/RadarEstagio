@@ -99,8 +99,6 @@ def exige_anos_de_experiencia(vaga: Vaga) -> bool:
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
-    if perfil.modalidade is Modalidade.REMOTO:
-        return False
     mesma_cidade = cidade(perfil.cidade) == cidade(vaga.localizacao)
     if perfil.modalidade is Modalidade.PRESENCIAL:
         return not mesma_cidade
