@@ -87,8 +87,10 @@ let currentStep = 1;
 let authMode = "signup";
 let radarClient = null;
 const selectedSkills = new Set();
+let continuarSemHabilidades = false;
 const previousStep = document.querySelector("#previous-step");
 const nextStep = document.querySelector("#next-step");
+const continuarSemHabilidadesButton = document.querySelector("#continue-without-skills");
 const PASSO_CONTA = 1;
 const PASSO_MOMENTO = 2;
 const PASSO_HABILIDADES = 3;
@@ -309,7 +311,7 @@ function limparErroSeCorrigido(event) {
 
 function validateStep(step) {
   limparErroDoCampo();
-  if (step === PASSO_HABILIDADES && selectedSkills.size === 0) {
+  if (step === PASSO_HABILIDADES && selectedSkills.size === 0 && !continuarSemHabilidades) {
     showStep(step);
     marcarErroNoCampo(document.querySelector("#custom-skill"), "Escolha ou digite pelo menos uma habilidade.");
     return false;
@@ -350,12 +352,14 @@ function renderSkills() {
     chip.type = "button";
     chip.textContent = `${skill} ×`;
     chip.setAttribute("aria-label", `Remover ${skill}`);
-    chip.addEventListener("click", () => {
-      selectedSkills.delete(skill);
-      renderSkills();
-    });
+      chip.addEventListener("click", () => {
+        selectedSkills.delete(skill);
+        if (selectedSkills.size === 0) continuarSemHabilidades = false;
+        renderSkills();
+      });
     return chip;
   }));
+  continuarSemHabilidadesButton.hidden = selectedSkills.size > 0;
 }
 
 function addCustomSkill() {
@@ -363,6 +367,7 @@ function addCustomSkill() {
   const skill = input.value.trim();
   if (!skill) return;
   selectedSkills.add(skill);
+  continuarSemHabilidades = false;
   input.value = "";
   renderSkills();
   setFormMessage();
@@ -519,6 +524,7 @@ function resetDialogView() {
   setFormMessage();
   limparErroDoCampo();
   setSubmitting(false);
+  continuarSemHabilidades = false;
   showStep(PASSO_CONTA);
 }
 
@@ -598,7 +604,7 @@ function profileFromForm() {
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
     throw validationError(mensagensValidacao.periodo);
   }
-  if (profile.habilidades.length === 0) {
+  if (profile.habilidades.length === 0 && !continuarSemHabilidades) {
     throw validationError("Escolha ou digite pelo menos uma habilidade.");
   }
   if (profile.cidade.length < 2) throw validationError(mensagensValidacao.cidade);
@@ -688,7 +694,9 @@ function resumoDoPerfil(profile) {
     hibrido: "híbrido",
     indiferente: "qualquer modalidade",
   };
-  const habilidades = profile.habilidades.join(", ");
+  const habilidades = profile.habilidades.length
+    ? profile.habilidades.join(", ")
+    : "Habilidades ainda não informadas";
   return `${profile.curso}, ${profile.periodo}º período · ${profile.cidade} · ${modalidades[profile.modalidade]}\n${habilidades}`;
 }
 
@@ -732,6 +740,7 @@ function preencherFormularioCom(profile) {
   form.elements.modalidade.value = profile.modalidade;
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
+  continuarSemHabilidades = profile.habilidades.length === 0;
   renderSkills();
   void montarHabilidadesDoCurso();
   areasSalvas = [...(profile.areas_de_interesse ?? [])];
@@ -1050,10 +1059,20 @@ document.querySelector("#skill-picker").addEventListener("click", (event) => {
   const button = event.target.closest("[data-skill]");
   if (!button) return;
   const skill = button.dataset.skill;
-  if (selectedSkills.has(skill)) selectedSkills.delete(skill);
-  else selectedSkills.add(skill);
+  if (selectedSkills.has(skill)) {
+    selectedSkills.delete(skill);
+    if (selectedSkills.size === 0) continuarSemHabilidades = false;
+  } else {
+    selectedSkills.add(skill);
+    continuarSemHabilidades = false;
+  }
   renderSkills();
   setFormMessage();
+});
+continuarSemHabilidadesButton.addEventListener("click", () => {
+  if (selectedSkills.size > 0) return;
+  continuarSemHabilidades = true;
+  avancarPasso();
 });
 document.querySelector("#custom-skill").addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;

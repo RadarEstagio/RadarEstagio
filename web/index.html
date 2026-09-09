@@ -298,7 +298,7 @@
             </fieldset>
             <fieldset class="form-step" data-step="3">
               <legend>O que você já sabe usar?</legend>
-              <p class="step-help">Escolha pelo menos uma habilidade. Isso melhora a nota das vagas que combinam com você.</p>
+              <p class="step-help" id="skills-help">Você pode começar pelo curso e pelas preferências. Depois, informe suas habilidades para melhorar as recomendações.</p>
               <input name="habilidades" type="hidden" />
               <div class="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
                 <button type="button" data-skill="Python" aria-pressed="false">Python</button>
@@ -316,6 +316,7 @@
                 <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
               </div>
               <div class="selected-skills" id="selected-skills" role="group" aria-label="Habilidades escolhidas" aria-live="polite"></div>
+              <button class="text-link skill-empty-action" type="button" id="continue-without-skills">Ainda não quero informar habilidades <span aria-hidden="true">→</span></button>
             </fieldset>
             <fieldset class="form-step" data-step="4">
               <legend>Onde as vagas devem chegar?</legend>

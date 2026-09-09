@@ -98,7 +98,7 @@ function app(
       onAuthStateChange: (callback: AuthCallback) => {
         authCallback = callback;
       },
-      signUp: async (args: Signup) => {
+      signUp: async (args: Signup): Promise<{ data: { session: Session | null }; error?: Error }> => {
         calls.push(["signup", args]);
         return { data: { session: null } };
       },
@@ -140,7 +140,7 @@ function app(
       };
       return query;
     },
-    rpc: async (name: string, args: Payload) => {
+    rpc: async (name: string, args: Payload): Promise<{ data?: unknown; error?: Error }> => {
       calls.push(["rpc", name, args]);
       return { data: {} };
     },
@@ -166,7 +166,7 @@ async function settle() {
   await new Promise((resolve) => setTimeout(resolve, 15));
 }
 
-function fill(w: TestWindow) {
+function fill(w: TestWindow, incluirHabilidade = true) {
   const form = w.document.querySelector("#signup-form");
   for (
     const [key, value] of Object.entries({
@@ -178,7 +178,7 @@ function fill(w: TestWindow) {
     })
   ) form.elements[key].value = value;
   form.querySelector('[value="remoto"]').checked = true;
-  w.document.querySelector('[data-skill="Python"]').click();
+  if (incluirHabilidade) w.document.querySelector('[data-skill="Python"]').click();
   form.elements.aceitou_termos.checked = true;
   return form;
 }
@@ -600,6 +600,97 @@ Deno.test("Enter adiciona habilidade sem avançar e Continuar ainda avança", as
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
     await settle();
   } finally { a.close(); }
+});
+
+Deno.test("atalho permite cadastrar com habilidades vazias e preserva a escolha ao voltar", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w, false);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    assert.equal(doc.querySelector("#continue-without-skills").hidden, false);
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    doc.querySelector("#continue-without-skills").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    assert.equal(form.elements.habilidades.value, "");
+    doc.querySelector("#previous-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const signup = called(a.calls, "signup")[1];
+    assert.deepEqual(Array.from(signup.options.data.cadastro_radar.perfil.habilidades), []);
+    const evento = a.calls.find(([name, , payload]) =>
+      name === "insert" && (payload as Payload)?.nome === "etapa_habilidades_concluida"
+    );
+    assert.equal(JSON.stringify(evento?.[2]).includes("continuarSemHabilidades"), false);
+    await settle();
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("edição de perfil salvo sem habilidades libera a etapa e remover a última exige escolha nova", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, habilidades: [], telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    doc.querySelector("#previous-step").click();
+    doc.querySelector('[data-skill="Python"]').click();
+    doc.querySelector('[data-skill="Python"]').click();
+    assert.equal(doc.querySelector("#continue-without-skills").hidden, false);
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
+    doc.querySelector("#continue-without-skills").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    await settle();
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("erro ao salvar perfil iniciante mantém dados e a opção de habilidades vazias", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.client.auth.signUp = async () => ({ data: { session: { user } } });
+    a.client.rpc = async () => ({ error: new Error("indisponível") });
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w, false);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#continue-without-skills").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    assert.equal(form.elements.cidade.value, "Recife, PE");
+    assert.equal(form.elements.habilidades.value, "");
+    doc.querySelector("#previous-step").click();
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    await settle();
+  } finally {
+    a.close();
+  }
 });
 
 

@@ -356,6 +356,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .selected-skills:empty { display: none; }
 .selected-skills button { border-color: var(--accent-deep); color: var(--accent-deep); background: var(--paper-deep); }
 .skill-picker button:focus-visible, .selected-skills button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.skill-empty-action { margin-top: 20px; padding: 8px 0; border-bottom-color: var(--accent); color: var(--accent-deep); font-size: 13px; text-align: left; }
 .account-switch { margin: 18px 0 0; color: var(--muted); font-size: 12px; text-align: right; }
 .account-switch button { padding: 0; border: 0; color: var(--accent); background: transparent; font-weight: 800; cursor: pointer; }
 .account-switch button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

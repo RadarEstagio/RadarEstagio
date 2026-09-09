@@ -6,9 +6,9 @@ Não reaplicar entregas existentes.
 
 ## Ponto de retomada
 
-- ID atual: C03.
-- Próximo passo: implementar a opção transitória para continuar sem habilidades no cadastro web.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C02 pronto para commit.
+- ID atual: C04.
+- Próximo passo: concluir fallback de habilidades e integração do catálogo conforme a ficha parcial.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C03 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -19,6 +19,7 @@ Não reaplicar entregas existentes.
 | O00 | Implementado/testado | `.github/workflows/radar-diario.yml` | `QUANTIDADE_VAGAS_ENVIADAS` mudou de 7 para 5; Python já tinha padrão 5 | Workflow versionado nesta branch; nenhuma execução remota verificada |
 | C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
 | C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
+| C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
 | C04 | Parcial | Catálogo e sugestões já existem na base | Falta concluir fallback e integração conforme ficha | Publicação não verificada |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
@@ -51,6 +52,16 @@ Não reaplicar entregas existentes.
 - Inspeção visual: não aplicável.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C02 após `uv run pytest -q`. Disponibilização remota não verificada.
 - Pendência real/próximo comando: publicar C02 antes da migration C01; seguir para C03.
+
+## C03
+
+- Comportamento antes → depois: a etapa exigia uma habilidade; agora oferece “Ainda não quero informar habilidades”, libera a próxima etapa com `[]`, mantém a escolha ao voltar e exige nova escolha quando a última habilidade é removida.
+- Arquivos/símbolos: `web/index.html`, `web/assets/app.js` (`continuarSemHabilidades`, `validateStep`, `profileFromForm`, `preencherFormularioCom`, `renderSkills`), `web/assets/styles.css`, `tests/web/cadastro_test.ts`.
+- Casos obrigatórios: novo cadastro vazio até o payload; edição de perfil salvo com `[]`; adicionar/remover última habilidade; Enter; logout/nova inscrição; erro de rede com dados preservados. O teste também confirma que o booleano não aparece nos eventos.
+- Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 36 aprovados, 0 ignorados.
+- Inspeção visual: Safari local em viewport de desktop (~1280 px), landing e modal/foco inicial conferidos; foco migra para e-mail e o botão novo é nativo. Verificação exata a 375 px não foi possível porque não havia viewport responsivo/browser controlável disponível; CSS de `@media (max-width: 760px)` foi revisado.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C03 após suíte Python completa. Frontend não publicado.
+- Pendência real/próximo comando: aplicar C01 somente depois de C02 publicado e C03 depois da migration; seguir para C04.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas
