@@ -93,6 +93,7 @@ p, h1, h2, h3 { margin-top: 0; }
   background: radial-gradient(circle 720px at 50% 56%, #dcebdd 0%, transparent 68%);
   animation: respirar 14s ease-in-out infinite;
 }
+.hero > .hero-grid { background: none; animation: none; }
 @keyframes respirar { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(-18px, 14px, 0) scale(1.06); } }
 .hero-layout { position: relative; display: grid; justify-items: center; gap: clamp(36px, 5vh, 64px); text-align: center; }
 .hero-copy { max-width: 900px; }

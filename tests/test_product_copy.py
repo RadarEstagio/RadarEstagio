@@ -42,6 +42,12 @@ def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():
     assert ".chat-typing { display: none; }" in regra_reduzida
 
 
+def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert ".hero > .hero-grid { background: none; animation: none; }" in css
+
+
 def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
     html = (RAIZ / "web/index.html").read_text()
 
