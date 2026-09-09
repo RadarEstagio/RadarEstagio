@@ -6,6 +6,7 @@ from radar.domain.models import Modalidade, Perfil, Vaga
 from radar.filtering.prefiltro import (
     deve_descartar,
     exige_anos_de_experiencia,
+    exige_ensino_medio,
     exige_pos_graduacao,
     exige_senioridade,
     filtrar,
@@ -611,3 +612,31 @@ def test_titulo_administrativo_com_sinal_da_propria_area_continua(titulo: str, c
     assert not fora_da_area_do_curso(
         vaga(titulo=titulo, descricao="Sem detalhes."), perfil(curso=curso)
     )
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO MÉDIO",
+        "Estágio de Ensino Médio - Nova Iguaçu",
+        "ESTÁGIO - Ensino Médio - Recrutamento Aberto",
+        "Estagiário Administrativo Financeiro - Estudantes Ensino Médio",
+        "Jovem Aprendiz e Estagiário em Supermercado",
+    ],
+)
+def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: str):
+    assert exige_ensino_medio(vaga(titulo=titulo))
+    assert deve_descartar(vaga(titulo=titulo), perfil(curso="Pedagogia"))
+    assert deve_descartar(vaga(titulo=titulo), perfil(curso="Administração"))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio Nível Médio e Superior :: Agência Itaúba",
+        "Estagiário Pedagogia - Ensino Fundamental I",
+        "Estágio em Pedagogia - Ensino Médio e Superior",
+    ],
+)
+def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
+    assert not exige_ensino_medio(vaga(titulo=titulo))

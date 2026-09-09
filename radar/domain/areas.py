@@ -511,7 +511,8 @@ AREAS = (
         cursos=("pedagogia", "letras", "historia", "geografia", "licenciatura"),
         titulo=(
             r"pedagogia|docencia|professor[a]?|monitoria|educacional|educacao(?! fisica)|escola"
-            r"|ensino|sala de aula|pedagogic[ao]|letras|historia|geografia|material didatico"
+            r"|ensino(?! medio)|sala de aula|pedagogic[ao]|letras|historia|geografia"
+            r"|material didatico"
         ),
         exclusao=r"pedagogia",
         descricao=r"pedagogia|docencia|acompanhamento pedagogico|material didatico",

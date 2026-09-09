@@ -13,6 +13,11 @@ from radar.domain.models import Modalidade, Perfil, Vaga
 
 PADRAO_ESTAGIO = re.compile(r"\bestagi|\bintern(?:ship)?s?\b")
 PADRAO_SENIORIDADE = re.compile(r"\b(?:pleno|senior|especialista|coordenador)\b")
+PADRAO_ENSINO_MEDIO = re.compile(
+    r"\b(?:jovem|menor) aprendiz\b|\b(?:estudantes?|alunos?|para) (?:d[eo] )?ensino medio\b"
+    r"|^\W*estagio\W+(?:de |em )?ensino medio\b|\bnivel medio\b"
+)
+PADRAO_TAMBEM_SUPERIOR = re.compile(r"\b(?:superior|graduacao|universitari[oa]s?|faculdade)\b")
 PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
 )
@@ -44,6 +49,13 @@ def exige_senioridade(vaga: Vaga) -> bool:
 
 def exige_pos_graduacao(vaga: Vaga) -> bool:
     return PADRAO_POS_GRADUACAO.search(normalizar(vaga.titulo)) is not None
+
+
+def exige_ensino_medio(vaga: Vaga) -> bool:
+    titulo = normalizar(vaga.titulo)
+    if PADRAO_TAMBEM_SUPERIOR.search(titulo):
+        return False
+    return PADRAO_ENSINO_MEDIO.search(titulo) is not None
 
 
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
@@ -122,6 +134,7 @@ def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
         nao_e_estagio(vaga)
         or exige_senioridade(vaga)
         or exige_pos_graduacao(vaga)
+        or exige_ensino_medio(vaga)
         or fora_da_area_do_curso(vaga, perfil)
         or exige_anos_de_experiencia(vaga)
         or localizacao_incompativel(vaga, perfil)

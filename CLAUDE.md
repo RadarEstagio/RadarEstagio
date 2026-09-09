@@ -449,6 +449,12 @@ sondas executáveis. O que mudou:
 - **Estágio de mestrado ou doutorado chegava a graduando.** "Estágio de Mestrado em Economia"
   (EPE) foi a um perfil de Direito com nota 55, só com o alerta de pegadinha. Título com
   mestrado, doutorado ou pós-graduação sai no pré-filtro, como já saía "pleno" e "sênior".
+- **Estágio de ensino médio chegava a universitário** (09/09, execução real com 12 perfis):
+  "Vaga de estágio para estudantes de ensino médio" foi para Pedagogia com nota 60, porque
+  "ensino" é sinal de educação no título. Título de ensino médio, nível médio ou jovem aprendiz
+  sai no pré-filtro, exceto quando também diz superior, graduação ou faculdade ("Nível Médio e
+  Superior" fica); e "ensino médio" deixou de contar como sinal de educação. Na coleta do dia,
+  11 títulos assim entre 983.
 
 Conferido e correto: as 20 constantes SQL e o `metricas.sql` passam por `EXPLAIN` contra o
 schema real; mensagem com 7 vagas longas e `<`, `&` nos textos divide em partes abaixo de 4096

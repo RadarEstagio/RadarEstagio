@@ -283,3 +283,9 @@ def test_toda_area_sugere_habilidades_proprias_e_computacao_mantem_as_de_sempre(
 )
 def test_nomes_de_curso_dos_anuncios_reais_sao_reconhecidos(curso: str, esperada: str):
     assert area_do_curso(curso) == esperada
+
+
+def test_ensino_medio_no_titulo_nao_e_sinal_de_educacao():
+    assert not titulo_e_da_area("vaga de estagio para estudantes de ensino medio", "educacao")
+    assert titulo_e_da_area("estagiario pedagogia - ensino fundamental i", "educacao")
+    assert titulo_e_da_area("estagio em ensino a distancia", "educacao")
