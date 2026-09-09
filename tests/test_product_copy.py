@@ -5,8 +5,12 @@ RAIZ = Path(__file__).parent.parent
 
 def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
 
-    assert "Encontre estágios que combinam com seu curso e seu momento." in html
+    assert '<span class="hero-title-primary">Cansado de procurar estágio?</span>' in html
+    assert '<span class="hero-title-secondary">Nós levamos ele até você</span>' in html
+    assert ".hero-title-primary { color: var(--accent-deep); }" in css
+    assert ".hero-title-secondary { color: var(--accent); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
     assert "100% automático" in html

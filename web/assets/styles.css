@@ -106,6 +106,9 @@ p, h1, h2, h3 { margin-top: 0; }
 .eyebrow { margin-bottom: 18px; color: var(--accent); font-size: 14px; font-weight: 500; }
 .eyebrow-light { color: var(--accent-light); }
 .hero h1 { max-width: 940px; margin: 0 auto 26px; font-size: clamp(38px, 4.4vw, 60px); font-weight: 600; line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
+.hero-title-primary, .hero-title-secondary { display: block; }
+.hero-title-primary { color: var(--accent-deep); }
+.hero-title-secondary { color: var(--accent); }
 .continuacao { color: var(--muted); }
 .how-frame .continuacao, .final-card .continuacao { color: rgba(255, 255, 255, .55); }
 .hero-lead { max-width: 640px; margin: 0 auto 34px; color: var(--ink-soft); font-size: 18px; line-height: 1.6; text-wrap: pretty; }
