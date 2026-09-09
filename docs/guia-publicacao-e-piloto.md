@@ -270,12 +270,24 @@ registrada neste guia em 05–06/09 e não foi repetida como se fosse atual.
    revisão de Ian/Miguel.
 2. Publicar o Python compatível com perfil sem habilidades e, no Supabase, conferir histórico
    antes de aplicar `0018_habilidades_vazias.sql`.
-3. Aplicar `0019_motivo_pausa.sql` depois de `0018`, conferir grants/RLS e `migration list`.
-4. Publicar `web/` com R02 somente depois de a coluna existir no banco; confirmar as URLs do
+3. Antes de aplicar a `0018`, conferir os dados existentes: a constraint nova valida na hora e
+   exige de 0 a 50 itens de 1 a 100 caracteres, contrato que a coluna original (`cardinality >= 1`)
+   nunca impôs no update direto. Uma linha fora do contrato aborta o `db push` no meio. Consulta
+   somente leitura, que precisa devolver zero linhas:
+
+   ```sql
+   select id from perfis
+   where cardinality(habilidades) > 50
+      or exists (select 1 from unnest(habilidades) h where length(btrim(h)) not between 1 and 100);
+   ```
+
+   Havendo linha, registrar o caso e decidir com o dono do perfil; não corrigir dado por suposição.
+4. Aplicar `0019_motivo_pausa.sql` depois de `0018`, conferir grants/RLS e `migration list`.
+5. Publicar `web/` com R02 somente depois de a coluna existir no banco; confirmar as URLs do
    Auth e o estado da site key do Turnstile no ambiente escolhido.
-5. Publicar/validar as funções apenas se a equipe alterar sua versão ou secrets; a expansão
+6. Publicar/validar as funções apenas se a equipe alterar sua versão ou secrets; a expansão
    local não alterou `supabase/functions`.
-6. Rodar o roteiro controlado abaixo com uma conta da equipe, registrar IDs de teste fora das
+7. Rodar o roteiro controlado abaixo com uma conta da equipe, registrar IDs de teste fora das
    métricas do piloto e verificar novamente o limite de sete no workflow sem atender a base inteira.
 
 ### Roteiro de verificação controlada
