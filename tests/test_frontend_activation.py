@@ -29,7 +29,7 @@ def test_funil_novo_monta_perfil_antes_de_pedir_a_conta():
 
     assert html.count('class="form-step') == 4
     assert "else passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA]" in javascript
-    assert "if (authMode === \"login\") passosAtivos = [PASSO_CONTA]" in javascript
+    assert 'if (authMode === "login") passosAtivos = [PASSO_CONTA]' in javascript
     assert "editandoPerfilExistente" in javascript
     assert 'id="cursos-sugeridos"' in html
     assert 'data-skill="Python"' in html
@@ -160,6 +160,9 @@ def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
 def test_perfil_vinculado_explica_a_espera_sem_prometer_execucao():
     javascript = (RAIZ / "web/assets/app.js").read_text()
 
-    assert "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis." in javascript
+    assert (
+        "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis."
+        in javascript
+    )
     assert "A primeira busca pode aguardar a próxima execução diária." in javascript
     assert "busca iniciou" not in javascript

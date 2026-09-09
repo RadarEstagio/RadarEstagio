@@ -80,7 +80,8 @@ def test_lista_perfil_iniciante_com_habilidades_vazias(conexao: psycopg.Connecti
     )
     perfil_id = conexao.execute(
         "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
-        "telegram_chat_id) values (%s, 'Direito', 2, '{}', 'Recife, PE', 'remoto', %s) returning id",
+        "telegram_chat_id) values (%s, 'Direito', 2, '{}', 'Recife, PE', 'remoto', %s) "
+        "returning id",
         (user_id, str(uuid4().int)[:9]),
     ).fetchone()[0]
 
