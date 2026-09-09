@@ -1,8 +1,11 @@
 # Guia de publicação e piloto
 
-**Atualizado em 06/09/2026.** O deploy foi parcial: migrations `0014`–`0016` aplicadas e
-reconciliadas com o histórico em 06/09 (seção 9), `ir` e `telegram-webhook` publicadas. O frontend
-continua sem hospedagem e os documentos continuam como rascunhos, sem vigência.
+**Consolidado em 09/09/2026, sem nova consulta remota.** Há evidências datadas de deploy
+parcial: migrations `0014`–`0016` aplicadas e reconciliadas em 06/09 (seção 9), `ir` e
+`telegram-webhook` publicadas. O endereço `https://radarestagio.pages.dev` foi registrado
+em 08/09; a versão efetivamente servida e o domínio final precisam de conferência.
+Os textos legais continuam em revisão, sem vigência. A seção 12 concentra a publicação da
+expansão; os registros anteriores abaixo não comprovam o estado atual dos serviços.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -30,7 +33,8 @@ Estado registrado na atualização de 05/09 à noite, sem repetir os testes remo
 - Trava por perfil implementada e validada com duas conexões no banco real.
 - Relatório conferido com dados reais; feedback ainda zerado naquele teste.
 - Hospedagem, retornos finais do Auth, Turnstile e cadastro completo continuam pendentes.
-- Organização compartilhada no GitHub foi proposta; transferência ainda não confirmada.
+- A transferência para `RadarEstagio/RadarEstagio` foi confirmada em 08/09; conferir se
+  Cloudflare, cron e dispatch do webhook usam a organização, conforme o registro em `CLAUDE.md`.
 
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
@@ -109,7 +113,9 @@ A tela de recuperação está implementada localmente; falta conferir o fluxo co
 
 ## 4. Hospedar o site e associar o domínio
 
-Quando as alterações estiverem no GitHub, abra **Workers & Pages → Create application →
+Primeiro conferir o projeto Pages existente, sua URL e ligação com a organização; não criar
+outro projeto para substituir uma integração desconectada. Registrar SHA do deploy e se a
+main publica automaticamente. Se não houver projeto, abra **Workers & Pages → Create application →
 Pages → Import an existing Git repository** e escolha o repositório do Radar:
 
 | Campo | Valor |
@@ -174,8 +180,9 @@ Preserve os secrets existentes `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` 
 As credenciais de banco das funções são fornecidas pelo ambiente Supabase. Nenhum segredo
 entra em `web/config.js`; ali só cabe a chave publicável do projeto.
 
-`ir` e `telegram-webhook` foram publicadas em 05/09. A tabela acima mostra os valores finais:
-troque `URL_DA_LANDING`, hoje apontada provisoriamente para o repositório, quando o site subir. `supabase/config.toml` já define `verify_jwt = false`
+`ir` e `telegram-webhook` foram publicadas em 05/09. A tabela acima registra a configuração
+conhecida: conferir `URL_DA_LANDING` e atualizá-la quando o domínio final for definido.
+`supabase/config.toml` já define `verify_jwt = false`
 para ambas: o webhook verifica o segredo do Telegram, e `ir` atende os links do navegador.
 
 Confira a configuração do webhook: URL da função, mesmo segredo e `allowed_updates` contendo
@@ -201,7 +208,8 @@ a janela de 06:23 a 07:23 aguarda o diário e os demais perfis continuam atendid
 
 ## 9. Código e validação antes do piloto
 
-Implementado na `main`; migrations aplicadas e funções publicadas, frontend ainda não hospedado:
+Registro anterior à expansão: migrations `0014`–`0016` aplicadas e funções publicadas;
+versão atual do frontend a conferir:
 
 - `0014`: consentimento, versão aceita e perfil criado na confirmação a partir de cópia protegida.
 - Cadastro com checkboxes separados, revelar senha e sessão de origem preservada.
@@ -259,6 +267,16 @@ sessões de teste para separá-las das métricas do piloto.
 
 ## 12. Registro de preparação da expansão — 08/09/2026
 
+### Evidência local consolidada em 09/09
+
+O registro da revisão do PR #22, de 08/09, informa 666 testes Python aprovados e 25
+ignorados por dependência de `DATABASE_URL_TESTE`; 52 testes web/banco aprovados; Ruff,
+formatação e `git diff --check` aprovados. São resultados históricos da revisão, não testes
+executados nesta consolidação ou garantia sobre qualquer SHA posterior.
+Não houve inspeção visual naquela revisão. Conferir landing, FAQ, cadastro e conta em
+375 px e 1280 px, teclado, foco, Enter e ausência de overflow; JSDOM não verifica layout.
+Nenhum desses resultados comprova deploy ou aplicação remota de `0017`–`0019`.
+
 Este registro reúne a evidência disponível no repositório e a diferença entre o código local
 da branch `codex/expansao-revenue-centric` e o ambiente remoto. A sessão não teve acesso para
 consultar Cloudflare, Supabase, Telegram, cron-job.org ou GitHub; portanto, “não verificado”
@@ -278,10 +296,13 @@ registrada neste guia em 05–06/09 e não foi repetida como se fosse atual.
 
 ### Ordem de publicação preparada
 
-1. Confirmar a branch e os testes locais; não publicar documentos legais como vigentes sem a
+1. Registrar SHA local, SHA remoto, versão observada por componente, data e responsável;
+   conferir se o deploy automático exige separar etapas antes do merge. Confirmar os testes
+   relevantes à versão escolhida; não publicar documentos legais como vigentes sem a
    revisão de Ian/Miguel.
-2. Publicar o Python compatível com perfil sem habilidades e, no Supabase, conferir histórico
-   antes de aplicar `0018_habilidades_vazias.sql`.
+2. Publicar o Python compatível com perfil sem habilidades e, no Supabase, conferir histórico,
+   incluindo a predecessora `0017`, antes de aplicar `0018_habilidades_vazias.sql`.
+   Aplicar apenas migrations pendentes; não reaplicar as já registradas.
 3. Antes de aplicar a `0018`, conferir os dados existentes: a constraint nova valida na hora e
    exige de 0 a 50 itens de 1 a 100 caracteres, contrato que a coluna original (`cardinality >= 1`)
    nunca impôs no update direto. Uma linha fora do contrato aborta o `db push` no meio. Consulta
@@ -324,7 +345,11 @@ migrations aditivas `0018`/`0019`; não editar nem apagar migration aplicada. Se
 R03 precisar ser retirado, usar a versão anterior do código do job/CLI enquanto a coluna
 nullable permanece no banco. Corrigir depois em nova migration, se necessário; não executar
 `drop column`, apagar dados ou reverter a coluna durante o piloto. A equipe deve registrar o
-SHA publicado, horário, responsável e motivo da reversão.
+SHA publicado, horário, responsável e motivo da reversão. Qualquer versão anterior escolhida
+para o job deve continuar aceitando habilidades vazias; não restaurar leitor ou constraint
+que rejeite perfis já criados. Desativar a entrada nova no frontend antes de uma reversão
+que dependa disso. A conferência de dados antes da `0018` foi escolhida para detectar legado
+inválido sem corrigir dados pessoais por suposição nem apenas adiar a validação.
 
 ### Pendências e responsáveis
 
