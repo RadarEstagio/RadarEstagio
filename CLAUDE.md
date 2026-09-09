@@ -420,8 +420,11 @@ com tags fechadas; janela da entrega imediata é 09:23–10:23 UTC (06:23–07:2
 suítes das Edge Functions (8 + 24) e do cadastro (38) verdes; nenhuma ref remota alcança commit
 do Claude.
 
-**Decisão pendente:** o workflow manda até **7** vagas (`QUANTIDADE_VAGAS_ENVIADAS: "7"`, commit
-de 03/09) e a landing de 08/09 promete "até cinco" em três lugares. Um dos dois tem que mudar.
+**Sete ou cinco:** o workflow manda até **7** vagas (`QUANTIDADE_VAGAS_ENVIADAS: "7"`, commit de
+03/09) e a landing de 08/09 prometia "até cinco". Ian decidiu na noite de 08/09 manter 7 e a
+landing passou a dizer "até sete". O plano de expansão do Igor (`docs/execucao-expansao/`,
+tarefas O00 e L01) registra a decisão oposta — reduzir o workflow para 5 — e ainda precisa ser
+alinhado entre os dois.
 
 ### Cobertura das fontes (30/08/2026)
 
