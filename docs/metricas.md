@@ -41,6 +41,14 @@ Não foi necessário mudar o catálogo de eventos. Repetições de entrega do we
 podem produzir mais de uma linha bruta; as métricas não contam essas linhas como recomendações
 adicionais. Eventos não são apagados ao mudar a resposta.
 
+Participação no feedback usa a mesma janela de entregas do período. O denominador é o número de
+pares distintos `(perfil_id, vaga_id)` com primeira entrega na janela, inclusive perfis antigos.
+O numerador é o número desses pares com uma resposta positiva ou negativa após a entrega, até o
+fim da consulta; se houver correção, vale a última por `ocorrido_em` e, em empate, por `id`.
+Uma abertura sem resposta não conta, resposta anterior à entrega não conta e zero entregas
+aparece como “sem denominador”. O relatório imprime contagens e percentual derivado, sem
+persistir percentual.
+
 ## Aquisição: da visita à primeira recomendação
 
 Inclui visita, CTA, três etapas de perfil, conta criada, e-mail confirmado, perfil salvo,

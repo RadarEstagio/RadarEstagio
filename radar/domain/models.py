@@ -167,6 +167,8 @@ class FunilDaCoorte(BaseModel):
     vagas_irrelevantes: int
     candidaturas: int
     vagas_extraidas: int
+    recomendacoes_elegiveis_feedback: int = 0
+    recomendacoes_com_feedback: int = 0
     recusas_por_motivo: dict[str, int] = Field(default_factory=dict)
 
     def vagas_extraidas_por_ativado(self) -> float | None:

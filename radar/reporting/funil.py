@@ -20,6 +20,7 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         etapa("Marcadas como irrelevantes", funil.vagas_irrelevantes, funil.vagas_enviadas),
         etapa("Candidaturas", funil.candidaturas, funil.vagas_enviadas),
         "",
+        linha_do_feedback(funil),
         "Motivo da recusa:",
     ]
     linhas.extend(linhas_dos_motivos(funil))
@@ -86,3 +87,12 @@ def linha_do_custo(funil: FunilDaCoorte) -> str:
     if por_ativado is None:
         return f"Custo: {extraidas} vagas extraídas, nenhum usuário ativado no período"
     return f"Custo: {extraidas} vagas extraídas, {por_ativado:.1f} por usuário ativado"
+
+
+def linha_do_feedback(funil: FunilDaCoorte) -> str:
+    elegiveis = funil.recomendacoes_elegiveis_feedback
+    respondidas = funil.recomendacoes_com_feedback
+    if not elegiveis:
+        return "Respostas: 0 de 0 recomendações (sem denominador)"
+    percentual = 100 * respondidas / elegiveis
+    return f"Respostas: {respondidas} de {elegiveis} recomendações ({percentual:.1f}%)"

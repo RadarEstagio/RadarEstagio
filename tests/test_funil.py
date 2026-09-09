@@ -17,6 +17,8 @@ def funil(**mudancas) -> FunilDaCoorte:
         "vagas_irrelevantes": 7,
         "candidaturas": 3,
         "vagas_extraidas": 210,
+        "recomendacoes_elegiveis_feedback": 10,
+        "recomendacoes_com_feedback": 3,
         "recusas_por_motivo": {"motivo_exigencia": 4, "motivo_area": 2, "sem_motivo": 1},
     }
     return FunilDaCoorte(**{**padrao, **mudancas})
@@ -41,6 +43,20 @@ def test_mostra_o_volume_de_vagas_com_a_proporcao_sobre_as_enviadas():
     assert "Aberturas" in texto
     assert "(33%)" in texto
     assert "Candidaturas" in texto
+
+
+def test_mostra_participacao_no_feedback_a_partir_das_contagens():
+    texto = formatar_funil(funil())
+
+    assert "Respostas: 3 de 10 recomendações (30.0%)" in texto
+
+
+def test_feedback_sem_entregas_mostra_ausencia_de_denominador():
+    texto = formatar_funil(
+        funil(recomendacoes_elegiveis_feedback=0, recomendacoes_com_feedback=0)
+    )
+
+    assert "Respostas: 0 de 0 recomendações (sem denominador)" in texto
 
 
 def test_quebra_as_recusas_por_motivo_na_ordem_recebida():
@@ -84,6 +100,8 @@ def test_coorte_vazia_nao_calcula_proporcao():
             vagas_irrelevantes=0,
             candidaturas=0,
             vagas_extraidas=0,
+            recomendacoes_elegiveis_feedback=0,
+            recomendacoes_com_feedback=0,
             recusas_por_motivo={},
         )
     )

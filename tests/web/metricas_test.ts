@@ -6,6 +6,8 @@ interface Metricas {
   vagas_abertas: number;
   vagas_uteis: number;
   vagas_irrelevantes: number;
+  recomendacoes_elegiveis_feedback: number;
+  recomendacoes_com_feedback: number;
   recusas_por_motivo: Record<string, number>;
   utilidade_semanal: {
     semana: string;
@@ -26,7 +28,7 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
       create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int, user_id text, sessao_id text, propriedades jsonb default '{}', ocorrido_em timestamptz);
       insert into perfis values (1,'dono','2026-09-03','2026-09-03','123'), (2,'antigo','2026-08-01','2026-08-02',null);
       insert into vagas values (1,'{"habilidades_obrigatorias":["Python"]}','2026-09-03'), (2,'{"habilidades_obrigatorias":["Python","SQL","Git"]}','2026-09-03'), (3,null,null);
-      insert into envios values (1,1,'2026-09-03'),(1,2,'2026-09-03'),(1,3,'2026-09-04'),(2,1,'2026-09-08');
+      insert into envios values (1,1,'2026-09-03'),(1,1,'2026-09-03 00:00:30'),(1,2,'2026-09-03'),(1,3,'2026-09-04'),(2,1,'2026-09-08');
       insert into eventos_produto(nome,user_id,sessao_id,ocorrido_em) values
         ('conta_criada','antigo',null,'2026-08-01'),
         ('landing_visualizada',null,'s1','2026-09-03'),
@@ -41,6 +43,7 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
         ('vaga_util',1,2,'2026-09-05','{}'),
         ('vaga_irrelevante',1,2,'2026-09-06','{"motivo":"motivo_nota"}'),
         ('vaga_irrelevante',1,2,'2026-09-06','{"motivo":"motivo_nota"}'),
+        ('vaga_util',1,3,'2026-09-03','{}'),
         ('vaga_util',2,1,'2026-09-08','{}'),
         ('vaga_util',1,3,'2026-09-10','{}');
     `);
@@ -58,6 +61,8 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     assert.equal(result.vagas_abertas, 1);
     assert.equal(result.vagas_uteis, 1);
     assert.equal(result.vagas_irrelevantes, 1);
+    assert.equal(result.recomendacoes_elegiveis_feedback, 4);
+    assert.equal(result.recomendacoes_com_feedback, 3);
     assert.equal(result.recusas_por_motivo.motivo_nota, 1);
     assert.deepEqual(result.utilidade_semanal, [
       { semana: "2026-08-31", parcial: false, ativados: 2, com_utilidade: 1 },
@@ -83,6 +88,8 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     await db.exec("truncate eventos_produto, envios, perfis, vagas");
     const empty = (await db.query<Metricas>(sql)).rows[0];
     assert.equal(empty.vagas_uteis, 0);
+    assert.equal(empty.recomendacoes_elegiveis_feedback, 0);
+    assert.equal(empty.recomendacoes_com_feedback, 0);
     await db.exec(
       `insert into eventos_produto(nome,user_id,sessao_id,ocorrido_em) values
       ('landing_visualizada',null,'compartilhada','2026-08-01'),

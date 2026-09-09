@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: M02.
-- Próximo passo: validar a participação no feedback com deduplicação por par entregue.
-- Branch/HEAD: `codex/expansao-revenue-centric` / M01 pronto para commit.
+- ID atual: M03.
+- Próximo passo: medir tempo até primeira entrega e abertura com medianas em segundos e nulos honestos.
+- Branch/HEAD: `codex/expansao-revenue-centric` / M02 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -26,6 +26,7 @@ existentes.
 | L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
 | C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
 | M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
+| M02 | Implementado/testado | `radar/storage/metricas.sql`, `radar/domain/models.py`, `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md` | Denominador deduplica primeira entrega por par; feedback só após entrega, última resposta por timestamp/ID; CLI exibe contagens e percentual ou sem denominador | Dados reais e respostas do piloto não verificados; métrica não é utilidade nem candidatura |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -127,6 +128,16 @@ existentes.
 - Inspeção visual: não aplicável; a mudança é documentação e cobertura de emissão de eventos.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M01 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: executar M02 com o oráculo de feedback; não usar dados reais nem alterar o limite de cinco.
+
+## M02
+
+- Comportamento antes → depois: o relatório não informava participação no feedback; agora retorna pares elegíveis e pares respondidos na mesma janela de entregas e deriva o percentual no CLI.
+- Arquivos/símbolos: `radar/storage/metricas.sql` (`entregas_do_periodo`, `respostas_do_periodo`), `radar/domain/models.py` (`FunilDaCoorte`), `radar/reporting/funil.py`, `tests/web/metricas_test.ts`, `tests/test_funil.py`, `docs/metricas.md`.
+- Casos obrigatórios: quatro pares elegíveis com envio duplicado deduplicado, três respostas após entrega, resposta anterior e evento futuro ignorados, correção negativa prevalece pelo último evento e coorte vazia mostra ausência de denominador.
+- Comandos/exit code/aprovados/ignorados: B — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` — exit 0, 1 aprovado, 0 ignorados; Q — `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py` — exit 0, 11 aprovados, 25 ignorados por Postgres; `git diff --check` — exit 0.
+- Inspeção visual: não aplicável; saída textual do CLI coberta por teste.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M02 será criado após a verificação do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: executar M03 sem interpretar mediana como prazo prometido.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

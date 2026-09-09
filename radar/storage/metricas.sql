@@ -58,13 +58,21 @@ with limites as (
       where p.ativado_em < s.ate and p.ativado_em <= l.fim) as com_utilidade
   from semanas s cross join limites l
 ), entregas_do_periodo as (
-  select e.perfil_id, e.vaga_id, e.enviada_em,
+  select distinct on(e.perfil_id, e.vaga_id)
+    e.perfil_id, e.vaga_id, e.enviada_em,
     case when v.extracao is null then 'sem_extracao'
       when jsonb_array_length(coalesce(v.extracao->'habilidades_obrigatorias', '[]')) = 0 then 'sem_tecnologias'
       when jsonb_array_length(coalesce(v.extracao->'habilidades_obrigatorias', '[]')) <= 2 then 'uma_ou_duas'
       else 'tres_ou_mais' end as grupo
   from envios e join vagas v on v.id = e.vaga_id, limites l
   where e.enviada_em >= l.inicio and e.enviada_em <= l.fim
+  order by e.perfil_id, e.vaga_id, e.enviada_em
+), respostas_do_periodo as (
+  select distinct on(e.perfil_id, e.vaga_id) e.*
+  from eventos e
+  join entregas_do_periodo t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
+  where e.nome in ('vaga_util', 'vaga_irrelevante') and e.ocorrido_em >= t.enviada_em
+  order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
 ), recusas_do_periodo as (
   select distinct on(e.perfil_id, e.vaga_id) e.* from eventos e
   join entregas_do_periodo t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
@@ -94,6 +102,8 @@ select
   (select count(*) from respostas where nome = 'vaga_irrelevante') as vagas_irrelevantes,
   (select count(distinct (perfil_id, vaga_id)) from interacoes where nome = 'candidatura_iniciada') as candidaturas,
   (select count(*) from vagas, limites l where extraida_em >= l.inicio and extraida_em <= l.fim) as vagas_extraidas,
+  (select count(*) from entregas_do_periodo) as recomendacoes_elegiveis_feedback,
+  (select count(*) from respostas_do_periodo) as recomendacoes_com_feedback,
   coalesce((select jsonb_object_agg(nome, total) from etapas), '{}') as etapas,
   coalesce((select jsonb_object_agg(motivo, total) from motivos), '{}') as recusas_por_motivo,
   coalesce((select jsonb_agg(to_jsonb(s) order by semana) from semanais s), '[]') as utilidade_semanal,
