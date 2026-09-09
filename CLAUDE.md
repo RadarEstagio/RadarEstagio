@@ -46,9 +46,10 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   descrição completa.
 - **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
   para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
-  padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele. Para
-  alternar, ver a skill `trocar-avaliador`. A IA **só extrai fatos da vaga**; quem compara com o
-  perfil e calcula a nota é Python, sem IA.
+  padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele.
+  `AVALIADOR=agy` dispensa `GEMINI_API_KEY` e usa `AGY_MODELO` e `AGY_TIMEOUT_SEGUNDOS`, com o
+  comando `agy` autenticado localmente; `python -m radar verificar` mostra o adapter ativo. A IA
+  **só extrai fatos da vaga**; quem compara com o perfil e calcula a nota é Python, sem IA.
 - **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
