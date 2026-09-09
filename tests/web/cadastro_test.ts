@@ -191,6 +191,12 @@ Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha loca
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
     assert.equal(a.calls.filter(([name]) => name === "signup").length, 0);
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "etapa_preferencias_concluida"
+      ),
+      false,
+    );
     form.elements.aceitou_termos.checked = true;
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
@@ -208,6 +214,16 @@ Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha loca
     assert.equal(
       a.w.document.querySelector("#assistance-submit").disabled,
       true,
+    );
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "etapa_preferencias_concluida"
+      ),
+      true,
+    );
+    assert.equal(
+      a.calls.some(([name, , payload]) => name === "insert" && (payload as Payload)?.nome === "conta_criada"),
+      false,
     );
   } finally {
     a.close();

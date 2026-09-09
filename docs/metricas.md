@@ -43,11 +43,11 @@ adicionais. Eventos não são apagados ao mudar a resposta.
 
 ## Aquisição: da visita à primeira recomendação
 
-Inclui visita, CTA, três etapas, conta criada, e-mail confirmado, perfil salvo, abertura do
-Telegram, vínculo e primeira recomendação. O formulário pede e-mail e senha antes das três
-etapas e esse passo não emite evento próprio: quem desiste nele aparece como CTA aberto sem
-`etapa_perfil_concluida`. Cada etapa conta identidades distintas cuja
-**primeira aparição em qualquer evento** ocorreu nos últimos 30 dias.
+Inclui visita, CTA, três etapas de perfil, conta criada, e-mail confirmado, perfil salvo,
+abertura do Telegram, vínculo e primeira recomendação. No novo cadastro, momento, habilidades
+e preferências vêm antes do e-mail e da senha; login pede somente a conta e edição não é novo
+cadastro. Cada etapa conta identidades distintas cuja **primeira aparição em qualquer evento**
+ocorreu nos últimos 30 dias.
 
 A identidade é o usuário explícito, o dono do perfil ou, se ainda anônimo, a sessão. Uma sessão
 anônima só é associada a um usuário quando o histórico contém exatamente um dono para ela.
@@ -58,6 +58,31 @@ Visitantes que abandonam antes de criar conta continuam contados. Uma pessoa em 
 anônimos diferentes pode contar como duas sessões; isso não é identificação individual perfeita.
 As etapas são contagens de alcance, não um funil estrito que descarte quem pulou uma etapa.
 Contas criadas sem perfil ou sem confirmação aparecem em suas respectivas etapas.
+
+### Mapa dos eventos do funil
+
+O relatório mostra a primeira aparição por identidade, não uma conversão sequencial entre
+linhas. Eventos do navegador não guardam senha, conteúdo digitado ou replay; eventos de banco
+são os marcos autoritativos quando o navegador pode fechar ou perder a conexão.
+
+| Fluxo/etapa visível | Evento existente e condição válida | Emissor | Identidade disponível | Repetição | Leitura no SQL | Limite de interpretação |
+|---|---|---|---|---|---|---|
+| Visita à landing | `landing_visualizada`, uma vez por armazenamento de sessão | navegador | `sessao_id`; `user_id` se a sessão já estiver autenticada | `sessionStorage` reduz recarga; linhas brutas ainda podem repetir entre sessões | `identificados` + `entradas` + `etapas` | não é pessoa única; sessões anônimas em aparelhos diferentes podem contar separadamente |
+| Abertura do cadastro | `cta_cadastro_aberto`, somente clique não autenticado | navegador | sessão ou usuário autenticado disponível | cada clique não autenticado pode gerar linha | `etapas` conta pessoa distinta | mede intenção de abrir, não envio nem conta criada |
+| Momento/curso e período | `etapa_perfil_concluida`, avanço após validação do passo | navegador | sessão ou usuário | voltar e avançar pode repetir | `etapas` por identidade | inclui edição; não prova novo cadastro nem habilidade informada |
+| Habilidades | `etapa_habilidades_concluida`, avanço após seleção ou opção explícita vazia; somente quantidade | navegador | sessão ou usuário | revisitas podem repetir; `quantidade` não contém valores | `etapas` por identidade | não mede quais habilidades foram digitadas nem conversão |
+| Preferências/última etapa | `etapa_preferencias_concluida`, fluxo ativo inteiro válido antes do backend | navegador | sessão ou usuário | novo submit válido pode repetir | `etapas` por identidade | não é conta criada; falha de autenticação não vira marco porque validação ocorre antes do emissor |
+| Conta criada | `conta_criada`, inserção de usuário no Auth | trigger do banco | `user_id` | marco autoritativo; não depende da aba | `etapas` por identidade | não prova confirmação de e-mail nem perfil salvo |
+| E-mail confirmado | `email_confirmado`, confirmação observada pelo Auth | trigger do banco | `user_id` | marco autoritativo | `etapas` por identidade | não prova vínculo do Telegram ou entrega |
+| Perfil salvo | `perfil_salvo`, insert confirmado pelo banco; o navegador mantém um espelho autenticado para ligar sessão | trigger do banco + navegador após persistência | banco: `user_id`/`perfil_id`; web: sessão/usuário | podem existir duas linhas para o mesmo marco; SQL conta identidade distinta | `etapas` por identidade; `0014` liga a sessão de origem nos eventos de banco | não distingue criação de edição; não atribui sucesso antes do retorno do backend |
+| Abertura do Telegram | `telegram_aberto`, clique no CTA de vínculo | navegador | sessão ou usuário | cada clique pode repetir | `etapas` por identidade | não confirma vínculo; retorno/abertura externa não é prova de entrega |
+| Telegram vinculado | `telegram_vinculado`, mudança confirmada de `telegram_chat_id` | trigger do banco após webhook | `user_id`/`perfil_id` | histórico pode ter revínculos | `etapas` e `perfis_vinculados` | não prova que o job rodou ou que havia vaga compatível |
+| Primeira recomendação | `primeira_recomendacao_enviada`, `ativado_em` preenchido | trigger do banco após ativação do perfil | `user_id`/`perfil_id` | somente a transição inicial | `etapas` e coorte de perfis | prova primeira entrega operacional, não abertura nem utilidade |
+
+Login, recuperação, edição de perfil, CAPTCHA, erro de rede e abandono não têm eventos próprios.
+Não são inferidos a partir de silêncio. Se forem necessários, a tarefa futura deve especificar
+`login_sucesso` ou `perfil_editado`, propriedades não pessoais e a regra de identidade/RLS antes
+de alterar o catálogo; este ID não cria esses eventos.
 
 ## Resultado dos perfis novos
 

@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: M01.
-- Próximo passo: mapear eventos de cadastro e lacunas sem alterar nomes existentes nem criar métricas inventadas.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C06 pronto para commit.
+- ID atual: M02.
+- Próximo passo: validar a participação no feedback com deduplicação por par entregue.
+- Branch/HEAD: `codex/expansao-revenue-centric` / M01 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -25,6 +25,7 @@ existentes.
 | L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até cinco recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
 | L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
 | C06 | Implementado/testado | `web/assets/app.js`, `tests/web/cadastro_test.ts`, `tests/test_frontend_activation.py` | Conta vinculada informa vínculo, compatibilidade e espera pela próxima execução sem alegar que a busca iniciou/concluiu; perfil sem vínculo continua com CTA | Job diário, vínculo real, ausência real e publicação não verificados |
+| M01 | Implementado/testado | `docs/metricas.md`, `tests/web/cadastro_test.ts` | Mapa dos 11 eventos exibidos pelo relatório, emissores, identidade, repetição, leitura SQL e limites; novo cadastro/profile order documentado; campo inválido não emite conclusão | Eventos reais e conversão do piloto dependem da publicação; lacunas de login/edição/CAPTCHA/abandono explicitadas |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -116,6 +117,16 @@ existentes.
 - Inspeção visual: estado da conta foi coberto no harness; sem validação de vínculo ou job real no ambiente externo.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C06 será criado após `git diff --check`. Nenhuma publicação externa.
 - Pendência real/próximo comando: mapear o funil de eventos em M01; a equipe precisa validar comportamento no Supabase/Telegram publicados.
+
+## M01
+
+- Comportamento antes → depois: `docs/metricas.md` dizia que e-mail/senha vinham antes do perfil e não explicava a atribuição por evento; agora registra a ordem C05, separa marcos do navegador e do banco e explicita que o relatório mede alcance por identidade, não conversão sequencial.
+- Arquivos/símbolos: `docs/metricas.md` (mapa de eventos), `tests/web/cadastro_test.ts` (preferências inválidas não emitem evento; conclusão válida emite e não fabrica `conta_criada`). Nenhum nome de evento ou migration foi alterado.
+- Casos obrigatórios: visita/CTA, três etapas, conta, confirmação, perfil, abertura/vínculo do Telegram e primeira recomendação foram rastreados aos emissores; login, edição, recovery, CAPTCHA e abandono ficaram como lacunas, sem inferência.
+- Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 41 aprovados, 0 ignorados; P — `uv run pytest -q tests/test_product_events.py tests/test_funil.py` — exit 0, 17 aprovados, 0 ignorados; `git diff --check` — exit 0.
+- Inspeção visual: não aplicável; a mudança é documentação e cobertura de emissão de eventos.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit M01 será criado após a verificação do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: executar M02 com o oráculo de feedback; não usar dados reais nem alterar o limite de cinco.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas
