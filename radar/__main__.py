@@ -2,12 +2,19 @@ import argparse
 import logging
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
 
 import httpx
 from pydantic import ValidationError
 
 from radar.avaliacao.factory import criar_juiz
+from radar.avaliacao.gabarito import (
+    carregar_gabarito,
+    exportar_gabarito,
+    gravar_gabarito,
+    selecionar_do_gabarito,
+)
 from radar.avaliacao.julgar import julgar_entregas
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import (
@@ -50,6 +57,7 @@ COMANDO_PADRAO = "rodar"
 DIAS_DO_JULGAMENTO = 7
 AMOSTRA_DO_JULGAMENTO = 30
 SEMENTE_DO_JULGAMENTO = 1
+AMOSTRA_DO_GABARITO = 20
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -141,13 +149,27 @@ def metricas(settings: Settings) -> None:
         print(formatar_funil(repositorio.funil_da_coorte(DIAS_DA_COORTE)))
 
 
-def julgar(settings: Settings, dias: int, amostra: int, semente: int) -> None:
+def julgar(
+    settings: Settings, dias: int, amostra: int, semente: int, gabarito: Path | None = None
+) -> None:
     with abrir_repositorio_de_metricas(settings) as repositorio:
         entregas = repositorio.entregas_recentes(dias)
+    rotulos = carregar_gabarito(gabarito) if gabarito else None
+    if rotulos is not None:
+        entregas = selecionar_do_gabarito(entregas, rotulos)
+        amostra = len(entregas)
     resultado = julgar_entregas(
         entregas, criar_juiz(settings), amostra, semente, settings.juiz_modelo, dias
     )
-    print(formatar_julgamento(resultado))
+    print(formatar_julgamento(resultado, rotulos))
+
+
+def gabarito(settings: Settings, dias: int, amostra: int, semente: int, saida: Path) -> None:
+    with abrir_repositorio_de_metricas(settings) as repositorio:
+        entregas = repositorio.entregas_recentes(dias)
+    itens = exportar_gabarito(entregas, amostra, semente)
+    gravar_gabarito(itens, saida)
+    print(f'{len(itens)} entregas gravadas em {saida}; preencha "relevante" com true ou false')
 
 
 def testar_telegram(settings: Settings) -> None:
@@ -317,6 +339,16 @@ def main() -> None:
     comando_julgar.add_argument("--dias", type=inteiro_positivo, default=DIAS_DO_JULGAMENTO)
     comando_julgar.add_argument("--amostra", type=inteiro_positivo, default=AMOSTRA_DO_JULGAMENTO)
     comando_julgar.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
+    comando_julgar.add_argument(
+        "--gabarito", type=Path, default=None, help="julga só as entregas rotuladas no arquivo"
+    )
+    comando_gabarito = subcomandos.add_parser(
+        "gabarito", help="exporta uma amostra de entregas para as pessoas rotularem"
+    )
+    comando_gabarito.add_argument("--dias", type=inteiro_positivo, default=DIAS_DO_JULGAMENTO)
+    comando_gabarito.add_argument("--amostra", type=inteiro_positivo, default=AMOSTRA_DO_GABARITO)
+    comando_gabarito.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
+    comando_gabarito.add_argument("--saida", type=Path, required=True)
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     subcomandos.add_parser(
         "testar-local",
@@ -334,7 +366,17 @@ def main() -> None:
         if nome_do_comando == "rodar":
             rodar(settings, getattr(argumentos, "perfil", None))
         elif nome_do_comando == "julgar":
-            julgar(settings, argumentos.dias, argumentos.amostra, argumentos.semente)
+            julgar(
+                settings,
+                argumentos.dias,
+                argumentos.amostra,
+                argumentos.semente,
+                argumentos.gabarito,
+            )
+        elif nome_do_comando == "gabarito":
+            gabarito(
+                settings, argumentos.dias, argumentos.amostra, argumentos.semente, argumentos.saida
+            )
         else:
             COMANDOS[nome_do_comando](settings)
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
