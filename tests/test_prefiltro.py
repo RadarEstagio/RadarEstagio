@@ -327,12 +327,9 @@ def test_curso_citado_com_contexto_de_formacao_mantem_a_vaga(
     assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
 
 
-@pytest.mark.parametrize(
-    "modalidade", [Modalidade.REMOTO, Modalidade.HIBRIDO, Modalidade.INDIFERENTE]
-)
-def test_localizacao_so_e_avaliada_para_perfil_presencial(modalidade: Modalidade):
+def test_perfil_remoto_nao_avalia_a_cidade_da_vaga():
     vaga_em_outra_cidade = vaga(localizacao="Salvador, Bahia")
-    assert not localizacao_incompativel(vaga_em_outra_cidade, perfil(modalidade=modalidade))
+    assert not localizacao_incompativel(vaga_em_outra_cidade, perfil(modalidade=Modalidade.REMOTO))
 
 
 def test_presencial_mantem_vaga_na_mesma_cidade():
@@ -533,4 +530,40 @@ def test_termo_da_area_em_texto_institucional_nao_mantem_titulo_generico(curso, 
 def test_termo_da_area_em_requisito_ou_atuacao_mantem_titulo_generico(curso, descricao):
     assert not fora_da_area_do_curso(
         vaga(titulo="Estagiário(a)", descricao=descricao), perfil(curso=curso)
+    )
+
+
+@pytest.mark.parametrize("modalidade", [Modalidade.HIBRIDO, Modalidade.INDIFERENTE])
+@pytest.mark.parametrize(
+    "descricao",
+    ["Estágio presencial na escola.", "Sem detalhes.", "Modelo híbrido, 3 dias no escritório."],
+)
+def test_hibrido_e_indiferente_descartam_vaga_de_outra_cidade_que_nao_admite_remoto(
+    modalidade: Modalidade, descricao: str
+):
+    do_rio = perfil(modalidade=modalidade, cidade="Rio de Janeiro, RJ")
+    em_palhoca = vaga(localizacao="Palhoça, Santa Catarina", descricao=descricao)
+
+    assert localizacao_incompativel(em_palhoca, do_rio)
+
+
+@pytest.mark.parametrize("modalidade", [Modalidade.HIBRIDO, Modalidade.INDIFERENTE])
+def test_hibrido_e_indiferente_mantem_vaga_remota_de_outra_cidade_e_qualquer_vaga_da_propria(
+    modalidade: Modalidade,
+):
+    do_rio = perfil(modalidade=modalidade, cidade="Rio de Janeiro, RJ")
+
+    assert not localizacao_incompativel(
+        vaga(localizacao="São Paulo, São Paulo", descricao="Trabalho 100% remoto."), do_rio
+    )
+    assert not localizacao_incompativel(
+        vaga(
+            localizacao="São Paulo, São Paulo",
+            descricao="Sem detalhes.",
+            modalidade=Modalidade.REMOTO,
+        ),
+        do_rio,
+    )
+    assert not localizacao_incompativel(
+        vaga(localizacao="Rio de Janeiro, Rio de Janeiro", descricao="Estágio presencial."), do_rio
     )

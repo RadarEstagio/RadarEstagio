@@ -80,9 +80,19 @@ def exige_anos_de_experiencia(vaga: Vaga) -> bool:
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
-    if perfil.modalidade is not Modalidade.PRESENCIAL:
+    if perfil.modalidade is Modalidade.REMOTO:
         return False
-    return cidade(perfil.cidade) != cidade(vaga.localizacao)
+    mesma_cidade = cidade(perfil.cidade) == cidade(vaga.localizacao)
+    if perfil.modalidade is Modalidade.PRESENCIAL:
+        return not mesma_cidade
+    return not mesma_cidade and not admite_remoto(vaga)
+
+
+def admite_remoto(vaga: Vaga) -> bool:
+    if vaga.modalidade is not None:
+        return vaga.modalidade is Modalidade.REMOTO
+    texto = normalizar(f"{vaga.titulo} {vaga.descricao}")
+    return PADRAO_TRABALHO_REMOTO.search(texto) is not None
 
 
 def cidade(localizacao: str) -> str:
