@@ -1,60 +1,56 @@
 # Documentação do Radar de Estágio
 
-Revisão de 08/09/2026. Este índice define o papel de cada documento. Implementação no código,
-publicação e validação com usuários são estados diferentes; nenhum documento deve tratá-los
-como equivalentes.
+Consolidada em 09/09/2026. Implementação, publicação e validação com usuários são estados
+diferentes. Esta revisão reorganizou registros locais; não consultou serviços externos.
 
 ## Por onde começar
 
-- **O que o produto faz:** [Funcionalidades](funcionalidades.md), para usuários e desenvolvedores.
-- **O que falta concluir:** [Plano geral](plano-geral.md).
-- **Implementar o plano em tarefas sequenciais:** [Índice de expansão](plano-expansao-revenue-centric.md) e
-  [protocolo de execução](execucao-expansao/00-protocolo.md).
-- **Correções da expansão e revalidação:** [Auditoria](auditorias/2026-09-08-expansao-adversarial.md).
-- **O que a revisão do PR decidiu por conta própria:** [Decisões da revisão](execucao-expansao/decisoes-da-revisao.md).
-- **Como publicar e testar:** [Guia de publicação e piloto](guia-publicacao-e-piloto.md).
-- **Como contribuir:** [README do projeto](../README.md), [arquitetura](arquitetura.md) e
-  [contrato do frontend](contrato-front.md).
-- **Como interpretar resultados:** [Métricas](metricas.md).
-- **Definição, hipóteses e viabilidade para a disciplina:** [Pré-PRD](pre-prd.md).
-- **Artefatos externos preparados:** [cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md), [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md).
+- [Funcionalidades](funcionalidades.md): capacidades implementadas, dependências e limitações.
+- [Plano geral](plano-geral.md): acompanhamento único de pendências e decisões da equipe.
+- [Guia de publicação e piloto](guia-publicacao-e-piloto.md): configuração, evidências datadas,
+  ordem de publicação, reversão e roteiro de validação.
+- [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.
+- [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
+- [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
+- [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
+- [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
+- [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): rascunhos
+  para revisão; sincronizar com HTML e versão aceita antes da vigência.
+- [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
+  [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
+  decisões externas ainda abertos, com dados ausentes explicitados.
 
-## Revisão: o que faz sentido manter
+## Consolidação para exclusão posterior
 
-| Documento | Decisão | Papel e limite |
-|---|---|---|
-| `funcionalidades.md` | Novo, manter atualizado | Catálogo do que existe, dependências e limitações; não duplica o checklist de deploy |
-| `plano-geral.md` | Manter | Único acompanhamento geral das entregas e pendências |
-| `guia-publicacao-e-piloto.md` | Manter | Procedimentos e evidências datadas de publicação e validação |
-| `arquitetura.md` | Manter e atualizar quando mudar estrutura | Camadas e decisões técnicas; não usar como status de produção |
-| `contrato-front.md` | Manter; corrigido nesta revisão | Auth, perfil, RPCs e limites de escrita; exemplo antigo de insert removido |
-| `metricas.md` | Manter | Definições, denominadores, deduplicação e limites históricos |
-| `termos-de-uso.md` | Manter em revisão | Texto para revisão; sincronizar com `web/termos.html` antes de publicar |
-| `politica-de-privacidade.md` | Manter em revisão | Texto para revisão; sincronizar com `web/privacidade.html` antes de publicar |
-| `pre-prd.md` | Restaurado em 08/09; atualizar a cada entrega | Definição, hipóteses, evidências datadas e viabilidade para a disciplina; não é catálogo nem backlog |
+Os nove arquivos abaixo continuam no repositório para revisão e consulta histórica.
+Seus comandos e estados antigos não são uma fila atual de trabalho. Nenhum foi excluído.
+O detalhamento histórico, cenários de aceite e resultados intermediários permanece neles
+e no Git; os documentos permanentes recebem a síntese útil para manutenção.
 
-Os documentos antigos foram removidos em 07/09/2026. As decisões de privacidade ficam no
-contrato frontend, a revisão dos responsáveis no guia e o viés do ranking na arquitetura.
-O histórico permanece no Git.
+| Arquivo histórico | Destino do conteúdo de manutenção |
+|---|---|
+| `plano-expansao-revenue-centric.md` | Estado, escopo e seis frentes externas no plano geral |
+| `execucao-expansao/00-protocolo.md` | Publicação compatível e verificações no guia; regras gerais já em `CLAUDE.md` |
+| `execucao-expansao/01-landing-e-cadastro.md` | Capacidades no catálogo; cadastro e decisões de interface no contrato frontend |
+| `execucao-expansao/02-metricas-e-retencao.md` | Cálculos em métricas; motivo de pausa no contrato |
+| `execucao-expansao/03-evidencias-e-decisoes.md` | Guia, cobertura, aquisição, custos, hipótese comercial e seção acadêmica do contrato |
+| `execucao-expansao/progresso.md` | Conclusão e pendências no plano geral; testes históricos e visual pendente no guia |
+| `execucao-expansao/decisoes-da-revisao.md` | Justificativas na arquitetura, contrato, métricas e guia; demonstração no catálogo |
+| `auditorias/2026-09-08-expansao-adversarial.md` | A01–A06, regressões e limites na arquitetura; casos novos na matriz de cobertura |
+| `../web/README.md` | Desenvolvimento no README principal; configuração no guia; comportamento no contrato |
 
-## Correções e pendências documentais
-
-- Contrato do frontend atualizado: cadastro validado pelo banco após confirmação, RPC para
-  completar cadastro, consentimento e controles de conta já implementados.
-- Arquitetura e instruções do agente corrigidas nos pontos que ainda atribuíam a nota à IA,
-  omitiam callbacks de feedback ou prometiam custo zero para toda primeira entrega.
-- Catálogo distingue Jooble opcional, CAPTCHA dependente de configuração e ausência de
-  feedback persistente no modo local.
-- Estado externo não foi consultado novamente nesta revisão. As evidências de 05–06/09
-  permanecem datadas no guia; publicação da landing ainda precisa ser confirmada pela equipe.
-- Textos legais não foram aprovados nem tiveram vigência alterada. A revisão dos responsáveis
-  continua na seção 2 do guia de publicação.
-
-O plano formal de piloto foi retirado em 07/09 por decisão do Igor. A checklist simples antes
-de divulgar está no plano geral; metas, entrevistas e D7 não são obrigações atuais.
+Antes da exclusão, revisar o diff da consolidação e conferir se alguma mudança posterior
+nesses arquivos precisa ser incorporada. Remover os nove em conjunto evita deixar referências
+internas dos documentos históricos apontando para arquivos apagados. Esta tabela usa caminhos
+como texto para não criar dependência de navegação dos arquivos a retirar.
 
 ## Como manter
 
-Ao adicionar ou remover uma função, atualize o catálogo e o contrato afetado. Ao publicar ou
-validar algo, registre data e resultado no guia e ajuste a pendência no plano geral. Registre
-hipóteses como hipóteses e medições como medições, sem transformar um teste isolado em garantia.
+Ao mudar uma função, atualizar o catálogo e o contrato afetado. Ao publicar ou validar,
+registrar data, versão e resultado no guia e ajustar o estado no plano geral. Decisões de
+cálculo ficam em métricas; justificativas técnicas na arquitetura. Não duplicar o backlog.
+
+O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7
+não são condições para divulgar. A conferência operacional e a revisão dos textos estão no
+plano geral. Hipótese não vira medição, teste local não vira deploy e histórico não vira
+instrução para reaplicar uma entrega.
