@@ -216,8 +216,19 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   perfil vale como incerteza ("não informado"), nunca como veto. As travas de 60/70 pontos por
   habilidade ausente foram removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de
   Dados a 48 por "faltar Power BI") enquanto anúncios sem stack ocupavam o topo.
-- **Vaga que não declara stack** recebe cobertura neutra de 0.35 (~nota 65): entregável, porém
-  atrás de vaga detalhada e parcialmente compatível.
+- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, porém
+  atrás de qualquer vaga com requisito batido. Era 0.35 até 09/09/2026, quando a mensagem do
+  Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Requisito genérico é atendido por habilidade da mesma família** (09/09/2026): "banco de
+  dados" por SQL/MySQL/Postgres, "back-end" por Java/Spring/Django/Node, "front-end" por
+  React/HTML/CSS/JS, "programação" por qualquer linguagem, "ETL", "cloud", "versionamento",
+  "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
+  exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
+  Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
+- **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
+  anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
+  computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
+  no cadastro dessas áreas.
 - **Idiomas e pacote Office não contam na cobertura** (ninguém os cadastra no perfil), mas
   seguem visíveis na lista de requisitos. As variantes normalizam antes da comparação
   (03/09/2026): "Microsoft Excel" vira `excel` e "Google Sheets" vira `planilhas`. Antes só o
