@@ -172,6 +172,17 @@ maior volume entregue com maior rejeição. Não ajustar pesos só por uma conta
 
 ## Custo e limites
 
+Decisões preservadas da revisão de 08/09: `vagas_enviadas` conta linhas de envio da coorte,
+enquanto `recomendacoes_elegiveis_feedback` deduplica pares e inclui perfis antigos. Os números
+podem divergir; não mudar um denominador para igualar os dois. `semanais` deriva de
+`utilidade_por_perfil_semana`, e as recusas reutilizam `respostas_do_periodo`, evitando duas
+definições concorrentes do mesmo cálculo. A classificação por área fica no domínio.
+
+Na apresentação, durações abaixo de 60 segundos usam segundos inteiros; abaixo de uma hora,
+minutos; abaixo de um dia, horas; depois, dias, com uma casa decimal nessas três unidades.
+O cálculo continua em segundos. Pausa sem resposta usa “Não informado”; essa decisão não
+alterou o rótulo `sem_motivo` das recusas, que pertencem a outra métrica.
+
 O custo mostrado é um indicador de uso: vagas extraídas no período por perfil novo com ativação
 operacional na coorte. Não é valor monetário nem número de requisições ao Gemini; o resumo de
 execução informa requisições separadamente. Extrações compartilhadas também atendem perfis
