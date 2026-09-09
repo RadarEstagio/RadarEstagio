@@ -118,7 +118,7 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | C04 | Concluir sugestões existentes e fallback | P1 | Implementado/testado | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
 | C05 | Colocar conta após o perfil | P1 | Implementado/testado | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
 | L01 | Corrigir promessa e copy da landing | P1 | Implementado/testado | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
-| L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
+| L02 | Demonstração fiel e dúvidas frequentes | P1 | Implementado/testado | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
 | C06 | Explicar vínculo, espera e ausência de vagas | P1 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c06) |
 | M01 | Mapear eventos e lacunas do cadastro | P1 | Pendente | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
 | M02 | Participação no feedback | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |

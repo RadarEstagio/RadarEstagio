@@ -6,9 +6,9 @@ existentes.
 
 ## Ponto de retomada
 
-- ID atual: L02.
-- Próximo passo: alinhar demonstração e FAQ ao formato real das recomendações.
-- Branch/HEAD: `codex/expansao-revenue-centric` / L01 pronto para commit.
+- ID atual: C06.
+- Próximo passo: alinhar estados pós-cadastro e mensagens de ausência de vagas à observabilidade real.
+- Branch/HEAD: `codex/expansao-revenue-centric` / L02 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -23,6 +23,7 @@ existentes.
 | C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
 | C05 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `tests/web/cadastro_test.ts` | Novo cadastro percorre perfil e só pede conta no fim; login continua só na conta; edição pula conta; rascunho sobrevive à troca de modo; envio duplicado é ignorado | Publicação e CAPTCHA real não verificados; viewport exato de 375 px pendente |
 | L01 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Hero, SEO/social, CTA e condição do piloto usam a promessa multiarea com até cinco recomendações explicadas no Telegram; alegações antigas de IA/tecnologia foram removidas | Clique autenticado coberto por teste local; publicação e viewport exato de 375 px não verificados |
+| L02 | Implementado/testado | `web/index.html`, `tests/test_product_copy.py` | Demo visível como exemplo fictício usa nota, fonte/data, requisitos atendidos e a conferir; marcas são fontes/tecnologias; FAQ cobre cobertura, vínculo, ausência, candidatura e conta | Abertura nativa de FAQ verificada no Safari local; publicação e viewport exato de 375 px não verificados |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
 ## O00
@@ -94,6 +95,16 @@ existentes.
 - Inspeção visual: Safari local recarregado em desktop (~1280 px) exibiu o novo título completo, CTA e os dois sinais de confiança sem rolagem horizontal aparente. Viewport exato de 375 px não foi disponibilizado.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L01 será criado após a verificação do diff. Nenhuma publicação externa.
 - Pendência real/próximo comando: alinhar a demonstração e as cinco dúvidas prioritárias em L02; clique com sessão real não foi validado fora do harness.
+
+## L02
+
+- Comportamento antes → depois: o cartão parecia uma vaga real, usava “match” e não mostrava o estado de requisitos a conferir; agora é explicitamente ilustrativo, usa “nota / 100”, fonte/data, requisitos atendidos e a conferir, sem link de candidatura real. A FAQ responde as cinco dúvidas fechadas.
+- Arquivos/símbolos: `web/index.html` (demo, faixa de fontes/tecnologias e seis `details`), `tests/test_product_copy.py`.
+- Casos obrigatórios: demo não contém texto visível “match”, não apresenta parceiro/depoimento, informa que as fontes não cobrem tudo, explica limite de cinco, dias sem vaga, candidatura na fonte, vínculo do Telegram e edição/pausa da conta.
+- Comandos/exit code/aprovados/ignorados: `uv run pytest -q tests/test_product_copy.py tests/test_formatador.py` — exit 0, 46 aprovados, 0 ignorados; `git diff --check` — exit 0.
+- Inspeção visual: Safari local com query de cache exibiu o cartão e a FAQ atualizados; abrir “Preciso vincular o Telegram?” por controle nativo mostrou a resposta e estado expandido. Viewport exato de 375 px não foi disponibilizado.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit L02 será criado após a verificação do diff. Nenhuma publicação externa.
+- Pendência real/próximo comando: executar C06 e conferir mensagens de sucesso/espera sem alegar execução do job.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

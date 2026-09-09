@@ -22,6 +22,32 @@ def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
     assert "As vagas certas chegam até você" not in html
 
 
+def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "EXEMPLO ILUSTRATIVO" in html
+    assert "não é uma vaga real" in html.lower()
+    assert "nota / 100" in html
+    assert "Requisitos atendidos:" in html
+    assert "Requisitos a conferir no seu perfil:" in html
+    assert ">match<" not in html.lower()
+    assert "Fontes e tecnologias do Radar" in html
+
+
+def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
+    html = (RAIZ / "web/index.html").read_text()
+
+    for trecho in (
+        "não cobrem todo o mercado",
+        "até cinco recomendações",
+        "Dias sem vaga podem acontecer",
+        "candidatura continua sendo sua",
+        "Preciso vincular o Telegram?",
+        "Posso pausar ou apagar minha conta?",
+    ):
+        assert trecho in html
+
+
 def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
     html = (RAIZ / "web/index.html").read_text()
 
