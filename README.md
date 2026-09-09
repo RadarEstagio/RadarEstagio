@@ -111,12 +111,19 @@ Execute a partir da raiz, com `uv run python -m radar` seguido do comando:
 | `rodar` ou nenhum comando | Executa para todos os perfis elegíveis; sem banco, usa o exemplo | Banco quando configurado, fontes, Telegram e IA quando necessária |
 | `metricas` | Imprime o relatório de produto dos últimos 30 dias | Leitura do banco; exige `DATABASE_URL` |
 | `julgar --dias 7 --amostra 30 --semente 1` | Pede a um segundo modelo que avalie uma amostra das entregas recentes | Leitura do banco e chamada de IA com perfil e anúncios; não grava nem envia mensagens |
+| `gabarito --dias 7 --amostra 20 --saida gabarito.json` | Exporta entregas para avaliação humana | Leitura do banco e escrita no arquivo indicado; não chama IA nem envia mensagens |
 
 `julgar` exige `DATABASE_URL` e usa `AVALIADOR` para escolher o provedor. Configure
 `JUIZ_MODELO` com um modelo disponível nesse provedor: o padrão `claude-sonnet-4-6` é
 destinado ao caminho AGY, não à Gemini Developer API. `--dias` e `--amostra` aceitam
 inteiros positivos; a semente torna a seleção reproduzível para a mesma lista de entregas.
 O julgamento é uma estimativa do modelo, não validação feita por estudantes.
+
+`gabarito` exige banco e grava um JSON com `relevante` inicialmente nulo. Preencha esse
+campo com `true` ou `false` para cada entrega avaliada e use `julgar --gabarito gabarito.json`
+para comparar o juiz com os rótulos humanos. A consulta continua limitada por `--dias`;
+itens sem rótulo são ignorados. O arquivo contém identificadores de perfil e dados das
+entregas: guarde-o fora do Git e escolha um caminho que não sobrescreva outro gabarito.
 
 Para uma verificação com conta da equipe, use `rodar --perfil UUID` com `DATABASE_URL`
 e substitua `UUID` por `perfis.id`, não por `auth.users.id`.

@@ -1,5 +1,6 @@
 from collections import Counter
 from statistics import median
+from uuid import UUID
 
 from radar.domain.models import EntregaJulgada, ResultadoDoJulgamento
 
@@ -9,7 +10,9 @@ LIMITE_DE_EXEMPLOS = 5
 NOTA_ALTA_DO_RADAR = 70
 
 
-def formatar_julgamento(resultado: ResultadoDoJulgamento) -> str:
+def formatar_julgamento(
+    resultado: ResultadoDoJulgamento, gabarito: dict[tuple[UUID, str], bool] | None = None
+) -> str:
     linhas = [
         f"Juiz: {resultado.modelo} — {len(resultado.julgadas)} de {resultado.entregas_no_periodo} "
         f"entregas dos últimos {resultado.dias} dias julgadas "
@@ -28,7 +31,35 @@ def formatar_julgamento(resultado: ResultadoDoJulgamento) -> str:
     linhas.extend(linhas_de_concordancia(resultado.julgadas))
     linhas.extend(["", f"Reprovadas pelo juiz com nota do Radar ≥ {NOTA_ALTA_DO_RADAR}:"])
     linhas.extend(linhas_de_reprovadas(resultado.julgadas))
+    if gabarito is not None:
+        linhas.extend(["", "Concordância com o gabarito humano:"])
+        linhas.extend(linhas_de_gabarito(resultado.julgadas, gabarito))
     return "\n".join(linhas)
+
+
+def linhas_de_gabarito(
+    julgadas: list[EntregaJulgada], gabarito: dict[tuple[UUID, str], bool]
+) -> list[str]:
+    rotuladas = [
+        (item, gabarito[(item.entrega.perfil_id, item.entrega.vaga.id_externo)])
+        for item in julgadas
+        if (item.entrega.perfil_id, item.entrega.vaga.id_externo) in gabarito
+    ]
+    if not rotuladas:
+        return ["  nenhuma entrega julgada está no gabarito"]
+    concordam = [item for item, humano in rotuladas if item.julgamento.relevante == humano]
+    linhas = [
+        f"  {len(concordam)}/{len(rotuladas)} concordam "
+        f"({percentual(len(concordam), len(rotuladas))})"
+    ]
+    for item, humano in rotuladas:
+        if item.julgamento.relevante != humano:
+            linhas.append(
+                f"  discorda: {item.entrega.vaga.titulo[:50]}"
+                f" · pessoas disseram {'relevante' if humano else 'irrelevante'}"
+                f" · juiz ({item.julgamento.problema.value}): {item.julgamento.motivo}"
+            )
+    return linhas
 
 
 def linhas_gerais(julgadas: list[EntregaJulgada]) -> list[str]:
