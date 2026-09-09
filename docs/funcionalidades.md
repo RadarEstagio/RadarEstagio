@@ -24,8 +24,8 @@ O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de 
 A landing apresenta estágios de diferentes áreas, até sete recomendações explicadas no
 Telegram quando houver compatibilidade e gratuidade durante o piloto. A candidatura ocorre
 na fonte; não há promessa de contratação ou cobertura de todos os anúncios.
-O cartão é um exemplo fictício identificado como ilustrativo, com nota e requisitos a
-conferir. “Publicada hoje” é texto estático desse exemplo, escolhido na revisão de 08/09
+O cartão é um exemplo fictício identificado como ilustrativo, com nota, requisitos a
+conferir e diferenciais que a vaga cita. “Publicada hoje” é texto estático desse exemplo, escolhido na revisão de 08/09
 para evitar data fixa envelhecida; não é data de anúncio real nem consulta dinâmica.
 Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summary` nativo
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
