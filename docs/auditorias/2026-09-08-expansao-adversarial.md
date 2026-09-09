@@ -1,5 +1,9 @@
 # Investigação adversarial da expansão
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../arquitetura.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Base: `5f5abc8`, 08/09/2026. Revisão local, sem alteração de código de aplicação, sem
 chamada ao Gemini e sem envio real ao Telegram. Cenários sintéticos reproduzidos usando
 funções reais; fakes dos testes existentes somente para infraestrutura e respostas externas.

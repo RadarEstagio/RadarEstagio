@@ -1,5 +1,9 @@
 # Fichas — evidências e decisões externas
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../plano-geral.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Estas tarefas produzem registros concretos, mas conclusão depende de acesso ou decisão da
 equipe. Prepare o que for possível; não invente resultados nem crie funcionalidades comerciais
 para preencher uma lacuna de dados. Nenhuma exige quantidade mínima de entrevistas.

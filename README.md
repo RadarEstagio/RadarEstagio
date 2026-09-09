@@ -2,15 +2,16 @@
 
 Documentação: [índice e revisão](docs/README.md) · [funcionalidades para usuários e devs](docs/funcionalidades.md).
 
-Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
-usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
+Agente que busca vagas de estágio todos os dias, extrai fatos com IA e calcula em Python a
+compatibilidade com o perfil. Entrega no Telegram as recomendações ranqueadas e explicadas.
 
 - Funcionalidades: [`docs/funcionalidades.md`](docs/funcionalidades.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
 - Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
-- Landing page e decisões de frontend: [`web/README.md`](web/README.md)
+- Cadastro e decisões de frontend: [contrato](docs/contrato-front.md)
+- Publicação e configuração externa: [guia](docs/guia-publicacao-e-piloto.md)
 
 ## Como funciona
 
@@ -18,7 +19,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 Adzuna + Gupy (vagas dos últimos 3 dias)
   → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
-  → Gemini extrai fatores e justificativas em lotes
+  → Gemini extrai fatos das vagas em lotes
   → Python calcula a nota 0–100: habilidades 45%, curso 10%, área 10%,
     período/experiência 15%, logística 10% e áreas de interesse 10%
   → ranqueia e pega as 7 melhores
@@ -26,8 +27,8 @@ Adzuna + Gupy (vagas dos últimos 3 dias)
 ```
 
 Com banco configurado (`DATABASE_URL`), o mesmo fluxo roda **para cada usuário** cadastrado
-no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, sem mandar ao
-Gemini vaga que já tem nota guardada, e a mensagem vai para o Telegram dele. Sem banco, usa o
+no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, reutilizando
+extrações compatíveis e recalculando notas em Python. A mensagem vai para o Telegram dele. Sem banco, usa o
 perfil fixo do código e o `TELEGRAM_CHAT_ID` do `.env`.
 
 Roda de duas formas:
@@ -46,8 +47,8 @@ Decisões atuais:
 
 - HTML, CSS e JavaScript, sem framework ou etapa de build;
 - conta por e-mail e senha com Supabase Auth;
-- formulário com curso, período, habilidades, cidade e modalidade preferida, salvo diretamente
-  na tabela `perfis` sob RLS;
+- perfil preenchido antes da conta, com curso, período, habilidades opcionais, cidade,
+  modalidade e interesses; criação pelo banco após confirmação e edição sob RLS;
 - vínculo com o Telegram por link do bot contendo token aleatório, sem pedir `@username` ou
   `chat_id` no formulário;
 - eventos do funil registrados no Supabase com uma sessão anônima que é ligada à conta após o
@@ -55,9 +56,28 @@ Decisões atuais:
 - React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
   de interface mais complexa.
 
-O perfil é persistido no Supabase depois da autenticação. Quando a confirmação de e-mail está
-ativada, o navegador guarda temporariamente apenas os campos do perfil até o usuário voltar pelo
-link de confirmação. Veja a configuração em [`web/README.md`](web/README.md).
+O banco preserva uma cópia protegida do cadastro até a confirmação, inclusive entre aparelhos.
+Novos cadastros não guardam perfil no `localStorage`. O painel permite editar, pausar/retomar,
+desvincular Telegram, exportar dados e solicitar ou cancelar a exclusão com carência de 60 dias.
+Aceite dos termos e preferência opcional de e-mails são controles separados.
+
+Para abrir o site localmente, depois de instalar as dependências:
+
+```bash
+uv run python -m http.server 8000 -d web
+```
+
+Acesse `http://localhost:8000`; autenticação exige HTTP, não abertura direta do HTML.
+Em `web/config.js`, preencha `supabasePublishableKey` com a chave publicável ou `anon`.
+A site key do Turnstile também é pública; `service_role`, senha de banco e secrets ficam
+no servidor. URLs autorizadas, SMTP, CAPTCHA e ordem de migrations estão no
+[guia de publicação](docs/guia-publicacao-e-piloto.md). Termos e Privacidade continuam em
+revisão, sem vigência, até aprovação e sincronização da versão aceita.
+
+`deno task --config tests/web/deno.json test` verifica os fluxos com JSDOM e migrations
+em PostgreSQL isolado via PGlite. Não usa o banco real nem envia e-mails. Inspeção visual
+e jornada publicada são verificações separadas; o [contrato](docs/contrato-front.md)
+detalha Auth, RPCs, eventos e limites de escrita.
 
 ## 1. Instalar (na ordem)
 

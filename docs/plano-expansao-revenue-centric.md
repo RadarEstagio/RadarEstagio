@@ -1,5 +1,9 @@
 # Plano de expansão — índice de execução
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](plano-geral.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Revisado em 08/09/2026 contra a main `40ed28c`, incluindo as duas rodadas de correções
 de Ian e a revalidação local. Este SHA identifica a base examinada, não uma versão para
 restaurar. Conferir mudanças posteriores antes de executar. Planejamento não comprova deploy.

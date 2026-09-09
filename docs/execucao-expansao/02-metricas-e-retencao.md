@@ -1,5 +1,9 @@
 # Fichas — métricas e retenção
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../metricas.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 Leia o protocolo e execute uma ficha por vez; continue a fila após concluir. Não substituir definições de `CONTEXT.md`.
 As métricas permanecem no relatório CLI; nenhum ID pede dashboard ou serviço externo.
 
