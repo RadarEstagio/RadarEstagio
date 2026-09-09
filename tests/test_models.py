@@ -58,12 +58,24 @@ def test_perfil_rejeita_modalidade_invalida():
         )
 
 
-def test_perfil_rejeita_lista_de_habilidades_vazia():
+def test_perfil_aceita_lista_de_habilidades_vazia():
+    perfil = Perfil(
+        curso="Engenharia de Software",
+        periodo=4,
+        habilidades=[],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.REMOTO,
+    )
+
+    assert perfil.habilidades == []
+
+
+def test_perfil_rejeita_habilidades_nulas():
     with pytest.raises(ValidationError):
         Perfil(
             curso="Engenharia de Software",
             periodo=4,
-            habilidades=[],
+            habilidades=None,
             cidade="Rio de Janeiro, RJ",
             modalidade=Modalidade.REMOTO,
         )

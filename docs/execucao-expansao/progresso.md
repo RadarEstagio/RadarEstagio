@@ -6,9 +6,9 @@ Não reaplicar entregas existentes.
 
 ## Ponto de retomada
 
-- ID atual: C02.
-- Próximo passo: permitir `Perfil(habilidades=[])` no Python e cobrir pontuação/leitura sem mudar pesos.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C01 pronto para commit.
+- ID atual: C03.
+- Próximo passo: implementar a opção transitória para continuar sem habilidades no cadastro web.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C02 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -18,6 +18,7 @@ Não reaplicar entregas existentes.
 |---|---|---|---|---|
 | O00 | Implementado/testado | `.github/workflows/radar-diario.yml` | `QUANTIDADE_VAGAS_ENVIADAS` mudou de 7 para 5; Python já tinha padrão 5 | Workflow versionado nesta branch; nenhuma execução remota verificada |
 | C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
+| C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
 | C04 | Parcial | Catálogo e sugestões já existem na base | Falta concluir fallback e integração conforme ficha | Publicação não verificada |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
@@ -40,6 +41,16 @@ Não reaplicar entregas existentes.
 - Inspeção visual: não aplicável.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C01 após a suíte Python completa. Migration não aplicada remotamente.
 - Pendência real/próximo comando: disponibilizar C02 antes de aplicar `0018`; seguir para C02.
+
+## C02
+
+- Comportamento antes → depois: `Perfil` rejeitava lista vazia; agora aceita `[]` como único estado sem habilidades informado, mantendo a lista obrigatória e rejeitando `None`.
+- Arquivos/símbolos: `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py`; a fórmula de `pontuar` não foi alterada.
+- Casos obrigatórios: perfis iniciantes de Computação e Direito tiveram notas finitas de 0–100, nenhum requisito foi marcado como atendido, e os limites de curso/modalidade continuaram ativos; perfil legado segue coberto pela suíte existente.
+- Comandos/exit code/aprovados/ignorados: P — `uv run pytest -q tests/test_models.py tests/test_avaliacoes.py tests/test_storage_postgres.py` — exit 0, 66 aprovados, 25 ignorados por ambiente Postgres; `uv run pytest -q tests/test_compatibilidade.py` — exit 0, 57 aprovados.
+- Inspeção visual: não aplicável.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C02 após `uv run pytest -q`. Disponibilização remota não verificada.
+- Pendência real/próximo comando: publicar C02 antes da migration C01; seguir para C03.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

@@ -75,7 +75,7 @@ class ExtracaoDaVaga(BaseModel):
 class Perfil(BaseModel):
     curso: str
     periodo: int = Field(ge=1)
-    habilidades: list[str] = Field(min_length=1)
+    habilidades: list[str] = Field()
     cidade: str
     modalidade: Modalidade
     areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
