@@ -66,6 +66,17 @@ preservando perfis e permissões, e só então liberar o frontend que oferece es
 
 ## Controles da conta
 
+Decisões de interface preservadas da revisão de 08/09: o campo de habilidade limita a
+digitação a 100 caracteres (`maxlength` e recorte em `addCustomSkill`), sem aviso de corte.
+A 51ª habilidade é recusada com erro no campo; o envio também valida o limite para listas
+legadas. Foi escolhido o limite nativo para texto e erro explícito para quantidade, evitando
+apagar uma seleção sem explicação. Remover a proteção do site deixaria a recusa só no banco.
+
+Logout e troca de conta limpam interesses e dados de perfil em memória; respostas pendentes
+do catálogo não podem restaurar outra sessão. Ao editar a mesma conta, seleções existentes
+devem ser preservadas. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
+resposta não desfaz a pausa; retomar limpa o motivo.
+
 | Operação | Caminho |
 |---|---|
 | Editar, pausar, retomar e revogar e-mails | `update` de colunas permitidas em `perfis` |
