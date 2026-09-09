@@ -229,6 +229,11 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
   no cadastro dessas áreas.
+- **Desejáveis que faltam aparecem na mensagem** (09/09/2026) como "Diferenciais que a vaga
+  cita", logo abaixo dos requisitos a conferir. Só 39% dos anúncios reais listam desejáveis, com
+  3 ou 4 itens, então a linha custa ~150 caracteres numa mensagem de 7 vagas. Continuam sem
+  virar veto e sem entrar em "a conferir"; o peso de 20% nas habilidades é o de sempre. O rótulo
+  é "diferenciais", não "não atendidos", pelo mesmo motivo do "a conferir" do Igor.
 - **Idiomas e pacote Office não contam na cobertura** (ninguém os cadastra no perfil), mas
   seguem visíveis na lista de requisitos. As variantes normalizam antes da comparação
   (03/09/2026): "Microsoft Excel" vira `excel` e "Google Sheets" vira `planilhas`. Antes só o
