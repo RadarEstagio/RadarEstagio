@@ -42,3 +42,8 @@ supabase/.branches/
 
 # Anotacao de sessao, nao e documentacao do projeto
 HANDOFF.md
+
+# Skills dos agentes: locais, nao versionadas
+.agents/
+.claude/skills/
+.claude/worktrees/
