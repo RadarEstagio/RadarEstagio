@@ -1,3 +1,4 @@
+import functools
 import re
 import unicodedata
 
@@ -41,7 +42,7 @@ PESO_DESEJAVEIS_COM_PRINCIPAIS = 0.2
 PESO_OBRIGATORIAS_QUANDO_TODAS = 0.6
 PESO_PRINCIPAIS_QUANDO_TODAS = 0.3
 PESO_DESEJAVEIS_QUANDO_TODAS = 0.1
-COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.35
+COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.25
 SUAVIZACAO_DA_COBERTURA = 1
 COEFICIENTES = {
     "compativel": 1.0,
@@ -67,18 +68,182 @@ REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
         "word",
     }
 )
+SOFT_SKILLS = frozenset(
+    {
+        "adaptabilidade",
+        "aprendizado",
+        "aprendizadocontinuo",
+        "atencaodetalhes",
+        "autonomia",
+        "colaboracao",
+        "comprometimento",
+        "comunicacao",
+        "comunicacaoescrita",
+        "comunicacaooral",
+        "criatividade",
+        "curiosidade",
+        "dedicacao",
+        "empatia",
+        "etica",
+        "flexibilidade",
+        "lideranca",
+        "organizacao",
+        "pontualidade",
+        "proatividade",
+        "raciociniologico",
+        "relacionamentointerpessoal",
+        "resiliencia",
+        "responsabilidade",
+        "trabalhoequipe",
+        "vontadeaprender",
+    }
+)
 PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
 QUALIFICADORES_DE_HABILIDADE = re.compile(
     r"\b(?:avancad[oa]s?|intermediari[oa]s?|basic[oa]s?|fluente|nativ[oa]|iniciante|nivel"
     r"|bom|boa|bons|boas|otim[oa]|excelente|solid[oa]|conhecimentos?|dominio|nocoes"
     r"|experiencia|vivencia|habilidades?|em|de|do|da|com|no|na)\b"
 )
+COMPLEMENTO_ENTRE_PARENTESES = re.compile(r"\([^)]*\)")
 NIVEL_NAO_INFORMADO = 0
 PADROES_DE_NIVEL = (
     (re.compile(r"\b(?:basic[oa]s?|iniciante|nocoes)\b"), 1),
     (re.compile(r"\bintermediari[oa]s?\b"), 2),
     (re.compile(r"\b(?:avancad[oa]s?|fluente|nativ[oa]|dominio)\b"), 3),
 )
+BANCOS_DE_DADOS = (
+    "SQL",
+    "MySQL",
+    "PostgreSQL",
+    "Postgres",
+    "Oracle",
+    "SQL Server",
+    "MongoDB",
+    "SQLite",
+    "MariaDB",
+    "Redis",
+    "DynamoDB",
+    "Firebase",
+)
+BACK_END = (
+    "Java",
+    "Spring",
+    "Spring Boot",
+    "Python",
+    "Django",
+    "Flask",
+    "FastAPI",
+    "Node",
+    "Node.js",
+    "Express",
+    "NestJS",
+    "PHP",
+    "Laravel",
+    "C#",
+    ".NET",
+    "Go",
+    "Golang",
+    "Ruby",
+    "Rails",
+    "Ruby on Rails",
+    "Kotlin",
+    "Rust",
+)
+FRONT_END = (
+    "React",
+    "JavaScript",
+    "TypeScript",
+    "HTML",
+    "CSS",
+    "Vue",
+    "Vue.js",
+    "Angular",
+    "Next.js",
+    "Svelte",
+    "Tailwind",
+    "Sass",
+    "Bootstrap",
+)
+LINGUAGENS = (
+    "Python",
+    "Java",
+    "JavaScript",
+    "TypeScript",
+    "C",
+    "C++",
+    "C#",
+    "Go",
+    "Golang",
+    "Kotlin",
+    "Swift",
+    "PHP",
+    "Ruby",
+    "Rust",
+    "Lua",
+    "Dart",
+    "Scala",
+    "R",
+    "Lógica de Programação",
+)
+FERRAMENTAS_DE_ETL = (
+    "SQL",
+    "Python",
+    "Pandas",
+    "Airflow",
+    "Spark",
+    "Databricks",
+    "dbt",
+    "Talend",
+    "Pentaho",
+)
+NUVENS = ("AWS", "Azure", "GCP", "Google Cloud", "Cloud")
+VERSIONAMENTO = ("Git", "GitHub", "GitLab", "Bitbucket")
+MOBILE = ("Android", "iOS", "Kotlin", "Swift", "Flutter", "React Native", "Dart")
+OFFICE = ("Excel", "Word", "PowerPoint", "Outlook", "Planilhas", "Documentos", "Apresentações")
+FERRAMENTAS_DE_DADOS = ("SQL", "Python", "Power BI", "Excel", "Pandas", "Tableau", "Looker", "R")
+INTELIGENCIA_ARTIFICIAL = (
+    "Machine Learning",
+    "Deep Learning",
+    "TensorFlow",
+    "PyTorch",
+    "Scikit-learn",
+    "NLP",
+    "LLM",
+)
+FAMILIAS_DE_HABILIDADES = {
+    "banco de dados": BANCOS_DE_DADOS,
+    "bancos de dados": BANCOS_DE_DADOS,
+    "BD": BANCOS_DE_DADOS,
+    "SGBD": BANCOS_DE_DADOS,
+    "banco de dados relacional": BANCOS_DE_DADOS,
+    "bancos de dados relacionais": BANCOS_DE_DADOS,
+    "back-end": BACK_END,
+    "desenvolvimento back-end": BACK_END,
+    "front-end": FRONT_END,
+    "desenvolvimento front-end": FRONT_END,
+    "desenvolvimento web": FRONT_END + BACK_END,
+    "web": FRONT_END + BACK_END,
+    "programação": LINGUAGENS,
+    "lógica de programação": LINGUAGENS,
+    "linguagem de programação": LINGUAGENS,
+    "linguagens de programação": LINGUAGENS,
+    "desenvolvimento de software": LINGUAGENS,
+    "desenvolvimento de sistemas": LINGUAGENS,
+    "ETL": FERRAMENTAS_DE_ETL,
+    "cloud": NUVENS,
+    "computação em nuvem": NUVENS,
+    "nuvem": NUVENS,
+    "versionamento": VERSIONAMENTO,
+    "controle de versão": VERSIONAMENTO,
+    "mobile": MOBILE,
+    "desenvolvimento mobile": MOBILE,
+    "Pacote Office": OFFICE,
+    "dados": FERRAMENTAS_DE_DADOS,
+    "análise de dados": FERRAMENTAS_DE_DADOS,
+    "inteligência artificial": INTELIGENCIA_ARTIFICIAL,
+    "IA": INTELIGENCIA_ARTIFICIAL,
+    "IA generativa": INTELIGENCIA_ARTIFICIAL,
+}
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
     "microsoft365": "office",
@@ -135,13 +300,16 @@ def pontuar_vagas(
 def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMatch:
     vaga = _com_modalidade_extraida(vaga, extracao)
     niveis = derivar_niveis(extracao, perfil)
-    requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(extracao, perfil)
+    requisitos_atendidos, requisitos_nao_atendidos, diferenciais = _classificar_habilidades(
+        extracao, perfil
+    )
     pontos_a_favor, pontos_contra = montar_pontos(extracao, niveis)
     return ResultadoMatch(
         vaga=vaga,
         nota=_calcular_nota(extracao, niveis, vaga, perfil),
         requisitos_atendidos=requisitos_atendidos,
         requisitos_nao_atendidos=requisitos_nao_atendidos,
+        diferenciais_nao_atendidos=diferenciais,
         requisitos_tecnicos_analisados=True,
         avisos_objetivos=_avisos_objetivos(extracao, niveis, perfil),
         pontos_a_favor=_juntar_sem_repetir(pontos_a_favor),
@@ -309,12 +477,31 @@ def _niveis_do_perfil(perfil: Perfil) -> dict[str, int]:
 
 
 def _atende(nome: str, nivel_exigido: int, niveis_do_perfil: dict[str, int]) -> bool:
-    if nome not in niveis_do_perfil:
+    nivel_do_perfil = _nivel_no_perfil(nome, niveis_do_perfil)
+    if nivel_do_perfil is None:
         return False
-    nivel_do_perfil = niveis_do_perfil[nome]
     if nivel_exigido == NIVEL_NAO_INFORMADO:
         return True
     return nivel_do_perfil >= nivel_exigido
+
+
+def _nivel_no_perfil(nome: str, niveis_do_perfil: dict[str, int]) -> int | None:
+    if nome in niveis_do_perfil:
+        return niveis_do_perfil[nome]
+    presentes = [
+        niveis_do_perfil[membro]
+        for membro in _membros_das_familias().get(nome, frozenset())
+        if membro in niveis_do_perfil
+    ]
+    return max(presentes) if presentes else None
+
+
+@functools.cache
+def _membros_das_familias() -> dict[str, frozenset[str]]:
+    return {
+        _normalizar_habilidade(nome): frozenset(_normalizar_habilidade(m) for m in membros)
+        for nome, membros in FAMILIAS_DE_HABILIDADES.items()
+    }
 
 
 def _perfil_atende(habilidade: str, niveis_do_perfil: dict[str, int]) -> bool:
@@ -335,26 +522,32 @@ def _niveis_citados(habilidade: str) -> set[int]:
 
 
 def _conta_para_a_nota(requisito_normalizado: str) -> bool:
-    if requisito_normalizado in REQUISITOS_FORA_DO_PERFIL_TECNICO:
+    if requisito_normalizado in REQUISITOS_FORA_DO_PERFIL_TECNICO | SOFT_SKILLS:
         return False
     return not requisito_normalizado.startswith(PREFIXOS_DE_IDIOMA)
 
 
 def _classificar_habilidades(
     extracao: ExtracaoDaVaga, perfil: Perfil
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], list[str]]:
     niveis_do_perfil = _niveis_do_perfil(perfil)
     requisitos_atendidos = [
         habilidade
         for habilidade in _juntar_habilidades_da_vaga(extracao)
         if _perfil_atende(habilidade, niveis_do_perfil)
     ]
+    exigidas = _exigidas_pela_vaga(extracao)
     requisitos_nao_atendidos = [
-        habilidade
-        for habilidade in _exigidas_pela_vaga(extracao)
-        if not _perfil_atende(habilidade, niveis_do_perfil)
+        habilidade for habilidade in exigidas if not _perfil_atende(habilidade, niveis_do_perfil)
     ]
-    return requisitos_atendidos, requisitos_nao_atendidos
+    nomes_exigidos = {_normalizar_habilidade(habilidade) for habilidade in exigidas}
+    diferenciais_nao_atendidos = [
+        habilidade
+        for habilidade in _juntar_sem_repetir(extracao.habilidades_desejaveis)
+        if _normalizar_habilidade(habilidade) not in nomes_exigidos
+        and not _perfil_atende(habilidade, niveis_do_perfil)
+    ]
+    return requisitos_atendidos, requisitos_nao_atendidos, diferenciais_nao_atendidos
 
 
 def _exigidas_pela_vaga(extracao: ExtracaoDaVaga) -> list[str]:
@@ -387,7 +580,8 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
-    normalizada = QUALIFICADORES_DE_HABILIDADE.sub(" ", _normalizar_texto(habilidade))
+    sem_complemento = COMPLEMENTO_ENTRE_PARENTESES.sub(" ", _normalizar_texto(habilidade))
+    normalizada = QUALIFICADORES_DE_HABILIDADE.sub(" ", sem_complemento)
     compacta = "".join(
         caractere for caractere in normalizada if caractere.isalnum() or caractere in "#+"
     )

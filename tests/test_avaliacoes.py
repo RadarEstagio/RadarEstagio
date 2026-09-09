@@ -158,7 +158,7 @@ def test_desejavel_nao_atendida_fica_fora_da_lista_de_cobranca():
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(extracao())
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
 
 
 def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
@@ -169,7 +169,7 @@ def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
         extracao(areas_da_vaga=["desenvolvimento_web", "dados_ia"]), perfil_web
     )
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
     assert resultado.avisos_objetivos == []
 
 
@@ -179,7 +179,7 @@ def test_outra_subarea_do_mesmo_campo_perde_metade_do_fator_e_nao_ganha_aviso():
 
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]), perfil_web)
 
-    assert resultado.nota == 63
+    assert resultado.nota == 59
     assert resultado.avisos_objetivos == []
 
 
@@ -200,7 +200,7 @@ def test_vaga_sem_area_reconhecida_fica_neutra_para_quem_tem_interesses():
 
     resultado = resultado_da(extracao(areas_da_vaga=["area_inventada"]), perfil_web)
 
-    assert resultado.nota == 63
+    assert resultado.nota == 59
     assert resultado.avisos_objetivos == []
 
 
@@ -269,7 +269,7 @@ def test_area_recusada_prevalece_sobre_o_interesse_declarado():
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]))
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
     assert resultado.avisos_objetivos == []
 
 
@@ -637,3 +637,116 @@ def test_requisito_sem_nivel_aceita_habilidade_conhecida():
     )
     assert resultado.requisitos_atendidos == ["Inglês", "Office 365"]
     assert resultado.requisitos_nao_atendidos == []
+
+
+def test_requisito_generico_e_atendido_por_habilidade_especifica_da_familia():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["banco de dados", "front-end", "back-end", "ETL"]),
+        perfil(["SQL", "Java", "Spring Boot", "Python", "Django", "MySQL"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["banco de dados", "back-end", "ETL"]
+    assert resultado.requisitos_nao_atendidos == ["front-end"]
+
+
+def test_familia_respeita_o_nivel_exigido():
+    exigente = extracao(habilidades_obrigatorias=["banco de dados avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["SQL básico"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["SQL avançado"])).requisitos_atendidos == [
+        "banco de dados avançado"
+    ]
+
+
+def test_programacao_e_atendida_por_qualquer_linguagem():
+    generica = extracao(habilidades_obrigatorias=["Programação", "Lógica de programação"])
+
+    assert pontuar(vaga(), generica, perfil(["Lua"])).requisitos_nao_atendidos == []
+    assert pontuar(vaga(), generica, perfil(["Excel"])).requisitos_nao_atendidos == [
+        "Programação",
+        "Lógica de programação",
+    ]
+
+
+def test_pacote_office_e_atendido_por_excel_fora_de_computacao():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Pacote Office", "Inglês"]),
+        perfil_de_direito(["Excel", "Inglês"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Pacote Office", "Inglês"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_vaga_que_so_pede_soft_skills_e_tratada_como_sem_stack_em_computacao():
+    so_soft_skills = resultado_da(
+        extracao(habilidades_obrigatorias=["Comunicação", "Proatividade", "Trabalho em equipe"])
+    )
+    sem_stack = resultado_da(extracao())
+
+    assert so_soft_skills.nota == sem_stack.nota
+    assert so_soft_skills.requisitos_nao_atendidos == [
+        "Comunicação",
+        "Proatividade",
+        "Trabalho em equipe",
+    ]
+
+
+def test_soft_skill_continua_contando_fora_de_computacao():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Comunicação", "Redação"]),
+        perfil_de_direito(["Comunicação", "Redação"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Comunicação", "Redação"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_complemento_entre_parenteses_nao_esconde_a_familia_nem_o_nivel():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Front-end (React)", "Excel (avançado)"]),
+        perfil(["HTML", "CSS", "Excel básico"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Front-end (React)"]
+    assert resultado.requisitos_nao_atendidos == ["Excel (avançado)"]
+
+
+def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Bancos de dados relacionais", "IA generativa"]),
+        perfil(["PostgreSQL", "LLM"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["Java"],
+            habilidades_desejaveis=["Angular", "Spring", "Java", "Python"],
+        ),
+        perfil(["Java", "Python"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Java", "Python"]
+    assert resultado.requisitos_nao_atendidos == []
+    assert resultado.diferenciais_nao_atendidos == ["Angular", "Spring"]
+
+
+def test_diferencial_nao_entra_nos_requisitos_a_conferir():
+    com_desejaveis = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["Java"], habilidades_desejaveis=["Angular"]),
+        perfil(["Java"]),
+    )
+
+    assert com_desejaveis.requisitos_nao_atendidos == []
+    assert com_desejaveis.diferenciais_nao_atendidos == ["Angular"]

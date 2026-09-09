@@ -242,7 +242,11 @@ Em que cada fator varia de 0 a 1:
 Regras vigentes em 08/09:
 
 - **Cobertura suavizada**, `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como
-  incerteza, nunca como veto. Vaga sem stack declarada recebe cobertura neutra de 0,35.
+  incerteza, nunca como veto. Vaga sem stack declarada recebe cobertura neutra de 0,25 (era
+  0,35 até 09/09), atrás de qualquer vaga com requisito batido.
+- **Requisito genérico é atendido pela família** (09/09): "banco de dados" por SQL ou MySQL,
+  "back-end" por Java ou Django, "front-end" por React ou HTML, "programação" por qualquer
+  linguagem, e assim por diante, respeitando o nível exigido.
 - Obrigatórias, principais e desejáveis têm pesos distintos dentro de H (80/20 quando há
   obrigatórias e desejáveis; 60/30/10 quando há as três).
 - **Nível declarado precisa cobrir o exigido** (08/09): "Inglês básico" não atende "Inglês
@@ -250,8 +254,8 @@ Regras vigentes em 08/09:
   Requisito sem nível aceita a habilidade conhecida; requisito com nível exige que o perfil
   declare o seu: "Excel" no perfil não comprova "Excel avançado". Por isso a mensagem chama a
   lista de "Requisitos a conferir no seu perfil", e não de requisitos não atendidos.
-- Idiomas e pacote Office ficam fora da cobertura **só para perfis de computação**; nas demais
-  formações contam como qualquer requisito.
+- Idiomas, pacote Office e soft skills ("comunicação", "proatividade") ficam fora da cobertura
+  **só para perfis de computação**; nas demais formações contam como qualquer requisito.
 - Tecnologias comparadas por nome normalizado e exato (Java ≠ JavaScript).
 - **Curso**: incompatível limita a 35 (sai da mensagem); parcial limita a 75. Quem decide é o
   catálogo: cursos da mesma área só são equivalentes onde a área declara

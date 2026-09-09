@@ -109,7 +109,8 @@ Receber as melhores vagas novas compatíveis encontradas.
 
 #### 12. Explicação da recomendação
 
-Ver nota, requisitos atendidos/não informados, pontos e alertas disponíveis.
+Ver nota, requisitos atendidos, requisitos a conferir, diferenciais que a vaga cita e o
+perfil não tem, pontos e alertas disponíveis.
 
 **Condições e limites:** Desejáveis ausentes não são cobrados; listas longas mostram até oito itens e “e mais N”.
 

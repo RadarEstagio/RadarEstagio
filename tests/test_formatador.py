@@ -364,3 +364,41 @@ def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 2, 2, 13, 830, 7)
 
     assert "⚠️" not in texto
+
+
+def test_diferenciais_que_faltam_aparecem_em_linha_propria_depois_dos_requisitos():
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from radar.domain.models import Recomendacao, ResultadoMatch, Vaga
+    from radar.notification.formatador import formatar_vaga
+
+    anuncio = Vaga(
+        id_externo="1",
+        fonte="adzuna",
+        titulo="Estágio Java",
+        empresa="Empresa",
+        localizacao="Rio de Janeiro, RJ",
+        descricao="d",
+        url="https://exemplo.com/1",
+        publicada_em=datetime(2026, 9, 9, tzinfo=UTC),
+    )
+    com = Recomendacao(
+        resultado=ResultadoMatch(
+            vaga=anuncio,
+            nota=80,
+            requisitos_atendidos=["Java"],
+            requisitos_nao_atendidos=["Docker"],
+            diferenciais_nao_atendidos=["Angular", "Spring"],
+        ),
+        token=uuid4(),
+    )
+    sem = Recomendacao(resultado=ResultadoMatch(vaga=anuncio, nota=80), token=uuid4())
+
+    linhas = formatar_vaga(1, com).split("\n")
+    posicao_requisitos = next(i for i, linha in enumerate(linhas) if "a conferir" in linha)
+
+    assert (
+        linhas[posicao_requisitos + 1] == "✨ <b>Diferenciais que a vaga cita:</b> Angular · Spring"
+    )
+    assert "Diferenciais" not in formatar_vaga(1, sem)

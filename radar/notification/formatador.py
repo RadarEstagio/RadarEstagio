@@ -140,6 +140,11 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
             "🔎 <b>Requisitos a conferir no seu perfil:</b> "
             f"{formatar_requisitos(resultado.requisitos_nao_atendidos)}"
         )
+    if resultado.diferenciais_nao_atendidos:
+        linhas.append(
+            "✨ <b>Diferenciais que a vaga cita:</b> "
+            f"{formatar_requisitos(resultado.diferenciais_nao_atendidos)}"
+        )
     if (
         resultado.requisitos_tecnicos_analisados
         and vaga.descricao_completa
