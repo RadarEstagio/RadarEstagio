@@ -1,17 +1,22 @@
 # Plano geral
 
-> Nova direção em 08/09/2026: a expansão para diferentes áreas de estágio e as melhorias de
-> conversão, ativação e sustentabilidade estão no [plano de expansão baseado em Revenue-Centric Design](plano-expansao-revenue-centric.md).
-> Esse plano substitui a restrição anterior à expansão de público e inclui monetização como
-> planejamento futuro. As pendências operacionais abaixo continuam válidas; o piloto permanece informal.
-
-**Atualizado em 08/09/2026 · Implementação: executar os IDs do plano de expansão. Operação: verificar publicação.**
+**Consolidado em 09/09/2026.** A expansão para diferentes áreas foi autorizada em 08/09.
+O registro de execução encerra as entregas locais de cadastro, landing, métricas e pausa
+(O00–R03), com testes registrados. Não há uma fila de implementação desses IDs a reiniciar.
+Publicação, validação com estudantes e decisões externas continuam pendentes de evidência.
+Esta consolidação não consultou serviços externos nem repetiu os testes de implementação.
 
 Este é o acompanhamento atual do projeto. O plano formal de piloto foi retirado por decisão
 do Igor: não há obrigação de recrutar uma coorte, realizar cinco entrevistas, calcular D7
 ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continuam disponíveis.
 
 ## 1. O que já está feito
+
+- **Expansão local concluída:** limite de sete recomendações, cadastro com perfil antes da
+  conta, caminho explícito sem habilidades, sugestões conforme o curso, demonstração
+  ilustrativa e FAQ, estados de vínculo sem promessa de busca já executada, participação no
+  feedback, medianas observadas, utilidade por área e motivo opcional após a pausa.
+  Contratos nas migrations `0017`–`0019`; presença no Git não comprova aplicação remota.
 
 - **Cadastro e conta:** formulário em etapas, confirmação entre aparelhos, reenvio, recuperação
   de senha, edição de perfil, consentimento e preferência de e-mails.
@@ -97,14 +102,32 @@ um dashboard ou novas consultas para começar essa conversa.
 - **Ranking:** a v1 usa repetição e recusas de área. Os outros motivos não mudam pesos
   automaticamente; investigar exemplos antes de recalibrar.
 - **IA:** reuso reduz trabalho repetido; novos anúncios, cidades e áreas podem exigir extrações.
-- **Fora do trabalho imediato:** monetização, plano formal de pesquisa, mediana/TTV/D7,
-  campanhas de e-mail e exclusão automática por abandono. Expansão de público já está
-  implementada parcialmente; melhorias e métricas adicionais seguem os IDs do plano de expansão.
+- **Fora do trabalho imediato:** cobrança, plano formal de pesquisa, D7, campanhas de e-mail
+  e exclusão automática por abandono. Medianas de entrega e abertura já estão implementadas;
+  são tempos observados, não promessa de prazo. Monetização permanece uma hipótese futura.
 - **Jooble:** ativação opcional, com chave e configuração próprias; não bloqueia a divulgação.
 - **Histórico Git e skills:** permanecem conforme decisões registradas em 05/09. Não há nova
   autorização para reescrever histórico ou remover recursos de terceiros.
 
-## 4. Onde consultar os detalhes
+## 4. Pendências externas da expansão
+
+Os IDs abaixo são referências históricas. Atualizar o estado geral aqui e a evidência no
+documento indicado; não manter uma segunda fila no antigo registro de execução.
+
+| Frente | Estado e próximo passo | Documento responsável |
+|---|---|---|
+| E01 — publicação e jornada | Conferir versões, migrations, deploy automático, Auth, SMTP, CAPTCHA, cron e jornada com conta da equipe; inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
+| E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Cobertura](cobertura-estagios.md) |
+| E03 — aquisição | Após verificar a jornada, confirmar canal, URL, responsável e mensagem; obter autorização antes de divulgar relato | [Aquisição e prova](aquisicao-e-prova.md) |
+| E04 — custos | Reunir faturas, uso e horas de suporte em uma janela comum; custos desconhecidos não são zero | [Custos](custos-operacao.md) |
+| E05 — oferta | Após cobertura e custos, decidir oferta, pagador, preço, duração, renovação, cancelamento, aceite e provedor; checkout é tarefa posterior | [Hipótese comercial](hipotese-comercial.md) |
+| D01 — formação | Usar casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo; preservar contrato atual até decisão | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
+
+Os responsáveis continuam a confirmar; a proposta de divisão está na seção 2 do guia.
+E02–E05/D01 não criam metas formais nem impedem o piloto informal depois da conferência
+operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
+
+## 5. Onde consultar os detalhes
 
 - [Funcionalidades](funcionalidades.md): o que usuários e desenvolvedores podem fazer.
 - [Guia de publicação](guia-publicacao-e-piloto.md): configuração e evidências datadas.
