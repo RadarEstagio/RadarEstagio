@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
+import pytest
+
 from radar.avaliacao.gabarito import (
     carregar_gabarito,
     exportar_gabarito,
@@ -12,6 +14,7 @@ from radar.avaliacao.gabarito import (
 from radar.avaliacao.julgar import julgar_entregas
 from radar.domain.models import EntregaParaJulgar, Modalidade, Perfil, Vaga
 from radar.reporting.julgamento import formatar_julgamento
+from radar.storage.errors import ErroDeArmazenamento
 from tests.test_julgar import JuizFalso
 
 PERFIL = UUID(int=1)
@@ -81,3 +84,18 @@ def test_sem_gabarito_o_relatorio_nao_menciona_humanos():
 
     assert "gabarito" not in formatar_julgamento(resultado)
     assert "nenhuma entrega julgada está no gabarito" in formatar_julgamento(resultado, {})
+
+
+def test_gabarito_ausente_ou_quebrado_vira_erro_claro(tmp_path: Path):
+    with pytest.raises(ErroDeArmazenamento, match="não encontrado"):
+        carregar_gabarito(tmp_path / "nao-existe.json")
+
+    quebrado = tmp_path / "quebrado.json"
+    quebrado.write_text("{isso nao e json")
+    with pytest.raises(ErroDeArmazenamento, match="JSON"):
+        carregar_gabarito(quebrado)
+
+    sem_campos = tmp_path / "sem-campos.json"
+    sem_campos.write_text('[{"titulo": "x", "relevante": true}]')
+    with pytest.raises(ErroDeArmazenamento, match="perfil_id"):
+        carregar_gabarito(sem_campos)
