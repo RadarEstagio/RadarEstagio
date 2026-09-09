@@ -124,6 +124,47 @@ class ResultadoMatch(BaseModel):
     alerta_pegadinha: str | None = None
 
 
+class ProblemaJulgado(StrEnum):
+    NENHUM = "nenhum"
+    OUTRA_AREA = "outra_area"
+    EXIGE_DEMAIS = "exige_demais"
+    LOGISTICA = "logistica"
+    REPETIDA = "repetida"
+    ANUNCIO_FRACO = "anuncio_fraco"
+
+
+class Julgamento(BaseModel):
+    id_vaga: str
+    relevante: bool
+    nota_juiz: int = Field(ge=0, le=100)
+    problema: ProblemaJulgado = ProblemaJulgado.NENHUM
+    motivo: str = ""
+
+
+class EntregaParaJulgar(BaseModel):
+    perfil_id: UUID
+    perfil: Perfil
+    vaga: Vaga
+    enviada_em: datetime
+    nota_do_radar: int | None = None
+    feedback: str | None = None
+    motivo_do_feedback: str | None = None
+
+
+class EntregaJulgada(BaseModel):
+    entrega: EntregaParaJulgar
+    julgamento: Julgamento
+
+
+class ResultadoDoJulgamento(BaseModel):
+    modelo: str
+    dias: int
+    entregas_no_periodo: int
+    amostradas: int
+    sem_julgamento: int = 0
+    julgadas: list[EntregaJulgada] = Field(default_factory=list)
+
+
 class RecusasDoUsuario(BaseModel):
     areas: list[AreaDeInteresse] = Field(default_factory=list)
     vagas_repetidas: list[Vaga] = Field(default_factory=list)

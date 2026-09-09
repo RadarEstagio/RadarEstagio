@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_vagas_por_lote: int = Field(default=10, ge=1)
     agy_modelo: str = "gemini-3.6-flash-low"
     agy_timeout_segundos: int = Field(default=300, ge=1)
+    juiz_modelo: str = "claude-sonnet-4-6"
     telegram_bot_token: str = Field(min_length=1)
     telegram_chat_id: str = ""
     database_url: str = ""

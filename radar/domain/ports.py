@@ -1,8 +1,11 @@
 from typing import Protocol
 
 from radar.domain.models import (
+    EntregaParaJulgar,
     ExtracaoDaVaga,
     FunilDaCoorte,
+    Julgamento,
+    Perfil,
     PerguntaDeFeedback,
     Recomendacao,
     RecusasDoUsuario,
@@ -66,6 +69,12 @@ class RepositorioDeAvaliacoes(Protocol):
 
 class RepositorioDeMetricas(Protocol):
     def funil_da_coorte(self, dias: int) -> FunilDaCoorte: ...
+
+    def entregas_recentes(self, dias: int) -> list[EntregaParaJulgar]: ...
+
+
+class JuizDeRecomendacoes(Protocol):
+    def julgar(self, perfil: Perfil, vagas: list[Vaga]) -> list[Julgamento]: ...
 
 
 class Repositorio(RepositorioDeUsuarios, RepositorioDeAvaliacoes, Protocol): ...
