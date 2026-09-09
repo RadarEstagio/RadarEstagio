@@ -159,7 +159,7 @@ tempo procurando e poderá se candidatar mais cedo às vagas relevantes.
 ### 5.1 Experiência desejada
 
 O usuário cria uma conta, informa curso, período, cidade, modalidade, habilidades e subáreas de
-interesse da sua área, e vincula o Telegram. O Radar executa diariamente e entrega até cinco
+interesse da sua área, e vincula o Telegram. O Radar executa diariamente e entrega até sete
 vagas novas com nota igual ou superior ao limite configurado. Cada vaga contém:
 
 - título, empresa, localização, modalidade, fonte e data;
@@ -168,7 +168,7 @@ vagas novas com nota igual ou superior ao limite configurado. Cada vaga contém:
 - alerta de possível inconsistência quando a IA a detecta;
 - link rastreado para a oportunidade e um teclado numerado para dar feedback.
 
-O padrão atual envia até **5 vagas** com nota mínima **40**, ambos configuráveis. Em dia sem vaga
+O padrão atual envia até **7 vagas** com nota mínima **40**, ambos configuráveis. Em dia sem vaga
 adequada, o estudante recebe um aviso curto; após 7 dias seguidos sem recomendação, o mesmo
 aviso ganha um parágrafo sugerindo ampliar cidade ou modalidade.
 

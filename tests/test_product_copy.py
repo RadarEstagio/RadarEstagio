@@ -8,7 +8,7 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
 
     assert "Encontre estágios que combinam com seu curso e seu momento." in html
     assert "diferentes áreas" in html
-    assert "até cinco recomendações explicadas no Telegram" in html
+    assert "até sete recomendações explicadas no Telegram" in html
     assert "Gratuito durante o piloto" in html
     assert "Pare de procurar estágio" not in html
     assert "A IA compara" not in html
@@ -18,7 +18,7 @@ def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
     html = (RAIZ / "web/index.html").read_text()
 
     assert '<meta name="twitter:card" content="summary_large_image" />' in html
-    assert html.count("até cinco recomendações explicadas no Telegram") >= 3
+    assert html.count("até sete recomendações explicadas no Telegram") >= 3
     assert "As vagas certas chegam até você" not in html
 
 
@@ -39,7 +39,7 @@ def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
 
     for trecho in (
         "não cobrem todo o mercado",
-        "até cinco recomendações",
+        "até sete recomendações",
         "Dias sem vaga podem acontecer",
         "candidatura continua sendo sua",
         "Preciso vincular o Telegram?",

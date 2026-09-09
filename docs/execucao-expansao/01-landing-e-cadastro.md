@@ -4,27 +4,28 @@ Leia o protocolo e execute a ficha ativa; ao concluir, registre e siga o próxim
 
 ## O00
 
-**Restaurar cinco recomendações no workflow. P0. Pronta.**
+**Atualizar para sete recomendações no workflow. P0. Pronta.**
 
-Decisão explícita do Igor: usuários recebem até cinco; sete foi usado para teste local.
+Decisão revisada pelo Igor durante a execução: usuários recebem até sete; a alteração precisa
+ser refletida no workflow, padrão Python, copy e documentação.
 Arquivos: `.github/workflows/radar-diario.yml`, `radar/settings.py` (conferência), documentação
-que descreve a quantidade. Alterar `QUANTIDADE_VAGAS_ENVIADAS` de `7` para `5` no workflow.
-Preservar o parâmetro configurável local e o padrão Python de cinco. Não alterar dias recentes,
+que descreve a quantidade. Manter `QUANTIDADE_VAGAS_ENVIADAS` em `7` no workflow.
+Sincronizar o parâmetro configurável local e o padrão Python em sete. Não alterar dias recentes,
 cron, endpoint, fontes ou enviar mensagens de teste. Verificar que diário e dispatch por perfil
-usam a mesma configuração. Aceite: produção versionada em cinco; teste local pode sobrescrever.
+usam a mesma configuração. Aceite: produção versionada em sete; teste local pode sobrescrever.
 Inspecionar diff/YAML; não criar teste Python para comparar uma string do workflow. Só afirmar
 configuração publicada quando o commit estiver na main, sem alegar execução real.
 
 ### Execução verificável
 
-Estado atual: workflow define `"7"`; decisão de produto e padrão Python são cinco.
-Resultado: os dois modos do mesmo workflow, diário e por perfil, usam `"5"`.
+Estado atual: workflow, decisão de produto e padrão Python usam sete.
+Resultado: os dois modos do mesmo workflow, diário e por perfil, usam `"7"`.
 
 1. Ler o bloco `env` do passo que executa o radar e localizar o consumo em `radar/settings.py`.
-2. Alterar somente o valor de produção e referências documentais que prometam sete ao usuário.
+2. Conferir o valor de produção e atualizar as referências documentais que prometam cinco ao usuário.
 3. Conferir que não existe override posterior no workflow. Não rodar o pipeline real.
 
-Fechamento O00: diff contém limite cinco e nenhuma mudança em fontes, cron ou filtros.
+Fechamento O00: diff contém limite sete e nenhuma mudança em fontes, cron ou filtros.
 Registrar arquivo/linha e status Git em `progresso.md`. Este ID não comprova entrega real.
 
 ## L01
@@ -36,7 +37,7 @@ para acomodar texto. Copiar a direção abaixo, ajustando pontuação sem mudar 
 
 - Título: “Encontre estágios que combinam com seu curso e seu momento.”
 - Descrição: “O Radar reúne oportunidades de diferentes áreas, compara com seu perfil e envia
-  até cinco recomendações explicadas no Telegram, quando houver vagas compatíveis.”
+  até sete recomendações explicadas no Telegram, quando houver vagas compatíveis.”
 - CTA: “Cadastrar meu perfil”. Manter comportamento de “Minha conta” para sessão autenticada.
 - Condição: “Gratuito durante o piloto”. Não inventar prazo, cartão, preço futuro ou número de usuários.
 
