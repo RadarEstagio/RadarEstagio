@@ -4,7 +4,9 @@ import pytest
 
 from radar.domain.models import Modalidade, Perfil, Vaga
 from radar.filtering.prefiltro import (
+    deve_descartar,
     exige_anos_de_experiencia,
+    exige_pos_graduacao,
     exige_senioridade,
     filtrar,
     fora_da_area_do_curso,
@@ -567,3 +569,22 @@ def test_hibrido_e_indiferente_mantem_vaga_remota_de_outra_cidade_e_qualquer_vag
     assert not localizacao_incompativel(
         vaga(localizacao="Rio de Janeiro, Rio de Janeiro", descricao="Estágio presencial."), do_rio
     )
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estagio de Mestrado em Economia, Contabilidade, Engenharia",
+        "Estágio de Mestrado em Meteorologia - EPE/RJ",
+        "Estágio para doutorandos em Química",
+        "Estágio de Pós-Graduação em Direito",
+    ],
+)
+def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
+    assert exige_pos_graduacao(vaga(titulo=titulo))
+    assert deve_descartar(vaga(titulo=titulo), perfil(curso="Economia"))
+
+
+@pytest.mark.parametrize("titulo", ["Estágio em Economia", "Estágio em Direito - Graduação"])
+def test_estagio_de_graduacao_nao_e_confundido_com_pos(titulo: str):
+    assert not exige_pos_graduacao(vaga(titulo=titulo))

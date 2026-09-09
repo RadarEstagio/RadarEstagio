@@ -13,6 +13,9 @@ from radar.domain.models import Modalidade, Perfil, Vaga
 
 PADRAO_ESTAGIO = re.compile(r"\bestagi|\bintern(?:ship)?s?\b")
 PADRAO_SENIORIDADE = re.compile(r"\b(?:pleno|senior|especialista|coordenador)\b")
+PADRAO_POS_GRADUACAO = re.compile(
+    r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
+)
 PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
@@ -37,6 +40,10 @@ def nao_e_estagio(vaga: Vaga) -> bool:
 
 def exige_senioridade(vaga: Vaga) -> bool:
     return PADRAO_SENIORIDADE.search(normalizar(vaga.titulo)) is not None
+
+
+def exige_pos_graduacao(vaga: Vaga) -> bool:
+    return PADRAO_POS_GRADUACAO.search(normalizar(vaga.titulo)) is not None
 
 
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
@@ -114,6 +121,7 @@ def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
     return (
         nao_e_estagio(vaga)
         or exige_senioridade(vaga)
+        or exige_pos_graduacao(vaga)
         or fora_da_area_do_curso(vaga, perfil)
         or exige_anos_de_experiencia(vaga)
         or localizacao_incompativel(vaga, perfil)

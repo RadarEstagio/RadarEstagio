@@ -430,6 +430,9 @@ sondas executáveis. O que mudou:
   (modalidade da fonte ou "remoto"/"home office" no texto); depois da extração, vaga presencial
   ou híbrida em outra cidade fica limitada a 30 com aviso próprio, como já acontecia com perfil
   remoto. Perfil presencial continua exigindo a própria cidade mesmo para vaga remota.
+- **Estágio de mestrado ou doutorado chegava a graduando.** "Estágio de Mestrado em Economia"
+  (EPE) foi a um perfil de Direito com nota 55, só com o alerta de pegadinha. Título com
+  mestrado, doutorado ou pós-graduação sai no pré-filtro, como já saía "pleno" e "sênior".
 
 Conferido e correto: as 20 constantes SQL e o `metricas.sql` passam por `EXPLAIN` contra o
 schema real; mensagem com 7 vagas longas e `<`, `&` nos textos divide em partes abaixo de 4096
