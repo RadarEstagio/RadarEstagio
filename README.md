@@ -2,8 +2,8 @@
 
 Documentação: [índice e revisão](docs/README.md) · [funcionalidades para usuários e devs](docs/funcionalidades.md).
 
-Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
-usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
+Agente que busca vagas de estágio todos os dias, extrai fatos com IA e calcula em Python a
+compatibilidade com o perfil. Entrega no Telegram as recomendações ranqueadas e explicadas.
 
 - Funcionalidades: [`docs/funcionalidades.md`](docs/funcionalidades.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
@@ -19,7 +19,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 Adzuna + Gupy (vagas dos últimos 3 dias)
   → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
-  → Gemini extrai fatores e justificativas em lotes
+  → Gemini extrai fatos das vagas em lotes
   → Python calcula a nota 0–100: habilidades 45%, curso 10%, área 10%,
     período/experiência 15%, logística 10% e áreas de interesse 10%
   → ranqueia e pega as 7 melhores
@@ -27,8 +27,8 @@ Adzuna + Gupy (vagas dos últimos 3 dias)
 ```
 
 Com banco configurado (`DATABASE_URL`), o mesmo fluxo roda **para cada usuário** cadastrado
-no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, sem mandar ao
-Gemini vaga que já tem nota guardada, e a mensagem vai para o Telegram dele. Sem banco, usa o
+no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, reutilizando
+extrações compatíveis e recalculando notas em Python. A mensagem vai para o Telegram dele. Sem banco, usa o
 perfil fixo do código e o `TELEGRAM_CHAT_ID` do `.env`.
 
 Roda de duas formas:
