@@ -110,16 +110,11 @@ with limites as (
   join entregas_do_periodo t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
   where e.nome in ('vaga_util', 'vaga_irrelevante') and e.ocorrido_em >= t.enviada_em
   order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
-), recusas_do_periodo as (
-  select distinct on(e.perfil_id, e.vaga_id) e.* from eventos e
-  join entregas_do_periodo t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
-  where e.nome in ('vaga_util', 'vaga_irrelevante') and e.ocorrido_em >= t.enviada_em
-  order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
 ), grupos as (
   select t.grupo, count(*) as entregas,
     count(*) filter(where r.nome = 'vaga_irrelevante') as recusas,
     count(*) filter(where r.nome = 'vaga_irrelevante' and r.propriedades->>'motivo' = 'motivo_nota') as recusas_da_nota
-  from entregas_do_periodo t left join recusas_do_periodo r using(perfil_id, vaga_id)
+  from entregas_do_periodo t left join respostas_do_periodo r using(perfil_id, vaga_id)
   group by t.grupo
 ), motivos as (
   select coalesce(propriedades->>'motivo', 'sem_motivo') as motivo, count(*) as total
