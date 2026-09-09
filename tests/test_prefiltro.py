@@ -12,8 +12,10 @@ from radar.filtering.prefiltro import (
     filtrar,
     fora_da_area_do_curso,
     localizacao_incompativel,
+    menciona_o_curso,
     modalidade_incompativel,
     nao_e_estagio,
+    normalizar,
 )
 
 
@@ -656,4 +658,26 @@ def test_seguranca_do_trabalho_nao_e_vaga_de_computacao(titulo: str):
 def test_seguranca_da_informacao_continua_sendo_de_computacao():
     assert not fora_da_area_do_curso(
         vaga(titulo="Estágio em Segurança da Informação", descricao="Sem detalhes."), perfil()
+    )
+
+
+def test_mencao_ao_curso_em_outra_frase_nao_conta_como_formacao():
+    descricao = (
+        "Consultoria de recursos humanos busca estagiário na área de gestão financeira "
+        "em Rio de Janeiro (Barra da Tijuca). O grupo é uma empresa especializada em "
+        "soluções criativas para marketing e comunicação."
+    )
+    assert not menciona_o_curso(normalizar(descricao), "Marketing")
+    assert deve_descartar(
+        vaga(titulo="Estagiário na Área de Gestão Financeira", descricao=descricao),
+        perfil(curso="Marketing"),
+    )
+
+
+def test_mencao_ao_curso_na_frase_da_formacao_continua_valendo():
+    descricao = "Requisitos: cursando Administração, Marketing ou Economia. Desejável Excel."
+    assert menciona_o_curso(normalizar(descricao), "Marketing")
+    assert not deve_descartar(
+        vaga(titulo="Estagiário na Área de Gestão Financeira", descricao=descricao),
+        perfil(curso="Marketing"),
     )
