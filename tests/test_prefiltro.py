@@ -640,3 +640,20 @@ def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: s
 )
 def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
     assert not exige_ensino_medio(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio Técnico em Segurança do Trabalho - Barra",
+        "Estagio em Segurança do Trabalho- Nível Superior - Matriz (Rio de Janeiro)",
+    ],
+)
+def test_seguranca_do_trabalho_nao_e_vaga_de_computacao(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao="Sem detalhes."), perfil())
+
+
+def test_seguranca_da_informacao_continua_sendo_de_computacao():
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Estágio em Segurança da Informação", descricao="Sem detalhes."), perfil()
+    )

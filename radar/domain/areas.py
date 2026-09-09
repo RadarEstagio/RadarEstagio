@@ -114,7 +114,7 @@ AREAS = (
             ("desenvolvimento_mobile", "Desenvolvimento mobile"),
             ("dados_ia", "Dados e IA"),
             ("infraestrutura_redes", "Infraestrutura e redes"),
-            ("seguranca", "Segurança"),
+            ("seguranca", "Segurança da informação"),
             ("suporte_tecnico", "Suporte técnico"),
             ("qa_testes", "QA e testes"),
         ),
