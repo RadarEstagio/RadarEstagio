@@ -1,4 +1,5 @@
 from radar.domain.models import (
+    EntregaParaJulgar,
     ExtracaoDaVaga,
     Recomendacao,
     RecusasDoUsuario,
@@ -58,3 +59,6 @@ class RepositorioEmMemoria:
 
     def pausar(self, usuario: Usuario) -> None:
         return None
+
+    def entregas_recentes(self, dias: int) -> list[EntregaParaJulgar]:
+        return []

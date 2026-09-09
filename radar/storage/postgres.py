@@ -11,6 +11,7 @@ from radar.domain.areas import subareas_do_curso
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
+    EntregaParaJulgar,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Modalidade,
@@ -76,6 +77,32 @@ SQL_VAGAS_ENVIADAS_RECENTES = """
     join vagas v on v.id = e.vaga_id
     where e.perfil_id = %(perfil_id)s
       and e.enviada_em > now() - interval '30 days'
+"""
+
+SQL_ENTREGAS_RECENTES = """
+    select e.perfil_id, e.enviada_em,
+           p.curso, p.periodo, p.habilidades, p.cidade, p.modalidade as modalidade_do_perfil,
+           p.areas_de_interesse,
+           v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
+           v.publicada_em, v.modalidade,
+           a.nota,
+           f.nome as feedback, f.propriedades->>'motivo' as motivo_do_feedback
+    from envios e
+    join perfis p on p.id = e.perfil_id
+    join vagas v on v.id = e.vaga_id
+    left join avaliacoes a on a.perfil_id = e.perfil_id and a.vaga_id = e.vaga_id
+    left join lateral (
+        select ev.nome, ev.propriedades
+        from eventos_produto ev
+        where ev.perfil_id = e.perfil_id
+          and ev.vaga_id = e.vaga_id
+          and ev.nome in ('vaga_util', 'vaga_irrelevante')
+          and ev.ocorrido_em >= e.enviada_em
+        order by ev.ocorrido_em desc
+        limit 1
+    ) f on true
+    where e.enviada_em >= now() - make_interval(days => %(dias)s)
+    order by e.enviada_em desc
 """
 
 SQL_AREAS_RECUSADAS = """
@@ -387,6 +414,14 @@ class RepositorioPostgres:
                 f"Falha ao gravar o aviso de silêncio: {descrever(erro)}"
             ) from erro
 
+    def entregas_recentes(self, dias: int) -> list[EntregaParaJulgar]:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linhas = cursor.execute(SQL_ENTREGAS_RECENTES, {"dias": dias}).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao ler as entregas: {descrever(erro)}") from erro
+        return [converter_em_entrega(linha) for linha in linhas]
+
     def funil_da_coorte(self, dias: int) -> FunilDaCoorte:
         try:
             with self._conexao.cursor(row_factory=dict_row) as cursor:
@@ -447,6 +482,25 @@ def interpretar_extracao(linha: dict) -> tuple[str, ExtracaoDaVaga] | None:
     except ValidationError:
         logger.info("extração guardada da vaga %s está em formato antigo", linha["id_externo"])
         return None
+
+
+def converter_em_entrega(linha: dict) -> EntregaParaJulgar:
+    return EntregaParaJulgar(
+        perfil_id=linha["perfil_id"],
+        perfil=Perfil(
+            curso=linha["curso"],
+            periodo=linha["periodo"],
+            habilidades=linha["habilidades"],
+            cidade=linha["cidade"],
+            modalidade=Modalidade(linha["modalidade_do_perfil"]),
+            areas_de_interesse=areas_do_campo_do_curso(linha["curso"], linha["areas_de_interesse"]),
+        ),
+        vaga=converter_em_vaga_enviada(linha),
+        enviada_em=linha["enviada_em"],
+        nota_do_radar=linha["nota"],
+        feedback=linha["feedback"],
+        motivo_do_feedback=linha["motivo_do_feedback"],
+    )
 
 
 def converter_em_vaga_enviada(linha: dict) -> Vaga:
