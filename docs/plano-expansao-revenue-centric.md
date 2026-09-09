@@ -115,7 +115,7 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | C01 | Permitir habilidades vazias no banco | P0 | Implementado/testado | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
 | C02 | Aceitar perfil iniciante no Python | P0 | Implementado/testado | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
 | C03 | Oferecer caminho sem habilidades no site | P1 | Implementado/testado | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
-| C04 | Concluir sugestões existentes e fallback | P1 | Parcial | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
+| C04 | Concluir sugestões existentes e fallback | P1 | Implementado/testado | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
 | C05 | Colocar conta após o perfil | P1 | Pendente | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
 | L01 | Corrigir promessa e copy da landing | P1 | Pendente | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
 | L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |

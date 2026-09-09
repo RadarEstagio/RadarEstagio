@@ -862,23 +862,73 @@ Deno.test("habilidades sugeridas acompanham o curso digitado", async () => {
   for (const [curso, esperada, indevida] of [
     ["Direito", "Redação", "Python"],
     ["Computação", "Python", "Redação"],
-    ["Curso Que Ninguem Tem", "Excel", "Python"],
-  ]) {
+    ["Curso Que Ninguem Tem", null, "Python"],
+  ] as [string, string | null, string][]) {
     const a = app();
     try {
       await settle();
       a.w.document.querySelector(".js-open-signup").click();
       await settle();
       const doc = a.w.document;
-      const form = fill(a.w);
+      const form = fill(a.w, Boolean(esperada));
       form.elements.curso.value = curso;
       doc.querySelector("#next-step").click();
       doc.querySelector("#next-step").click();
       await settle();
       const sugeridas = [...doc.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
-      assert.equal(sugeridas.includes(esperada), true, curso);
+      if (esperada) assert.equal(sugeridas.includes(esperada), true, curso);
+      else assert.deepEqual(sugeridas, []);
       assert.equal(sugeridas.includes(indevida), false, curso);
+      if (!esperada) assert.equal(doc.querySelector("#continue-without-skills").hidden, false);
     } finally { a.close(); }
+  }
+});
+
+Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    doc.querySelector("#next-step").click();
+    await settle();
+    a.w.catalogoDeAreas = null;
+    a.w.fetch = async () => { throw new Error("offline"); };
+    await a.w.montarHabilidadesDoCurso();
+    assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
+    assert.equal(form.elements.habilidades.value, "Python");
+    assert.equal(doc.querySelector("#skills-catalog-notice").hidden, false);
+    assert.equal(doc.querySelector("#continue-without-skills").hidden, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("resposta assíncrona de curso anterior não substitui o curso atual", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w, false);
+    form.elements.curso.value = "Direito";
+    a.w.catalogoDeAreas = null;
+    const respostas: ((resposta: { ok: boolean; json: () => Promise<unknown> }) => void)[] = [];
+    a.w.fetch = () => new Promise((resolve) => respostas.push(resolve));
+    const primeira = a.w.montarHabilidadesDoCurso();
+    form.elements.curso.value = "Computação";
+    const segunda = a.w.montarHabilidadesDoCurso();
+    respostas[1]({ ok: true, json: async () => areasJson });
+    await segunda;
+    respostas[0]({ ok: true, json: async () => areasJson });
+    await primeira;
+    const sugeridas = [...a.w.document.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
+    assert.equal(sugeridas.includes("Python"), true);
+    assert.equal(sugeridas.includes("Redação"), false);
+  } finally {
+    a.close();
   }
 });
 

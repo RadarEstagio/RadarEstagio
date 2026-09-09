@@ -350,6 +350,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .field-error::before { width: 15px; height: 15px; font-size: 10px; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
 .skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
 .skill-picker { margin-bottom: 22px; }
+.catalog-notice { margin: -8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .skill-picker button:hover, .skill-picker button.is-selected { border-color: var(--accent); color: var(--accent); background: rgba(62,124,89,.08); }
 .selected-skills { min-height: 0; margin-top: 14px; }

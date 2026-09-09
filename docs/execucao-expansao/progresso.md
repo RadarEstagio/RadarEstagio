@@ -6,9 +6,9 @@ Não reaplicar entregas existentes.
 
 ## Ponto de retomada
 
-- ID atual: C04.
-- Próximo passo: concluir fallback de habilidades e integração do catálogo conforme a ficha parcial.
-- Branch/HEAD: `codex/expansao-revenue-centric` / C03 pronto para commit.
+- ID atual: C05.
+- Próximo passo: mover conta para depois do perfil no novo cadastro, preservando login e edição.
+- Branch/HEAD: `codex/expansao-revenue-centric` / C04 pronto para commit.
 - Alterações locais preexistentes: inventariar e preservar.
 - Bloqueios reais: nenhum identificado para iniciar O00.
 
@@ -20,6 +20,7 @@ Não reaplicar entregas existentes.
 | C01 | Implementado/testado | `supabase/migrations/0018_habilidades_vazias.sql`, `tests/web/migrations_test.ts`, `docs/contrato-front.md` | Harness aplicou 0001–0017, inseriu perfil legado, aplicou 0018 e passou cadastro vazio, update do dono, rejeições, RLS e preservação | Migration ainda não aplicada em projeto remoto; publicação requer C02 antes e C03 depois |
 | C02 | Implementado/testado | `radar/domain/models.py`, `tests/test_models.py`, `tests/test_avaliacoes.py`, `tests/test_storage_postgres.py` | Perfil vazio válido; `None` inválido; pontuação finita em Computação/Direito sem requisito dado como atendido; limites de curso/modalidade preservados; leitura Postgres coberta (teste ignorado sem `DATABASE_URL_TESTE`) | Python compatível localmente; publicação deve preceder C01 remoto |
 | C03 | Implementado/testado | `web/index.html`, `web/assets/app.js`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Atalho explícito libera `[]`, validação/payload preservam vazio, edição reabre vazio, remoção da última habilidade exige escolha nova, Enter continua adicionando, erro de rede preserva dados e eventos não gravam estado extra | C01 remoto e frontend ainda não publicados; visual 1280 px inspecionado no Safari local; 375 px pendente por falta de viewport responsivo disponível |
+| C04 | Implementado/testado | `web/assets/app.js`, `web/index.html`, `web/assets/styles.css`, `tests/web/cadastro_test.ts` | Curso desconhecido não recebe sugestões de outra área; falha de catálogo limpa botões, avisa e preserva seleção; respostas antigas não vencem curso/sessão atuais | Catálogo remoto/publicação não verificados; JSON local continua gerado pelo catálogo único |
 | C04 | Parcial | Catálogo e sugestões já existem na base | Falta concluir fallback e integração conforme ficha | Publicação não verificada |
 | Demais IDs locais | Não iniciado | — | Executar na ordem do índice | — |
 
@@ -62,6 +63,16 @@ Não reaplicar entregas existentes.
 - Inspeção visual: Safari local em viewport de desktop (~1280 px), landing e modal/foco inicial conferidos; foco migra para e-mail e o botão novo é nativo. Verificação exata a 375 px não foi possível porque não havia viewport responsivo/browser controlável disponível; CSS de `@media (max-width: 760px)` foi revisado.
 - Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C03 após suíte Python completa. Frontend não publicado.
 - Pendência real/próximo comando: aplicar C01 somente depois de C02 publicado e C03 depois da migration; seguir para C04.
+
+## C04
+
+- Comportamento antes → depois: curso desconhecido recebia `habilidades_gerais`; agora recebe somente entrada livre e o caminho vazio. Falha do JSON limpa sugestões sem apagar seleção e exibe aviso discreto. Requisições antigas são ignoradas por identidade do formulário, curso e número da requisição.
+- Arquivos/símbolos: `web/assets/app.js` (`montarHabilidadesDoCurso`, `montarAreasDoCurso`, invalidação assíncrona), `web/index.html` (`skills-catalog-notice`), `web/assets/styles.css`, `tests/web/cadastro_test.ts`.
+- Casos obrigatórios: Direito/Computação preservam sugestões existentes; curso desconhecido sem sugestões; catálogo indisponível com seleção preservada; duas trocas rápidas terminam no curso atual; logout/nova inscrição continuam limpando estado de áreas. Item livre e atalho de C03 continuam disponíveis.
+- Comandos/exit code/aprovados/ignorados: W — `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` — exit 0, 38 aprovados, 0 ignorados; `uv run pytest -q tests/test_areas_do_front.py` — exit 0, 1 aprovado.
+- Inspeção visual: aviso usa `role=status`, não altera o payload e mantém foco/entrada nativos; viewport exato de 375 px continua não verificável nesta sessão.
+- Commit/branch e publicação: branch `codex/expansao-revenue-centric`; commit C04 após suíte Python completa. Nenhuma publicação externa.
+- Pendência real/próximo comando: publicar catálogo/JSON junto do frontend quando a equipe executar a sequência; seguir para C05.
 
 Estados: Parcial; Não iniciado; Em execução; Implementado/testado; Preparado, falta evidência externa;
 Bloqueado (descrever causa); Publicado/verificado. A coluna de publicação nunca decorre apenas

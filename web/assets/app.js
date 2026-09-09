@@ -103,6 +103,9 @@ const gradeDeAreas = document.querySelector("#grade-de-areas");
 let catalogoDeAreas = null;
 let areasEscolhidas = new Set();
 let areasSalvas = [];
+let identidadeDoFormulario = 0;
+let requisicaoDeHabilidades = 0;
+let requisicaoDeAreas = 0;
 
 function normalizarTexto(texto) {
   return texto
@@ -151,8 +154,16 @@ function areaDoCurso(curso, catalogo) {
 }
 
 async function montarAreasDoCurso() {
+  const requisicao = ++requisicaoDeAreas;
+  const identidade = identidadeDoFormulario;
+  const cursoSolicitado = form.elements.curso?.value ?? "";
   const catalogo = await carregarAreas();
-  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
+  if (
+    requisicao !== requisicaoDeAreas
+    || identidade !== identidadeDoFormulario
+    || (form.elements.curso?.value ?? "") !== cursoSolicitado
+  ) return;
+  const area = areaDoCurso(cursoSolicitado, catalogo);
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = !area;
   if (!area) return;
@@ -185,11 +196,26 @@ function areasDeInteresseDoFormulario(data) {
 }
 
 async function montarHabilidadesDoCurso() {
-  const catalogo = await carregarAreas();
-  if (!catalogo) return;
-  const area = areaDoCurso(form.elements.curso?.value ?? "", catalogo);
-  const sugeridas = area?.habilidades?.length ? area.habilidades : catalogo.habilidades_gerais;
+  const requisicao = ++requisicaoDeHabilidades;
+  const identidade = identidadeDoFormulario;
+  const cursoSolicitado = form.elements.curso?.value ?? "";
   const picker = document.querySelector("#skill-picker");
+  const aviso = document.querySelector("#skills-catalog-notice");
+  const catalogo = await carregarAreas();
+  if (
+    requisicao !== requisicaoDeHabilidades
+    || identidade !== identidadeDoFormulario
+    || (form.elements.curso?.value ?? "") !== cursoSolicitado
+  ) return;
+  if (!catalogo) {
+    picker.replaceChildren();
+    aviso.hidden = false;
+    renderSkills();
+    return;
+  }
+  aviso.hidden = true;
+  const area = areaDoCurso(cursoSolicitado, catalogo);
+  const sugeridas = area?.habilidades ?? [];
   picker.replaceChildren(...sugeridas.map((habilidade) => {
     const botao = document.createElement("button");
     botao.type = "button";
@@ -509,6 +535,7 @@ function entrarNoModoEdicao() {
 }
 
 function resetDialogView() {
+  identidadeDoFormulario += 1;
   assistanceMode = null;
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = false;
