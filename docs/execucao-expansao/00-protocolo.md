@@ -1,5 +1,9 @@
 # Protocolo de execução autônoma
 
+> Histórico em consolidação desde 09/09/2026, mantido para revisão antes da exclusão.
+> Consulte a [referência mantida](../plano-geral.md) para o estado atual. As instruções e
+> pendências abaixo retratam a execução anterior; não reiniciam tarefas nem comprovam produção.
+
 ## Missão e ponto de entrada
 
 Quando o usuário pedir para implementar o plano, execute a fila inteira do índice
