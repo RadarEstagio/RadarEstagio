@@ -318,6 +318,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .password-toggle[aria-pressed="true"] .password-eye-slash { opacity: 1; }
 .auth-help button { border: 0; background: transparent; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
 @media (hover: hover) { .password-toggle:hover { color: var(--accent-deep); background: var(--paper); } }
+@supports selector(input::-webkit-credentials-auto-fill-button) {
+  .password-field:focus-within input { padding-inline-end: 102px; }
+  .password-field:focus-within .password-toggle { inset-inline-end: 44px; }
+}
 .auth-help { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 20px; }
 .auth-help button { min-height: 28px; }
 #assistance-form { display: grid; gap: 24px; margin-block: 24px; }
