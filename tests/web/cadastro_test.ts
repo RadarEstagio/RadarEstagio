@@ -822,3 +822,24 @@ Deno.test("sair da conta nao deixa as areas de interesse da pessoa anterior no p
     a.close();
   }
 });
+
+Deno.test("curso escrito como tecnologia da informacao abre as areas de computacao", async () => {
+  const a = app({ session: null, savedProfile: null });
+  try {
+    await settle();
+    a.w.setAuthMode("signup");
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    form.elements.curso.value = "Bacharelado em Tecnologia da Informação";
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(doc.querySelector("#campo-areas").hidden, false);
+    assert.ok(doc.querySelectorAll('input[name="areas"]').length > 0);
+  } finally {
+    a.close();
+  }
+});

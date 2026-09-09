@@ -127,13 +127,18 @@ function normalizarCurso(curso, catalogo) {
     .replace(/\s+/g, " ")
     .replace(/\s*(?:\(.*\)|[-–|/].*)$/, "")
     .replace(sufixo, "");
-  if (catalogo.genericos.includes(texto)) return "";
+  const conhecidos = new Set(catalogo.areas.flatMap((area) => area.cursos));
   const prefixo = new RegExp(
-    `^(?:(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+)+`,
+    `^(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+`,
   );
-  texto = texto.replace(prefixo, "");
-  if (catalogo.genericos.includes(texto)) return "";
-  return catalogo.sinonimos[texto] ?? texto;
+  for (;;) {
+    if (catalogo.genericos.includes(texto)) return "";
+    if (Object.hasOwn(catalogo.sinonimos, texto)) return catalogo.sinonimos[texto];
+    if (conhecidos.has(texto)) return texto;
+    const encontrado = texto.match(prefixo);
+    if (!encontrado) return texto;
+    texto = texto.slice(encontrado[0].length);
+  }
 }
 
 function areaDoCurso(curso, catalogo) {
