@@ -56,16 +56,28 @@ Revise com Ian os [Termos](../web/termos.html) e a [Política](../web/privacidad
 Miguel também está identificado como responsável pelos dados. Registrem:
 
 - Concordância com a descrição do serviço, dados, fornecedores e retenção de 60 dias.
-- Bases legais por finalidade e condições de processamento internacional, logs e backups,
-  conferidas nos serviços contratados; esses pontos ainda estão abertos nos rascunhos.
+- Bases legais por finalidade e condições de processamento internacional, logs e backups:
+  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política (Markdown e HTML
+  iguais). Falta só a aprovação dos três.
 - Quem atenderá solicitações de dados e pedidos de eliminação sem aguardar arrependimento.
 - Quem acompanha falhas do job e a rotina de apagamento.
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
 
-Não retire o aviso de revisão antes de resolver as passagens pendentes e implementar as
-promessas. Confiram também os controles reais descritos no [contrato frontend](contrato-front.md).
+Proposta de divisão registrada em 08/09/2026 por Ian, **a confirmar por Igor e Miguel**:
 
-**Concluído quando:** texto final revisado, contato ativo e responsabilidades registradas.
+| Responsabilidade | Proposta | Por quê |
+|---|---|---|
+| Responder o `contato@radarestagio.com` e os pedidos de dados e eliminação | Miguel | Já identificado como responsável pelos dados na Política; prazo de resposta combinado: 5 dias úteis |
+| Acompanhar o resumo diário das 07:23, falhas do job, cota do Gemini e a rotina de apagamento | Ian | Dono das contas do Actions, do cron-job.org, da Cloudflare e do Supabase |
+| Domínio `radarestagio.com`, DNS, e-mail e renovação | Igor | O domínio está na conta pessoal dele; ao fim da disciplina, transferir para quem continuar ou deixar expirar com aviso no site |
+
+Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
+(`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
+`VERSAO_DOS_TERMOS` em `web/assets/app.js` para a mesma data, porque o banco guarda a versão
+aceita por cada conta. Confiram também os controles reais descritos no
+[contrato frontend](contrato-front.md).
+
+**Concluído quando:** texto final aprovado, contato ativo e responsabilidades confirmadas.
 
 ## 3. Configurar Resend e SMTP — pode preparar agora
 
