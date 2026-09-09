@@ -25,6 +25,23 @@ pessoais não aparecem no documento. Registrar quem acompanha contato, falhas e 
 textos legais ainda precisam da equipe. Migrations de recursos novos devem acompanhar versões
 compatíveis. Preparar reversão da aplicação sem apagar dados. Não declarar aprovação jurídica.
 
+### Procedimento e artefato final
+
+1. Registrar SHA local/remoto e lista de componentes alterados. Ler evidências datadas já
+   presentes no guia antes de consultar contas; não repetir como atual uma evidência de 06/09.
+2. Preencher tabela com uma linha por componente: evidência consultada, versão esperada,
+   observada, data e divergência. Sem acesso, preencher “não verificado” e método de verificação.
+3. Preparar sequência concreta de publicação, citando nomes de migrations e funções realmente
+   alteradas. Consultar histórico antes de propor aplicação; frontend não pode escrever campos
+   que o banco ainda rejeita. Registrar eventual deploy automático ligado à main.
+4. Preparar roteiro de conta da equipe, com resultado esperado por passo: salvar perfil,
+   confirmar e-mail, vincular chat, receber até cinco, abrir link, responder feedback e pausar.
+   Execução com efeitos externos depende de acesso/autorização; roteiro sozinho é entrega local.
+
+Saída obrigatória: tabela de versões, roteiro, ordem de publicação, reversão compatível e
+pendências com responsável “a definir” se não conhecido. Não enviar mensagem nem alterar cron
+para preencher a tabela. Fechamento local: todas as linhas têm evidência ou impedimento explícito.
+
 ## E02
 
 **Matriz de cobertura e casos de qualidade. P1.**
@@ -42,6 +59,21 @@ Para cada erro, guardar exemplo público ou anonimizado, resultado atual e esper
 criar uma tarefa de correção por causa, não ajustar pesos arbitrariamente. Observar descrição
 truncada, alias ausente, cursos aceitos e informação desconhecida. Só propor fonte nova após
 lacuna demonstrada. Sem acesso: entregar estrutura e procedimento com células “não medido”.
+
+### Coleta de evidência sem alterar ranking
+
+1. Criar tabela com colunas: data, fonte, consulta/curso, cidade, modalidade, total recebido,
+   após pré-filtro, extraído, recomendável, descrição completa?, erro/limite e referência do caso.
+2. Usar fixtures sintéticas primeiro para documentar procedimento; rotular “sintético”, não
+   misturar suas contagens com anúncios observados. Para dados reais, registrar janela e paginação.
+3. Separar rejeição legítima (curso incompatível) de informação desconhecida e de falha técnica.
+   Cada divergência recebe entrada/esperado/observado/causa provável/teste sugerido, sem dados pessoais.
+4. Incluir casos de A01–A06 como regressões já corrigidas, não trabalho a refazer. Para novo
+   defeito, criar pendência específica ligada ao exemplo; não alterar pesos nesta ficha.
+
+Fechamento local: `docs/cobertura-estagios.md` contém método reproduzível e matriz preenchida
+ou “não medido” por campo. Conclusão permitida: oferta observada na amostra. Não permitido:
+“cobrimos todos os estágios” ou ausência de mercado inferida de resposta vazia/erro de fonte.
 
 ## E03
 
@@ -62,6 +94,20 @@ Não usar abertura como candidatura ou contratação. Compartilhamento futuro de
 pública, nunca token pessoal de envio/vínculo. Mídia paga, recompensas e páginas por curso
 ficam fora desta tarefa. Sem evidência, documento registra hipótese.
 
+### Um canal, uma hipótese, um registro
+
+1. Preparar comparação de até três canais aos quais a equipe possa ter acesso: público,
+   forma de acesso, esforço, custo conhecido/desconhecido e hipótese de utilidade.
+2. Recomendar um canal inicial, explicitamente como proposta se acesso não estiver confirmado.
+   Preparar uma mensagem pronta para revisão com promessa de L01 e URL pública, sem dispará-la.
+3. Criar registro com data/canal/mensagem, pessoas expostas quando conhecido, visitas/cadastros
+   atribuíveis e sinal de utilidade. Campo não observável fica desconhecido, não zero.
+4. Preparar solicitação de autorização de relato e modelo de caso: contexto, uso real, sinal
+   observado, limite e autorização. Sem relato autorizado, manter placeholder explícito no documento.
+
+Fechamento local: `docs/aquisicao-e-prova.md` tem canal proposto, mensagem, método de leitura
+e próximo passo da equipe. Não publicar depoimento, mandar mensagens ou construir programa de indicação.
+
 ## E04
 
 **Custos reais e capacidade. P2.**
@@ -77,6 +123,22 @@ consultar a fonte oficial na execução e registrar data. Calcular cenários tra
 custo por usuário atendido, sem atribuir toda extração compartilhada a um único usuário novo.
 Aceite: fórmulas e premissas reproduzíveis; dados ausentes identificados; custo de suporte
 contabilizado ou explicitamente não medido. Não inventar CAC/LTV sem aquisição/pagamento.
+
+### Planilha lógica no documento
+
+1. Criar tabela por serviço e período: faturado, franquia disponível, uso observado, estimativa,
+   moeda, fonte e data. Incluir suporte como horas não medidas quando não houver registro.
+2. Definir custo operacional do período = custos fixos + custos variáveis + suporte monetizado
+   apenas quando taxa/hora for conhecida. Não somar franquia gratuita como cobrança.
+3. Custo por usuário atendido = custo do período / perfis distintos que receberam recomendação
+   no mesmo período. Denominador zero → indisponível. Mostrar custos conhecidos separadamente
+   se o total não puder ser calculado por dados faltantes.
+4. Preparar cenário de crescimento variando novas vagas, reaproveitamento e perfis atendidos;
+   não assumir uma extração por usuário. Toda estimativa deve explicitar premissas e fórmula.
+
+Fechamento local: `docs/custos-operacao.md` permite refazer contas com os mesmos dados.
+Preços, quando necessários, são verificados em fonte oficial na execução. Não comprar plano,
+consultar segredos em logs, inventar CAC/LTV ou apresentar extrações como custo em reais.
 
 ## E05
 
@@ -96,6 +158,20 @@ condições definidos; esta tarefa não instala gateway nem inicia cobrança.
 Três planos, ancoragem e upgrade são opções posteriores a necessidades comprovadas. Não criar
 perda fictícia, paywall surpresa ou retenção de dados para pressionar pagamento. Aceite: decisão
 ou perguntas remanescentes registradas; hipótese não apresentada como monetização validada.
+
+### Proposta comercial revisável, sem implementação de cobrança
+
+1. Comparar assinatura e acesso por período em tabela: pagador hipotético, benefício incluído,
+   duração, previsibilidade de custo, relação com busca temporária e dúvidas não resolvidas.
+2. Usar E02 para descrever benefício comprovado e E04 para custo conhecido; lacunas impedem
+   conclusão de margem, não a preparação do documento. Piloto gratuito permanece respeitado.
+3. Preparar campos de decisão: preço, duração, renovação, cancelamento, elegibilidade de
+   participantes atuais e forma de obter aceite. Deixar “decisão da equipe” se não definida.
+4. Descrever teste futuro e métricas: oferta apresentada, compradores, recebimento líquido,
+   custo associado, uso posterior e cancelamento. Intenção declarada não entra como comprador.
+
+Fechamento local: `docs/hipotese-comercial.md` contém comparação e decisões pendentes precisas.
+Sem decisão comercial não criar checkout, paywall ou preços na landing. E05 não bloqueia C/L/M/R.
 
 ## D01
 
@@ -118,3 +194,18 @@ Após decisão, escrever tarefas separadas de contrato/migration, leitura e aval
 interface e verificação integrada. Enumerar campos, semântica de desconhecido, compatibilidade
 com perfis antigos e ordem de publicação antes de permitir implementação. Não gerar migration
 com decisão ainda aberta. Aceite desta ficha é proposta revisável, não código generalista novo.
+
+### Matriz para uma decisão por vez
+
+1. Preparar linhas para técnico por módulo, graduação por ano, curso não catalogado, interesse
+   fora da grande área e anúncio com curso exato/correlatos. Cada linha descreve entrada atual,
+   limitação, exemplo e o que falta decidir; não inferir equivalência profissional.
+2. Apresentar duas opções por problema quando houver escolha real, com impacto em dados,
+   ranking, cadastro e compatibilidade de perfis existentes. Não misturar frequência com curso.
+3. Para decisão já autorizada, registrar fonte/data e desdobrar em tarefas de implementação
+   separadas. Para decisão aberta, registrar pergunta concreta e manter contrato atual.
+4. Se surgir ADR/alteração de domínio, ler a skill aplicável antes de escrever. Não gerar
+   migration ou alterar `area_do_curso` como parte de preparar opções.
+
+Fechamento local: seção do contrato tem exemplos e decisão/pendência por linha. Um modelo mais
+barato não precisa decidir regras acadêmicas por conta própria para terminar os demais IDs.

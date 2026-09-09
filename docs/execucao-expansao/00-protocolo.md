@@ -26,7 +26,8 @@ são relativos à raiz. Use `rg`; se indisponível, use `grep`/`find`.
 
 ## Ciclo por tarefa
 
-- Selecione o primeiro ID não concluído cujas dependências de código estejam implementadas.
+- Selecione o primeiro ID não concluído na ordem dos blocos do índice cujas dependências
+  de código estejam implementadas. A posição da ficha no arquivo não muda essa ordem.
 - Declare brevemente o comportamento a alterar. Leia símbolos/testes relevantes, não o repo inteiro.
 - Implemente o menor conjunto coeso de mudanças que atende à ficha. Arquivos citados são pontos
   de entrada; ajustar contrato/teste diretamente afetado é permitido. Não refatorar partes alheias.
@@ -86,6 +87,42 @@ verificação visual pendente, completar os testes disponíveis e seguir outras 
 Não mudar expectativas só para a suíte passar. Não reportar teste ignorado como executado.
 Ao fim da fila, rodar Python completo, web/banco, lint e formatação na versão final. Repetir
 verificação adicional somente se houver mudanças, falhas ou dúvidas materiais novas.
+
+## Comandos nomeados nas fichas
+
+Executar a partir da raiz. As letras são atalhos documentais, não comandos shell definidos.
+Rodar somente a bateria necessária à tarefa, além do Python completo obrigatório antes de commit.
+
+| Código | Comando exato | Uso |
+|---|---|---|
+| P | `uv run pytest -q tests/test_models.py tests/test_avaliacoes.py tests/test_storage_postgres.py` | Leitura e pontuação de perfil |
+| W | `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/cadastro_test.ts` | Fluxos de cadastro/conta |
+| B | `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/migrations_test.ts` | Migration e escrita com permissões |
+| Q-SQL | `deno test --config tests/web/deno.json --allow-read --allow-env tests/web/metricas_test.ts` | SQL das métricas com banco isolado |
+| Q-Python | `uv run pytest -q tests/test_funil.py tests/test_storage_postgres.py` | Modelo, conversão e relatório |
+
+“Rodar Q” significa executar Q-SQL e Q-Python, conferindo os dois resultados. O harness SQL
+de métricas cria schema reduzido próprio; ao adicionar colunas, atualizar esse schema. O harness
+de migrations tem outro propósito e precisa aplicar migrations reais. Um não substitui o outro.
+Testes Postgres ignorados por ausência de ambiente continuam pendentes, mesmo com os demais verdes.
+
+## Tamanho de trabalho e fechamento de um ID
+
+As subseções numeradas são passos internos da mesma tarefa. Executar e verificar um passo
+antes do seguinte, sem abrir mudanças de outro ID. Se o contexto ficar curto, registrar
+subpasso exato, arquivos alterados, testes executados e próximo comando em `progresso.md`.
+Não marcar um ID concluído apenas porque seu primeiro subpasso foi implementado.
+
+Registro mínimo por ID:
+
+- Antes → depois observado, arquivos e símbolos alterados.
+- Cenários da matriz: resultado por caso e teste que o demonstra.
+- Comandos, exit code, aprovados/ignorados e inspeção visual quando aplicável.
+- Commit/branch, dependência de publicação e qualquer limitação ainda real.
+
+Critério objetivo: todas as linhas obrigatórias da ficha passaram ou há bloqueio explicitamente
+registrado. Caso sintético comprova comportamento, não frequência do problema em produção.
+Não relaxar contrato nem mudar expectativa de teste para mascarar falha encontrada.
 
 ## Publicação e compatibilidade
 

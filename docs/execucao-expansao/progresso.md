@@ -40,3 +40,18 @@ tokens, dados pessoais ou informações de conta desnecessárias.
 
 Base `40ed28c`: 649 testes Python aprovados e 24 ignorados. Web/banco: 36 aprovados
 em `a87f9fc`. Esses resultados são referência, não conclusão das tarefas futuras.
+
+## Modelo de registro por tarefa
+
+Copiar para cada ID em execução; não preencher resultados antes de verificar.
+
+- ID/subpasso:
+- Comportamento antes → depois:
+- Arquivos/símbolos:
+- Casos obrigatórios e teste correspondente:
+- Comandos/exit code/aprovados/ignorados:
+- Inspeção visual (se aplicável):
+- Commit/branch e publicação:
+- Pendência real/próximo comando:
+
+A ordem de retomada segue os blocos do índice. Após O00, iniciar C01; landing vem após C05.

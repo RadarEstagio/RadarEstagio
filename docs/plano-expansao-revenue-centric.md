@@ -23,6 +23,30 @@ custo de servir e pagamento como evidência (E04–E05). Swiss Knife filter rege
 cada tarefa precisa reforçar seleção, entrega ou compreensão do valor. Estatísticas da skill
 não são metas nem previsões do Radar.
 
+## Foco absoluto e ordem de trabalho
+
+Resultado prioritário: estudante de outra área ou iniciante consegue completar o perfil e
+entender recomendações relevantes, sem perder dados nem receber explicações falsas.
+Não maximizar quantidade de funcionalidades ou prometer cobertura universal.
+
+| Bloco | IDs, nesta ordem | Resultado necessário para fechar |
+|---|---|---|
+| 1. Cadastro e confiança | O00 → C01 → C02 → C03 → C04 → C05 | Limite cinco, iniciante aceito de ponta a ponta, navegação e isolamento entre contas preservados |
+| 2. Compreensão da entrega | L01 → L02 → C06 | Promessa, demonstração e estados coerentes com o que o sistema sabe |
+| 3. Aprendizado | M01 → M02 → M03 → M04 | Eventos interpretáveis, contagens e tempos corretos, utilidade por área sem duplicação |
+| 4. Motivo da pausa | R01 → R02 → R03 | Pausa continua livre; resposta opcional é persistida e relatada corretamente |
+| 5. Preparação externa | E01 → E02 → E03 → E04 → E05 → D01 | Procedimentos/evidências e decisões pendentes documentados, sem métricas inventadas |
+
+A ordem dos blocos governa a execução local; a ordem de publicação de C01–C03 continua
+C02 → C01 → C03. E01 pode ser consultado antes quando for necessário publicar, mas falta de
+acesso externo não interrompe outro ID local. Não começar monetização enquanto há trabalho
+local de cadastro/confiança pendente. Problema de regressão introduzida tem precedência sobre
+novo ID. Achado alheio ao escopo vira pendência reproduzível, não refactor oportunista.
+
+Cada ficha agora inclui passos internos, cenários e fechamento. C05 tem quatro subpassos;
+M02–M04 têm exemplos numéricos para conferir o cálculo. Os comandos P/W/B/Q estão definidos
+no protocolo, sem exigir que a IA adivinhe nomes de arquivos ou como executar a suíte.
+
 ## Já implementado — preservar, não refazer
 
 | Entrega | Evidência no código/commit | Limite ainda existente |
@@ -88,13 +112,13 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | ID | Tarefa | Prioridade | Estado | Depende de | Especificação |
 |---|---|---|---|---|---|
 | O00 | Restaurar limite de cinco no workflow | P0 | Pronta | — | [Entrega](execucao-expansao/01-landing-e-cadastro.md#o00) |
-| L01 | Corrigir promessa e copy da landing | P1 | Pendente | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
-| L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
 | C01 | Permitir habilidades vazias no banco | P0 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c01) |
 | C02 | Aceitar perfil iniciante no Python | P0 | Pendente | C01 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c02) |
 | C03 | Oferecer caminho sem habilidades no site | P1 | Pendente | C02 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c03) |
 | C04 | Concluir sugestões existentes e fallback | P1 | Parcial | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c04) |
 | C05 | Colocar conta após o perfil | P1 | Pendente | C03 | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c05) |
+| L01 | Corrigir promessa e copy da landing | P1 | Pendente | O00 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l01) |
+| L02 | Demonstração fiel e dúvidas frequentes | P1 | Pendente | L01 | [Landing](execucao-expansao/01-landing-e-cadastro.md#l02) |
 | C06 | Explicar vínculo, espera e ausência de vagas | P1 | Pronta | — | [Cadastro](execucao-expansao/01-landing-e-cadastro.md#c06) |
 | M01 | Mapear eventos e lacunas do cadastro | P1 | Pendente | C05 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m01) |
 | M02 | Participação no feedback | P1 | Pronta | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m02) |
@@ -110,10 +134,9 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | E05 | Definir oferta e teste de pagamento | P2 | Externa | E02, E04, decisão da equipe | [Economia](execucao-expansao/03-evidencias-e-decisoes.md#e05) |
 | D01 | Resolver elegibilidade e formatos acadêmicos | P1 | Decisão | Casos de E02 | [Decisões](execucao-expansao/03-evidencias-e-decisoes.md#d01) |
 
-Sequência recomendada de implementação: **O00 → L01 → L02 → C01 → C02 → C03 → C04 → C05 → C06 →
-M01 → M02 → M03 → M04 → R01 → R02 → R03**. E01 pode conferir a versão atual antes dessa fila;
-a verificação deve ser repetida apenas para as partes alteradas após publicação. E02–E04
-podem ser preparados sem bloquear as melhorias prontas. Não exigir todas as métricas para divulgar.
+Sequência obrigatória de implementação local: **O00 → C01 → C02 → C03 → C04 → C05 → L01 →
+L02 → C06 → M01 → M02 → M03 → M04 → R01 → R02 → R03**. Depois preparar os seis artefatos
+externos. Acesso/decisão ausente não autoriza inventar resultados nem bloqueia outro documento.
 
 ## Pontos do plano anterior que mudaram
 
