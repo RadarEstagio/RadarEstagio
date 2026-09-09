@@ -296,6 +296,29 @@ chaves, tokens, dados pessoais ou informações de conta desnecessárias. Perman
 consulta remota, a coleta real de cobertura, autorização de aquisição/relato, billing e decisões
 comercial/acadêmica da equipe.
 
+## Correções da revisão do PR (08/09/2026, noite)
+
+Revisão do PR contra o plano. Nenhum ID foi reaberto: são correções sobre a fila já entregue,
+cada uma com o teste que a acompanha.
+
+| Correção | Motivo | Verificação |
+|---|---|---|
+| `semanais` deriva de `utilidade_por_perfil_semana` | a utilidade semanal existia duas vezes no SQL; definições paralelas divergem | `metricas_test.ts` fixa que a soma dos fatos é igual ao total semanal |
+| `recusas_do_periodo` removida em favor de `respostas_do_periodo` | eram a mesma consulta palavra por palavra | `metricas_test.ts` |
+| `agrupar_utilidade_por_area` em `radar/domain/metricas.py` | `storage` importava `reporting`, invertendo as camadas; a classificação é regra de domínio | `tests/test_funil.py`, suíte completa |
+| Pausa sem resposta aparece como "Não informado" | o relatório imprimia `sem_motivo`, contra a ficha R03 e `docs/metricas.md` | `tests/test_funil.py` |
+| Mediana convertida para min/h/d na apresentação | "86400.0 s" obriga quem lê a converter; o cálculo continua em segundos | `tests/test_funil.py` |
+| Site limita 50 habilidades de 100 caracteres | a `0018` cobra o contrato no update direto e o formulário não limitava nada | `cadastro_test.ts` |
+| Passo de conferência de dados antes da `0018` | constraint validada na hora aborta o `db push` se houver linha antiga fora do contrato | consulta somente leitura em `guia-publicacao-e-piloto.md` |
+| `docs/funcionalidades.md` e `CLAUDE.md` sincronizados | descreviam conta antes do perfil, habilidade obrigatória, pausa sem pergunta e relatório antigo | leitura |
+| Guarda de copy de C06 corrigida | a negativa citava uma frase que nunca existiu; a ficha proíbe outras | `tests/test_frontend_activation.py` |
+| Inspeção visual removida do registro | foi declarada sem ter sido executada | — |
+
+Verificações após as correções: `uv run pytest -q` — 666 aprovados, 25 ignorados;
+`deno test --config tests/web/deno.json --allow-read --allow-env tests/web/` — 52 aprovados;
+`uv run ruff check .` e `uv run ruff format --check .` aprovados. Continua sem inspeção visual,
+sem aplicação remota de migration e sem execução publicada.
+
 ## Referência anterior à execução da fila
 
 Base `40ed28c`: 649 testes Python aprovados e 24 ignorados. Web/banco: 36 aprovados
