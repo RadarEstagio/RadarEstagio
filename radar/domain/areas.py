@@ -588,6 +588,44 @@ PADROES_DE_TITULO = {
 }
 PADROES_DE_EXCLUSAO = {area.nome: re.compile(rf"\b(?:{area.exclusao})\b") for area in AREAS}
 PADROES_DE_DESCRICAO = {area.nome: re.compile(rf"\b(?:{area.descricao})\b") for area in AREAS}
+CONTEXTO_DE_FORMACAO = (
+    r"cursando|cursar|estudantes?|graduand[oa]s?|graduacao|formacao|formad[oa]s?|bacharelado"
+    r"|bacharel|licenciatura|tecnologo|ensino superior|nivel superior|superior (?:em|de|completo)"
+    r"|cursos?(?=\s*:|\s+(?:de|em|aceitos|desejados|relacionados|superior))|aceita(?:mos|m)?"
+    r"|vagas? para|areas? (?:de|da|do)"
+)
+CONTEXTO_DE_ATUACAO = (
+    rf"{CONTEXTO_DE_FORMACAO}|setor (?:de|da|do)|departamento (?:de|da|do)|equipe (?:de|da|do)"
+    r"|time (?:de|da|do)|atuar|atuara|atuacao|atividades|responsabilidades|rotinas? (?:de|da|do)"
+    r"|apoio|apoiar|auxiliar|suporte|conhecimentos? (?:em|de)|experiencia (?:em|com)|desejavel"
+    r"|requisitos?|vivencia|interesse (?:em|por)|habilidades? (?:em|com)|dominio (?:de|em)"
+    r"|nocoes (?:de|em)|elaborar|elaboracao"
+)
+PALAVRAS_ATE_O_TERMO = 24
+JANELA_DE_CONTEXTO = 260
+
+
+def _padrao_de_contexto(alternativas: str) -> re.Pattern[str]:
+    return re.compile(
+        rf"\b(?:{alternativas})\b:?(?:[^:\w]+\w+){{0,{PALAVRAS_ATE_O_TERMO}}}?[^:\w]*$"
+    )
+
+
+PADRAO_CONTEXTO_DE_FORMACAO = _padrao_de_contexto(CONTEXTO_DE_FORMACAO)
+PADRAO_CONTEXTO_DE_ATUACAO = _padrao_de_contexto(CONTEXTO_DE_ATUACAO)
+
+
+def precedido_de_contexto_de_formacao(texto: str, posicao: int) -> bool:
+    return _precedido_de(PADRAO_CONTEXTO_DE_FORMACAO, texto, posicao)
+
+
+def precedido_de_contexto_de_atuacao(texto: str, posicao: int) -> bool:
+    return _precedido_de(PADRAO_CONTEXTO_DE_ATUACAO, texto, posicao)
+
+
+def _precedido_de(padrao: re.Pattern[str], texto: str, posicao: int) -> bool:
+    inicio = max(0, posicao - JANELA_DE_CONTEXTO)
+    return padrao.search(texto[inicio:posicao]) is not None
 
 
 PREFIXOS_DE_FORMACAO = (
@@ -714,7 +752,12 @@ def titulo_e_da_area(titulo: str, area: str | None) -> bool:
 
 def descricao_e_da_area(descricao: str, area: str | None) -> bool:
     padrao = PADROES_DE_DESCRICAO.get(area or "")
-    return padrao is not None and padrao.search(descricao) is not None
+    if padrao is None:
+        return False
+    return any(
+        precedido_de_contexto_de_atuacao(descricao, ocorrencia.start())
+        for ocorrencia in padrao.finditer(descricao)
+    )
 
 
 def titulo_e_de_outra_area(titulo: str, area: str | None) -> bool:

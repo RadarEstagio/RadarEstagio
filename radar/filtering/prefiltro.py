@@ -5,6 +5,7 @@ from radar.domain.areas import (
     area_do_curso,
     descricao_e_da_area,
     normalizar_curso,
+    precedido_de_contexto_de_formacao,
     titulo_e_da_area,
     titulo_e_de_outra_area,
 )
@@ -15,10 +16,6 @@ PADRAO_SENIORIDADE = re.compile(r"\b(?:pleno|senior|especialista|coordenador)\b"
 PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
-)
-PADRAO_CONTEXTO_DE_FORMACAO = (
-    r"(?:cursando|cursar|estudantes?|graduand[oa]s?|graduacao|formacao|formad[oa]s?|bacharelado"
-    r"|licenciatura|tecnologo|cursos?|aceita(?:mos|m)?|vagas? para|areas? de|superior em)"
 )
 PADRAO_QUALQUER_FORMACAO = re.compile(
     r"\b(?:qualquer|todos os|todas as)\s+(?:cursos?|formacao|formacoes|graduacao|graduacoes)"
@@ -65,12 +62,9 @@ def menciona_o_curso(descricao: str, curso_do_perfil: str) -> bool:
     curso = normalizar_curso(curso_do_perfil)
     if not curso:
         return False
-    nome = re.escape(curso)
-    if " " in curso:
-        return re.search(rf"\b{nome}\b", descricao) is not None
-    return (
-        re.search(rf"\b{PADRAO_CONTEXTO_DE_FORMACAO}\b(?:\W+\w+){{0,6}}?\W+\b{nome}\b", descricao)
-        is not None
+    return any(
+        precedido_de_contexto_de_formacao(descricao, ocorrencia.start())
+        for ocorrencia in re.finditer(rf"\b{re.escape(curso)}\b", descricao)
     )
 
 

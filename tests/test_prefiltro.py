@@ -489,3 +489,48 @@ def test_titulo_de_outra_area_nao_veta_curso_mencionado(curso, titulo, descricao
 def test_laboratorio_no_titulo_nao_veta_vaga_de_computacao(titulo: str):
     descricao = "Desenvolver sistemas em Python e APIs web para a equipe de pesquisa."
     assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil())
+
+
+@pytest.mark.parametrize(
+    ("curso", "descricao"),
+    [
+        ("Direito", "Contratação ao final do estágio, com direito a bolsas de estudo."),
+        ("Direito", "Nascemos para ser o braço direito das pessoas. Atividades: análise de dados."),
+        (
+            "Recursos Humanos",
+            "Empresa: ABRH Consultoria em Recursos Humanos. Ramo: recursos humanos/recrutamento."
+            " Atividades: suporte técnico de TI.",
+        ),
+        (
+            "Economia",
+            "Movemos o mercado financeiro para o futuro. Atividades: desenvolvimento em Java.",
+        ),
+        (
+            "Marketing",
+            "Você vai trabalhar com equipes multidisciplinares como marketing e compras.",
+        ),
+    ],
+)
+def test_termo_da_area_em_texto_institucional_nao_mantem_titulo_generico(curso, descricao):
+    assert fora_da_area_do_curso(
+        vaga(titulo="Estagiário(a)", descricao=descricao), perfil(curso=curso)
+    )
+
+
+@pytest.mark.parametrize(
+    ("curso", "descricao"),
+    [
+        (
+            "Engenharia Civil",
+            "Requisitos: estar cursando engenharia mecânica ou engenharia de produção.",
+        ),
+        ("Economia", "Você vai atuar na área financeira, apoiando contas a pagar e a receber."),
+        ("Administração", "Responsabilidades: apoio nas rotinas administrativas do setor."),
+        ("Recursos Humanos", "Atividades: apoiar o time de recrutamento e seleção."),
+        ("Engenharia Civil", "Desejável conhecimento em AutoCAD."),
+    ],
+)
+def test_termo_da_area_em_requisito_ou_atuacao_mantem_titulo_generico(curso, descricao):
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Estagiário(a)", descricao=descricao), perfil(curso=curso)
+    )
