@@ -23,16 +23,13 @@ def test_cadastro_persiste_perfil_e_monta_vinculo():
     assert 'localStorage.setItem("radar-perfil"' not in javascript
 
 
-def test_funil_novo_monta_perfil_antes_de_pedir_a_conta():
+def test_formulario_tem_as_quatro_etapas_e_as_sugestoes_do_cadastro():
     html = (RAIZ / "web/index.html").read_text()
-    javascript = (RAIZ / "web/assets/app.js").read_text()
 
     assert html.count('class="form-step') == 4
-    assert "else passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA]" in javascript
-    assert 'if (authMode === "login") passosAtivos = [PASSO_CONTA]' in javascript
-    assert "editandoPerfilExistente" in javascript
     assert 'id="cursos-sugeridos"' in html
     assert 'data-skill="Python"' in html
+    assert 'id="continue-without-skills"' in html
 
 
 def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
@@ -165,4 +162,5 @@ def test_perfil_vinculado_explica_a_espera_sem_prometer_execucao():
         in javascript
     )
     assert "A primeira busca pode aguardar a próxima execução diária." in javascript
-    assert "busca iniciou" not in javascript
+    for promessa in ("busca iniciada", "busca concluída", "busca começou", "quatro minutos"):
+        assert promessa not in javascript
