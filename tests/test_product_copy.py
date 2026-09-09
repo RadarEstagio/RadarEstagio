@@ -25,7 +25,7 @@ def test_landing_atualiza_metadados_sociais_para_a_promessa_real():
 def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
     html = (RAIZ / "web/index.html").read_text()
 
-    assert "EXEMPLO ILUSTRATIVO" in html
+    assert "exemplo ilustrativo" in html.lower()
     assert "não é uma vaga real" in html.lower()
     assert "nota / 100" in html
     assert "Requisitos atendidos:" in html
