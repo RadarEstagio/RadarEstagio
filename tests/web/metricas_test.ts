@@ -102,6 +102,14 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
     assert.equal(result.mediana_segundos_ate_abertura, 86400);
     assert.equal(result.utilidade_semanal_fatos.length, 4);
     assert.equal(
+      result.utilidade_semanal_fatos.length,
+      result.utilidade_semanal.reduce((total, semana) => total + semana.ativados, 0),
+    );
+    assert.equal(
+      result.utilidade_semanal_fatos.filter((fato) => fato.com_utilidade).length,
+      result.utilidade_semanal.reduce((total, semana) => total + semana.com_utilidade, 0),
+    );
+    assert.equal(
       result.utilidade_semanal_fatos.filter((fato) => fato.curso === "Computação" && fato.com_utilidade).length,
       1,
     );

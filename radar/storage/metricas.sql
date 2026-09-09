@@ -60,24 +60,6 @@ with limites as (
   from limites l, generate_series(
     date_trunc('week', l.inicio at time zone 'America/Sao_Paulo'),
     date_trunc('week', l.fim at time zone 'America/Sao_Paulo'), interval '1 week') semana_inicio
-), semanais as (
-  select s.semana::date as semana, s.ate > l.fim as parcial,
-    (select count(*) from perfis p where p.ativado_em < s.ate and p.ativado_em <= l.fim) as ativados,
-    (select count(distinct u.perfil_id) from (
-      select r.perfil_id, r.vaga_id from (
-        select distinct on(e.perfil_id, e.vaga_id) e.* from eventos e
-        join envios t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
-        where e.nome in ('vaga_util', 'vaga_irrelevante')
-          and e.ocorrido_em >= s.de and e.ocorrido_em < s.ate and e.ocorrido_em >= t.enviada_em
-        order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
-      ) r where r.nome = 'vaga_util'
-      union select e.perfil_id, e.vaga_id from eventos e
-        join envios t on t.perfil_id = e.perfil_id and t.vaga_id = e.vaga_id
-        where e.nome = 'candidatura_iniciada' and e.ocorrido_em >= s.de
-          and e.ocorrido_em < s.ate and e.ocorrido_em >= t.enviada_em
-    ) u join perfis p on p.id = u.perfil_id
-      where p.ativado_em < s.ate and p.ativado_em <= l.fim) as com_utilidade
-  from semanas s cross join limites l
 ), respostas_de_utilidade_semana as (
   select distinct on (s.semana, e.perfil_id, e.vaga_id)
     s.semana::date as semana, e.perfil_id, e.vaga_id, e.nome
@@ -105,6 +87,13 @@ with limites as (
     ) as com_utilidade
   from semanas s cross join limites l
   join perfis p on p.ativado_em < s.ate and p.ativado_em <= l.fim
+), semanais as (
+  select s.semana::date as semana, s.ate > l.fim as parcial,
+    (select count(*) from utilidade_por_perfil_semana u
+      where u.semana = s.semana::date) as ativados,
+    (select count(*) from utilidade_por_perfil_semana u
+      where u.semana = s.semana::date and u.com_utilidade) as com_utilidade
+  from semanas s cross join limites l
 ), entregas_do_periodo as (
   select distinct on(e.perfil_id, e.vaga_id)
     e.perfil_id, e.vaga_id, e.enviada_em,
