@@ -939,3 +939,31 @@ def test_vaga_ja_entregue_a_todos_os_interessados_nao_vai_para_a_ia():
     )
 
     assert extrator.extraidas == []
+
+
+class RepositorioComHistoricoQuebrado(RepositorioFalso):
+    def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
+        if usuario.id == ID_USUARIO:
+            raise ErroDeArmazenamento("falha ao ler os envios")
+        return super().ids_ja_enviadas(usuario)
+
+
+def test_falha_ao_ler_o_historico_de_um_usuario_nao_derruba_os_demais():
+    notificador = NotificadorFalso()
+    repositorio = RepositorioComHistoricoQuebrado(
+        [usuario(), usuario(id_usuario=ID_OUTRO_USUARIO, chat_id="456")]
+    )
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert notificador.chats == ["456"]
+    assert set(resumo.enviadas_por_usuario) == {ID_OUTRO_USUARIO}
+    assert ("liberar", ID_USUARIO) in repositorio.travas

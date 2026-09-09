@@ -259,6 +259,9 @@ def atender_usuario(
             pontuador,
             revalidacao,
         )
+    except ErroDeArmazenamento as erro:
+        logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        return None
     finally:
         repositorio.liberar_atendimento(usuario)
 
