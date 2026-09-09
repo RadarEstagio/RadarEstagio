@@ -3,7 +3,10 @@ from pathlib import Path
 
 from radar.domain.areas import SUBAREAS
 
-MIGRACAO = Path(__file__).parent.parent / "supabase/migrations/0017_areas_de_todos_os_cursos.sql"
+MIGRACOES = Path(__file__).parent.parent / "supabase/migrations"
+MIGRACAO = MIGRACOES / "0017_areas_de_todos_os_cursos.sql"
+DEFINICAO_DA_VALIDACAO = "function public.validar_cadastro_radar"
+LISTA_DE_SUBAREAS = "where area not in ("
 
 
 def valores_citados(trecho: str) -> set[str]:
@@ -17,11 +20,21 @@ def test_a_restricao_do_banco_aceita_exatamente_as_subareas_do_codigo():
     assert valores_citados(restricao) == set(SUBAREAS)
 
 
-def test_a_validacao_do_cadastro_aceita_exatamente_as_subareas_do_codigo():
-    sql = MIGRACAO.read_text()
-    validacao = sql[sql.index("where area not in (") : sql.index("raise exception 'habilidades")]
+def migracoes_que_definem_a_validacao() -> list[Path]:
+    return [
+        caminho
+        for caminho in sorted(MIGRACOES.glob("*.sql"))
+        if DEFINICAO_DA_VALIDACAO in caminho.read_text()
+    ]
 
-    assert valores_citados(validacao) == set(SUBAREAS)
+
+def test_a_versao_vigente_da_validacao_do_cadastro_aceita_exatamente_as_subareas_do_codigo():
+    vigente = migracoes_que_definem_a_validacao()[-1]
+    sql = vigente.read_text()
+
+    assert vigente.name >= MIGRACAO.name
+    validacao = sql[sql.index(LISTA_DE_SUBAREAS) : sql.index("raise exception 'habilidades")]
+    assert valores_citados(validacao) == set(SUBAREAS), vigente.name
 
 
 def test_toda_area_conhecida_tem_ao_menos_uma_subarea():
