@@ -791,6 +791,35 @@ Deno.test("Enter adiciona habilidade sem avançar e Continuar ainda avança", as
   } finally { a.close(); }
 });
 
+Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco aceita", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w, false);
+    doc.querySelector("#next-step").click();
+    const input = doc.querySelector("#custom-skill");
+    const digitar = (valor: string) => {
+      input.value = valor;
+      input.dispatchEvent(
+        new a.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+      );
+    };
+    digitar("x".repeat(150));
+    assert.equal(form.elements.habilidades.value.length, 100);
+    for (let indice = 1; indice < 50; indice += 1) digitar(`habilidade-${indice}`);
+    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    digitar("passou-do-limite");
+    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    assert.ok(doc.querySelector("#erro-do-campo").textContent.includes("50 habilidades"));
+    await settle();
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("atalho permite cadastrar com habilidades vazias e preserva a escolha ao voltar", async () => {
   const a = app();
   try {

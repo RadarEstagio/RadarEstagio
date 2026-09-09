@@ -71,6 +71,8 @@ const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para con
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
+const MAXIMO_DE_HABILIDADES = 50;
+const TAMANHO_MAXIMO_DA_HABILIDADE = 100;
 const MOTIVOS_PAUSA = new Set([
   "conseguiu_estagio",
   "interrompeu_busca",
@@ -389,11 +391,11 @@ function renderSkills() {
     chip.type = "button";
     chip.textContent = `${skill} ×`;
     chip.setAttribute("aria-label", `Remover ${skill}`);
-      chip.addEventListener("click", () => {
-        selectedSkills.delete(skill);
-        if (selectedSkills.size === 0) continuarSemHabilidades = false;
-        renderSkills();
-      });
+    chip.addEventListener("click", () => {
+      selectedSkills.delete(skill);
+      if (selectedSkills.size === 0) continuarSemHabilidades = false;
+      renderSkills();
+    });
     return chip;
   }));
   continuarSemHabilidadesButton.hidden = selectedSkills.size > 0;
@@ -401,8 +403,12 @@ function renderSkills() {
 
 function addCustomSkill() {
   const input = document.querySelector("#custom-skill");
-  const skill = input.value.trim();
+  const skill = input.value.trim().slice(0, TAMANHO_MAXIMO_DA_HABILIDADE);
   if (!skill) return;
+  if (selectedSkills.size >= MAXIMO_DE_HABILIDADES && !selectedSkills.has(skill)) {
+    marcarErroNoCampo(input, `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+    return;
+  }
   selectedSkills.add(skill);
   continuarSemHabilidades = false;
   input.value = "";
@@ -658,6 +664,9 @@ function profileFromForm() {
   if (profile.habilidades.length === 0 && !continuarSemHabilidades) {
     throw validationError("Escolha ou digite pelo menos uma habilidade.");
   }
+  if (profile.habilidades.length > MAXIMO_DE_HABILIDADES) {
+    throw validationError(`Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+  }
   if (profile.cidade.length < 2) throw validationError(mensagensValidacao.cidade);
   if (!modalidadesAceitas.has(profile.modalidade)) {
     throw validationError(mensagensValidacao.modalidade);
@@ -720,7 +729,6 @@ function showActivation(profile) {
     token: profile.token_vinculo,
   });
 }
-
 
 function setAccountMessage(message = "", tom = "erro") {
   const regiao = tom === "aviso" ? accountNotice : accountMessage;
