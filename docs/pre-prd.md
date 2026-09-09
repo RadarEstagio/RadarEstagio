@@ -239,7 +239,7 @@ Em que cada fator varia de 0 a 1:
 - **L — logística:** média de localização e modalidade;
 - **I — interesse:** subáreas da vaga comparadas com as escolhidas no perfil.
 
-Regras vigentes em 08/09:
+Regras vigentes, atualizadas com as mudanças de 09/09:
 
 - **Cobertura suavizada**, `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como
   incerteza, nunca como veto. Vaga sem stack declarada recebe cobertura neutra de 0,25 (era
@@ -256,7 +256,8 @@ Regras vigentes em 08/09:
   lista de "Requisitos a conferir no seu perfil", e não de requisitos não atendidos.
 - Idiomas, pacote Office e soft skills ("comunicação", "proatividade") ficam fora da cobertura
   **só para perfis de computação**; nas demais formações contam como qualquer requisito.
-- Tecnologias comparadas por nome normalizado e exato (Java ≠ JavaScript).
+- Tecnologias específicas usam nome normalizado e exato (Java ≠ JavaScript); requisitos
+  genéricos usam as famílias explícitas descritas acima, preservando a exigência de nível.
 - **Curso**: incompatível limita a 35 (sai da mensagem); parcial limita a 75. Quem decide é o
   catálogo: cursos da mesma área só são equivalentes onde a área declara
   `cursos_intercambiaveis` (só computação). Curso genérico aceito pelo anúncio ("Engenharia")
