@@ -42,7 +42,7 @@ PESO_DESEJAVEIS_COM_PRINCIPAIS = 0.2
 PESO_OBRIGATORIAS_QUANDO_TODAS = 0.6
 PESO_PRINCIPAIS_QUANDO_TODAS = 0.3
 PESO_DESEJAVEIS_QUANDO_TODAS = 0.1
-COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.35
+COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.25
 SUAVIZACAO_DA_COBERTURA = 1
 COEFICIENTES = {
     "compativel": 1.0,
@@ -66,6 +66,36 @@ REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
         "powerpoint",
         "teams",
         "word",
+    }
+)
+SOFT_SKILLS = frozenset(
+    {
+        "adaptabilidade",
+        "aprendizado",
+        "aprendizadocontinuo",
+        "atencaodetalhes",
+        "autonomia",
+        "colaboracao",
+        "comprometimento",
+        "comunicacao",
+        "comunicacaoescrita",
+        "comunicacaooral",
+        "criatividade",
+        "curiosidade",
+        "dedicacao",
+        "empatia",
+        "etica",
+        "flexibilidade",
+        "lideranca",
+        "organizacao",
+        "pontualidade",
+        "proatividade",
+        "raciociniologico",
+        "relacionamentointerpessoal",
+        "resiliencia",
+        "responsabilidade",
+        "trabalhoequipe",
+        "vontadeaprender",
     }
 )
 PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
@@ -485,7 +515,7 @@ def _niveis_citados(habilidade: str) -> set[int]:
 
 
 def _conta_para_a_nota(requisito_normalizado: str) -> bool:
-    if requisito_normalizado in REQUISITOS_FORA_DO_PERFIL_TECNICO:
+    if requisito_normalizado in REQUISITOS_FORA_DO_PERFIL_TECNICO | SOFT_SKILLS:
         return False
     return not requisito_normalizado.startswith(PREFIXOS_DE_IDIOMA)
 

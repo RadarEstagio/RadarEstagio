@@ -158,7 +158,7 @@ def test_desejavel_nao_atendida_fica_fora_da_lista_de_cobranca():
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(extracao())
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
 
 
 def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
@@ -169,7 +169,7 @@ def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
         extracao(areas_da_vaga=["desenvolvimento_web", "dados_ia"]), perfil_web
     )
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
     assert resultado.avisos_objetivos == []
 
 
@@ -179,7 +179,7 @@ def test_outra_subarea_do_mesmo_campo_perde_metade_do_fator_e_nao_ganha_aviso():
 
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]), perfil_web)
 
-    assert resultado.nota == 63
+    assert resultado.nota == 59
     assert resultado.avisos_objetivos == []
 
 
@@ -200,7 +200,7 @@ def test_vaga_sem_area_reconhecida_fica_neutra_para_quem_tem_interesses():
 
     resultado = resultado_da(extracao(areas_da_vaga=["area_inventada"]), perfil_web)
 
-    assert resultado.nota == 63
+    assert resultado.nota == 59
     assert resultado.avisos_objetivos == []
 
 
@@ -269,7 +269,7 @@ def test_area_recusada_prevalece_sobre_o_interesse_declarado():
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]))
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
     assert resultado.avisos_objetivos == []
 
 
@@ -677,4 +677,29 @@ def test_pacote_office_e_atendido_por_excel_fora_de_computacao():
     )
 
     assert resultado.requisitos_atendidos == ["Pacote Office", "Inglês"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_vaga_que_so_pede_soft_skills_e_tratada_como_sem_stack_em_computacao():
+    so_soft_skills = resultado_da(
+        extracao(habilidades_obrigatorias=["Comunicação", "Proatividade", "Trabalho em equipe"])
+    )
+    sem_stack = resultado_da(extracao())
+
+    assert so_soft_skills.nota == sem_stack.nota
+    assert so_soft_skills.requisitos_nao_atendidos == [
+        "Comunicação",
+        "Proatividade",
+        "Trabalho em equipe",
+    ]
+
+
+def test_soft_skill_continua_contando_fora_de_computacao():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Comunicação", "Redação"]),
+        perfil_de_direito(["Comunicação", "Redação"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Comunicação", "Redação"]
     assert resultado.requisitos_nao_atendidos == []
