@@ -1,5 +1,6 @@
+from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import FunilDaCoorte
-from radar.reporting.funil import agrupar_utilidade_por_area, formatar_funil
+from radar.reporting.funil import formatar_funil
 
 
 def funil(**mudancas) -> FunilDaCoorte:

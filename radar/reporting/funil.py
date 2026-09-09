@@ -1,5 +1,4 @@
-from radar.domain.areas import area_do_curso
-from radar.domain.models import FatoUtilidadeSemanal, FunilDaCoorte, UtilidadePorArea
+from radar.domain.models import FunilDaCoorte
 
 LARGURA_DO_ROTULO = 26
 
@@ -143,30 +142,3 @@ def linha_do_tempo(
 ) -> str:
     valor = "indisponível" if mediana is None else f"{mediana:.1f} s"
     return f"  {rotulo}: {valor} ({observados} observados; {faltantes} {rotulo_faltante})"
-
-
-def agrupar_utilidade_por_area(fatos: list[dict]) -> list[UtilidadePorArea]:
-    grupos: dict[tuple[str, bool, str], dict[str, int | str | bool]] = {}
-    for bruto in fatos:
-        fato = FatoUtilidadeSemanal(**bruto)
-        area = area_do_curso(fato.curso) or "Não classificado"
-        chave = (fato.semana, fato.parcial, area)
-        grupo = grupos.setdefault(
-            chave,
-            {
-                "semana": fato.semana,
-                "parcial": fato.parcial,
-                "area": area,
-                "ativados": 0,
-                "com_utilidade": 0,
-            },
-        )
-        grupo["ativados"] = int(grupo["ativados"]) + 1
-        grupo["com_utilidade"] = int(grupo["com_utilidade"]) + int(fato.com_utilidade)
-    return [
-        UtilidadePorArea(**grupo)
-        for _, grupo in sorted(
-            grupos.items(),
-            key=lambda item: (item[0][0], item[0][1], item[0][2] == "Não classificado", item[0][2]),
-        )
-    ]

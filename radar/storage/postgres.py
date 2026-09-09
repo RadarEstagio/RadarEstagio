@@ -8,6 +8,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from radar.domain.areas import subareas_do_curso
+from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
@@ -20,7 +21,6 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
-from radar.reporting.funil import agrupar_utilidade_por_area
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
