@@ -55,6 +55,10 @@ const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
+const pauseReason = document.querySelector("#pause-reason");
+const pauseReasonMessage = document.querySelector("#pause-reason-message");
+const savePauseReason = document.querySelector("#save-pause-reason");
+const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
 const rotulosDeCadastro = new Map(
@@ -67,6 +71,13 @@ const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para con
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
+const MOTIVOS_PAUSA = new Set([
+  "conseguiu_estagio",
+  "interrompeu_busca",
+  "sem_vagas_uteis",
+  "frequencia",
+  "outro",
+]);
 let assistanceMode = null;
 let recoverySession = false;
 let resendAvailableAt = 0;
@@ -545,6 +556,8 @@ function resetDialogView() {
   successState.hidden = true;
   accountState.hidden = true;
   accountConfirm.hidden = true;
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
   setAccountMessage();
   progressWrap.hidden = false;
   telegramLink.hidden = true;
@@ -749,6 +762,8 @@ function showAccount(profile) {
   progressWrap.hidden = true;
   successState.hidden = true;
   accountConfirm.hidden = true;
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
   accountState.hidden = false;
   setAccountMessage();
   document.querySelector("#account-summary").textContent = resumoDoPerfil(profile);
@@ -788,11 +803,48 @@ async function perfilAtual() {
 async function alternarEntregas(profile) {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  const updates = profile.ativo
+    ? { ativo: false, atualizado_em: new Date().toISOString() }
+    : { ativo: true, motivo_pausa: null, atualizado_em: new Date().toISOString() };
   const { error } = await getClient()
     .from("perfis")
-    .update({ ativo: !profile.ativo, atualizado_em: new Date().toISOString() })
+    .update(updates)
     .eq("user_id", session.user.id);
   if (error) throw error;
+}
+
+function mostrarPerguntaMotivoPausa() {
+  pauseReason.hidden = false;
+  pauseReasonMessage.textContent = "";
+  pauseReason.querySelectorAll('input[name="motivo-pausa"]').forEach((input) => {
+    input.checked = false;
+  });
+  document.querySelector("#pause-reason-title").focus();
+}
+
+function esconderPerguntaMotivoPausa() {
+  pauseReason.hidden = true;
+  pauseReasonMessage.textContent = "";
+}
+
+async function salvarMotivoPausa(motivo) {
+  if (!MOTIVOS_PAUSA.has(motivo)) {
+    throw validationError("Escolha um dos motivos ou pule esta pergunta.");
+  }
+  const session = await currentSession();
+  if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  const { data, error } = await getClient()
+    .from("perfis")
+    .update({ motivo_pausa: motivo, atualizado_em: new Date().toISOString() })
+    .eq("user_id", session.user.id)
+    .eq("ativo", false)
+    .select("user_id,ativo,motivo_pausa")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || data.ativo !== false) {
+    throw validationError("A conta não está mais pausada. Atualize o estado da conta e tente novamente.");
+  }
+  return data;
 }
 
 function dataDoApagamento(marcadaEm) {
@@ -817,7 +869,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -1017,14 +1069,50 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
 });
 
 toggleDeliveries.addEventListener("click", async () => {
+  if (toggleDeliveries.disabled) return;
+  toggleDeliveries.disabled = true;
   setAccountMessage();
   try {
     const profile = await perfilAtual();
+    const wasActive = profile.ativo;
     await alternarEntregas(profile);
-    showAccount({ ...profile, ativo: !profile.ativo });
+    const updatedProfile = { ...profile, ativo: !wasActive, motivo_pausa: null };
+    showAccount(updatedProfile);
+    if (wasActive) mostrarPerguntaMotivoPausa();
   } catch (error) {
     setAccountMessage(humanizeError(error));
+  } finally {
+    toggleDeliveries.disabled = false;
   }
+});
+
+savePauseReason.addEventListener("click", async () => {
+  if (savePauseReason.disabled) return;
+  const selected = pauseReason.querySelector('input[name="motivo-pausa"]:checked');
+  if (!selected) {
+    pauseReasonMessage.textContent = "Escolha um motivo ou clique em “Pular”.";
+    pauseReason.querySelector('input[name="motivo-pausa"]').focus();
+    return;
+  }
+  marcarOcupado(savePauseReason, true);
+  skipPauseReason.disabled = true;
+  try {
+    await salvarMotivoPausa(selected.value);
+    const profile = await perfilAtual();
+    showAccount(profile);
+    setAccountMessage("Motivo salvo.", "aviso");
+  } catch (error) {
+    pauseReasonMessage.textContent = humanizeError(error);
+  } finally {
+    marcarOcupado(savePauseReason, false);
+    skipPauseReason.disabled = false;
+  }
+});
+
+skipPauseReason.addEventListener("click", () => {
+  if (skipPauseReason.disabled) return;
+  esconderPerguntaMotivoPausa();
+  document.querySelector("#account-title").focus();
 });
 
 document.querySelector("#unlink-telegram").addEventListener("click", () => {

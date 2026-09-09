@@ -367,6 +367,22 @@
             <p class="account-schedule" id="account-schedule"></p>
             <p class="form-message" id="account-message" role="alert"></p>
             <p class="form-message form-message-aviso" id="account-notice" role="status"></p>
+            <fieldset class="account-confirm pause-reason" id="pause-reason" hidden>
+              <legend id="pause-reason-title" tabindex="-1">Por que você pausou as entregas?</legend>
+              <p>Responder é opcional e ajuda a entender o momento do seu perfil.</p>
+              <div class="option-grid">
+                <label><input type="radio" name="motivo-pausa" value="conseguiu_estagio" /><span>Consegui um estágio</span></label>
+                <label><input type="radio" name="motivo-pausa" value="interrompeu_busca" /><span>Interrompi a busca</span></label>
+                <label><input type="radio" name="motivo-pausa" value="sem_vagas_uteis" /><span>Não encontrei vagas úteis</span></label>
+                <label><input type="radio" name="motivo-pausa" value="frequencia" /><span>Minha frequência mudou</span></label>
+                <label><input type="radio" name="motivo-pausa" value="outro" /><span>Outro</span></label>
+              </div>
+              <p class="form-message" id="pause-reason-message" role="alert"></p>
+              <div class="account-actions">
+                <button class="button button-primary" type="button" id="save-pause-reason">Salvar motivo</button>
+                <button class="button button-ghost" type="button" id="skip-pause-reason">Pular</button>
+              </div>
+            </fieldset>
             <div class="account-actions">
               <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
               <button class="button button-ghost" type="button" id="toggle-deliveries"></button>

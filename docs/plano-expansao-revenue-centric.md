@@ -125,7 +125,7 @@ significa que a conclusão exige evidência/acesso ou decisão da equipe.
 | M03 | Tempo até entrega e abertura | P1 | Implementado/testado | — | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m03) |
 | M04 | Utilidade por área do curso | P1 | Implementado/testado | M02 | [Métricas](execucao-expansao/02-metricas-e-retencao.md#m04) |
 | R01 | Persistir motivo opcional da pausa | P1 | Implementado/testado | — | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r01) |
-| R02 | Perguntar motivo após pausar | P1 | Pendente | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
+| R02 | Perguntar motivo após pausar | P1 | Implementado/testado | R01 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r02) |
 | R03 | Relatar motivos de pausa | P1 | Pendente | R02 | [Retenção](execucao-expansao/02-metricas-e-retencao.md#r03) |
 | E01 | Verificar publicação e jornada real | P0 | Externa | Versão a publicar definida | [Operação](execucao-expansao/03-evidencias-e-decisoes.md#e01) |
 | E02 | Registrar cobertura e casos de qualidade | P1 | Externa | Acesso às fontes/dados | [Cobertura](execucao-expansao/03-evidencias-e-decisoes.md#e02) |

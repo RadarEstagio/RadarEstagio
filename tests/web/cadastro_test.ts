@@ -23,6 +23,7 @@ const profile = {
   areas_de_interesse: [],
   token_vinculo: "token",
   ativo: true,
+  motivo_pausa: null as string | null,
   aceita_emails: false,
   telegram_chat_id: null,
 };
@@ -133,6 +134,7 @@ function app(
         },
         update: (args: Payload) => {
           calls.push(["update", table, args]);
+          if (table === "perfis" && savedProfile) Object.assign(savedProfile, args);
           return query;
         },
         maybeSingle: async () => ({ data: savedProfile }),
@@ -644,6 +646,109 @@ Deno.test("conta vinculada explica a espera sem afirmar que a busca rodou", asyn
     assert.equal(texto.includes("pode aguardar a próxima execução diária"), true);
     assert.equal(texto.includes("busca iniciou"), false);
     assert.equal(texto.includes("concluída"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("pausar mantém a conta pausada e oferece motivo opcional", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].ativo, false);
+    assert.equal(update[2].motivo_pausa, undefined);
+    assert.equal(doc.querySelector("#pause-reason").hidden, false);
+    assert.equal(doc.activeElement.id, "pause-reason-title");
+    doc.querySelector("#skip-pause-reason").click();
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+    assert.equal(doc.querySelector("#account-schedule").textContent.includes("pausadas"), true);
+  } finally { a.close(); }
+});
+
+Deno.test("resposta de motivo é separada e não altera ativo", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    doc.querySelector('input[name="motivo-pausa"][value="sem_vagas_uteis"]').click();
+    doc.querySelector("#save-pause-reason").click();
+    await settle();
+    const updates = a.calls.filter(([name]) => name === "update");
+    assert.equal(updates.length, 2);
+    const reasonUpdate = updates[1];
+    assert.ok(reasonUpdate);
+    const reasonPayload = reasonUpdate[2];
+    assert.ok(reasonPayload);
+    assert.deepEqual(reasonPayload.motivo_pausa, "sem_vagas_uteis");
+    assert.equal(reasonPayload.ativo, undefined);
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+    assert.match(doc.querySelector("#account-notice").textContent, /Motivo salvo/);
+  } finally { a.close(); }
+});
+
+Deno.test("erro ou corrida ao salvar motivo mantém pausa e permite pular", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    const from = a.client.from;
+    a.client.from = (table: string) => {
+      const query = from(table);
+      const update = query.update;
+      query.update = (args: Payload) => {
+        const chained = update(args);
+        if ("motivo_pausa" in args) {
+          chained.maybeSingle = async () => ({ data: { ...profile, ativo: true } as Profile });
+        }
+        return chained;
+      };
+      return query;
+    };
+    const doc = a.w.document;
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    doc.querySelector('input[name="motivo-pausa"][value="outro"]').click();
+    doc.querySelector("#save-pause-reason").click();
+    await settle();
+    assert.equal(doc.querySelector("#pause-reason").hidden, false);
+    assert.match(doc.querySelector("#pause-reason-message").textContent, /não está mais pausada/);
+    doc.querySelector("#skip-pause-reason").click();
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+    assert.equal(doc.querySelector("#account-schedule").textContent.includes("pausadas"), true);
+  } finally { a.close(); }
+});
+
+Deno.test("retomar limpa o motivo no mesmo update", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: {
+      ...profile,
+      ativo: false,
+      motivo_pausa: "outro",
+      telegram_chat_id: "123",
+    },
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#toggle-deliveries").click();
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].ativo, true);
+    assert.equal(update[2].motivo_pausa, null);
+    assert.equal(a.w.document.querySelector("#pause-reason").hidden, true);
+    assert.equal(a.w.document.querySelector("#account-schedule").textContent.includes("recomendações chegarão"), true);
   } finally { a.close(); }
 });
 
