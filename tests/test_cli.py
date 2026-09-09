@@ -13,3 +13,16 @@ def test_cli_oferece_fluxo_local_sem_banco():
     assert processo.returncode == 0
     assert "testar-local" in processo.stdout
     assert "sem banco ou histórico" in processo.stdout
+
+
+def test_cli_oferece_o_julgamento_por_segundo_modelo():
+    processo = subprocess.run(
+        [sys.executable, "-m", "radar", "julgar", "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert processo.returncode == 0
+    assert "--dias" in processo.stdout
+    assert "--amostra" in processo.stdout

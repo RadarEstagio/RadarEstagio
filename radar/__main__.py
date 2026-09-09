@@ -7,6 +7,8 @@ from uuid import UUID
 import httpx
 from pydantic import ValidationError
 
+from radar.avaliacao.factory import criar_juiz
+from radar.avaliacao.julgar import julgar_entregas
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import (
     cidades_de_interesse,
@@ -31,6 +33,7 @@ from radar.notification.formatador import (
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.reporting.funil import formatar_funil
+from radar.reporting.julgamento import formatar_julgamento
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.factory import (
@@ -44,6 +47,9 @@ TIMEOUT_HTTP_EM_SEGUNDOS = 30
 LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL = 3
 DIAS_DA_COORTE = 30
 COMANDO_PADRAO = "rodar"
+DIAS_DO_JULGAMENTO = 7
+AMOSTRA_DO_JULGAMENTO = 30
+SEMENTE_DO_JULGAMENTO = 1
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -133,6 +139,15 @@ def avaliar(settings: Settings) -> None:
 def metricas(settings: Settings) -> None:
     with abrir_repositorio_de_metricas(settings) as repositorio:
         print(formatar_funil(repositorio.funil_da_coorte(DIAS_DA_COORTE)))
+
+
+def julgar(settings: Settings, dias: int, amostra: int, semente: int) -> None:
+    with abrir_repositorio_de_metricas(settings) as repositorio:
+        entregas = repositorio.entregas_recentes(dias)
+    resultado = julgar_entregas(
+        entregas, criar_juiz(settings), amostra, semente, settings.juiz_modelo, dias
+    )
+    print(formatar_julgamento(resultado))
 
 
 def testar_telegram(settings: Settings) -> None:
@@ -288,6 +303,13 @@ def main() -> None:
     subcomandos.add_parser(
         "metricas", help="imprime o funil da coorte e o custo de extração do período"
     )
+    comando_julgar = subcomandos.add_parser(
+        "julgar",
+        help="pede a um segundo modelo que julgue uma amostra das entregas recentes",
+    )
+    comando_julgar.add_argument("--dias", type=int, default=DIAS_DO_JULGAMENTO)
+    comando_julgar.add_argument("--amostra", type=int, default=AMOSTRA_DO_JULGAMENTO)
+    comando_julgar.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     subcomandos.add_parser(
         "testar-local",
@@ -304,6 +326,8 @@ def main() -> None:
     try:
         if nome_do_comando == "rodar":
             rodar(settings, getattr(argumentos, "perfil", None))
+        elif nome_do_comando == "julgar":
+            julgar(settings, argumentos.dias, argumentos.amostra, argumentos.semente)
         else:
             COMANDOS[nome_do_comando](settings)
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:

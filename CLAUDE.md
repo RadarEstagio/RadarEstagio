@@ -467,6 +467,23 @@ porque com 5 slots vaga boa saía da janela sem ser enviada). A landing de 08/09
 cinco"; Ian decidiu manter 7, a landing passou a dizer "até sete" e o PR #22 do Igor adotou o
 mesmo valor no padrão do código, na copy e no plano de expansão.
 
+### Juiz de recomendações: LLM as a judge (09/09/2026)
+
+`python -m radar julgar --dias 7 --amostra 30` pede a um **segundo modelo** que julgue, às
+cegas, uma amostra das entregas recentes: para cada vaga enviada, `relevante`, `nota_juiz`,
+`problema` (catálogo fechado: outra_area, exige_demais, logistica, repetida, anuncio_fraco,
+nenhum) e um motivo. O juiz vê o perfil e o anúncio completo, **nunca a nota do Radar**, para o
+julgamento ser independente. O relatório (`reporting/julgamento.py`) traz relevância por perfil,
+problemas, concordância com o feedback das pessoas quando existir, e as vagas reprovadas pelo
+juiz com nota do Radar acima de 70 — a lista que interessa para revisar regra.
+
+O modelo vem de `JUIZ_MODELO` (padrão `claude-sonnet-4-6`, outra família que a do extrator)
+e o adapter segue `AVALIADOR`: `agy` local, sem cota; pela API precisa ser um modelo Gemini. O
+comando só lê o banco; nada de nota alterada. Só pontuação por regra em Python decide o que é
+enviado — o juiz mede, não ranqueia. Antes de usar o número do juiz como evidência, ele precisa
+ser validado contra o gabarito humano de 20 vagas (pré-PRD, H2); abaixo de 75% de concordância
+é ruído com cara de número.
+
 ### Cobertura das fontes (30/08/2026)
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
