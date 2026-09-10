@@ -10,6 +10,13 @@ const script = await Deno.readTextFile(
 const areasJson = JSON.parse(
   await Deno.readTextFile(new URL("../../web/assets/areas.json", import.meta.url)),
 );
+const cidadesJson = JSON.parse(
+  await Deno.readTextFile(new URL("../../web/assets/cidades.json", import.meta.url)),
+);
+const catalogos: Record<string, unknown> = {
+  "assets/areas.json": areasJson,
+  "assets/cidades.json": cidadesJson,
+};
 const user = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "teste@example.com",
@@ -90,8 +97,8 @@ function app(
     return 1;
   };
   w.fetch = async (caminho: string) => ({
-    ok: String(caminho).includes("areas.json"),
-    json: async () => areasJson,
+    ok: Object.hasOwn(catalogos, String(caminho)),
+    json: async () => catalogos[String(caminho)],
   });
   const calls: Call[] = [];
   let authCallback: AuthCallback = () => {
@@ -1532,4 +1539,211 @@ Deno.test("cadastro recusado devolve a barra ao último passo", async () => {
     assert.equal(form.hidden, false);
     assert.deepEqual(progresso(), ["75%", "75", "75%"]);
   } finally { a.close(); }
+});
+
+async function abrirPreferencias(a: ReturnType<typeof app>) {
+  await settle();
+  a.w.document.querySelector(".js-open-signup").click();
+  await settle();
+  const form = fill(a.w);
+  a.w.document.querySelector("#next-step").click();
+  a.w.document.querySelector("#next-step").click();
+  form.elements.cidade.focus();
+  await settle();
+  return form;
+}
+
+async function digitarCidade(a: ReturnType<typeof app>, texto: string) {
+  const campo = a.w.document.querySelector("#cidade");
+  campo.value = texto;
+  campo.dispatchEvent(new a.w.Event("input", { bubbles: true }));
+  await settle();
+  return [...a.w.document.querySelectorAll("#lista-de-cidades [data-cidade]")].map(
+    (opcao) => opcao.dataset.cidade,
+  );
+}
+
+function teclar(a: ReturnType<typeof app>, key: string) {
+  a.w.document.querySelector("#cidade").dispatchEvent(
+    new a.w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+  );
+}
+
+Deno.test("cidade sugere municípios reais conforme a pessoa digita, sem exigir acento", async () => {
+  const a = app();
+  try {
+    await abrirPreferencias(a);
+    const rio = await digitarCidade(a, "rio");
+    assert.equal(rio[0], "Rio de Janeiro, RJ");
+    assert.ok(rio.length > 1 && rio.length <= 8);
+    assert.ok(rio.every((cidade) => cidade.startsWith("Rio")));
+    assert.equal(a.w.document.querySelector("#cidade").getAttribute("aria-expanded"), "true");
+    assert.equal((await digitarCidade(a, "niteroi"))[0], "Niterói, RJ");
+    assert.equal((await digitarCidade(a, "sao paulo"))[0], "São Paulo, SP");
+    assert.deepEqual(await digitarCidade(a, "cidade que nao existe"), []);
+    assert.equal(
+      a.w.document.querySelector("#lista-de-cidades").textContent,
+      "Nenhuma cidade encontrada. Confira a grafia.",
+    );
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("clicar numa sugestão preenche a cidade e fecha a lista", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    await digitarCidade(a, "curit");
+    a.w.document.querySelector('#lista-de-cidades [data-cidade="Curitiba, PR"]').click();
+    assert.equal(form.elements.cidade.value, "Curitiba, PR");
+    assert.equal(a.w.document.querySelector("#lista-de-cidades").hidden, true);
+    assert.equal(form.elements.cidade.getAttribute("aria-expanded"), "false");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("setinha abre as maiores cidades com o campo vazio e fecha no segundo clique", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    form.elements.cidade.value = "";
+    const setinha = a.w.document.querySelector("#mostrar-cidades");
+    setinha.click();
+    await settle();
+    const opcoes = [...a.w.document.querySelectorAll("#lista-de-cidades [data-cidade]")];
+    assert.deepEqual(
+      opcoes.slice(0, 3).map((opcao) => opcao.dataset.cidade),
+      ["São Paulo, SP", "Rio de Janeiro, RJ", "Brasília, DF"],
+    );
+    assert.equal(setinha.getAttribute("aria-expanded"), "true");
+    setinha.click();
+    assert.equal(a.w.document.querySelector("#lista-de-cidades").hidden, true);
+    assert.equal(setinha.getAttribute("aria-expanded"), "false");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("setas escolhem a sugestão e Enter confirma sem avançar o passo", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    await digitarCidade(a, "rio");
+    teclar(a, "ArrowDown");
+    teclar(a, "ArrowDown");
+    teclar(a, "ArrowUp");
+    const destacada = a.w.document.querySelector('#lista-de-cidades [aria-selected="true"]');
+    assert.equal(destacada.dataset.cidade, "Rio de Janeiro, RJ");
+    assert.equal(form.elements.cidade.getAttribute("aria-activedescendant"), destacada.id);
+    teclar(a, "Enter");
+    assert.equal(form.elements.cidade.value, "Rio de Janeiro, RJ");
+    assert.equal(a.w.document.querySelector('.form-step[data-step="4"]').classList.contains("is-active"), true);
+    await digitarCidade(a, "rio");
+    teclar(a, "Escape");
+    assert.equal(a.w.document.querySelector("#lista-de-cidades").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cidade fora da lista não avança e explica o que fazer", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    form.elements.cidade.value = "Cidade Inventada";
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(
+      a.w.document.querySelector("#erro-do-campo").textContent,
+      "Escolha sua cidade na lista, como Rio de Janeiro, RJ.",
+    );
+    assert.equal(form.elements.cidade.getAttribute("aria-invalid"), "true");
+    assert.equal(a.w.document.querySelector('.form-step[data-step="4"]').classList.contains("is-active"), true);
+    form.elements.cidade.value = "Bom Jesus";
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(
+      a.w.document.querySelector("#erro-do-campo").textContent,
+      "Existe mais de uma cidade com esse nome. Escolha a do seu estado na lista.",
+    );
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cidade escrita sem acento ou sem estado é salva no formato da lista", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    form.elements.cidade.value = "niteroi";
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(form.elements.cidade.value, "Niterói, RJ");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.cidade, "Niterói, RJ");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("envio direto recusa cidade fora da lista mesmo sem a lista carregada antes", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    form.elements.cidade.value = "Cidade Inventada";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.calls.some(([name]) => name === "signup"), false);
+    assert.equal(
+      a.w.document.querySelector("#erro-do-campo").textContent,
+      "Escolha sua cidade na lista, como Rio de Janeiro, RJ.",
+    );
+    assert.equal(a.w.document.querySelector('.form-step[data-step="4"]').classList.contains("is-active"), true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("lista de cidades fora do ar avisa e não bloqueia o cadastro", async () => {
+  const a = app();
+  try {
+    a.w.fetch = async (caminho: string) => ({
+      ok: String(caminho).includes("areas.json"),
+      json: async () => areasJson,
+    });
+    const form = await abrirPreferencias(a);
+    assert.equal(a.w.document.querySelector("#cities-catalog-notice").hidden, false);
+    form.elements.cidade.value = "Recife, PE";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.cidade, "Recife, PE");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("perfil antigo sem estado na cidade é corrigido ao salvar a edição", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, cidade: "Rio de Janeiro", telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].cidade, "Rio de Janeiro, RJ");
+  } finally {
+    a.close();
+  }
 });
