@@ -234,5 +234,25 @@
   "Administração  de  Empresas": [
     "administracao",
     "administracao"
+  ],
+  "Pedagogia’": [
+    "pedagogia",
+    "educacao"
+  ],
+  "Direito´": [
+    "direito",
+    "direito"
+  ],
+  "Tecnologia da Informação’": [
+    "tecnologia da informacao",
+    "computacao"
+  ],
+  "Engenharia ´de Software": [
+    "engenharia de software",
+    "computacao"
+  ],
+  "Economia ´": [
+    "economia",
+    "financas"
   ]
 }

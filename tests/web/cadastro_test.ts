@@ -1590,6 +1590,22 @@ Deno.test("cidade sugere municípios reais conforme a pessoa digita, sem exigir 
   }
 });
 
+Deno.test("cidade com apóstrofo é achada com apóstrofo curvo ou acento agudo", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    const digitados = ["santa barbara d’oeste", "santa barbara d‘oeste", "santa barbara dʼoeste"];
+    for (const digitado of [...digitados, "santa barbara d´oeste"]) {
+      assert.equal((await digitarCidade(a, digitado))[0], "Santa Bárbara d'Oeste, SP");
+    }
+    form.elements.cidade.value = "Sant’Ana do Livramento";
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(form.elements.cidade.value, "Sant'Ana do Livramento, RS");
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("clicar numa sugestão preenche a cidade e fecha a lista", async () => {
   const a = app();
   try {
