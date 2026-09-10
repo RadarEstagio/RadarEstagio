@@ -4,6 +4,7 @@ from radar.domain.models import BotaoDeFeedback, PerguntaDeFeedback
 from radar.notification.formatador import dividir_em_mensagens
 
 URL_BASE_DA_API = "https://api.telegram.org"
+LIMITE_DA_DESCRICAO_DO_ERRO = 200
 
 
 class ErroDeNotificacao(Exception):
@@ -48,12 +49,19 @@ class NotificadorTelegram:
             resposta.raise_for_status()
         except httpx.HTTPStatusError as erro:
             status = erro.response.status_code
-            descricao = erro.response.json().get("description", "")
+            descricao = descricao_do_erro(erro.response)
             raise ErroDeNotificacao(f"Telegram respondeu HTTP {status}: {descricao}") from None
         except httpx.HTTPError as erro:
             raise ErroDeNotificacao(
                 f"Falha de rede ao enviar mensagem no Telegram ({type(erro).__name__})"
             ) from erro
+
+
+def descricao_do_erro(resposta: httpx.Response) -> str:
+    try:
+        return str(resposta.json().get("description", ""))
+    except ValueError:
+        return resposta.text[:LIMITE_DA_DESCRICAO_DO_ERRO].strip()
 
 
 def teclado(linhas: list[list[BotaoDeFeedback]]) -> list[list[dict]]:
