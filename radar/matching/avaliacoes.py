@@ -534,7 +534,7 @@ def _exigencias(requisitos: list[str]) -> dict[str, tuple[HabilidadeComparavel, 
     exigencias: dict[str, tuple[HabilidadeComparavel, ...]] = {}
     for requisito in requisitos:
         if requisito.strip():
-            nome = _normalizar_habilidade(requisito)
+            nome = _normalizar_habilidade(_parte_unica(requisito) or requisito)
             exigencias[nome] = (*exigencias.get(nome, ()), _exigencia(requisito))
     return exigencias
 
@@ -550,12 +550,12 @@ def _todas_atendidas(
 @functools.cache
 def _exigencia(requisito: str) -> HabilidadeComparavel:
     texto = requisito.strip()
-    alternativas = _alternativas(requisito)
-    if sum(len(partes) for partes in alternativas) < 2:
-        return HabilidadeComparavel(
-            nivel_exigido(requisito), _palavras_de_um_nivel(requisito), texto=texto
-        )
-    com_nivel = tuple(_partes_com_nivel(partes, nivel_exigido) for partes in alternativas)
+    unica = _parte_unica(requisito)
+    if unica is not None:
+        return HabilidadeComparavel(nivel_exigido(unica), _palavras_de_um_nivel(unica), texto=texto)
+    com_nivel = tuple(
+        _partes_com_nivel(partes, nivel_exigido) for partes in _alternativas(requisito)
+    )
     niveis = [parte.nivel for alternativa in com_nivel for _, parte in alternativa]
     return HabilidadeComparavel(max(niveis), frozenset(), com_nivel, texto)
 
@@ -593,15 +593,15 @@ def _habilidades_declaradas(
 ) -> Mapping[str, HabilidadeComparavel]:
     declaradas: dict[str, HabilidadeComparavel] = {}
     for habilidade in (habilidade for habilidade in habilidades if habilidade.strip()):
-        alternativas = _alternativas(habilidade)
-        if sum(len(partes) for partes in alternativas) < 2:
-            palavras = _palavras_de_um_nivel(habilidade) if compara_palavras else frozenset()
-            declarada = HabilidadeComparavel(nivel_declarado(habilidade), palavras)
-            _declarar(declaradas, _normalizar_habilidade(habilidade), declarada)
+        unica = _parte_unica(habilidade)
+        if unica is not None:
+            palavras = _palavras_de_um_nivel(unica) if compara_palavras else frozenset()
+            declarada = HabilidadeComparavel(nivel_declarado(unica), palavras)
+            _declarar(declaradas, _normalizar_habilidade(unica), declarada)
             continue
         com_nivel = [
             (nome, parte)
-            for partes in alternativas
+            for partes in _alternativas(habilidade)
             for nome, parte in _partes_com_nivel(partes, nivel_declarado)
         ]
         inteira = HabilidadeComparavel(min(parte.nivel for _, parte in com_nivel), frozenset())
@@ -615,6 +615,8 @@ def _habilidades_declaradas(
 def _declarar(
     declaradas: dict[str, HabilidadeComparavel], nome: str, declarada: HabilidadeComparavel
 ) -> None:
+    if not nome:
+        return
     anterior = declaradas.get(nome)
     if anterior is None or declarada.nivel > anterior.nivel:
         declaradas[nome] = declarada
@@ -782,14 +784,24 @@ def _normalizar_habilidade(habilidade: str) -> str:
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
 
 
+def _parte_unica(habilidade: str) -> str | None:
+    alternativas = _alternativas(habilidade)
+    if sum(len(partes) for partes in alternativas) > 1:
+        return None
+    return alternativas[0][0] if alternativas else habilidade.strip()
+
+
 def _alternativas(habilidade: str) -> list[list[str]]:
-    divididas = (
-        _juntar_niveis_soltos(
-            [parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()]
-        )
-        for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade)
-    )
-    return [partes for partes in divididas if partes]
+    alternativas: list[list[str]] = []
+    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade):
+        partes = [
+            parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()
+        ]
+        if alternativas and partes and not any(map(_normalizar_habilidade, partes)):
+            alternativas[-1][-1] = " ".join([alternativas[-1][-1], *partes])
+        elif partes:
+            alternativas.append(_juntar_niveis_soltos(partes))
+    return alternativas
 
 
 def _juntar_niveis_soltos(partes: list[str]) -> list[str]:

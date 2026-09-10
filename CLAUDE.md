@@ -471,8 +471,8 @@ sondas executáveis. O que mudou:
   anúncios reais (36 de 202 extrações); anúncio que aceitava só ele ficava incompatível (teto 35)
   para todo estudante de computação. A normalização agora tira um prefixo por vez e para no
   primeiro nome que o catálogo ou os sinônimos conhecem; o site espelha a regra, e
-  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (59 formas de escrever
-  o curso). Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
+  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados, uma entrada por forma
+  de escrever o curso. Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
   Science, T.I, Gestão da TI, Processamento de Dados. Em 10/09/2026 entraram Ciências Jurídicas
   e Ciências Jurídicas e Sociais: a vaga que aceitava só esse nome dava curso incompatível (teto
   35) a quem cursa Direito, e "Estágio em Ciências Jurídicas" caía no pré-filtro porque o padrão

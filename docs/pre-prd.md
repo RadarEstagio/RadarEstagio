@@ -339,8 +339,9 @@ religados um a um.
 - que o Telegram é aceito como canal de uso recorrente;
 - que usuários concluem cadastro e vínculo sem ajuda;
 - que recomendações geram abertura ou candidatura;
-- que a cota gratuita do Gemini sustenta a primeira execução com muitas áreas: em 09/09 o cache
-  de extração recomeça do zero pela mudança de prompt.
+- que o custo do Gemini no plano pago (desde 10/09/2026) continua aceitável quando a coorte trouxer
+  mais cidades e áreas: a extração não se repete por usuário, mas cada vaga nova é requisição
+  cobrada, e toda mudança de prompt reextrai as candidatas.
 
 ## 9. Hipóteses e testes de baixo custo
 
@@ -409,7 +410,7 @@ conversa produzem sinal melhor que teste A/B.
 | Vagas expiradas ou enganosas | Médio | Fonte e data visíveis; alerta de pegadinha | Feedback "a nota não fez sentido" |
 | Republicação por outra fonte com descrição curta | Baixo | Sabido, não corrigido | Aceitar até aparecer caso real |
 | Banco aceita subárea de outro curso | Baixo | Mitigado ao carregar o perfil | Validar no banco quando houver tempo |
-| Dependência de serviços gratuitos | Médio | Adequado ao piloto | Registrar custo por execução no resumo |
+| Custo do Gemini no plano pago | Médio | Billing habilitado em 10/09/2026; mais cidades e áreas trazem mais vagas novas para extrair | Registrar custo por execução no resumo |
 | Crescimento de escopo | Alto | Plano de expansão tem 9 frentes | Aplicar o filtro da seção 12 |
 
 ## 12. Oportunidades e características pertinentes
@@ -446,7 +447,7 @@ vagas, editar perfil, pausar e retomar, excluir conta. As que continuam abertas:
 | Dimensão | Avaliação | Evidência | Condição restante |
 | --- | --- | --- | --- |
 | Técnica | **Favorável** | Ciclo completo em produção há 12 dias; expansão implementada com catálogo único | Acompanhar a primeira execução com reextração total |
-| Financeira | **Favorável no piloto** | Serviços gratuitos suportam o volume; custo não cresce com usuários | Billing do Gemini habilitado em 10/09/2026 |
+| Financeira | **Favorável no piloto** | Gemini no plano pago desde 10/09/2026; a extração não se repete por usuário, e o custo cresce com as vagas novas que cidades e áreas trazem | Acompanhar o custo por execução no resumo |
 | Operacional | **Favorável com ressalvas** | Automação, resumo diário e alertas de vagas sem extração | Observar 7 dias após a expansão; renovação de token registrada |
 | Prazo | **Favorável** | Entrega de 02/09 realizada; expansão e publicação concluídas em 08/09 | Combinar a próxima entrega |
 | Privacidade | **Favorável** | Token de uso único, RLS, exportação e exclusão implementadas | Aprovar os textos legais |
