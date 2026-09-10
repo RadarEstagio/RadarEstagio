@@ -787,9 +787,103 @@ def test_requisito_generico_contido_na_habilidade_do_perfil_e_atendido():
     assert pontuar(
         vaga(), extracao_juridica(["pesquisas"]), perfil_de_direito(["Pesquisa jurídica"])
     ).requisitos_atendidos == ["pesquisas"]
+
+
+def test_computacao_nao_compara_habilidade_por_palavras():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=[
+                "Angular JS",
+                "Node JS",
+                "React Native",
+                "PL/SQL",
+                "C/C++",
+                "HTML/CSS/JavaScript",
+                "Spring",
+                "comunicação verbal",
+            ]
+        ),
+        perfil(["Python", "JavaScript", "React", "SQL", "C", "HTML", "Spring Boot", "Comunicação"]),
+    )
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_requisito_composto_de_computacao_e_atendido_quando_todas_as_partes_batem():
+    resultado = pontuar(
+        vaga(),
+        extracao(habilidades_obrigatorias=["HTML/CSS/JavaScript"]),
+        perfil(["HTML", "CSS", "JavaScript"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["HTML/CSS/JavaScript"]
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida", "atende"),
+    [
+        (["Excel"], "Excel e Power BI", False),
+        (["Excel", "Power BI"], "Excel e Power BI", True),
+        (["SQL"], "SQL/Python", False),
+        (["Inglês"], "Inglês e Espanhol", False),
+        (["Contratos", "Redação"], "revisão de contratos e redação", True),
+    ],
+)
+def test_requisito_composto_exige_todas_as_partes(do_perfil, exigida: str, atende: bool):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito(do_perfil))
+
+    assert (resultado.requisitos_atendidos == [exigida]) is atende
+
+
+def test_nivel_de_uma_parte_da_habilidade_nao_vaza_para_a_outra():
+    estudante = perfil_de_direito(["Inglês fluente e Espanhol básico"])
+
+    assert pontuar(vaga(), extracao_juridica(["Espanhol avançado"]), estudante).nota < 100
+    assert (
+        pontuar(vaga(), extracao_juridica(["Espanhol avançado"]), estudante).requisitos_atendidos
+        == []
+    )
     assert pontuar(
-        vaga(), extracao(habilidades_obrigatorias=["Spring"]), perfil(["Spring Boot"])
-    ).requisitos_atendidos == ["Spring"]
+        vaga(), extracao_juridica(["Inglês avançado"]), estudante
+    ).requisitos_atendidos == ["Inglês avançado"]
+
+
+def test_nivel_dito_uma_vez_vale_para_todas_as_partes_do_requisito():
+    exigente = extracao_juridica(["Inglês e Espanhol avançados"])
+
+    assert pontuar(
+        vaga(), exigente, perfil_de_direito(["Inglês avançado", "Espanhol fluente"])
+    ).requisitos_atendidos == ["Inglês e Espanhol avançados"]
+    assert (
+        pontuar(
+            vaga(), exigente, perfil_de_direito(["Inglês avançado", "Espanhol"])
+        ).requisitos_atendidos
+        == []
+    )
+
+
+def test_acrescentar_habilidade_ao_perfil_nunca_derruba_o_que_ja_era_atendido():
+    exigente = extracao_juridica(["Inglês avançado"])
+    so_tecnico = perfil_de_direito(["Inglês técnico avançado"])
+    com_basico = perfil_de_direito(["Inglês técnico avançado", "Inglês básico"])
+
+    assert pontuar(vaga(), exigente, so_tecnico).requisitos_atendidos == ["Inglês avançado"]
+    assert pontuar(vaga(), exigente, com_basico).requisitos_atendidos == ["Inglês avançado"]
+
+
+def test_familia_decide_sozinha_o_requisito_que_nomeia():
+    resultado = pontuar(
+        vaga(), extracao_juridica(["banco de dados"]), perfil_de_direito(["Estrutura de dados"])
+    )
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_apelido_de_tecnologia_nao_vale_palavra_por_palavra():
+    resultado = pontuar(vaga(), extracao_juridica(["React JS"]), perfil_de_direito(["JavaScript"]))
+
+    assert resultado.requisitos_atendidos == []
 
 
 @pytest.mark.parametrize(
@@ -801,6 +895,8 @@ def test_requisito_generico_contido_na_habilidade_do_perfil_e_atendido():
         ("API", "APIs REST"),
         ("Gestor de tráfego", "gestores de tráfego"),
         ("Software", "softwares de gestão"),
+        ("Contábil", "rotinas contábeis"),
+        ("Processo civil", "processos civis"),
     ],
 )
 def test_plural_nao_impede_a_correspondencia_por_palavras(do_perfil: str, exigida: str):
