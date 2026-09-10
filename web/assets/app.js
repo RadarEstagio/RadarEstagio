@@ -215,9 +215,11 @@ window.addEventListener("hashchange", () => {
 
 function normalizarTexto(texto) {
   return texto
+    .replace(/[\u2010\u2011\u2013\u2014\u2212]/g, "-")
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x00-\x7f]/g, "")
     .toLowerCase()
+    .replace(/\s+/g, " ")
     .trim();
 }
 
