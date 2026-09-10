@@ -51,7 +51,9 @@ quero informar habilidades" segue sem nenhuma.
 habilidades de até 100 caracteres. Lista vazia significa habilidade não informada, não incapacidade:
 a vaga continua sendo avaliada pelos demais critérios. Curso sem área conhecida não recebe
 sugestões de habilidade; a digitação livre continua valendo. Cidade fora da lista não avança; se a
-lista não carregar, o texto digitado vale e o formulário avisa.
+lista não carregar, o texto digitado vale e o formulário avisa. Vaga de outra cidade da mesma
+região imediata do IBGE conta como da cidade (Niterói e Rio, por exemplo), com meia pontuação de
+localização.
 
 #### 03. Aceite e e-mails opcionais
 
@@ -211,7 +213,7 @@ ranking automaticamente. Regras e métricas têm finalidades diferentes.
 
 #### 01. Coleta por múltiplas fontes
 
-Adzuna e Gupy por padrão; buscas consideram cidades dos perfis.
+Adzuna e Gupy por padrão; buscas consideram as cidades dos perfis e a maior cidade da região de cada um.
 
 **Código de referência:** `radar/collectors/`.
 

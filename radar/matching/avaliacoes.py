@@ -13,6 +13,7 @@ from radar.domain.models import (
     ResultadoMatch,
     Vaga,
 )
+from radar.domain.regioes import Proximidade, proximidade
 from radar.matching.compatibilidade import (
     NiveisDeCompatibilidade,
     derivar_niveis,
@@ -25,6 +26,11 @@ PESO_AREA = 10
 PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
 PESO_INTERESSE = 10
+LOCALIZACAO_POR_PROXIMIDADE = {
+    Proximidade.MESMA_CIDADE: 1.0,
+    Proximidade.MESMA_REGIAO: 0.5,
+    Proximidade.DISTANTE: 0.0,
+}
 LIMITE_FORA_DAS_AREAS_DE_INTERESSE = 65
 LIMITE_CURSO_PARCIAL = 75
 LIMITE_CURSO_INCOMPATIVEL = 35
@@ -611,9 +617,7 @@ def _compatibilidade_logistica(vaga: Vaga, perfil: Perfil) -> float:
 def _compatibilidade_de_localizacao(vaga: Vaga, perfil: Perfil) -> float:
     if vaga.modalidade is Modalidade.REMOTO or perfil.modalidade is Modalidade.REMOTO:
         return 1.0
-    cidade_da_vaga = _normalizar_texto(vaga.localizacao.split(",")[0])
-    cidade_do_perfil = _normalizar_texto(perfil.nome_da_cidade())
-    return 1.0 if cidade_da_vaga == cidade_do_perfil else 0.0
+    return LOCALIZACAO_POR_PROXIMIDADE[proximidade(vaga.localizacao, perfil.cidade)]
 
 
 def _compatibilidade_de_modalidade(vaga: Vaga, perfil: Perfil) -> float:

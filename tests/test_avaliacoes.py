@@ -70,6 +70,18 @@ def test_modalidade_extraida_entra_na_logistica_da_nota():
     assert presencial_extraida.nota > sem_modalidade.nota
 
 
+def test_cidade_vizinha_vale_metade_da_localizacao_na_nota():
+    def nota_em(localizacao: str) -> int:
+        na_localizacao = vaga(Modalidade.PRESENCIAL).model_copy(update={"localizacao": localizacao})
+        return pontuar(na_localizacao, extracao(), perfil()).nota
+
+    na_cidade = nota_em("Rio de Janeiro, Estado do Rio de Janeiro")
+    na_regiao = nota_em("Niterói, Estado do Rio de Janeiro")
+    longe = nota_em("São Paulo, Estado de São Paulo")
+
+    assert na_cidade > na_regiao > longe
+
+
 def test_stack_desejavel_sem_correspondencia_recebe_nota_baixa():
     requisitos = ["PHP", "MySQL", "SQL", "HTML5", "JavaScript", "REST", "VueJS", "AJAX", "jQuery"]
 

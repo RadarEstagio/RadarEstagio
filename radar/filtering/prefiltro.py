@@ -10,6 +10,7 @@ from radar.domain.areas import (
     titulo_e_de_outra_area,
 )
 from radar.domain.models import Modalidade, Perfil, Vaga
+from radar.domain.regioes import Proximidade, proximidade
 
 PADRAO_ESTAGIO = re.compile(r"\bestagi|\bintern(?:ship)?s?\b")
 PADRAO_SENIORIDADE = re.compile(r"\b(?:pleno|senior|especialista|coordenador)\b")
@@ -112,10 +113,10 @@ def exigencia_negada(texto: str, posicao: int) -> bool:
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
-    mesma_cidade = cidade(perfil.cidade) == cidade(vaga.localizacao)
+    alcancavel = proximidade(vaga.localizacao, perfil.cidade) is not Proximidade.DISTANTE
     if perfil.modalidade is Modalidade.PRESENCIAL:
-        return not mesma_cidade
-    return not mesma_cidade and not admite_remoto(vaga)
+        return not alcancavel
+    return not alcancavel and not admite_remoto(vaga)
 
 
 def admite_remoto(vaga: Vaga) -> bool:
