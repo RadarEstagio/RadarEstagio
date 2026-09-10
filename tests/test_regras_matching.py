@@ -116,6 +116,20 @@ def test_limita_vaga_presencial_de_outra_cidade_para_perfil_hibrido_ou_indiferen
             assert "outra cidade" in corrigido.avisos_objetivos[0]
 
 
+def test_nao_limita_vaga_presencial_de_cidade_vizinha_para_perfil_hibrido_ou_indiferente():
+    for modalidade_do_perfil in (Modalidade.HIBRIDO, Modalidade.INDIFERENTE):
+        de_niteroi = perfil(modalidade_do_perfil).model_copy(update={"cidade": "Niterói, RJ"})
+        no_rio = ResultadoMatch(
+            vaga=vaga_em("Rio de Janeiro, Estado do Rio de Janeiro", Modalidade.PRESENCIAL),
+            nota=88,
+        )
+
+        corrigido = aplicar_regras_objetivas([no_rio], de_niteroi)[0]
+
+        assert corrigido.nota == 88
+        assert not any("outra cidade" in aviso for aviso in corrigido.avisos_objetivos)
+
+
 def test_mantem_nota_de_vaga_remota_ou_da_propria_cidade_para_perfil_hibrido():
     hibrido = perfil(Modalidade.HIBRIDO)
     remota_longe = ResultadoMatch(vaga=vaga_em("São Paulo, São Paulo", Modalidade.REMOTO), nota=88)

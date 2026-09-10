@@ -1,5 +1,5 @@
-from radar.domain.areas import normalizar
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch
+from radar.domain.regioes import Proximidade, proximidade
 
 LIMITE_MODALIDADE_INCOMPATIVEL = 30
 AVISO_MODALIDADE_INCOMPATIVEL = "Nota limitada a 30: modalidade incompatível"
@@ -53,15 +53,13 @@ def limite_de_modalidade(resultado: ResultadoMatch, perfil: Perfil) -> tuple[int
         return 100, ""
     if perfil.modalidade is Modalidade.REMOTO:
         return LIMITE_MODALIDADE_INCOMPATIVEL, AVISO_MODALIDADE_INCOMPATIVEL
-    if perfil.modalidade is not Modalidade.PRESENCIAL and not mesma_cidade(resultado, perfil):
+    if perfil.modalidade is not Modalidade.PRESENCIAL and fora_da_regiao(resultado, perfil):
         return LIMITE_MODALIDADE_INCOMPATIVEL, AVISO_PRESENCA_EM_OUTRA_CIDADE
     return 100, ""
 
 
-def mesma_cidade(resultado: ResultadoMatch, perfil: Perfil) -> bool:
-    return normalizar(resultado.vaga.localizacao.split(",")[0]) == normalizar(
-        perfil.nome_da_cidade()
-    )
+def fora_da_regiao(resultado: ResultadoMatch, perfil: Perfil) -> bool:
+    return proximidade(resultado.vaga.localizacao, perfil.cidade) is Proximidade.DISTANTE
 
 
 def descreve_modalidade(ponto: str) -> bool:
