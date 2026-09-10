@@ -24,6 +24,7 @@ LIMITE_DO_AVISO = 120
 LIMITE_DO_ALERTA = 160
 RETICENCIAS = "…"
 PADRAO_ENTIDADE_INCOMPLETA = re.compile(r"&[#a-zA-Z0-9]*$")
+PADRAO_DE_ESPACOS = re.compile(r"\s+")
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
@@ -47,7 +48,7 @@ ROTULOS_MODALIDADE = {
 
 
 def escapar_limitado(texto: str, limite: int) -> str:
-    escapado = escape(texto)
+    escapado = escape(PADRAO_DE_ESPACOS.sub(" ", texto).strip())
     if len(escapado) <= limite:
         return escapado
     cortado = PADRAO_ENTIDADE_INCOMPLETA.sub("", escapado[:limite])

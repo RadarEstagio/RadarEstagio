@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from radar.domain.models import Modalidade, Recomendacao, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
+    SEPARADOR_ENTRE_VAGAS,
     dividir_em_mensagens,
     formatar_falha_da_execucao,
     formatar_mensagem,
@@ -501,3 +502,21 @@ def test_cada_parte_leva_as_vagas_que_estao_dentro_dela():
     assert len(partes) > 1
     assert sum(len(grupo) for grupo in grupos) == 4
     assert [r.resultado.nota for grupo in grupos for r in grupo] == [89, 88, 87, 86]
+
+
+def test_titulo_com_quebras_de_linha_nao_inventa_uma_vaga_a_mais():
+    poluido = resultado(90, titulo="Estágio" + SEPARADOR_ENTRE_VAGAS + "falso", numero=1)
+    outros = [resultado(80 - numero, numero=numero) for numero in range(2, 5)]
+    recomendacoes = [Recomendacao(resultado=item) for item in [poluido, *outros]]
+    texto = formatar_mensagem(recomendacoes, MOMENTO_DE_TESTE)
+
+    grupos = recomendacoes_por_parte(dividir_em_mensagens(texto), recomendacoes)
+
+    assert texto.count(SEPARADOR_ENTRE_VAGAS) == len(recomendacoes) - 1
+    assert sum(len(grupo) for grupo in grupos) == len(recomendacoes)
+
+
+def test_texto_da_fonte_com_quebra_de_linha_vira_uma_linha_so():
+    com_quebra = resultado(50, titulo="Estágio\nem\tDados")
+
+    assert "Estágio em Dados" in mensagem([com_quebra])
