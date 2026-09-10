@@ -196,6 +196,25 @@ login, reenvio e recuperação, incluindo expiração do desafio.
 
 **Concluído quando:** os fluxos passam com token válido e o servidor recusa token inválido.
 
+## 6.1 Republicar as funções depois das correções de 10/09/2026
+
+As duas Edge Functions mudaram e **precisam de deploy**; sem ele as correções não valem em
+produção:
+
+```bash
+supabase functions deploy ir
+supabase functions deploy telegram-webhook
+```
+
+O que muda: `ir` só redireciona para endereço `http`/`https` e cai na landing em qualquer outro
+esquema; o vínculo passa a recusar chat de grupo, para que ninguém mande as recomendações de
+uma conta para um grupo; corpo que não é JSON devolve 200 em vez de 500, que fazia o Telegram
+reenviar em laço; e clique cujo formato a função não reconhece recebe `answerCallbackQuery`,
+tirando o relógio do botão nas mensagens antigas.
+
+Nenhum secret muda e o webhook não precisa ser re-registrado. Depois do deploy, confira
+`getWebhookInfo` sem `last_error_message` e abra um link de vaga para ver o 302 de sempre.
+
 ## 7. Rastreamento publicado — concluir o endereço da landing
 
 | Onde | Nome | Valor |
