@@ -1,0 +1,56 @@
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v7
+
+      - name: Instalar o uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.12"
+
+      - name: Instalar as dependências
+        run: uv sync --frozen
+
+      - name: Rodar a suíte
+        run: uv run pytest -q
+
+      - name: Conferir o lint
+        run: uv run ruff check .
+
+      - name: Conferir a formatação
+        run: uv run ruff format --check .
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v7
+
+      - name: Instalar o Deno
+        uses: denoland/setup-deno@v2.0.5
+        with:
+          deno-version: v2.x
+
+      - name: Rodar os testes do cadastro e do banco isolado
+        run: deno test --config tests/web/deno.json --allow-read --allow-env tests/web/
+
+      - name: Rodar os testes da telegram-webhook
+        working-directory: supabase/functions/telegram-webhook
+        run: deno test
+
+      - name: Rodar os testes da ir
+        working-directory: supabase/functions/ir
+        run: deno test
