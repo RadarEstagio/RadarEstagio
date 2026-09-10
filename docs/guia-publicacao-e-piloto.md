@@ -36,6 +36,21 @@ Estado registrado na atualização de 05/09 à noite, sem repetir os testes remo
 - A transferência para `RadarEstagio/RadarEstagio` foi confirmada em 08/09; conferir se
   Cloudflare, cron e dispatch do webhook usam a organização, conforme o registro em `CLAUDE.md`.
 
+Verificação de 09/09 à noite, contra o site publicado e o projeto real:
+
+- Os arquivos publicados são os do `main`; a página carrega sem erro de console no Chrome.
+- `signup` pelo mesmo pedido que o site faz, com e-mail real: conta criada, confirmação enviada
+  em 1 segundo, `cadastros_pendentes` com o perfil e `conta_criada` registrado pelo gatilho.
+  Com `@example.com` o Auth devolve 500 "Error sending confirmation email": o SMTP recusa o
+  domínio, não é falha do fluxo.
+- Anônimo não lê `perfis` (401) nem chama `concluir_meu_cadastro` (401). Webhook do bot sem
+  fila e sem erro; `ir` e `telegram-webhook` respondem.
+- O último cadastro completo (08/09 01:12) levou 33 s até confirmar e 18 s até vincular o
+  Telegram. Nenhum cadastro pendente ficou para trás.
+- Continua pendente: Turnstile (`turnstileSiteKey` vazio em `web/config.js` e proteção por
+  captcha desligada no Auth, então o cadastro sem captcha passa). Sem evento de falha no passo
+  da conta, não dá para saber por que duas sessões concluíram as etapas e não criaram conta.
+
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
 
