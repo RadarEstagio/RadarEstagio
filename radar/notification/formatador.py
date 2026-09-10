@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from html import escape
 from urllib.parse import urlsplit
@@ -14,6 +15,15 @@ from radar.domain.models import (
 FUSO_DA_ENTREGA = ZoneInfo("America/Sao_Paulo")
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
+LIMITE_DO_TITULO = 120
+LIMITE_DA_EMPRESA = 80
+LIMITE_DA_LOCALIZACAO = 80
+LIMITE_DO_REQUISITO = 60
+LIMITE_DO_PONTO = 80
+LIMITE_DO_AVISO = 120
+LIMITE_DO_ALERTA = 160
+RETICENCIAS = "…"
+PADRAO_ENTIDADE_INCOMPLETA = re.compile(r"&[#a-zA-Z0-9]*$")
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
@@ -34,6 +44,14 @@ ROTULOS_MODALIDADE = {
     "hibrido": "Híbrido",
     "indiferente": "Indiferente",
 }
+
+
+def escapar_limitado(texto: str, limite: int) -> str:
+    escapado = escape(texto)
+    if len(escapado) <= limite:
+        return escapado
+    cortado = PADRAO_ENTIDADE_INCOMPLETA.sub("", escapado[:limite])
+    return cortado.rstrip() + RETICENCIAS
 
 
 def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
@@ -132,8 +150,10 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
     resultado = recomendacao.resultado
     vaga = resultado.vaga
     linhas = [
-        f"<b>{posicao}. {escape(vaga.titulo)}</b> — {escape(vaga.empresa)}",
-        f"📍 {escape(vaga.localizacao)} · {escape(rotulo_modalidade(vaga))}",
+        f"<b>{posicao}. {escapar_limitado(vaga.titulo, LIMITE_DO_TITULO)}</b>"
+        f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
+        f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
+        f" · {escape(rotulo_modalidade(vaga))}",
         f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
@@ -163,9 +183,9 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
     if resultado.pontos_contra:
         linhas.append(f"❌ {formatar_pontos(resultado.pontos_contra)}")
     for aviso in resultado.avisos_objetivos:
-        linhas.append(f"⚠️ {escape(aviso)}")
+        linhas.append(f"⚠️ {escapar_limitado(aviso, LIMITE_DO_AVISO)}")
     if resultado.alerta_pegadinha:
-        linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
+        linhas.append(f"⚠️ {escapar_limitado(resultado.alerta_pegadinha, LIMITE_DO_ALERTA)}")
     destino = url_de_abertura(recomendacao, url_de_rastreio)
     linhas.append(f'🔗 <a href="{escape(destino)}">Ver vaga em {escape(dominio_da_vaga(vaga))}</a>')
     return "\n".join(linhas)
@@ -194,12 +214,13 @@ def rotulo_fonte(fonte: str) -> str:
 
 def formatar_pontos(pontos: list[str]) -> str:
     selecionados = pontos[:MAXIMO_DE_PONTOS_EXIBIDOS]
-    return " · ".join(escape(ponto) for ponto in selecionados)
+    return " · ".join(escapar_limitado(ponto, LIMITE_DO_PONTO) for ponto in selecionados)
 
 
 def formatar_requisitos(requisitos: list[str]) -> str:
     exibidos = " · ".join(
-        escape(requisito) for requisito in requisitos[:MAXIMO_DE_REQUISITOS_EXIBIDOS]
+        escapar_limitado(requisito, LIMITE_DO_REQUISITO)
+        for requisito in requisitos[:MAXIMO_DE_REQUISITOS_EXIBIDOS]
     )
     ocultos = len(requisitos) - MAXIMO_DE_REQUISITOS_EXIBIDOS
     if ocultos <= 0:

@@ -419,3 +419,51 @@ def test_execucao_das_sete_da_manha_mantem_a_data_do_dia():
     manha = datetime(2026, 9, 10, 10, 23, tzinfo=UTC)
 
     assert "10/09/2026" in mensagem([resultado(50)], manha)
+
+
+def resultado_gigante() -> ResultadoMatch:
+    enorme = ResultadoMatch(
+        vaga=Vaga(
+            id_externo="1",
+            fonte="adzuna",
+            titulo="Título " + "muito longo " * 40,
+            empresa="Empresa " + "com nome interminável " * 20,
+            localizacao="Cidade " + "com nome enorme " * 20,
+            descricao="descrição",
+            url="https://exemplo.com/vaga/1",
+            publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
+        ),
+        nota=80,
+        requisitos_atendidos=[f"requisito atendido {n} " + "detalhado " * 40 for n in range(12)],
+        requisitos_nao_atendidos=[f"a conferir {n} " + "detalhado " * 40 for n in range(12)],
+        diferenciais_nao_atendidos=[f"diferencial {n} " + "detalhado " * 40 for n in range(12)],
+        pontos_a_favor=["ponto a favor " * 40] * 4,
+        pontos_contra=["ponto contra " * 40] * 4,
+        avisos_objetivos=["aviso " * 60] * 3,
+        alerta_pegadinha="alerta " * 80,
+    )
+    return enorme
+
+
+def test_vaga_com_textos_enormes_cabe_nas_partes_do_telegram():
+    texto = mensagem([resultado_gigante()])
+
+    partes = dividir_em_mensagens(texto)
+
+    assert all(len(parte) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for parte in partes)
+
+
+def test_sete_vagas_enormes_continuam_dentro_do_limite():
+    resultados = [resultado_gigante() for _ in range(7)]
+
+    partes = dividir_em_mensagens(mensagem(resultados))
+
+    assert all(len(parte) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for parte in partes)
+
+
+def test_corte_nao_deixa_entidade_html_pela_metade():
+    com_ecomercial = resultado(50, titulo="P&D " * 200)
+
+    texto = mensagem([com_ecomercial])
+
+    assert "&am" not in texto.replace("&amp;", "")
