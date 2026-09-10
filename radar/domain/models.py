@@ -171,7 +171,11 @@ class ResultadoDoJulgamento(BaseModel):
     entregas_no_periodo: int
     amostradas: int
     sem_julgamento: int = 0
+    ultimo_erro: str = ""
     julgadas: list[EntregaJulgada] = Field(default_factory=list)
+
+    def nada_foi_julgado(self) -> bool:
+        return self.amostradas > 0 and not self.julgadas
 
 
 class RecusasDoUsuario(BaseModel):

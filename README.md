@@ -116,7 +116,9 @@ Execute a partir da raiz, com `uv run python -m radar` seguido do comando:
 
 `julgar` exige `DATABASE_URL` e usa `AVALIADOR` para escolher o provedor. Configure
 `JUIZ_MODELO` com um modelo disponível nesse provedor: o padrão `claude-sonnet-4-6` é
-destinado ao caminho AGY, não à Gemini Developer API. `--dias` e `--amostra` aceitam
+destinado ao caminho AGY, não à Gemini Developer API. Se nenhuma entrega for julgada, o
+comando imprime o último erro do avaliador e sai com código 1, em vez de mostrar um relatório
+vazio como se não houvesse o que julgar. `--dias` e `--amostra` aceitam
 inteiros positivos; a semente torna a seleção reproduzível para a mesma lista de entregas.
 O julgamento é uma estimativa do modelo, não validação feita por estudantes.
 
@@ -128,8 +130,8 @@ o perfil de exemplo. O arquivo tem os mesmos cuidados do gabarito.
 
 `gabarito` exige banco e grava um JSON com `relevante` inicialmente nulo. Preencha esse
 campo com `true` ou `false` para cada entrega avaliada e use `julgar --gabarito gabarito.json`
-para comparar o juiz com os rótulos humanos. A consulta continua limitada por `--dias`;
-itens sem rótulo são ignorados. O arquivo contém identificadores de perfil e dados das
+para comparar o juiz com os rótulos humanos. A consulta continua limitada por `--dias`, e o
+comando avisa quantos rótulos ficaram fora dessa janela; itens sem rótulo são ignorados. O arquivo contém identificadores de perfil e dados das
 entregas: guarde-o fora do Git e escolha um caminho que não sobrescreva outro gabarito.
 
 Para uma verificação com conta da equipe, use `rodar --perfil UUID` com `DATABASE_URL`

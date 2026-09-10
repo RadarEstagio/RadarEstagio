@@ -50,6 +50,12 @@ def carregar_gabarito(caminho: Path) -> dict[Chave, bool]:
         raise ErroDeArmazenamento(f"Gabarito inválido em {caminho}: {erro}") from erro
 
 
+def rotulos_fora_da_janela(
+    gabarito: dict[Chave, bool], selecionadas: list[EntregaParaJulgar]
+) -> int:
+    return len(gabarito) - len(selecionadas)
+
+
 def selecionar_do_gabarito(
     entregas: list[EntregaParaJulgar], gabarito: dict[Chave, bool]
 ) -> list[EntregaParaJulgar]:

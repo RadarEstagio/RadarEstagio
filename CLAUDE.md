@@ -561,6 +561,11 @@ a data de cada uma por isso. Limitação que o juiz expôs: a Adzuna informa a r
 cidade ("Estagiário de TI - São Gonçalo" vem como "Rio de Janeiro"); 1 caso em 168 envios,
 registrado, sem regra nova.
 
+Desde 10/09/2026 o comando **falha com código 1** quando nenhuma entrega é julgada, imprimindo
+o último erro do avaliador. Antes, o padrão `gemini_api` + `claude-sonnet-4-6` devolvia
+relatório vazio com código 0, o que parecia execução limpa. O `--gabarito` também avisa quantos
+rótulos ficaram fora da janela de `--dias`, em vez de descartá-los em silêncio.
+
 O gabarito humano nasce de `python -m radar gabarito --dias 2 --amostra 20 --saida arquivo.json`:
 o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com true ou false;
 `julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
