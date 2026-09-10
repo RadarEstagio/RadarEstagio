@@ -18,6 +18,7 @@ from radar.avaliacao.gabarito import (
     carregar_gabarito,
     exportar_gabarito,
     gravar_gabarito,
+    rotulos_fora_da_janela,
     selecionar_do_gabarito,
 )
 from radar.avaliacao.julgar import julgar_entregas
@@ -175,6 +176,7 @@ def julgar(
     if rotulos is not None:
         entregas = selecionar_do_gabarito(entregas, rotulos)
         amostra = len(entregas)
+        avisar_rotulos_fora_da_janela(rotulos, entregas, dias)
     resultado = julgar_entregas(
         entregas, criar_juiz(settings), amostra, semente, settings.juiz_modelo, dias
     )
@@ -185,6 +187,16 @@ def julgar(
             f"{resultado.ultimo_erro or 'não informado'}"
         )
 
+
+def avisar_rotulos_fora_da_janela(rotulos: dict, selecionadas: list, dias: int) -> None:
+    fora = rotulos_fora_da_janela(rotulos, selecionadas)
+    if not fora:
+        return
+    print(
+        f"{fora} de {len(rotulos)} rótulos do gabarito estão fora das entregas dos últimos "
+        f"{dias} dias e não serão julgados; use --dias maior para incluí-los.",
+        file=sys.stderr,
+    )
 
 
 def gabarito(settings: Settings, dias: int, amostra: int, semente: int, saida: Path) -> None:

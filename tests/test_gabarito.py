@@ -9,6 +9,7 @@ from radar.avaliacao.gabarito import (
     carregar_gabarito,
     exportar_gabarito,
     gravar_gabarito,
+    rotulos_fora_da_janela,
     selecionar_do_gabarito,
 )
 from radar.avaliacao.julgar import julgar_entregas
@@ -99,3 +100,16 @@ def test_gabarito_ausente_ou_quebrado_vira_erro_claro(tmp_path: Path):
     sem_campos.write_text('[{"titulo": "x", "relevante": true}]')
     with pytest.raises(ErroDeArmazenamento, match="perfil_id"):
         carregar_gabarito(sem_campos)
+
+
+def test_conta_os_rotulos_que_ficaram_fora_da_janela_de_dias():
+    rotulos = {(UUID(int=1), "1"): True, (UUID(int=1), "2"): False, (UUID(int=2), "3"): True}
+
+    assert rotulos_fora_da_janela(rotulos, []) == 3
+    assert rotulos_fora_da_janela(rotulos, [entrega(1)]) == 2
+
+
+def test_gabarito_inteiro_dentro_da_janela_nao_gera_aviso():
+    rotulos = {(UUID(int=1), "1"): True}
+
+    assert rotulos_fora_da_janela(rotulos, [entrega(1)]) == 0

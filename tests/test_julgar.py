@@ -1,3 +1,4 @@
+import json
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -236,3 +237,20 @@ def test_periodo_sem_entrega_nao_vira_erro(monkeypatch):
     preparar_comando(monkeypatch, [], JuizFalso())
 
     radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1)
+
+
+def test_gabarito_avisa_quantos_rotulos_ficaram_fora_da_janela(monkeypatch, capsys, tmp_path):
+    arquivo = tmp_path / "gabarito.json"
+    arquivo.write_text(
+        json.dumps(
+            [
+                {"perfil_id": str(PERFIL_A), "id_externo": "1", "relevante": True},
+                {"perfil_id": str(PERFIL_A), "id_externo": "99", "relevante": False},
+            ]
+        )
+    )
+    preparar_comando(monkeypatch, [entrega(1)], JuizFalso(relevantes={"1"}))
+
+    radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1, gabarito=arquivo)
+
+    assert "1 de 2 rótulos do gabarito estão fora" in capsys.readouterr().err
