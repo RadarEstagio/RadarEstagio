@@ -240,9 +240,37 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   perfil vale como incerteza ("não informado"), nunca como veto. As travas de 60/70 pontos por
   habilidade ausente foram removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de
   Dados a 48 por "faltar Power BI") enquanto anúncios sem stack ocupavam o topo.
-- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, porém
-  atrás de qualquer vaga com requisito batido. Era 0.35 até 09/09/2026, quando a mensagem do
-  Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, atrás
+  de vaga com boa parte dos requisitos batidos, mas não de *qualquer* vaga com requisito batido:
+  quem atende 1 de 8 ou mais tem cobertura menor (2/9 < 0.25). Era 0.35 até 09/09/2026, quando a
+  mensagem do Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Vaga sem nenhum requisito atendido não passa da neutra** (10/09/2026). Com um requisito só,
+  a suavização dava 0.5 a quem não atendia nada, o dobro da vaga sem stack. A Monte Carlo
+  (obrigatório Excel, que não conta em computação, e desejável Power BI) tirava 75 para os dois
+  estudantes de Engenharia de Software sem atender nada: na execução de 10/09 ficou em 7º e 9º,
+  sem ser enviada, e entre as candidatas não enviadas estava em 1º e 2º. Agora, se nenhum
+  requisito que conta na nota é atendido, em nenhuma das listas, a cobertura fica no máximo em
+  0.25; quem atende ao menos um segue a fórmula. O teto nunca sobe nota e não é peso novo: é
+  coerência com a cobertura neutra, como a troca de 0.35 por 0.25. Office e idioma atendidos em
+  computação continuam fora da conta e não tiram a vaga do teto. Medido nas 119 extrações da
+  versão atual contra 18 perfis (6 reais e 12 do catálogo): 300 de 2.142 pares caem, 9 abaixo
+  da nota mínima. Nas candidatas das últimas 48 h ainda não enviadas dos 4 perfis reais com
+  candidatas, saem das 7 primeiras 9 vagas, todas sem requisito atendido; entram 9, seis que
+  batem algo do perfil e três sem requisito atendido que ganham pelos outros fatores (curso,
+  área, interesse). O teto é da vaga inteira, não de cada lista: obrigatória não atendida com
+  desejável atendido continua valendo 0.5 com peso 80%, e a Colégio IPA, que pede "Suporte" e
+  cita "Programação", tira 75. Por lista, os pares com nota 70 ou mais sem obrigatória atendida
+  cairiam de 15 para 8, mas mudaria também vaga com todas as obrigatórias batidas e um
+  desejável faltando; fica para decidir com `vaga_irrelevante`.
+- **"Planilhas" é família atendida por Excel** (10/09/2026). Era membro de Pacote Office, não
+  nome de família, então Excel não atendia "planilhas" (7 extrações), "planilhas eletrônicas"
+  nem "Google Sheets". Com o teto acima, a vaga de Administração que pedia só "planilhas
+  eletrônicas" caía de 65 para 54 para a estudante que tem Excel; agora sobe para 75, e 39
+  pares da medição acima sobem por isso. Custo aceito: "Controle de planilhas" no perfil deixa
+  de atender "planilhas" por palavras, porque a família decide sozinha o requisito que nomeia.
+  Seguem abertos: "Pacote Office" no perfil não atende "Excel" (56 extrações; é a única
+  habilidade de Office que o catálogo sugere para Direito, Saúde e Educação), e Excel não atende
+  "informática" nem "microinformática" (2 extrações cada).
 - **Requisito genérico é atendido por habilidade da mesma família** (09/09/2026): "banco de
   dados" por SQL/MySQL/Postgres, "back-end" por Java/Spring/Django/Node, "front-end" por
   React/HTML/CSS/JS, "programação" por qualquer linguagem, "ETL", "cloud", "versionamento",
