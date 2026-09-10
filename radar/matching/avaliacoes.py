@@ -293,6 +293,7 @@ ALIASES_DE_HABILIDADES = {
     "vuejs": "vue",
 }
 SEPARADORES_DE_PALAVRAS = re.compile(r"[\s/,;|]+")
+SEPARADORES_DE_PARTES = re.compile(r"\s+e\s+|\s*[/,;&|]\s*|\s+\+\s+", re.IGNORECASE)
 PALAVRAS_SEM_SIGNIFICADO = frozenset(
     {
         "a",
@@ -328,6 +329,7 @@ PALAVRAS_SEM_SIGNIFICADO = frozenset(
 class HabilidadeComparavel(NamedTuple):
     nivel: int
     palavras: frozenset[str]
+    partes: tuple[tuple[str, "HabilidadeComparavel"], ...] = ()
 
 
 def pontuar_vagas(
@@ -519,27 +521,67 @@ def _exigencias(requisitos: list[str]) -> dict[str, HabilidadeComparavel]:
     for requisito in requisitos:
         if requisito.strip():
             nome = _normalizar_habilidade(requisito)
-            exigencia = _comparavel(requisito, nivel_exigido(requisito))
+            exigencia = _exigencia(requisito)
             anterior = exigencias.get(nome)
             if anterior is None or exigencia.nivel < anterior.nivel:
                 exigencias[nome] = exigencia
     return exigencias
 
 
+def _exigencia(requisito: str) -> HabilidadeComparavel:
+    nivel = nivel_exigido(requisito)
+    partes = _partes(requisito)
+    if len(partes) < 2:
+        return HabilidadeComparavel(nivel, _palavras_de_um_nivel(requisito))
+    return HabilidadeComparavel(
+        nivel,
+        frozenset(),
+        tuple(
+            (
+                _normalizar_habilidade(parte),
+                HabilidadeComparavel(_nivel_da_parte(parte, nivel), _palavras_de_um_nivel(parte)),
+            )
+            for parte in partes
+        ),
+    )
+
+
+def _nivel_da_parte(parte: str, nivel_do_requisito: int) -> int:
+    nivel = nivel_exigido(parte)
+    return nivel_do_requisito if nivel == NIVEL_NAO_INFORMADO else nivel
+
+
 def _habilidades_do_perfil(perfil: Perfil) -> dict[str, HabilidadeComparavel]:
-    habilidades: dict[str, HabilidadeComparavel] = {}
-    for habilidade in perfil.habilidades:
-        if habilidade.strip():
-            nome = _normalizar_habilidade(habilidade)
-            declarada = _comparavel(habilidade, nivel_declarado(habilidade))
-            anterior = habilidades.get(nome)
-            if anterior is None or declarada.nivel > anterior.nivel:
-                habilidades[nome] = declarada
-    return habilidades
+    return _habilidades_declaradas(
+        tuple(perfil.habilidades), area_do_curso(perfil.curso) != COMPUTACAO
+    )
 
 
-def _comparavel(habilidade: str, nivel: int) -> HabilidadeComparavel:
-    return HabilidadeComparavel(nivel=nivel, palavras=_palavras(habilidade))
+@functools.cache
+def _habilidades_declaradas(
+    habilidades: tuple[str, ...], compara_palavras: bool
+) -> dict[str, HabilidadeComparavel]:
+    declaradas: dict[str, HabilidadeComparavel] = {}
+    for habilidade in habilidades:
+        partes = _partes(habilidade)
+        composta = len(partes) > 1
+        _declarar(declaradas, habilidade, compara_palavras and not composta)
+        for parte in partes if composta else []:
+            _declarar(declaradas, parte, compara_palavras)
+    return declaradas
+
+
+def _declarar(
+    declaradas: dict[str, HabilidadeComparavel], texto: str, compara_palavras: bool
+) -> None:
+    if not texto.strip():
+        return
+    nome = _normalizar_habilidade(texto)
+    palavras = _palavras_de_um_nivel(texto) if compara_palavras else frozenset()
+    declarada = HabilidadeComparavel(nivel_declarado(texto), palavras)
+    anterior = declaradas.get(nome)
+    if anterior is None or declarada.nivel > anterior.nivel:
+        declaradas[nome] = declarada
 
 
 def _atende(
@@ -547,32 +589,42 @@ def _atende(
     exigencia: HabilidadeComparavel,
     habilidades_do_perfil: dict[str, HabilidadeComparavel],
 ) -> bool:
+    if _satisfeita(nome, exigencia, habilidades_do_perfil):
+        return True
+    return bool(exigencia.partes) and all(
+        _satisfeita(nome_da_parte, parte, habilidades_do_perfil)
+        for nome_da_parte, parte in exigencia.partes
+    )
+
+
+def _satisfeita(
+    nome: str,
+    exigencia: HabilidadeComparavel,
+    habilidades_do_perfil: dict[str, HabilidadeComparavel],
+) -> bool:
     nivel_do_perfil = _nivel_no_perfil(nome, exigencia.palavras, habilidades_do_perfil)
     if nivel_do_perfil is None:
         return False
-    if exigencia.nivel == NIVEL_NAO_INFORMADO:
-        return True
-    return nivel_do_perfil >= exigencia.nivel
+    return exigencia.nivel == NIVEL_NAO_INFORMADO or nivel_do_perfil >= exigencia.nivel
 
 
 def _nivel_no_perfil(
     nome: str, palavras: frozenset[str], habilidades_do_perfil: dict[str, HabilidadeComparavel]
 ) -> int | None:
-    if nome in habilidades_do_perfil:
-        return habilidades_do_perfil[nome].nivel
-    da_familia = [
+    familia = _membros_das_familias().get(nome)
+    niveis = [habilidades_do_perfil[nome].nivel] if nome in habilidades_do_perfil else []
+    niveis += [
         habilidades_do_perfil[membro].nivel
-        for membro in _membros_das_familias().get(nome, frozenset())
+        for membro in familia or ()
         if membro in habilidades_do_perfil
     ]
-    if da_familia:
-        return max(da_familia)
-    por_palavras = [
-        habilidade.nivel
-        for habilidade in habilidades_do_perfil.values()
-        if _correspondem_por_palavras(palavras, habilidade.palavras)
-    ]
-    return max(por_palavras) if por_palavras else None
+    if familia is None:
+        niveis += [
+            habilidade.nivel
+            for habilidade in habilidades_do_perfil.values()
+            if _correspondem_por_palavras(palavras, habilidade.palavras)
+        ]
+    return max(niveis, default=None)
 
 
 def _correspondem_por_palavras(requisito: frozenset[str], habilidade: frozenset[str]) -> bool:
@@ -591,8 +643,12 @@ def _formas_da_palavra(palavra: str) -> frozenset[str]:
     formas = {palavra}
     if palavra.endswith("oes"):
         formas.add(palavra[:-3] + "ao")
-    if len(palavra) > 4 and palavra.endswith(("ais", "eis")):
-        formas.add(palavra[:-2] + "l")
+    if len(palavra) > 4 and palavra.endswith("ais"):
+        formas.add(palavra[:-3] + "al")
+    if len(palavra) > 4 and palavra.endswith("eis"):
+        formas.update({palavra[:-3] + "el", palavra[:-3] + "il"})
+    if len(palavra) > 4 and palavra.endswith("is") and not palavra.endswith(("ais", "eis")):
+        formas.add(palavra[:-1] + "l")
     if palavra.endswith("ns"):
         formas.add(palavra[:-2] + "m")
     if palavra.endswith(("res", "zes")):
@@ -612,9 +668,7 @@ def _membros_das_familias() -> dict[str, frozenset[str]]:
 
 def _perfil_atende(habilidade: str, habilidades_do_perfil: dict[str, HabilidadeComparavel]) -> bool:
     return _atende(
-        _normalizar_habilidade(habilidade),
-        _comparavel(habilidade, nivel_exigido(habilidade)),
-        habilidades_do_perfil,
+        _normalizar_habilidade(habilidade), _exigencia(habilidade), habilidades_do_perfil
     )
 
 
@@ -696,12 +750,26 @@ def _normalizar_habilidade(habilidade: str) -> str:
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
 
 
+def _partes(habilidade: str) -> list[str]:
+    sem_complemento = COMPLEMENTO_ENTRE_PARENTESES.sub(" ", habilidade)
+    return [
+        parte.strip() for parte in SEPARADORES_DE_PARTES.split(sem_complemento) if parte.strip()
+    ]
+
+
+def _palavras_de_um_nivel(habilidade: str) -> frozenset[str]:
+    if len(_niveis_citados(habilidade)) > 1:
+        return frozenset()
+    return _palavras(habilidade)
+
+
+@functools.cache
 def _palavras(habilidade: str) -> frozenset[str]:
     palavras = set()
     for palavra in SEPARADORES_DE_PALAVRAS.split(_sem_qualificadores(habilidade)):
         compacta = _compactar(palavra)
         if compacta and compacta not in PALAVRAS_SEM_SIGNIFICADO:
-            palavras.add(ALIASES_DE_HABILIDADES.get(compacta, compacta))
+            palavras.add(compacta)
     return frozenset(palavras)
 
 

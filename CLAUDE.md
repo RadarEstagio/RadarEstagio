@@ -249,18 +249,25 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
   modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
   no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
-- **Habilidades comparadas por nome normalizado, depois família, depois palavras inteiras**
-  (10/09/2026). Só o nome exato deixava estudantes fora de computação sem nada atendido: o anúncio
-  de Direito descreve atividades ("revisão de contratos", "atendimento ao público") e o perfil
-  cadastra a habilidade ("Contratos", "Atendimento"). Das 18 vagas da primeira mensagem de um
-  estudante de Direito, só duas casavam algo; as duas do Veirano, que descreviam o perfil, ficaram
-  fora com 64 e passam a 86. Quando nome e família falham, o requisito é atendido se todas as
-  palavras de um estão no outro, nos dois sentidos, com plural dobrado. Palavra inteira, nunca
-  pedaço: `Java` segue diferente de `JavaScript`, `Word` de `WordPress`, e uma palavra em comum
-  não basta ("análise de dados" não atende "análise de crédito"). Medido nas 153 extrações no
-  formato atual: 14 pares novos, todos legítimos, nenhuma nota caiu, computação mudou 2 de ~65
-  vagas por perfil. Risco aceito: habilidade genérica como "Organização" atende "organização de
-  arquivos" e pode subir vaga mais administrativa.
+- **Habilidades comparadas por nome normalizado, depois família e, fora de computação, por
+  palavras inteiras** (10/09/2026, revisto no mesmo dia depois da auditoria do #41). Só o nome
+  exato deixava estudantes fora de computação sem nada atendido: o anúncio de Direito descreve
+  atividades ("revisão de contratos", "atendimento ao público") e o perfil cadastra a habilidade
+  ("Contratos", "Atendimento"). As duas vagas do Veirano, que descreviam o perfil de um estudante
+  de Direito, ficaram fora com 64 e passam a 86. Fora de computação, quando nome e família falham,
+  o requisito é atendido se todas as palavras de um estão no outro, nos dois sentidos, com plural
+  dobrado; palavra inteira, nunca pedaço, e "análise de dados" não atende "análise de crédito".
+  **Computação não compara por palavras**: a primeira versão deixou `JavaScript` atender "React
+  JS", `SQL` atender "PL/SQL" e `React` atender "React Native", e lá os requisitos são nomes de
+  tecnologia, que o nome exato e as famílias já tratam. Requisito com "e", "/", vírgula ou ponto e
+  vírgula exige todas as partes ("Excel e Power BI" não é atendido só por Excel), e habilidade do
+  perfil escrita assim vira várias, cada uma com o próprio nível. O nível é o maior entre nome,
+  família e palavras, para que acrescentar habilidade nunca derrube a nota; família decide sozinha
+  o requisito que nomeia; alias vale só para o nome inteiro. Medido em 343 extrações × 24 perfis:
+  nenhuma nota cai contra a regra anterior. Risco aceito: habilidade genérica de uma palavra
+  ("Organização", "Gestão", "Processos") atende toda atividade que a contém e pode subir vaga mais
+  administrativa; a da MUDES chegou ao topo do estudante de Direito por "organização de arquivos"
+  e "atendimento a clientes".
 - **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
   de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
   `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do
