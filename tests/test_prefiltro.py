@@ -233,6 +233,27 @@ def test_mantem_a_vaga_da_area_do_curso_de_quem_nao_e_de_computacao(curso: str, 
 
 @pytest.mark.parametrize(
     "titulo",
+    [
+        "Estágio em Ciências Jurídicas",
+        "ESTÁGIO CIENCIAS JURIDICAS",
+        "Estágio: Assessorias Jurídicas",
+    ],
+)
+def test_plural_de_juridica_no_titulo_mantem_a_vaga_para_quem_e_de_direito(titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Direito"))
+    assert fora_da_area_do_curso(vaga(titulo=titulo), perfil())
+
+
+def test_plural_de_juridica_na_descricao_mantem_titulo_generico_para_quem_e_de_direito():
+    generico = vaga(
+        titulo="Programa de Estágio", descricao="Atuação na área de assessorias jurídicas."
+    )
+
+    assert not fora_da_area_do_curso(generico, perfil(curso="Direito"))
+
+
+@pytest.mark.parametrize(
+    "titulo",
     ["Estágio em Desenvolvimento de Software", "Estagiário de TI", "Estagiário Programador"],
 )
 def test_descarta_vaga_de_computacao_para_quem_e_de_outro_curso(titulo: str):
