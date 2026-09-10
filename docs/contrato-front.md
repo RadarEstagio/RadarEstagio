@@ -63,7 +63,7 @@ de `web/assets/cidades.json`, que sugere as cidades conforme a pessoa digita, se
 O site recusa texto fora da lista e grava a forma da lista quando a pessoa digita sem acento ou
 sem o estado e o nome é de uma cidade só; nome repetido em mais de um estado pede a escolha na
 lista. O banco continua aceitando qualquer texto de 2 a 120 caracteres: a lista é regra do
-cadastro, não do schema, e o pipeline só usa o nome antes da vírgula. Se a lista não carregar, o
+cadastro, não do schema, e o pipeline lê o nome e o estado para achar a região imediata. Se a lista não carregar, o
 cadastro aceita o texto digitado e avisa, para uma falha de rede não custar a conta. A lista vem
 de `uv run python scripts/gerar_cidades.py`, que lê os municípios e a população do Censo 2022
 nas APIs do IBGE; a população só ordena as sugestões. Regerar quando o IBGE criar município.

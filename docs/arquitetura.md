@@ -247,6 +247,13 @@ perfil: quem era de Recife perdia a vaga de Recife para a de São Paulo, sem err
 A segunda etapa, a de republicações, continua comparando o início da descrição dentro da
 mesma cidade.
 
+Para decidir se a vaga é alcançável, a cidade da vaga e a do perfil passam por
+`domain/regioes.py`, que devolve mesma cidade, mesma região imediata do IBGE ou distante. Mesma
+região conta como a cidade no pré-filtro e na trava de modalidade, e vale metade na logística.
+O mapa vem de `domain/regioes_imediatas.json`, gerado do IBGE por `scripts/gerar_cidades.py`; o
+estado da vaga é lido nos formatos das fontes e, sem estado, o nome decide quando só existe num
+estado.
+
 ### 10. Banco atrás de interface, com objeto nulo
 
 O `pipeline.py` fala com um `Repositorio` (`domain/ports.py`) e nunca com o Postgres. Há

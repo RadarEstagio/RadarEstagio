@@ -449,7 +449,8 @@ sondas executáveis. O que mudou:
   vale 5 pontos. Agora, para quem não é remoto, vaga de outra cidade só fica se admite remoto
   (modalidade da fonte ou "remoto"/"home office" no texto); depois da extração, vaga presencial
   ou híbrida em outra cidade fica limitada a 30 com aviso próprio, como já acontecia com perfil
-  remoto. Perfil presencial continua exigindo a própria cidade mesmo para vaga remota.
+  remoto. Perfil presencial continua exigindo a própria cidade mesmo para vaga remota — desde
+  10/09/2026, a própria cidade ou uma da mesma região imediata do IBGE.
 - **Estágio de mestrado ou doutorado chegava a graduando.** "Estágio de Mestrado em Economia"
   (EPE) foi a um perfil de Direito com nota 55, só com o alerta de pegadinha. Título com
   mestrado, doutorado ou pós-graduação sai no pré-filtro, como já saía "pleno" e "sênior".
@@ -536,6 +537,34 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   caracteres por bloco.
 - **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
   chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
+
+### Cidades vizinhas: região imediata do IBGE (10/09/2026)
+
+Quem mora em Niterói trabalha no Rio, mas a cidade era comparada pelo nome exato. Nos 30 dias
+anteriores, 448 vagas chegaram como "Rio de Janeiro" e 1 como "Niterói": um perfil presencial de
+Niterói praticamente não recebia nada. A Adzuna ainda rotula pela região, e "Estágio TI - Niterói"
+veio como Rio de Janeiro.
+
+`domain/regioes.py` classifica vaga × perfil em mesma cidade, mesma região imediata do IBGE ou
+distante, lendo `radar/domain/regioes_imediatas.json` (510 regiões, gerado por
+`scripts/gerar_cidades.py` junto com a lista do site). O que muda:
+
+- **Mesma região vale como a cidade** no pré-filtro e na trava de 30 para híbrido e indiferente.
+- **Na logística vale metade** da cidade, cerca de 2,5 pontos a menos: a própria cidade continua
+  na frente, sem enterrar a vizinha.
+- **A coleta busca também a maior cidade da região** do perfil (Adzuna `where`, Gupy `city`),
+  senão um perfil de Niterói sozinho dependeria de haver alguém do Rio para as vagas do Rio
+  serem coletadas.
+- **O juiz recebe as cidades da região** no perfil; sem isso ele marcaria `logistica` na vaga
+  do Rio para quem é de Niterói.
+- **O estado da vaga é lido nos formatos das fontes** ("Estado do Rio de Janeiro", "Rio de
+  Janeiro", "RJ"). Sem estado, vale o nome quando ele só existe num estado; perfil antigo
+  "Rio de Janeiro" continua achando a região. Nome igual em estados diferentes deixou de ser a
+  mesma cidade.
+
+Limite conhecido: a região imediata do Rio tem 21 municípios e inclui Saquarema e Mangaratiba, a
+cerca de 100 km. Se o feedback "local ou modalidade" apontar esses casos, o ajuste é uma lista de
+exceções ou a região metropolitana, não voltar ao nome exato.
 
 ### Juiz de recomendações: LLM as a judge (09/09/2026)
 
