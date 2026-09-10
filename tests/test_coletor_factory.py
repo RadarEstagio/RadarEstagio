@@ -110,6 +110,22 @@ def test_cidades_de_interesse_vem_de_perfis_presenciais_e_hibridos_sem_repetir()
     assert cidades_de_interesse(usuarios) == ["Niterói", "Rio de Janeiro", "rio de janeiro"]
 
 
+def test_perfil_de_cidade_vizinha_tambem_busca_a_maior_cidade_da_regiao():
+    usuarios = [
+        usuario(1, "Niterói, RJ", Modalidade.PRESENCIAL),
+        usuario(2, "São Gonçalo, RJ", Modalidade.HIBRIDO),
+        usuario(3, "Maricá, RJ", Modalidade.REMOTO),
+        usuario(4, "Cidade Inventada", Modalidade.PRESENCIAL),
+    ]
+
+    assert cidades_de_interesse(usuarios) == [
+        "Cidade Inventada",
+        "Niterói",
+        "Rio de Janeiro",
+        "São Gonçalo",
+    ]
+
+
 def test_cidades_de_interesse_sem_usuarios_e_vazia():
     assert cidades_de_interesse([]) == []
 

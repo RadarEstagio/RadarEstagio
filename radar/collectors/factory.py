@@ -10,6 +10,7 @@ from radar.collectors.jooble import ColetorJooble
 from radar.domain.areas import area_do_curso, termos_de_busca
 from radar.domain.models import Modalidade, Usuario
 from radar.domain.ports import ColetorDeVagas
+from radar.domain.regioes import polo_da_regiao
 from radar.settings import Settings
 
 MODALIDADES_QUE_DEPENDEM_DA_CIDADE = frozenset({Modalidade.PRESENCIAL, Modalidade.HIBRIDO})
@@ -50,12 +51,14 @@ def criar_coletor(
 
 
 def cidades_de_interesse(usuarios: Iterable[Usuario]) -> list[str]:
-    cidades = {
-        usuario.perfil.nome_da_cidade()
+    perfis = [
+        usuario.perfil
         for usuario in usuarios
         if usuario.perfil.modalidade in MODALIDADES_QUE_DEPENDEM_DA_CIDADE
-    }
-    return sorted(cidades)
+    ]
+    cidades = {perfil.nome_da_cidade() for perfil in perfis}
+    polos = {polo for perfil in perfis if (polo := polo_da_regiao(perfil.cidade))}
+    return sorted(cidades | polos)
 
 
 def areas_de_interesse(usuarios: Iterable[Usuario]) -> set[str]:
