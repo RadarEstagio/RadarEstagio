@@ -206,5 +206,33 @@
   "Engenharia – Civil": [
     "engenharia",
     null
+  ],
+  "Direito — Bacharelado": [
+    "direito",
+    "direito"
+  ],
+  "Ciências Jurídicas — Direito": [
+    "direito",
+    "direito"
+  ],
+  "Ciências Econômicas — Bacharelado": [
+    "economia",
+    "financas"
+  ],
+  "Letras — Português": [
+    "letras",
+    "educacao"
+  ],
+  "Engenharia‑Civil": [
+    "engenharia",
+    null
+  ],
+  "Letras − Inglês": [
+    "letras",
+    "educacao"
+  ],
+  "Administração  de  Empresas": [
+    "administracao",
+    "administracao"
   ]
 }
