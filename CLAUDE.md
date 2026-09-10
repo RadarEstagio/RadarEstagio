@@ -249,8 +249,18 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
   modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
   no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
-- **Tecnologias comparadas por nome normalizado e exato**, de modo que `Java` não corresponde a
-  `JavaScript`.
+- **Habilidades comparadas por nome normalizado, depois família, depois palavras inteiras**
+  (10/09/2026). Só o nome exato deixava estudantes fora de computação sem nada atendido: o anúncio
+  de Direito descreve atividades ("revisão de contratos", "atendimento ao público") e o perfil
+  cadastra a habilidade ("Contratos", "Atendimento"). Das 18 vagas da primeira mensagem de um
+  estudante de Direito, só duas casavam algo; as duas do Veirano, que descreviam o perfil, ficaram
+  fora com 64 e passam a 86. Quando nome e família falham, o requisito é atendido se todas as
+  palavras de um estão no outro, nos dois sentidos, com plural dobrado. Palavra inteira, nunca
+  pedaço: `Java` segue diferente de `JavaScript`, `Word` de `WordPress`, e uma palavra em comum
+  não basta ("análise de dados" não atende "análise de crédito"). Medido nas 153 extrações no
+  formato atual: 14 pares novos, todos legítimos, nenhuma nota caiu, computação mudou 2 de ~65
+  vagas por perfil. Risco aceito: habilidade genérica como "Organização" atende "organização de
+  arquivos" e pode subir vaga mais administrativa.
 - **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
   de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
   `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do

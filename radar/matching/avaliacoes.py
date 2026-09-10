@@ -1,6 +1,7 @@
 import functools
 import re
 import unicodedata
+from typing import NamedTuple
 
 from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, ROTULOS_DAS_SUBAREAS, area_do_curso
 from radar.domain.models import (
@@ -291,6 +292,42 @@ ALIASES_DE_HABILIDADES = {
     "ts": "typescript",
     "vuejs": "vue",
 }
+SEPARADORES_DE_PALAVRAS = re.compile(r"[\s/,;|]+")
+PALAVRAS_SEM_SIGNIFICADO = frozenset(
+    {
+        "a",
+        "o",
+        "as",
+        "os",
+        "ao",
+        "aos",
+        "e",
+        "ou",
+        "dos",
+        "das",
+        "nos",
+        "nas",
+        "para",
+        "por",
+        "pelo",
+        "pela",
+        "pelos",
+        "pelas",
+        "sobre",
+        "and",
+        "of",
+        "the",
+        "in",
+        "for",
+        "with",
+        "to",
+    }
+)
+
+
+class HabilidadeComparavel(NamedTuple):
+    nivel: int
+    palavras: frozenset[str]
 
 
 def pontuar_vagas(
@@ -461,55 +498,108 @@ def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) ->
 
 
 def _cobertura(requisitos: list[str], perfil: Perfil) -> float | None:
-    exigencias = _niveis_exigidos(requisitos)
+    exigencias = _exigencias(requisitos)
     if area_do_curso(perfil.curso) == COMPUTACAO:
-        exigencias = {nome: nivel for nome, nivel in exigencias.items() if _conta_para_a_nota(nome)}
+        exigencias = {
+            nome: exigencia for nome, exigencia in exigencias.items() if _conta_para_a_nota(nome)
+        }
     if not exigencias:
         return None
-    niveis_do_perfil = _niveis_do_perfil(perfil)
+    habilidades_do_perfil = _habilidades_do_perfil(perfil)
     atendidas = [
-        nome for nome, nivel in exigencias.items() if _atende(nome, nivel, niveis_do_perfil)
+        nome
+        for nome, exigencia in exigencias.items()
+        if _atende(nome, exigencia, habilidades_do_perfil)
     ]
     return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (SUAVIZACAO_DA_COBERTURA + len(exigencias))
 
 
-def _niveis_exigidos(requisitos: list[str]) -> dict[str, int]:
-    exigencias: dict[str, int] = {}
+def _exigencias(requisitos: list[str]) -> dict[str, HabilidadeComparavel]:
+    exigencias: dict[str, HabilidadeComparavel] = {}
     for requisito in requisitos:
         if requisito.strip():
             nome = _normalizar_habilidade(requisito)
-            nivel = nivel_exigido(requisito)
-            exigencias[nome] = min(exigencias.get(nome, nivel), nivel)
+            exigencia = _comparavel(requisito, nivel_exigido(requisito))
+            anterior = exigencias.get(nome)
+            if anterior is None or exigencia.nivel < anterior.nivel:
+                exigencias[nome] = exigencia
     return exigencias
 
 
-def _niveis_do_perfil(perfil: Perfil) -> dict[str, int]:
-    niveis: dict[str, int] = {}
+def _habilidades_do_perfil(perfil: Perfil) -> dict[str, HabilidadeComparavel]:
+    habilidades: dict[str, HabilidadeComparavel] = {}
     for habilidade in perfil.habilidades:
         if habilidade.strip():
             nome = _normalizar_habilidade(habilidade)
-            niveis[nome] = max(niveis.get(nome, NIVEL_NAO_INFORMADO), nivel_declarado(habilidade))
-    return niveis
+            declarada = _comparavel(habilidade, nivel_declarado(habilidade))
+            anterior = habilidades.get(nome)
+            if anterior is None or declarada.nivel > anterior.nivel:
+                habilidades[nome] = declarada
+    return habilidades
 
 
-def _atende(nome: str, nivel_minimo: int, niveis_do_perfil: dict[str, int]) -> bool:
-    nivel_do_perfil = _nivel_no_perfil(nome, niveis_do_perfil)
+def _comparavel(habilidade: str, nivel: int) -> HabilidadeComparavel:
+    return HabilidadeComparavel(nivel=nivel, palavras=_palavras(habilidade))
+
+
+def _atende(
+    nome: str,
+    exigencia: HabilidadeComparavel,
+    habilidades_do_perfil: dict[str, HabilidadeComparavel],
+) -> bool:
+    nivel_do_perfil = _nivel_no_perfil(nome, exigencia.palavras, habilidades_do_perfil)
     if nivel_do_perfil is None:
         return False
-    if nivel_minimo == NIVEL_NAO_INFORMADO:
+    if exigencia.nivel == NIVEL_NAO_INFORMADO:
         return True
-    return nivel_do_perfil >= nivel_minimo
+    return nivel_do_perfil >= exigencia.nivel
 
 
-def _nivel_no_perfil(nome: str, niveis_do_perfil: dict[str, int]) -> int | None:
-    if nome in niveis_do_perfil:
-        return niveis_do_perfil[nome]
-    presentes = [
-        niveis_do_perfil[membro]
+def _nivel_no_perfil(
+    nome: str, palavras: frozenset[str], habilidades_do_perfil: dict[str, HabilidadeComparavel]
+) -> int | None:
+    if nome in habilidades_do_perfil:
+        return habilidades_do_perfil[nome].nivel
+    da_familia = [
+        habilidades_do_perfil[membro].nivel
         for membro in _membros_das_familias().get(nome, frozenset())
-        if membro in niveis_do_perfil
+        if membro in habilidades_do_perfil
     ]
-    return max(presentes) if presentes else None
+    if da_familia:
+        return max(da_familia)
+    por_palavras = [
+        habilidade.nivel
+        for habilidade in habilidades_do_perfil.values()
+        if _correspondem_por_palavras(palavras, habilidade.palavras)
+    ]
+    return max(por_palavras) if por_palavras else None
+
+
+def _correspondem_por_palavras(requisito: frozenset[str], habilidade: frozenset[str]) -> bool:
+    if not requisito or not habilidade:
+        return False
+    return _todas_presentes(requisito, habilidade) or _todas_presentes(habilidade, requisito)
+
+
+def _todas_presentes(procuradas: frozenset[str], texto: frozenset[str]) -> bool:
+    formas_do_texto = {forma for palavra in texto for forma in _formas_da_palavra(palavra)}
+    return all(_formas_da_palavra(palavra) & formas_do_texto for palavra in procuradas)
+
+
+@functools.cache
+def _formas_da_palavra(palavra: str) -> frozenset[str]:
+    formas = {palavra}
+    if palavra.endswith("oes"):
+        formas.add(palavra[:-3] + "ao")
+    if len(palavra) > 4 and palavra.endswith(("ais", "eis")):
+        formas.add(palavra[:-2] + "l")
+    if palavra.endswith("ns"):
+        formas.add(palavra[:-2] + "m")
+    if palavra.endswith(("res", "zes")):
+        formas.add(palavra[:-2])
+    if len(palavra) > 3 and palavra.endswith("s") and not palavra.endswith("ss"):
+        formas.add(palavra[:-1])
+    return frozenset(formas)
 
 
 @functools.cache
@@ -520,8 +610,12 @@ def _membros_das_familias() -> dict[str, frozenset[str]]:
     }
 
 
-def _perfil_atende(habilidade: str, niveis_do_perfil: dict[str, int]) -> bool:
-    return _atende(_normalizar_habilidade(habilidade), nivel_exigido(habilidade), niveis_do_perfil)
+def _perfil_atende(habilidade: str, habilidades_do_perfil: dict[str, HabilidadeComparavel]) -> bool:
+    return _atende(
+        _normalizar_habilidade(habilidade),
+        _comparavel(habilidade, nivel_exigido(habilidade)),
+        habilidades_do_perfil,
+    )
 
 
 def nivel_exigido(habilidade: str) -> int:
@@ -546,22 +640,24 @@ def _conta_para_a_nota(requisito_normalizado: str) -> bool:
 def _classificar_habilidades(
     extracao: ExtracaoDaVaga, perfil: Perfil
 ) -> tuple[list[str], list[str], list[str]]:
-    niveis_do_perfil = _niveis_do_perfil(perfil)
+    habilidades_do_perfil = _habilidades_do_perfil(perfil)
     requisitos_atendidos = [
         habilidade
         for habilidade in _juntar_habilidades_da_vaga(extracao)
-        if _perfil_atende(habilidade, niveis_do_perfil)
+        if _perfil_atende(habilidade, habilidades_do_perfil)
     ]
     exigidas = _exigidas_pela_vaga(extracao)
     requisitos_nao_atendidos = [
-        habilidade for habilidade in exigidas if not _perfil_atende(habilidade, niveis_do_perfil)
+        habilidade
+        for habilidade in exigidas
+        if not _perfil_atende(habilidade, habilidades_do_perfil)
     ]
     nomes_exigidos = {_normalizar_habilidade(habilidade) for habilidade in exigidas}
     diferenciais_nao_atendidos = [
         habilidade
         for habilidade in _juntar_sem_repetir(extracao.habilidades_desejaveis)
         if _normalizar_habilidade(habilidade) not in nomes_exigidos
-        and not _perfil_atende(habilidade, niveis_do_perfil)
+        and not _perfil_atende(habilidade, habilidades_do_perfil)
     ]
     return requisitos_atendidos, requisitos_nao_atendidos, diferenciais_nao_atendidos
 
@@ -596,12 +692,26 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
-    sem_complemento = COMPLEMENTO_ENTRE_PARENTESES.sub(" ", _normalizar_texto(habilidade))
-    normalizada = QUALIFICADORES_DE_HABILIDADE.sub(" ", sem_complemento)
-    compacta = "".join(
-        caractere for caractere in normalizada if caractere.isalnum() or caractere in "#+"
-    )
+    compacta = _compactar(_sem_qualificadores(habilidade))
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
+
+
+def _palavras(habilidade: str) -> frozenset[str]:
+    palavras = set()
+    for palavra in SEPARADORES_DE_PALAVRAS.split(_sem_qualificadores(habilidade)):
+        compacta = _compactar(palavra)
+        if compacta and compacta not in PALAVRAS_SEM_SIGNIFICADO:
+            palavras.add(ALIASES_DE_HABILIDADES.get(compacta, compacta))
+    return frozenset(palavras)
+
+
+def _sem_qualificadores(habilidade: str) -> str:
+    sem_complemento = COMPLEMENTO_ENTRE_PARENTESES.sub(" ", _normalizar_texto(habilidade))
+    return QUALIFICADORES_DE_HABILIDADE.sub(" ", sem_complemento)
+
+
+def _compactar(texto: str) -> str:
+    return "".join(caractere for caractere in texto if caractere.isalnum() or caractere in "#+")
 
 
 def _coeficiente(nivel: NivelCompatibilidade) -> float:

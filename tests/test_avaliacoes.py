@@ -1,6 +1,8 @@
 import math
 from datetime import UTC, datetime
 
+import pytest
+
 from radar.domain.models import AreaDeInteresse, ExtracaoDaVaga, Modalidade, Perfil, Vaga
 from radar.matching.avaliacoes import pontuar
 
@@ -762,3 +764,86 @@ def test_diferencial_nao_entra_nos_requisitos_a_conferir():
 
     assert com_desejaveis.requisitos_nao_atendidos == []
     assert com_desejaveis.diferenciais_nao_atendidos == ["Angular"]
+
+
+def test_habilidade_do_perfil_contida_no_requisito_o_atende():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(
+            [
+                "revisão de contratos",
+                "atendimento ao público",
+                "organização de arquivos",
+                "redação de peças processuais",
+            ]
+        ),
+        perfil_de_direito(["Contratos", "Atendimento", "Organização", "Redação"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_requisito_generico_contido_na_habilidade_do_perfil_e_atendido():
+    assert pontuar(
+        vaga(), extracao_juridica(["pesquisas"]), perfil_de_direito(["Pesquisa jurídica"])
+    ).requisitos_atendidos == ["pesquisas"]
+    assert pontuar(
+        vaga(), extracao(habilidades_obrigatorias=["Spring"]), perfil(["Spring Boot"])
+    ).requisitos_atendidos == ["Spring"]
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida"),
+    [
+        ("Contrato", "contratos"),
+        ("Petição", "elaboração de petições"),
+        ("Rede social", "redes sociais"),
+        ("API", "APIs REST"),
+        ("Gestor de tráfego", "gestores de tráfego"),
+        ("Software", "softwares de gestão"),
+    ],
+)
+def test_plural_nao_impede_a_correspondencia_por_palavras(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida"),
+    [
+        ("Java", "JavaScript"),
+        ("Word", "WordPress"),
+        ("SQL", "MySQL"),
+        ("Análise de dados", "análise de crédito"),
+        ("Power BI", "Power Apps"),
+        ("Redes", "Red Hat"),
+    ],
+)
+def test_palavra_parecida_ou_so_uma_em_comum_nao_basta(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+    assert resultado.requisitos_nao_atendidos == [exigida]
+
+
+def test_nivel_continua_valendo_na_correspondencia_por_palavras():
+    exigente = extracao_juridica(["inglês técnico avançado"])
+
+    assert pontuar(vaga(), exigente, perfil_de_direito(["Inglês"])).requisitos_atendidos == []
+    assert pontuar(
+        vaga(), exigente, perfil_de_direito(["Inglês avançado"])
+    ).requisitos_atendidos == ["inglês técnico avançado"]
+
+
+def test_vaga_que_descreve_as_habilidades_do_perfil_passa_a_vaga_muda():
+    estudante = perfil_de_direito(["Redação", "Pesquisa jurídica", "Contratos"])
+    muda = ExtracaoDaVaga(id_vaga="vaga-1", area_da_vaga="direito", cursos_aceitos=["Direito"])
+    descritiva = ExtracaoDaVaga(
+        id_vaga="vaga-1",
+        area_da_vaga="direito",
+        cursos_aceitos=["Direito"],
+        habilidades_principais=["pesquisas", "elaboração de petições", "revisão de contratos"],
+    )
+
+    assert pontuar(vaga(), descritiva, estudante).nota > pontuar(vaga(), muda, estudante).nota
