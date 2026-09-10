@@ -132,8 +132,9 @@ descrição e o Telegram.
 
 A IA extrai **fatos da vaga**; o Python **compara** esses fatos com cada perfil. A separação
 existe por custo: o prompt não contém perfil algum, então uma vaga é extraída **uma vez** e a
-extração serve todos os usuários. O custo de IA passou de O(usuários × vagas) para O(vagas), e
-o vigésimo usuário não custa nada.
+extração serve todos os usuários. O custo de IA passou de O(usuários × vagas) para O(vagas):
+usuário novo não repete extração alguma, mas traz as vagas novas da sua cidade e da sua área, e
+no plano pago cada extração é requisição cobrada.
 
 - **Por que Gemini**: começou pela camada gratuita, suficiente para validar o produto; desde
   10/09/2026 o projeto usa o plano pago.
