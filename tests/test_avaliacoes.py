@@ -867,6 +867,16 @@ def test_nivel_dito_no_fim_vale_para_todas_as_partes_do_requisito():
         assert pontuar(vaga(), exigente, perfil_de_direito(sem_nivel)).requisitos_atendidos == []
 
 
+def test_nivel_dito_no_fim_da_habilidade_do_perfil_vale_para_todas_as_partes():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês avançado"]),
+        perfil_de_direito(["Inglês e Espanhol fluentes"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Inglês avançado"]
+
+
 def test_nivel_dito_so_na_primeira_parte_nao_vale_para_as_outras():
     resultado = pontuar(
         vaga(),

@@ -111,16 +111,16 @@ SOFT_SKILLS = frozenset(
 )
 PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
 QUALIFICADORES_DE_HABILIDADE = re.compile(
-    r"\b(?:avancad[oa]s?|intermediari[oa]s?|basic[oa]s?|fluente|nativ[oa]|iniciante|nivel"
+    r"\b(?:avancad[oa]s?|intermediari[oa]s?|basic[oa]s?|fluentes?|nativ[oa]s?|iniciantes?|nivel"
     r"|bom|boa|bons|boas|otim[oa]|excelente|solid[oa]|conhecimentos?|dominio|nocoes"
     r"|experiencia|vivencia|habilidades?|em|de|do|da|com|no|na)\b"
 )
 COMPLEMENTO_ENTRE_PARENTESES = re.compile(r"\([^)]*\)")
 NIVEL_NAO_INFORMADO = 0
 PADROES_DE_NIVEL = (
-    (re.compile(r"\b(?:basic[oa]s?|iniciante|nocoes)\b"), 1),
+    (re.compile(r"\b(?:basic[oa]s?|iniciantes?|nocoes)\b"), 1),
     (re.compile(r"\bintermediari[oa]s?\b"), 2),
-    (re.compile(r"\b(?:avancad[oa]s?|fluente|nativ[oa]|dominio)\b"), 3),
+    (re.compile(r"\b(?:avancad[oa]s?|fluentes?|nativ[oa]s?|dominio)\b"), 3),
 )
 BANCOS_DE_DADOS = (
     "SQL",
