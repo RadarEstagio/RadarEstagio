@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import UTC, date, datetime, time
 from html import escape
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
@@ -61,6 +61,13 @@ def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
 
 def data_local(momento: datetime) -> date:
     return momento.astimezone(FUSO_DA_ENTREGA).date()
+
+
+def data_de_publicacao(publicada_em: datetime) -> date:
+    em_utc = publicada_em.astimezone(UTC)
+    if em_utc.time() == time(0):
+        return em_utc.date()
+    return data_local(publicada_em)
 
 
 def formatar_mensagem(
@@ -155,7 +162,8 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
         f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
         f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
         f" · {escape(rotulo_modalidade(vaga))}",
-        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
+        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))}"
+        f" · Publicada em {data_de_publicacao(vaga.publicada_em):%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
     if resultado.requisitos_atendidos:

@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 
 from radar.domain.models import Modalidade, Recomendacao, ResultadoMatch, Vaga
@@ -520,3 +521,33 @@ def test_texto_da_fonte_com_quebra_de_linha_vira_uma_linha_so():
     com_quebra = resultado(50, titulo="Estágio\nem\tDados")
 
     assert "Estágio em Dados" in mensagem([com_quebra])
+
+
+def test_todas_as_datas_da_mensagem_usam_o_mesmo_fuso():
+    publicada_as_21h30_de_brasilia = datetime(2026, 9, 10, 0, 30, tzinfo=UTC)
+    entregue_as_22h_de_brasilia = datetime(2026, 9, 10, 1, 0, tzinfo=UTC)
+    vaga_da_noite = resultado(80).model_copy(
+        update={"vaga": vaga().model_copy(update={"publicada_em": publicada_as_21h30_de_brasilia})}
+    )
+
+    texto = mensagem([vaga_da_noite], entregue_as_22h_de_brasilia)
+
+    assert set(re.findall(r"\d{2}/\d{2}/\d{4}", texto)) == {"09/09/2026"}
+
+
+def test_fonte_que_so_informa_a_data_mantem_o_dia_informado():
+    so_a_data = datetime(2026, 9, 4, tzinfo=UTC)
+    vaga_sem_hora = resultado(80).model_copy(
+        update={"vaga": vaga().model_copy(update={"publicada_em": so_a_data})}
+    )
+
+    assert "Publicada em 04/09/2026" in mensagem([vaga_sem_hora], MOMENTO_DE_TESTE)
+
+
+def test_horario_real_depois_das_21h_de_brasilia_fica_no_proprio_dia():
+    as_22h_de_brasilia = datetime(2026, 9, 5, 1, 0, tzinfo=UTC)
+    vaga_da_noite = resultado(80).model_copy(
+        update={"vaga": vaga().model_copy(update={"publicada_em": as_22h_de_brasilia})}
+    )
+
+    assert "Publicada em 04/09/2026" in mensagem([vaga_da_noite], MOMENTO_DE_TESTE)
