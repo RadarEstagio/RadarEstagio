@@ -839,7 +839,6 @@ def test_requisito_composto_exige_todas_as_partes(do_perfil, exigida: str, atend
 def test_nivel_de_uma_parte_da_habilidade_nao_vaza_para_a_outra():
     estudante = perfil_de_direito(["Inglês fluente e Espanhol básico"])
 
-    assert pontuar(vaga(), extracao_juridica(["Espanhol avançado"]), estudante).nota < 100
     assert (
         pontuar(vaga(), extracao_juridica(["Espanhol avançado"]), estudante).requisitos_atendidos
         == []
@@ -849,18 +848,96 @@ def test_nivel_de_uma_parte_da_habilidade_nao_vaza_para_a_outra():
     ).requisitos_atendidos == ["Inglês avançado"]
 
 
-def test_nivel_dito_uma_vez_vale_para_todas_as_partes_do_requisito():
+def test_frase_com_dois_niveis_sem_separador_nao_compara_por_palavras():
+    estudante = perfil_de_direito(["Inglês fluente Espanhol básico"])
+
+    assert (
+        pontuar(vaga(), extracao_juridica(["Espanhol avançado"]), estudante).requisitos_atendidos
+        == []
+    )
+
+
+def test_nivel_dito_no_fim_vale_para_todas_as_partes_do_requisito():
     exigente = extracao_juridica(["Inglês e Espanhol avançados"])
 
     assert pontuar(
         vaga(), exigente, perfil_de_direito(["Inglês avançado", "Espanhol fluente"])
     ).requisitos_atendidos == ["Inglês e Espanhol avançados"]
+    for sem_nivel in (["Inglês avançado", "Espanhol"], ["Inglês", "Espanhol avançado"]):
+        assert pontuar(vaga(), exigente, perfil_de_direito(sem_nivel)).requisitos_atendidos == []
+
+
+def test_nivel_dito_so_na_primeira_parte_nao_vale_para_as_outras():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Excel avançado e Power BI"]),
+        perfil_de_direito(["Excel avançado", "Power BI"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Excel avançado e Power BI"]
+
+
+def test_nivel_entre_parenteses_fica_com_a_propria_parte():
+    exigente = extracao_juridica(["Inglês (avançado) e Espanhol (básico)"])
+
     assert (
         pontuar(
-            vaga(), exigente, perfil_de_direito(["Inglês avançado", "Espanhol"])
+            vaga(), exigente, perfil_de_direito(["Inglês básico", "Espanhol básico"])
         ).requisitos_atendidos
         == []
     )
+    assert pontuar(
+        vaga(), exigente, perfil_de_direito(["Inglês avançado", "Espanhol básico"])
+    ).requisitos_atendidos == ["Inglês (avançado) e Espanhol (básico)"]
+
+
+def test_separador_dentro_de_parenteses_nao_parte_o_requisito():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["revisão de contratos (civis, trabalhistas)"]),
+        perfil_de_direito(["Contratos"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["revisão de contratos (civis, trabalhistas)"]
+
+
+@pytest.mark.parametrize("exigida", ["Inglês ou Espanhol", "Inglês e/ou Espanhol"])
+def test_ou_e_alternativa_e_basta_uma_parte(exigida: str):
+    assert pontuar(
+        vaga(), extracao_juridica([exigida]), perfil_de_direito(["Espanhol"])
+    ).requisitos_atendidos == [exigida]
+    assert (
+        pontuar(
+            vaga(), extracao_juridica([exigida]), perfil_de_direito(["Francês"])
+        ).requisitos_atendidos
+        == []
+    )
+
+
+@pytest.mark.parametrize("exigida", ["Excel & Power BI", "Excel + Power BI"])
+def test_e_comercial_e_mais_com_espacos_juntam_partes(exigida: str):
+    assert (
+        pontuar(
+            vaga(), extracao_juridica([exigida]), perfil_de_direito(["Excel"])
+        ).requisitos_atendidos
+        == []
+    )
+    assert pontuar(
+        vaga(), extracao_juridica([exigida]), perfil_de_direito(["Excel", "Power BI"])
+    ).requisitos_atendidos == [exigida]
+
+
+def test_requisito_repetido_nao_depende_da_ordem_em_que_a_ia_listou():
+    estudante = perfil_de_direito(["Excel"])
+    uma_ordem = pontuar(
+        vaga(), extracao_juridica(["Excel Power BI", "Excel / Power BI"]), estudante
+    )
+    outra_ordem = pontuar(
+        vaga(), extracao_juridica(["Excel / Power BI", "Excel Power BI"]), estudante
+    )
+
+    assert uma_ordem.nota == outra_ordem.nota
+    assert uma_ordem.requisitos_atendidos == outra_ordem.requisitos_atendidos == []
 
 
 def test_acrescentar_habilidade_ao_perfil_nunca_derruba_o_que_ja_era_atendido():
@@ -874,10 +951,26 @@ def test_acrescentar_habilidade_ao_perfil_nunca_derruba_o_que_ja_era_atendido():
 
 def test_familia_decide_sozinha_o_requisito_que_nomeia():
     resultado = pontuar(
-        vaga(), extracao_juridica(["banco de dados"]), perfil_de_direito(["Estrutura de dados"])
+        vaga(), extracao_juridica(["Dados"]), perfil_de_direito(["Estrutura de dados"])
     )
 
     assert resultado.requisitos_atendidos == []
+
+
+def test_vaga_de_computacao_nao_compara_por_palavras_nem_para_quem_e_de_outro_curso():
+    estatistica = Perfil(
+        curso="Estatística",
+        periodo=4,
+        habilidades=["React", "SQL", "Spring"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+    de_computacao = extracao(
+        cursos_aceitos=["Estatística"],
+        habilidades_obrigatorias=["React Native", "SQL Server", "Spring Boot"],
+    )
+
+    assert pontuar(vaga(), de_computacao, estatistica).requisitos_atendidos == []
 
 
 def test_apelido_de_tecnologia_nao_vale_palavra_por_palavra():

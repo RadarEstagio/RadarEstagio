@@ -1,6 +1,8 @@
 import functools
 import re
 import unicodedata
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import NamedTuple
 
 from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, ROTULOS_DAS_SUBAREAS, area_do_curso
@@ -293,7 +295,13 @@ ALIASES_DE_HABILIDADES = {
     "vuejs": "vue",
 }
 SEPARADORES_DE_PALAVRAS = re.compile(r"[\s/,;|]+")
-SEPARADORES_DE_PARTES = re.compile(r"\s+e\s+|\s*[/,;&|]\s*|\s+\+\s+", re.IGNORECASE)
+FORA_DE_PARENTESES = r"(?![^(]*\))"
+SEPARADORES_DE_PARTES = re.compile(
+    r"(?:\s+e\s+|\s*[/,;|]\s*|\s+[&+]\s+)" + FORA_DE_PARENTESES, re.IGNORECASE
+)
+SEPARADORES_DE_ALTERNATIVAS = re.compile(
+    r"(?:\s+e\s*/\s*ou\s+|\s+ou\s+)" + FORA_DE_PARENTESES, re.IGNORECASE
+)
 PALAVRAS_SEM_SIGNIFICADO = frozenset(
     {
         "a",
@@ -329,7 +337,7 @@ PALAVRAS_SEM_SIGNIFICADO = frozenset(
 class HabilidadeComparavel(NamedTuple):
     nivel: int
     palavras: frozenset[str]
-    partes: tuple[tuple[str, "HabilidadeComparavel"], ...] = ()
+    alternativas: tuple[tuple[tuple[str, "HabilidadeComparavel"], ...], ...] = ()
 
 
 def pontuar_vagas(
@@ -466,9 +474,11 @@ def _areas_reconhecidas(extracao: ExtracaoDaVaga) -> set[str]:
 
 
 def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
-    obrigatorias = _cobertura(extracao.habilidades_obrigatorias, perfil)
-    principais = _cobertura(extracao.habilidades_principais, perfil)
-    desejaveis = _cobertura(extracao.habilidades_desejaveis, perfil)
+    habilidades_do_perfil = _habilidades_do_perfil(perfil, extracao)
+    computacao = area_do_curso(perfil.curso) == COMPUTACAO
+    obrigatorias = _cobertura(extracao.habilidades_obrigatorias, habilidades_do_perfil, computacao)
+    principais = _cobertura(extracao.habilidades_principais, habilidades_do_perfil, computacao)
+    desejaveis = _cobertura(extracao.habilidades_desejaveis, habilidades_do_perfil, computacao)
     if obrigatorias is not None and principais is not None and desejaveis is not None:
         return (
             PESO_OBRIGATORIAS_QUANDO_TODAS * obrigatorias
@@ -499,86 +509,105 @@ def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) ->
     return COBERTURA_NEUTRA_SEM_STACK_DECLARADA
 
 
-def _cobertura(requisitos: list[str], perfil: Perfil) -> float | None:
+def _cobertura(
+    requisitos: list[str],
+    habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
+    computacao: bool,
+) -> float | None:
     exigencias = _exigencias(requisitos)
-    if area_do_curso(perfil.curso) == COMPUTACAO:
+    if computacao:
         exigencias = {
-            nome: exigencia for nome, exigencia in exigencias.items() if _conta_para_a_nota(nome)
+            nome: variantes for nome, variantes in exigencias.items() if _conta_para_a_nota(nome)
         }
     if not exigencias:
         return None
-    habilidades_do_perfil = _habilidades_do_perfil(perfil)
     atendidas = [
         nome
-        for nome, exigencia in exigencias.items()
-        if _atende(nome, exigencia, habilidades_do_perfil)
+        for nome, variantes in exigencias.items()
+        if _todas_atendidas(nome, variantes, habilidades_do_perfil)
     ]
     return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (SUAVIZACAO_DA_COBERTURA + len(exigencias))
 
 
-def _exigencias(requisitos: list[str]) -> dict[str, HabilidadeComparavel]:
-    exigencias: dict[str, HabilidadeComparavel] = {}
+def _exigencias(requisitos: list[str]) -> dict[str, tuple[HabilidadeComparavel, ...]]:
+    exigencias: dict[str, tuple[HabilidadeComparavel, ...]] = {}
     for requisito in requisitos:
         if requisito.strip():
             nome = _normalizar_habilidade(requisito)
-            exigencia = _exigencia(requisito)
-            anterior = exigencias.get(nome)
-            if anterior is None or exigencia.nivel < anterior.nivel:
-                exigencias[nome] = exigencia
+            exigencias[nome] = (*exigencias.get(nome, ()), _exigencia(requisito))
     return exigencias
 
 
+def _todas_atendidas(
+    nome: str,
+    variantes: tuple[HabilidadeComparavel, ...],
+    habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
+) -> bool:
+    return all(_atende(nome, variante, habilidades_do_perfil) for variante in variantes)
+
+
+@functools.cache
 def _exigencia(requisito: str) -> HabilidadeComparavel:
-    nivel = nivel_exigido(requisito)
-    partes = _partes(requisito)
-    if len(partes) < 2:
-        return HabilidadeComparavel(nivel, _palavras_de_um_nivel(requisito))
+    alternativas = _alternativas(requisito)
+    if sum(len(partes) for partes in alternativas) < 2:
+        return HabilidadeComparavel(nivel_exigido(requisito), _palavras_de_um_nivel(requisito))
+    nivel_distribuido = nivel_exigido(alternativas[-1][-1])
     return HabilidadeComparavel(
-        nivel,
+        nivel_exigido(requisito),
         frozenset(),
         tuple(
-            (
-                _normalizar_habilidade(parte),
-                HabilidadeComparavel(_nivel_da_parte(parte, nivel), _palavras_de_um_nivel(parte)),
+            tuple(
+                (
+                    _normalizar_habilidade(parte),
+                    HabilidadeComparavel(
+                        _com_nivel_distribuido(nivel_exigido(parte), nivel_distribuido),
+                        _palavras_de_um_nivel(parte),
+                    ),
+                )
+                for parte in partes
             )
-            for parte in partes
+            for partes in alternativas
         ),
     )
 
 
-def _nivel_da_parte(parte: str, nivel_do_requisito: int) -> int:
-    nivel = nivel_exigido(parte)
-    return nivel_do_requisito if nivel == NIVEL_NAO_INFORMADO else nivel
+def _com_nivel_distribuido(nivel: int, nivel_distribuido: int) -> int:
+    return nivel_distribuido if nivel == NIVEL_NAO_INFORMADO else nivel
 
 
-def _habilidades_do_perfil(perfil: Perfil) -> dict[str, HabilidadeComparavel]:
-    return _habilidades_declaradas(
-        tuple(perfil.habilidades), area_do_curso(perfil.curso) != COMPUTACAO
-    )
+def _habilidades_do_perfil(
+    perfil: Perfil, extracao: ExtracaoDaVaga
+) -> Mapping[str, HabilidadeComparavel]:
+    compara_palavras = COMPUTACAO not in (area_do_curso(perfil.curso), extracao.area_da_vaga)
+    return _habilidades_declaradas(tuple(perfil.habilidades), compara_palavras)
 
 
 @functools.cache
 def _habilidades_declaradas(
     habilidades: tuple[str, ...], compara_palavras: bool
-) -> dict[str, HabilidadeComparavel]:
+) -> Mapping[str, HabilidadeComparavel]:
     declaradas: dict[str, HabilidadeComparavel] = {}
     for habilidade in habilidades:
-        partes = _partes(habilidade)
-        composta = len(partes) > 1
-        _declarar(declaradas, habilidade, compara_palavras and not composta)
-        for parte in partes if composta else []:
-            _declarar(declaradas, parte, compara_palavras)
-    return declaradas
+        partes = [parte for alternativa in _alternativas(habilidade) for parte in alternativa]
+        if len(partes) < 2:
+            _declarar(declaradas, habilidade, nivel_declarado(habilidade), compara_palavras)
+            continue
+        _declarar(declaradas, habilidade, nivel_exigido(habilidade), False)
+        nivel_distribuido = nivel_declarado(partes[-1])
+        for parte in partes:
+            nivel = _com_nivel_distribuido(nivel_declarado(parte), nivel_distribuido)
+            _declarar(declaradas, parte, nivel, compara_palavras)
+    return MappingProxyType(declaradas)
 
 
 def _declarar(
-    declaradas: dict[str, HabilidadeComparavel], texto: str, compara_palavras: bool
+    declaradas: dict[str, HabilidadeComparavel], texto: str, nivel: int, compara_palavras: bool
 ) -> None:
     if not texto.strip():
         return
     nome = _normalizar_habilidade(texto)
     palavras = _palavras_de_um_nivel(texto) if compara_palavras else frozenset()
-    declarada = HabilidadeComparavel(nivel_declarado(texto), palavras)
+    declarada = HabilidadeComparavel(nivel, palavras)
     anterior = declaradas.get(nome)
     if anterior is None or declarada.nivel > anterior.nivel:
         declaradas[nome] = declarada
@@ -587,20 +616,23 @@ def _declarar(
 def _atende(
     nome: str,
     exigencia: HabilidadeComparavel,
-    habilidades_do_perfil: dict[str, HabilidadeComparavel],
+    habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
 ) -> bool:
     if _satisfeita(nome, exigencia, habilidades_do_perfil):
         return True
-    return bool(exigencia.partes) and all(
-        _satisfeita(nome_da_parte, parte, habilidades_do_perfil)
-        for nome_da_parte, parte in exigencia.partes
+    return any(
+        all(
+            _satisfeita(nome_da_parte, parte, habilidades_do_perfil)
+            for nome_da_parte, parte in alternativa
+        )
+        for alternativa in exigencia.alternativas
     )
 
 
 def _satisfeita(
     nome: str,
     exigencia: HabilidadeComparavel,
-    habilidades_do_perfil: dict[str, HabilidadeComparavel],
+    habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
 ) -> bool:
     nivel_do_perfil = _nivel_no_perfil(nome, exigencia.palavras, habilidades_do_perfil)
     if nivel_do_perfil is None:
@@ -609,7 +641,7 @@ def _satisfeita(
 
 
 def _nivel_no_perfil(
-    nome: str, palavras: frozenset[str], habilidades_do_perfil: dict[str, HabilidadeComparavel]
+    nome: str, palavras: frozenset[str], habilidades_do_perfil: Mapping[str, HabilidadeComparavel]
 ) -> int | None:
     familia = _membros_das_familias().get(nome)
     niveis = [habilidades_do_perfil[nome].nivel] if nome in habilidades_do_perfil else []
@@ -666,10 +698,15 @@ def _membros_das_familias() -> dict[str, frozenset[str]]:
     }
 
 
-def _perfil_atende(habilidade: str, habilidades_do_perfil: dict[str, HabilidadeComparavel]) -> bool:
-    return _atende(
-        _normalizar_habilidade(habilidade), _exigencia(habilidade), habilidades_do_perfil
-    )
+def _atendida_na_vaga(
+    habilidade: str,
+    exigidas: dict[str, tuple[HabilidadeComparavel, ...]],
+    desejaveis: dict[str, tuple[HabilidadeComparavel, ...]],
+    habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
+) -> bool:
+    nome = _normalizar_habilidade(habilidade)
+    variantes = exigidas.get(nome) or desejaveis[nome]
+    return _todas_atendidas(nome, variantes, habilidades_do_perfil)
 
 
 def nivel_exigido(habilidade: str) -> int:
@@ -694,24 +731,24 @@ def _conta_para_a_nota(requisito_normalizado: str) -> bool:
 def _classificar_habilidades(
     extracao: ExtracaoDaVaga, perfil: Perfil
 ) -> tuple[list[str], list[str], list[str]]:
-    habilidades_do_perfil = _habilidades_do_perfil(perfil)
+    habilidades_do_perfil = _habilidades_do_perfil(perfil, extracao)
+    exigidas = _exigencias(extracao.habilidades_obrigatorias + extracao.habilidades_principais)
+    desejaveis = _exigencias(extracao.habilidades_desejaveis)
     requisitos_atendidos = [
         habilidade
         for habilidade in _juntar_habilidades_da_vaga(extracao)
-        if _perfil_atende(habilidade, habilidades_do_perfil)
+        if _atendida_na_vaga(habilidade, exigidas, desejaveis, habilidades_do_perfil)
     ]
-    exigidas = _exigidas_pela_vaga(extracao)
     requisitos_nao_atendidos = [
         habilidade
-        for habilidade in exigidas
-        if not _perfil_atende(habilidade, habilidades_do_perfil)
+        for habilidade in _exigidas_pela_vaga(extracao)
+        if not _atendida_na_vaga(habilidade, exigidas, desejaveis, habilidades_do_perfil)
     ]
-    nomes_exigidos = {_normalizar_habilidade(habilidade) for habilidade in exigidas}
     diferenciais_nao_atendidos = [
         habilidade
         for habilidade in _juntar_sem_repetir(extracao.habilidades_desejaveis)
-        if _normalizar_habilidade(habilidade) not in nomes_exigidos
-        and not _perfil_atende(habilidade, habilidades_do_perfil)
+        if _normalizar_habilidade(habilidade) not in exigidas
+        and not _atendida_na_vaga(habilidade, exigidas, desejaveis, habilidades_do_perfil)
     ]
     return requisitos_atendidos, requisitos_nao_atendidos, diferenciais_nao_atendidos
 
@@ -750,11 +787,12 @@ def _normalizar_habilidade(habilidade: str) -> str:
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
 
 
-def _partes(habilidade: str) -> list[str]:
-    sem_complemento = COMPLEMENTO_ENTRE_PARENTESES.sub(" ", habilidade)
-    return [
-        parte.strip() for parte in SEPARADORES_DE_PARTES.split(sem_complemento) if parte.strip()
-    ]
+def _alternativas(habilidade: str) -> list[list[str]]:
+    divididas = (
+        [parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()]
+        for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade)
+    )
+    return [partes for partes in divididas if partes]
 
 
 def _palavras_de_um_nivel(habilidade: str) -> frozenset[str]:
