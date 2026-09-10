@@ -207,6 +207,9 @@ conseguiu casar por id. Não sabe o que é "tentar de novo".
 | 14 vagas, lote de 10 | 2 chamadas |
 | lote de 10 falha (JSON quebrado, erro 500) | divide em 5 + 5, tenta cada; repete até isolar a vaga com problema |
 | modelo esqueceu de responder 1 vaga | extrai só ela |
+| modelo devolveu parte do lote, só com ids do lote, e faltaram 2 ou mais | pede as que faltaram juntas, uma vez; o que ainda faltar vai uma a uma |
+| voltou vazio, ou com id fora do lote ou repetido | pede as que faltaram uma a uma |
+| a repetição falhou com erro não temporário, ou voltou com id fora do que faltou ou repetido | descarta a repetição e pede uma a uma |
 | esqueceu mesmo sozinha | ignora e registra |
 | cota excedida (HTTP 429) | espera o "retry in Ns" e repete o mesmo lote; acima de 120 s desiste e envia o que já tem |
 | avaliador fora do ar (502, 503, 504) | espera e repete o **mesmo** lote, sem dividir |
