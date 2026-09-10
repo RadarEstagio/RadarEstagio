@@ -70,6 +70,13 @@
         "Power BI",
         "Linux",
         "Redes"
+      ],
+      "cursos_sugeridos": [
+        "Ciência da Computação",
+        "Engenharia de Software",
+        "Análise e Desenvolvimento de Sistemas",
+        "Sistemas de Informação",
+        "Ciência de Dados"
       ]
     },
     {
@@ -106,6 +113,9 @@
         "LGPD",
         "Atendimento",
         "Organização"
+      ],
+      "cursos_sugeridos": [
+        "Direito"
       ]
     },
     {
@@ -146,6 +156,12 @@
         "Inglês",
         "Redação",
         "Planejamento"
+      ],
+      "cursos_sugeridos": [
+        "Administração",
+        "Administração Pública",
+        "Processos Gerenciais",
+        "Secretariado Executivo"
       ]
     },
     {
@@ -189,6 +205,12 @@
         "Fluxo de caixa",
         "Conciliação bancária",
         "Pacote Office"
+      ],
+      "cursos_sugeridos": [
+        "Ciências Contábeis",
+        "Ciências Econômicas",
+        "Gestão Financeira",
+        "Ciências Atuariais"
       ]
     },
     {
@@ -236,6 +258,13 @@
         "Produção de conteúdo",
         "Comunicação",
         "Inglês"
+      ],
+      "cursos_sugeridos": [
+        "Marketing",
+        "Publicidade e Propaganda",
+        "Jornalismo",
+        "Design Gráfico",
+        "Comunicação Social"
       ]
     },
     {
@@ -271,6 +300,11 @@
         "LinkedIn",
         "Treinamento",
         "Inglês"
+      ],
+      "cursos_sugeridos": [
+        "Psicologia",
+        "Gestão de Recursos Humanos",
+        "Gestão de Pessoas"
       ]
     },
     {
@@ -307,6 +341,11 @@
         "Inglês",
         "Apresentações",
         "Organização"
+      ],
+      "cursos_sugeridos": [
+        "Comércio Exterior",
+        "Relações Internacionais",
+        "Gestão Comercial"
       ]
     },
     {
@@ -340,6 +379,11 @@
         "Power BI",
         "Negociação",
         "Pacote Office",
+        "Transportes"
+      ],
+      "cursos_sugeridos": [
+        "Logística",
+        "Gestão de Logística",
         "Transportes"
       ]
     },
@@ -397,6 +441,13 @@
         "Manutenção",
         "Segurança do trabalho",
         "Inglês"
+      ],
+      "cursos_sugeridos": [
+        "Engenharia Civil",
+        "Engenharia de Produção",
+        "Engenharia Mecânica",
+        "Engenharia Elétrica",
+        "Arquitetura e Urbanismo"
       ]
     },
     {
@@ -440,6 +491,13 @@
         "Anatomia",
         "Laboratório",
         "Inglês"
+      ],
+      "cursos_sugeridos": [
+        "Enfermagem",
+        "Fisioterapia",
+        "Nutrição",
+        "Farmácia",
+        "Educação Física"
       ]
     },
     {
@@ -476,6 +534,12 @@
         "Inglês",
         "Canva",
         "Educação inclusiva"
+      ],
+      "cursos_sugeridos": [
+        "Pedagogia",
+        "Letras",
+        "História",
+        "Geografia"
       ]
     },
     {
@@ -511,6 +575,12 @@
         "Hospitalidade",
         "Cozinha",
         "Vendas"
+      ],
+      "cursos_sugeridos": [
+        "Turismo",
+        "Hotelaria",
+        "Gastronomia",
+        "Eventos"
       ]
     }
   ],
