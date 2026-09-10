@@ -25,7 +25,7 @@ from radar.notification.formatador import (
     formatar_mensagem_sem_vagas,
     formatar_pergunta_de_feedback,
 )
-from radar.notification.telegram import ErroDeNotificacao
+from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
@@ -326,7 +326,7 @@ def atender_usuario_travado(
         notificador.enviar_pergunta(usuario.chat_id, pergunta)
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
-        pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
         return None
     try:
         repositorio.registrar_envios(usuario, selecionadas)
@@ -361,7 +361,7 @@ def avisar_que_nao_houve_vaga(
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
-        pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
         return
     if dias is None:
         return
@@ -385,6 +385,18 @@ def silencio_prolongado(usuario: Usuario, agora: datetime, dias: int) -> bool:
     if usuario.sem_recomendacao_desde > limite:
         return False
     return usuario.silencio_avisado_em is None or usuario.silencio_avisado_em <= limite
+
+
+def pausar_se_o_destinatario_recusou(
+    repositorio: Repositorio,
+    usuario: Usuario,
+    erro: ErroDeNotificacao,
+    falhas_ate_pausar: int,
+) -> None:
+    if not isinstance(erro, DestinatarioRecusouAMensagem):
+        logger.info("falha temporária de entrega do usuário %s não conta para a pausa", usuario.id)
+        return
+    pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
 
 
 def pausar_apos_falhas_seguidas(

@@ -13,7 +13,7 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
-from radar.notification.telegram import ErroDeNotificacao
+from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -93,23 +93,32 @@ class PontuadorFalso:
 
 
 class NotificadorFalso:
-    def __init__(self, chats_com_erro: set[str] = frozenset()) -> None:
+    def __init__(
+        self,
+        chats_com_erro: set[str] = frozenset(),
+        chats_com_falha_temporaria: set[str] = frozenset(),
+    ) -> None:
         self.textos: list[str] = []
         self.chats: list[str] = []
         self.perguntas: list[PerguntaDeFeedback] = []
         self._chats_com_erro = chats_com_erro
+        self._chats_com_falha_temporaria = chats_com_falha_temporaria
 
     def enviar(self, chat_id: str, texto: str) -> None:
-        if chat_id in self._chats_com_erro:
-            raise ErroDeNotificacao("chat not found")
+        self._recusar_se_preciso(chat_id)
         self.chats.append(chat_id)
         self.textos.append(texto)
 
     def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
-        if chat_id in self._chats_com_erro:
-            raise ErroDeNotificacao("chat not found")
+        self._recusar_se_preciso(chat_id)
         self.perguntas.append(pergunta)
         self.enviar(chat_id, pergunta.texto)
+
+    def _recusar_se_preciso(self, chat_id: str) -> None:
+        if chat_id in self._chats_com_erro:
+            raise DestinatarioRecusouAMensagem("Telegram respondeu HTTP 403: bot was blocked")
+        if chat_id in self._chats_com_falha_temporaria:
+            raise ErroDeNotificacao("Telegram respondeu HTTP 502: Bad Gateway")
 
 
 class RepositorioFalso(RepositorioEmMemoria):
@@ -995,3 +1004,20 @@ def test_vagas_de_fontes_diferentes_com_o_mesmo_id_nao_viram_a_mesma_vaga():
         "adzuna:42",
         "gupy:42",
     ]
+
+
+def test_falha_temporaria_do_telegram_nao_conta_para_pausar_o_perfil():
+    repositorio = RepositorioFalso([usuario(chat_id="fora-do-ar")])
+    notificador = NotificadorFalso(chats_com_falha_temporaria={"fora-do-ar"})
+
+    for _ in range(3):
+        rodar(
+            [vaga(1)],
+            {"1": 70},
+            repositorio=repositorio,
+            notificador=notificador,
+            falhas_ate_pausar=3,
+        )
+
+    assert repositorio.falhas_por_usuario == {}
+    assert repositorio.pausados == []
