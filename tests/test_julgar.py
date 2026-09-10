@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from radar.avaliacao.julgar import TAMANHO_DO_LOTE, amostrar, julgar_entregas
+from radar.avaliacao.prompt import apenas_das_vagas
 from radar.domain.models import (
     EntregaParaJulgar,
     Julgamento,
@@ -70,19 +71,20 @@ class JuizFalso:
         self.chamadas.append((perfil.curso, ids))
         if self._falhar_em & set(ids):
             raise AvaliadorIndisponivel("HTTP 503")
-        return [
+        julgamentos = [
             Julgamento(
-                id_vaga=id_vaga,
-                relevante=id_vaga in self._relevantes,
-                nota_juiz=90 if id_vaga in self._relevantes else 20,
+                id_vaga=vaga.identidade(),
+                relevante=vaga.id_externo in self._relevantes,
+                nota_juiz=90 if vaga.id_externo in self._relevantes else 20,
                 problema=ProblemaJulgado.NENHUM
-                if id_vaga in self._relevantes
+                if vaga.id_externo in self._relevantes
                 else ProblemaJulgado.OUTRA_AREA,
                 motivo="motivo",
             )
-            for id_vaga in ids
-            if id_vaga not in self._omitir
+            for vaga in vagas
+            if vaga.id_externo not in self._omitir
         ]
+        return apenas_das_vagas(julgamentos, vagas)
 
 
 def test_julga_por_perfil_em_lotes_e_reune_os_resultados():
