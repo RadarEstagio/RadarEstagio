@@ -207,6 +207,8 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.equal(demo.querySelectorAll(".chat-vacancy").length, 2);
     assert.ok(demo.querySelector(".chat-typing"));
     assert.ok(demo.querySelector(".chat-feedback"));
+    assert.equal(demo.querySelector(".chat-composer-field").textContent.trim(), "Mensagem");
+    assert.equal(demo.querySelectorAll(".chat-composer-icon").length, 2);
   } finally { a.close(); }
 });
 
