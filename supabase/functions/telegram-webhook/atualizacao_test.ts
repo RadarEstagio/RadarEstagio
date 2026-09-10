@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "jsr:@std/assert@1";
 import { cliqueQuePrecisaDeResposta, interpretarCorpo } from "./atualizacao.ts";
 
 Deno.test("corpo que não é JSON vira nulo em vez de derrubar a função", async () => {
