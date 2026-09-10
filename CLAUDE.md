@@ -322,6 +322,11 @@ Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à n
    vale também para nome composto ("consultoria em recursos humanos" mantinha tudo para RH), a
    janela é de 24 palavras (listas longas de cursos aceitos) e o contexto não atravessa rótulo
    "campo:" — anúncio de agência traz "formação: não informado … ramo: recursos humanos".
+   Desde 10/09/2026 a busca inclui os sinônimos de nome composto que o catálogo converte no
+   curso da pessoa (`nomes_do_curso`): quem cursa Ciências Contábeis procurava só "contabilidade"
+   e perdia "cursando Administração ou Ciências Contábeis" — 23 vagas reais, mais 2 de Ciências
+   Econômicas e 3 de "gestão de RH". Sigla e palavra solta ("si", "ti", "redes") ficam de fora
+   porque aparecem em texto comum ("entre si", "redes sociais").
 2. Curso sem área conhecida: mantém só título sem marcador forte de área alguma ("Programa de
    Estágio", "Estagiário"). Sem isso, um perfil de Agronomia passava 96% das vagas (641 de 667)
    para a extração.
