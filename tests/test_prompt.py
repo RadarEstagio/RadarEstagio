@@ -65,6 +65,15 @@ def test_habilidades_usam_qualificador_especifico_e_tecnologias_exatas():
     assert "Não use correspondência por pedaços" in INSTRUCAO_DE_EXTRACAO
 
 
+def test_atividades_viram_habilidades_principais_quando_a_vaga_nao_cita_ferramentas():
+    assert "Quando a vaga não cita ferramenta alguma para o trabalho central" in (
+        INSTRUCAO_DE_EXTRACAO
+    )
+    assert "as atividades listadas em responsabilidades" in INSTRUCAO_DE_EXTRACAO
+    assert '"Elaborar petições" vira "elaboração de petições"' in INSTRUCAO_DE_EXTRACAO
+    assert '"elaboração de petições" e "revisão de contratos"' in INSTRUCAO_DE_EXTRACAO
+
+
 def test_informacao_ausente_nao_e_alerta_pegadinha():
     assert "Não use alerta para descrição insuficiente" in INSTRUCAO_DE_EXTRACAO
     assert "título genérico" in INSTRUCAO_DE_EXTRACAO

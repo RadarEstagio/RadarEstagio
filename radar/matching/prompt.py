@@ -52,7 +52,12 @@ Python, atendimento ao público). Use lista vazia quando não houver.
 - habilidades_principais: ferramentas e habilidades que compõem o trabalho central da vaga, mas \
 não estão marcadas explicitamente como obrigatórias nem desejáveis. Frases como "atuará com", \
 "trabalhará com", "nossa stack" e listas de ferramentas nas atividades da vaga indicam \
-habilidades principais. Use lista vazia quando não houver.
+habilidades principais. Quando a vaga não cita ferramenta alguma para o trabalho central, como \
+é comum em Direito, Administração, RH e Educação, as atividades listadas em responsabilidades \
+ou atribuições são as habilidades principais: escreva cada uma como um nome curto, sem o verbo \
+("Elaborar petições" vira "elaboração de petições"; "Pesquisa jurídica no âmbito tributário" \
+vira "pesquisa jurídica"; "Auxílio à elaboração de petições e à revisão de contratos" vira \
+"elaboração de petições" e "revisão de contratos"). Use lista vazia quando não houver.
 - habilidades_desejaveis: todas as ferramentas, idiomas e habilidades marcadas como desejáveis, \
 diferenciais ou conhecimento recomendado, uma por item. Use lista vazia quando não houver.
 - alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o título \
