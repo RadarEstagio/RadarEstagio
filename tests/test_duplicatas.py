@@ -185,3 +185,24 @@ def test_remover_republicacoes_de_sem_conhecidas_mantem_tudo():
     candidatas = [vaga("Estágio em TI", "A", descricao=ANUNCIO)]
 
     assert remover_republicacoes_de(candidatas, []) == candidatas
+
+
+def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
+    em_sao_paulo = vaga(localizacao="São Paulo", numero=1)
+    em_recife = vaga(localizacao="Recife", numero=2)
+
+    restantes = remover_duplicatas([em_sao_paulo, em_recife])
+
+    assert [vaga.localizacao for vaga in restantes] == ["São Paulo", "Recife"]
+
+
+def test_mesma_vaga_na_mesma_cidade_por_duas_fontes_continua_sendo_uma_so():
+    da_adzuna = vaga(fonte="adzuna", numero=1, localizacao="Rio de Janeiro, RJ")
+    da_gupy = vaga(
+        fonte="gupy", numero=2, localizacao="Rio de Janeiro", modalidade=Modalidade.HIBRIDO
+    )
+
+    restantes = remover_duplicatas([da_adzuna, da_gupy])
+
+    assert len(restantes) == 1
+    assert restantes[0].fonte == "gupy"

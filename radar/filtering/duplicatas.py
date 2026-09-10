@@ -11,7 +11,7 @@ PALAVRAS_COMPARADAS_DA_DESCRICAO = 40
 
 
 def chave_de_duplicata(vaga: Vaga) -> str:
-    return limpar(f"{vaga.titulo} {vaga.empresa}")
+    return limpar(f"{vaga.titulo} {vaga.empresa} {cidade(vaga.localizacao)}")
 
 
 def chave_de_anuncio(vaga: Vaga) -> str:
