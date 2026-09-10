@@ -755,6 +755,23 @@ def test_pacote_office_e_atendido_por_excel_fora_de_computacao():
     assert resultado.requisitos_nao_atendidos == []
 
 
+@pytest.mark.parametrize(
+    "requisito", ["planilhas", "planilhas eletrônicas", "Planilha eletrônica", "Google Sheets"]
+)
+def test_planilhas_sao_atendidas_por_excel_fora_de_computacao(requisito):
+    resultado = pontuar(vaga(), extracao_juridica([requisito]), perfil_de_direito(["Excel"]))
+
+    assert resultado.requisitos_atendidos == [requisito]
+
+
+def test_planilhas_nao_sao_atendidas_por_word():
+    resultado = pontuar(
+        vaga(), extracao_juridica(["planilhas eletrônicas"]), perfil_de_direito(["Word"])
+    )
+
+    assert resultado.requisitos_atendidos == []
+
+
 def test_vaga_que_so_pede_soft_skills_e_tratada_como_sem_stack_em_computacao():
     so_soft_skills = resultado_da(
         extracao(habilidades_obrigatorias=["Comunicação", "Proatividade", "Trabalho em equipe"])
