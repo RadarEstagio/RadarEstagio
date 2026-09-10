@@ -213,14 +213,22 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
 - **Lote incompleto pede junto o que faltou** (10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
   1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
-  de 9.170 caracteres. Agora, se a resposta vem curta e só com ids do lote, as que faltaram vão
-  juntas numa requisição, uma vez, e o que ainda faltar segue uma a uma. Resposta com id fora do
-  lote ou repetido vai direto para uma a uma; a repetição que falha ou volta com id fora do que
-  faltou é descartada inteira, porque a extração só se liga à vaga pelo id e esse é o lote em que
-  o modelo acabou de errar. Por lote incompleto, no máximo 1 requisição a mais que antes; em
-  caracteres de entrada, a repetição de 9 vagas tem de 17% a 34% das 9 chamadas avulsas
-  (descrições de 500 a 3.000 caracteres), e é esse o acréscimo quando ela volta vazia. O log
-  `Lote de N vagas voltou com M extrações` registra os ids que faltaram, os devolvidos sem vaga e
+  de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
+  mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
+  uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
+  com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
+  com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
+  ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
+  Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
+  que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
+  conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
+  tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
+  acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
+  temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
+  troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
+  como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
+  na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
+  extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
   os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
 
