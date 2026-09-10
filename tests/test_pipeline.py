@@ -121,6 +121,22 @@ class NotificadorFalso:
             raise ErroDeNotificacao("Telegram respondeu HTTP 502: Bad Gateway")
 
 
+class NotificadorQueFalhaNoMeio:
+    def __init__(self, partes_entregues: int) -> None:
+        self.partes_entregues = partes_entregues
+        self.perguntas: list[PerguntaDeFeedback] = []
+        self.textos: list[str] = []
+        self.chats: list[str] = []
+
+    def enviar(self, chat_id: str, texto: str) -> None:
+        self.chats.append(chat_id)
+        self.textos.append(texto)
+
+    def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
+        self.perguntas.append(pergunta)
+        raise ErroDeNotificacao("Telegram respondeu HTTP 502: Bad Gateway", self.partes_entregues)
+
+
 class RepositorioFalso(RepositorioEmMemoria):
     def __init__(
         self,
@@ -1021,3 +1037,70 @@ def test_falha_temporaria_do_telegram_nao_conta_para_pausar_o_perfil():
 
     assert repositorio.falhas_por_usuario == {}
     assert repositorio.pausados == []
+
+
+class PontuadorDeBlocosGrandes:
+    def __init__(self, notas: dict[str, int]) -> None:
+        self._notas = notas
+
+    def __call__(self, vagas: list[Vaga], extracoes: dict, perfil: Perfil) -> list[ResultadoMatch]:
+        return [
+            ResultadoMatch(
+                vaga=vaga_avaliada,
+                nota=self._notas[vaga_avaliada.id_externo],
+                requisitos_atendidos=[f"requisito {i} " + "detalhado " * 20 for i in range(12)],
+                requisitos_nao_atendidos=[f"conferir {i} " + "detalhado " * 20 for i in range(12)],
+                diferenciais_nao_atendidos=[
+                    f"diferencial {i} " + "detalhado " * 20 for i in range(12)
+                ],
+            )
+            for vaga_avaliada in vagas
+            if vaga_avaliada.id_externo in self._notas and vaga_avaliada.chave() in extracoes
+        ]
+
+
+def executar_com_blocos_grandes(notificador, repositorio, quantidade: int):
+    vagas = [vaga(numero) for numero in range(1, quantidade + 1)]
+    notas = {str(numero): 90 - numero for numero in range(1, quantidade + 1)}
+    return executar(
+        ColetorFalso(vagas),
+        ExtratorFalso({}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        pontuador=PontuadorDeBlocosGrandes(notas),
+    )
+
+
+def test_partes_entregues_antes_da_falha_contam_como_enviadas():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorQueFalhaNoMeio(partes_entregues=2)
+
+    resumo = executar_com_blocos_grandes(notificador, repositorio, quantidade=7)
+
+    entregues = resumo.enviadas_por_usuario[ID_USUARIO]
+    assert 0 < len(entregues) < 7
+    assert len(repositorio.tokens_gravados) == len(entregues)
+    assert repositorio.pausados == []
+
+
+def test_so_as_vagas_entregues_entram_no_historico_de_envios():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorQueFalhaNoMeio(partes_entregues=2)
+
+    resumo = executar_com_blocos_grandes(notificador, repositorio, quantidade=7)
+
+    entregues = [r.resultado.vaga.id_externo for r in resumo.enviadas_por_usuario[ID_USUARIO]]
+    assert repositorio.envios_gravados == [(ID_USUARIO, entregues)]
+    assert set(entregues) < {str(numero) for numero in range(1, 8)}
+
+
+def test_nenhuma_parte_entregue_nao_grava_envio_algum():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorQueFalhaNoMeio(partes_entregues=0)
+
+    resumo = executar_com_blocos_grandes(notificador, repositorio, quantidade=7)
+
+    assert resumo.enviadas_por_usuario == {}
+    assert repositorio.tokens_gravados == []

@@ -1,6 +1,8 @@
-from datetime import date
+import re
+from datetime import date, datetime
 from html import escape
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 from radar.domain.models import (
     BotaoDeFeedback,
@@ -10,8 +12,19 @@ from radar.domain.models import (
     Vaga,
 )
 
+FUSO_DA_ENTREGA = ZoneInfo("America/Sao_Paulo")
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
+LIMITE_DO_TITULO = 120
+LIMITE_DA_EMPRESA = 80
+LIMITE_DA_LOCALIZACAO = 80
+LIMITE_DO_REQUISITO = 60
+LIMITE_DO_PONTO = 80
+LIMITE_DO_AVISO = 120
+LIMITE_DO_ALERTA = 160
+RETICENCIAS = "…"
+PADRAO_ENTIDADE_INCOMPLETA = re.compile(r"&[#a-zA-Z0-9]*$")
+PADRAO_DE_ESPACOS = re.compile(r"\s+")
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
@@ -34,19 +47,31 @@ ROTULOS_MODALIDADE = {
 }
 
 
+def escapar_limitado(texto: str, limite: int) -> str:
+    escapado = escape(PADRAO_DE_ESPACOS.sub(" ", texto).strip())
+    if len(escapado) <= limite:
+        return escapado
+    cortado = PADRAO_ENTIDADE_INCOMPLETA.sub("", escapado[:limite])
+    return cortado.rstrip() + RETICENCIAS
+
+
 def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
     return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
 
 
+def data_local(momento: datetime) -> date:
+    return momento.astimezone(FUSO_DA_ENTREGA).date()
+
+
 def formatar_mensagem(
-    recomendacoes: list[Recomendacao], data: date, url_de_rastreio: str = ""
+    recomendacoes: list[Recomendacao], momento: datetime, url_de_rastreio: str = ""
 ) -> str:
     ranqueadas = ranquear(recomendacoes)
     blocos = [
         formatar_vaga(posicao, recomendacao, url_de_rastreio)
         for posicao, recomendacao in enumerate(ranqueadas, start=1)
     ]
-    return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+    return cabecalho(momento) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
 
 
 def formatar_pergunta_de_feedback(recomendacoes: list[Recomendacao]) -> PerguntaDeFeedback:
@@ -69,9 +94,9 @@ def formatar_motivos_da_recusa(token: str) -> list[list[BotaoDeFeedback]]:
     ]
 
 
-def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None) -> str:
+def formatar_mensagem_sem_vagas(momento: datetime, dias_de_silencio: int | None = None) -> str:
     mensagem = (
-        f"{cabecalho(data)}\n\n"
+        f"{cabecalho(momento)}\n\n"
         "Nenhuma vaga nova compatível com o seu perfil hoje.\n"
         "O Radar volta a procurar amanhã de manhã."
     )
@@ -85,12 +110,12 @@ def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None)
     )
 
 
-def cabecalho(data: date) -> str:
-    return f"📡 <b>Radar de Estágio</b> — {data.strftime('%d/%m/%Y')}"
+def cabecalho(momento: datetime) -> str:
+    return f"📡 <b>Radar de Estágio</b> — {data_local(momento):%d/%m/%Y}"
 
 
 def formatar_resumo_da_execucao(
-    data: date,
+    momento: datetime,
     usuarios: int,
     atendidos: int,
     vagas_enviadas: int,
@@ -102,7 +127,7 @@ def formatar_resumo_da_execucao(
     extracoes_nao_gravadas: int = 0,
 ) -> str:
     linhas = [
-        f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>",
+        f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
         f"Usuários ativos: {usuarios}",
         f"Receberam recomendação: {atendidos}",
         f"Vagas enviadas: {vagas_enviadas}",
@@ -118,16 +143,18 @@ def formatar_resumo_da_execucao(
     return "\n".join(linhas)
 
 
-def formatar_falha_da_execucao(data: date, erro: str) -> str:
-    return f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')} falhou</b>\n{escape(erro)}"
+def formatar_falha_da_execucao(momento: datetime, erro: str) -> str:
+    return f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y} falhou</b>\n{escape(erro)}"
 
 
 def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str = "") -> str:
     resultado = recomendacao.resultado
     vaga = resultado.vaga
     linhas = [
-        f"<b>{posicao}. {escape(vaga.titulo)}</b> — {escape(vaga.empresa)}",
-        f"📍 {escape(vaga.localizacao)} · {escape(rotulo_modalidade(vaga))}",
+        f"<b>{posicao}. {escapar_limitado(vaga.titulo, LIMITE_DO_TITULO)}</b>"
+        f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
+        f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
+        f" · {escape(rotulo_modalidade(vaga))}",
         f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
@@ -157,9 +184,9 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
     if resultado.pontos_contra:
         linhas.append(f"❌ {formatar_pontos(resultado.pontos_contra)}")
     for aviso in resultado.avisos_objetivos:
-        linhas.append(f"⚠️ {escape(aviso)}")
+        linhas.append(f"⚠️ {escapar_limitado(aviso, LIMITE_DO_AVISO)}")
     if resultado.alerta_pegadinha:
-        linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
+        linhas.append(f"⚠️ {escapar_limitado(resultado.alerta_pegadinha, LIMITE_DO_ALERTA)}")
     destino = url_de_abertura(recomendacao, url_de_rastreio)
     linhas.append(f'🔗 <a href="{escape(destino)}">Ver vaga em {escape(dominio_da_vaga(vaga))}</a>')
     return "\n".join(linhas)
@@ -188,17 +215,31 @@ def rotulo_fonte(fonte: str) -> str:
 
 def formatar_pontos(pontos: list[str]) -> str:
     selecionados = pontos[:MAXIMO_DE_PONTOS_EXIBIDOS]
-    return " · ".join(escape(ponto) for ponto in selecionados)
+    return " · ".join(escapar_limitado(ponto, LIMITE_DO_PONTO) for ponto in selecionados)
 
 
 def formatar_requisitos(requisitos: list[str]) -> str:
     exibidos = " · ".join(
-        escape(requisito) for requisito in requisitos[:MAXIMO_DE_REQUISITOS_EXIBIDOS]
+        escapar_limitado(requisito, LIMITE_DO_REQUISITO)
+        for requisito in requisitos[:MAXIMO_DE_REQUISITOS_EXIBIDOS]
     )
     ocultos = len(requisitos) - MAXIMO_DE_REQUISITOS_EXIBIDOS
     if ocultos <= 0:
         return exibidos
     return f"{exibidos} · e mais {ocultos}"
+
+
+def recomendacoes_por_parte(
+    partes: list[str], recomendacoes: list[Recomendacao]
+) -> list[list[Recomendacao]]:
+    ranqueadas = ranquear(recomendacoes)
+    grupos = []
+    inicio = 0
+    for parte in partes:
+        quantidade = parte.count(SEPARADOR_ENTRE_VAGAS) + 1
+        grupos.append(ranqueadas[inicio : inicio + quantidade])
+        inicio += quantidade
+    return grupos
 
 
 def dividir_em_mensagens(texto: str) -> list[str]:

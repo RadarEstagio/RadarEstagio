@@ -21,9 +21,11 @@ from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
 from radar.notification.formatador import (
+    dividir_em_mensagens,
     formatar_mensagem,
     formatar_mensagem_sem_vagas,
     formatar_pergunta_de_feedback,
+    recomendacoes_por_parte,
 )
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
@@ -316,25 +318,48 @@ def atender_usuario_travado(
         return None
     if not revalidacao.permite(usuario):
         return None
+    pergunta = formatar_pergunta_de_feedback(selecionadas)
+    pergunta.texto = (
+        formatar_mensagem(selecionadas, agora, parametros.url_de_rastreio) + "\n\n" + pergunta.texto
+    )
     try:
-        pergunta = formatar_pergunta_de_feedback(selecionadas)
-        pergunta.texto = (
-            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio)
-            + "\n\n"
-            + pergunta.texto
-        )
         notificador.enviar_pergunta(usuario.chat_id, pergunta)
     except ErroDeNotificacao as erro:
-        logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        entregues = recomendacoes_entregues(pergunta.texto, selecionadas, erro.partes_entregues)
+        logger.warning(
+            "usuário %s recebeu %d das %d vagas: %s",
+            usuario.id,
+            len(entregues),
+            len(selecionadas),
+            erro,
+        )
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
-        return None
+        if not entregues:
+            return None
+        gravar_envios(repositorio, usuario, entregues)
+        return entregues
+    gravar_envios(repositorio, usuario, selecionadas)
+    return selecionadas
+
+
+def recomendacoes_entregues(
+    texto: str, selecionadas: list[Recomendacao], partes_entregues: int
+) -> list[Recomendacao]:
+    if partes_entregues <= 0:
+        return []
+    grupos = recomendacoes_por_parte(dividir_em_mensagens(texto), selecionadas)
+    return [recomendacao for grupo in grupos[:partes_entregues] for recomendacao in grupo]
+
+
+def gravar_envios(
+    repositorio: Repositorio, usuario: Usuario, entregues: list[Recomendacao]
+) -> None:
     try:
-        repositorio.registrar_envios(usuario, selecionadas)
+        repositorio.registrar_envios(usuario, entregues)
     except ErroDeArmazenamento as erro:
         logger.warning(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )
-    return selecionadas
 
 
 def gravar_avaliacoes(
@@ -358,7 +383,7 @@ def avisar_que_nao_houve_vaga(
     if not revalidacao.permite(usuario):
         return
     try:
-        notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
+        notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
