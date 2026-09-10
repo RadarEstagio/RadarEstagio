@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import pytest
@@ -235,3 +236,214 @@ def test_log_da_cota_conta_as_vagas_sem_extracao_e_nao_as_extracoes_devolvidas(c
     ExtratorEmLotes(ExtratorQueRepeteEDepoisEstouraACota(), 2).extrair(vagas(4))
 
     assert "2 de 4 vagas ficaram sem extração" in caplog.text
+
+
+class ExtratorQueDevolveSoAPrimeiraVaga:
+    def __init__(self, vezes: int) -> None:
+        self._vezes = vezes
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        devolvidas = lote[:1] if self._vezes > 0 and len(lote) > 1 else lote
+        self._vezes -= 1
+        return [
+            ExtracaoDaVaga(id_vaga=vaga.identidade(), area_da_vaga="computacao")
+            for vaga in devolvidas
+        ]
+
+
+@pytest.mark.parametrize("quantidade", [3, 10])
+def test_vagas_que_faltaram_no_lote_sao_pedidas_juntas_numa_requisicao_so(quantidade):
+    interno = ExtratorQueDevolveSoAPrimeiraVaga(vezes=1)
+    em_lotes = ExtratorEmLotes(interno, 10)
+
+    resultados = em_lotes.extrair(vagas(quantidade))
+
+    assert interno.lotes_recebidos == [
+        [str(numero) for numero in range(1, quantidade + 1)],
+        [str(numero) for numero in range(2, quantidade + 1)],
+    ]
+    assert em_lotes.requisicoes == 2
+    assert sorted(ids_de(resultados), key=int) == [
+        str(numero) for numero in range(1, quantidade + 1)
+    ]
+
+
+def test_o_que_ainda_faltar_depois_de_pedir_junto_segue_uma_a_uma(caplog):
+    caplog.set_level("WARNING")
+    interno = ExtratorQueDevolveSoAPrimeiraVaga(vezes=99)
+    em_lotes = ExtratorEmLotes(interno, 4)
+
+    resultados = em_lotes.extrair(vagas(4))
+
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"], ["2", "3", "4"], ["3"], ["4"]]
+    assert em_lotes.requisicoes == 4
+    assert sorted(ids_de(resultados)) == ["1", "2", "3", "4"]
+    assert "Lote de 4 vagas voltou com 1 extrações" in caplog.text
+    assert "Repetição de 3 vagas voltou com 1 extrações" in caplog.text
+
+
+class ExtratorQueNaoDevolveNadaEmLote:
+    def __init__(self) -> None:
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        if len(lote) > 1:
+            return []
+        return [ExtracaoDaVaga(id_vaga=lote[0].identidade(), area_da_vaga="computacao")]
+
+
+def test_lote_que_volta_vazio_segue_uma_a_uma_sem_repetir_o_mesmo_prompt():
+    interno = ExtratorQueNaoDevolveNadaEmLote()
+
+    resultados = ExtratorEmLotes(interno, 3).extrair(vagas(3))
+
+    assert interno.lotes_recebidos == [["1", "2", "3"], ["1"], ["2"], ["3"]]
+    assert ids_de(resultados) == ["1", "2", "3"]
+
+
+class ExtratorQueTrocaOsIds:
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        if len(lote) == 1:
+            return [ExtracaoDaVaga(id_vaga=lote[0].identidade(), area_da_vaga="computacao")]
+        return [
+            ExtracaoDaVaga(id_vaga=id_vaga, area_da_vaga="computacao")
+            for id_vaga in ("adzuna:1", "adzuna:22", "adzuna:1")
+        ]
+
+
+def test_lote_incompleto_registra_o_que_faltou_e_o_que_voltou_sem_vaga(caplog):
+    caplog.set_level("WARNING")
+
+    ExtratorEmLotes(ExtratorQueTrocaOsIds(), 3).extrair(vagas(3))
+
+    assert "Lote de 3 vagas voltou com 3 extrações" in caplog.text
+    assert "faltaram ['adzuna:2', 'adzuna:3']" in caplog.text
+    assert "ids sem vaga ['adzuna:22']" in caplog.text
+    assert "ids repetidos ['adzuna:1']" in caplog.text
+
+
+class ExtratorQueDevolveIdsFixosEmLote:
+    def __init__(self, ids_devolvidos: tuple[str, ...]) -> None:
+        self._ids_devolvidos = ids_devolvidos
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        ids = self._ids_devolvidos if len(lote) > 1 else (lote[0].identidade(),)
+        return [ExtracaoDaVaga(id_vaga=id_vaga, area_da_vaga="computacao") for id_vaga in ids]
+
+
+@pytest.mark.parametrize("ids_devolvidos", [("adzuna:1", "adzuna:22"), ("adzuna:1", "adzuna:1")])
+def test_lote_com_id_fora_do_lote_ou_repetido_pede_as_que_faltaram_uma_a_uma(ids_devolvidos):
+    interno = ExtratorQueDevolveIdsFixosEmLote(ids_devolvidos)
+
+    ExtratorEmLotes(interno, 4).extrair(vagas(4))
+
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"], ["2"], ["3"], ["4"]]
+
+
+class ExtratorQueErraOsIdsNaRepeticao:
+    def __init__(self, ids_na_repeticao: Callable[[list[Vaga]], list[str]]) -> None:
+        self._ids_na_repeticao = ids_na_repeticao
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        if len(self.lotes_recebidos) == 1 or len(lote) == 1:
+            ids = [lote[0].identidade()]
+        else:
+            ids = self._ids_na_repeticao(lote)
+        return [ExtracaoDaVaga(id_vaga=id_vaga, area_da_vaga="computacao") for id_vaga in ids]
+
+
+@pytest.mark.parametrize(
+    ("ids_na_repeticao", "trecho_do_log"),
+    [
+        (
+            lambda lote: [f"adzuna:{int(vaga.id_externo) - 1}" for vaga in lote],
+            "ids sem vaga ['adzuna:1']",
+        ),
+        (lambda lote: [lote[0].identidade()] * len(lote), "ids repetidos ['adzuna:2']"),
+    ],
+)
+def test_repeticao_com_id_fora_do_que_faltou_ou_repetido_e_descartada(
+    ids_na_repeticao, trecho_do_log, caplog
+):
+    caplog.set_level("WARNING")
+    interno = ExtratorQueErraOsIdsNaRepeticao(ids_na_repeticao)
+
+    resultados = ExtratorEmLotes(interno, 4).extrair(vagas(4))
+
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"], ["2", "3", "4"], ["2"], ["3"], ["4"]]
+    assert ids_de(resultados) == ["1", "2", "3", "4"]
+    assert "Repetição de 3 vagas descartada" in caplog.text
+    assert trecho_do_log in caplog.text
+
+
+class ExtratorQueEstouraACotaNaRepeticao:
+    def __init__(self, espera: float) -> None:
+        self._espera = espera
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        if len(self.lotes_recebidos) == 2:
+            raise CotaDeAvaliacaoExcedida("HTTP 429", self._espera)
+        devolvidas = lote[:1] if len(self.lotes_recebidos) == 1 else lote
+        return [
+            ExtracaoDaVaga(id_vaga=vaga.identidade(), area_da_vaga="computacao")
+            for vaga in devolvidas
+        ]
+
+
+def test_cota_por_minuto_na_repeticao_espera_e_repete_as_que_faltaram_juntas():
+    interno = ExtratorQueEstouraACotaNaRepeticao(espera=7)
+    esperas: list[float] = []
+    em_lotes = ExtratorEmLotes(interno, 4, esperar=esperas.append)
+
+    resultados = em_lotes.extrair(vagas(4))
+
+    assert esperas == [8]
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"], ["2", "3", "4"], ["2", "3", "4"]]
+    assert em_lotes.requisicoes == 3
+    assert ids_de(resultados) == ["1", "2", "3", "4"]
+
+
+def test_cota_diaria_na_repeticao_interrompe_a_extracao_sem_ir_uma_a_uma():
+    interno = ExtratorQueEstouraACotaNaRepeticao(espera=999)
+    esperas: list[float] = []
+
+    resultados = ExtratorEmLotes(interno, 4, esperar=esperas.append).extrair(vagas(8))
+
+    assert esperas == []
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"], ["2", "3", "4"]]
+    assert ids_de(resultados) == ["1"]
+
+
+class ExtratorQueFalhaNaRepeticao:
+    def __init__(self) -> None:
+        self.lotes_recebidos: list[list[str]] = []
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.lotes_recebidos.append([vaga.id_externo for vaga in lote])
+        if len(lote) > 1 and len(self.lotes_recebidos) > 1:
+            raise ErroDeAvaliacao("JSON inválido")
+        return [ExtracaoDaVaga(id_vaga=lote[0].identidade(), area_da_vaga="computacao")]
+
+
+def test_repeticao_que_falha_segue_uma_a_uma_sem_dividir_nem_repetir_em_lote():
+    interno = ExtratorQueFalhaNaRepeticao()
+    em_lotes = ExtratorEmLotes(interno, 10)
+
+    resultados = em_lotes.extrair(vagas(10))
+
+    assert interno.lotes_recebidos == [
+        [str(numero) for numero in range(1, 11)],
+        [str(numero) for numero in range(2, 11)],
+        *[[str(numero)] for numero in range(2, 11)],
+    ]
+    assert em_lotes.requisicoes == 11
+    assert ids_de(resultados) == [str(numero) for numero in range(1, 11)]

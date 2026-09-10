@@ -55,12 +55,48 @@ class ExtratorEmLotes:
             return
         resultados.extend(extraidas)
         faltantes = vagas_sem_resultado(lote, extraidas)
-        if faltantes and len(lote) > 1:
-            logger.info("%d vagas sem extração no lote; extraindo uma a uma", len(faltantes))
-            for vaga in faltantes:
-                self._extrair_lote([vaga], resultados)
-        elif faltantes:
+        if not faltantes:
+            return
+        if len(lote) == 1:
             logger.warning("Vaga %s ignorada: extrator não a devolveu", lote[0].identidade())
+            return
+        registrar_resposta_incompleta("Lote", lote, extraidas, faltantes)
+        if 1 < len(faltantes) < len(lote) and ids_confiaveis(lote, extraidas):
+            self._pedir_juntas_as_que_faltaram(faltantes, resultados)
+        else:
+            self._extrair_uma_a_uma(faltantes, resultados)
+
+    def _pedir_juntas_as_que_faltaram(
+        self, faltantes: list[Vaga], resultados: list[ExtracaoDaVaga]
+    ) -> None:
+        try:
+            extraidas = self._chamar_esperando_a_cota(faltantes)
+        except ErroTemporarioDeAvaliacao:
+            raise
+        except ErroDeAvaliacao as erro:
+            logger.info(
+                "Repetição de %d vagas falhou (%s); seguindo uma a uma", len(faltantes), erro
+            )
+            self._extrair_uma_a_uma(faltantes, resultados)
+            return
+        if not ids_confiaveis(faltantes, extraidas):
+            logger.warning(
+                "Repetição de %d vagas descartada; ids sem vaga %s; ids repetidos %s",
+                len(faltantes),
+                ids_sem_vaga(faltantes, extraidas),
+                ids_repetidos(extraidas),
+            )
+            self._extrair_uma_a_uma(faltantes, resultados)
+            return
+        resultados.extend(extraidas)
+        ainda_faltam = vagas_sem_resultado(faltantes, extraidas)
+        if ainda_faltam:
+            registrar_resposta_incompleta("Repetição", faltantes, extraidas, ainda_faltam)
+        self._extrair_uma_a_uma(ainda_faltam, resultados)
+
+    def _extrair_uma_a_uma(self, vagas: list[Vaga], resultados: list[ExtracaoDaVaga]) -> None:
+        for vaga in vagas:
+            self._extrair_lote([vaga], resultados)
 
     def _chamar_esperando_a_cota(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
         for tentativa in range(1, TENTATIVAS_APOS_COTA_EXCEDIDA + 1):
@@ -98,3 +134,31 @@ class ExtratorEmLotes:
 def vagas_sem_resultado(vagas: list[Vaga], extracoes: list[ExtracaoDaVaga]) -> list[Vaga]:
     extraidas = {extracao.id_vaga for extracao in extracoes}
     return [vaga for vaga in vagas if vaga.identidade() not in extraidas]
+
+
+def ids_sem_vaga(lote: list[Vaga], extraidas: list[ExtracaoDaVaga]) -> list[str]:
+    esperados = {vaga.identidade() for vaga in lote}
+    return sorted({extracao.id_vaga for extracao in extraidas} - esperados)
+
+
+def ids_repetidos(extraidas: list[ExtracaoDaVaga]) -> list[str]:
+    devolvidos = [extracao.id_vaga for extracao in extraidas]
+    return sorted({id_vaga for id_vaga in devolvidos if devolvidos.count(id_vaga) > 1})
+
+
+def ids_confiaveis(lote: list[Vaga], extraidas: list[ExtracaoDaVaga]) -> bool:
+    return not ids_sem_vaga(lote, extraidas) and not ids_repetidos(extraidas)
+
+
+def registrar_resposta_incompleta(
+    chamada: str, vagas: list[Vaga], extraidas: list[ExtracaoDaVaga], faltantes: list[Vaga]
+) -> None:
+    logger.warning(
+        "%s de %d vagas voltou com %d extrações; faltaram %s; ids sem vaga %s; ids repetidos %s",
+        chamada,
+        len(vagas),
+        len(extraidas),
+        [vaga.identidade() for vaga in faltantes],
+        ids_sem_vaga(vagas, extraidas),
+        ids_repetidos(extraidas),
+    )
