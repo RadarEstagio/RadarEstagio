@@ -555,12 +555,9 @@ def _exigencia(requisito: str) -> HabilidadeComparavel:
         return HabilidadeComparavel(
             nivel_exigido(requisito), _palavras_de_um_nivel(requisito), texto=texto
         )
-    return HabilidadeComparavel(
-        nivel_declarado(requisito),
-        frozenset(),
-        tuple(_partes_com_nivel(partes, nivel_exigido) for partes in alternativas),
-        texto,
-    )
+    com_nivel = tuple(_partes_com_nivel(partes, nivel_exigido) for partes in alternativas)
+    niveis = [parte.nivel for alternativa in com_nivel for _, parte in alternativa]
+    return HabilidadeComparavel(max(niveis), frozenset(), com_nivel, texto)
 
 
 def _partes_com_nivel(
@@ -602,12 +599,16 @@ def _habilidades_declaradas(
             declarada = HabilidadeComparavel(nivel_declarado(habilidade), palavras)
             _declarar(declaradas, _normalizar_habilidade(habilidade), declarada)
             continue
-        inteira = HabilidadeComparavel(nivel_exigido(habilidade), frozenset())
+        com_nivel = [
+            (nome, parte)
+            for partes in alternativas
+            for nome, parte in _partes_com_nivel(partes, nivel_declarado)
+        ]
+        inteira = HabilidadeComparavel(min(parte.nivel for _, parte in com_nivel), frozenset())
         _declarar(declaradas, _normalizar_habilidade(habilidade), inteira)
-        for partes in alternativas:
-            for nome, parte in _partes_com_nivel(partes, nivel_declarado):
-                palavras = parte.palavras if compara_palavras else frozenset()
-                _declarar(declaradas, nome, parte._replace(palavras=palavras))
+        for nome, parte in com_nivel:
+            palavras = parte.palavras if compara_palavras else frozenset()
+            _declarar(declaradas, nome, parte._replace(palavras=palavras))
     return MappingProxyType(declaradas)
 
 
@@ -783,10 +784,22 @@ def _normalizar_habilidade(habilidade: str) -> str:
 
 def _alternativas(habilidade: str) -> list[list[str]]:
     divididas = (
-        [parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()]
+        _juntar_niveis_soltos(
+            [parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()]
+        )
         for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade)
     )
     return [partes for partes in divididas if partes]
+
+
+def _juntar_niveis_soltos(partes: list[str]) -> list[str]:
+    juntas: list[str] = []
+    for parte in partes:
+        if juntas and not _normalizar_habilidade(parte):
+            juntas[-1] = f"{juntas[-1]} {parte}"
+        else:
+            juntas.append(parte)
+    return juntas
 
 
 def _palavras_de_um_nivel(habilidade: str) -> frozenset[str]:

@@ -1205,6 +1205,81 @@ def test_desejavel_que_repete_uma_exigida_nao_vira_diferencial():
     assert resultado.diferenciais_nao_atendidos == []
 
 
+@pytest.mark.parametrize(
+    ("exigida", "do_perfil", "atende"),
+    [
+        ("Inglês intermediário/avançado", "Inglês intermediário", True),
+        ("Excel básico/intermediário", "Excel básico", True),
+        ("Inglês: intermediário/avançado", "Inglês intermediário", True),
+        ("Inglês intermediário, avançado", "Inglês intermediário", True),
+        ("Inglês intermediário/avançado", "Inglês básico", False),
+    ],
+)
+def test_faixa_de_nivel_escrita_com_separador_vale_pelo_menor(exigida, do_perfil, atende):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
+
+    assert (resultado.requisitos_atendidos == [exigida]) is atende
+
+
+def test_parte_sem_nivel_baixa_o_nivel_do_nome_inteiro_da_habilidade_do_perfil():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês e Espanhol avançados"]),
+        perfil_de_direito(["Inglês avançado e Espanhol"]),
+    )
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_mensagem_mostra_a_versao_que_falta_em_qualquer_ordem():
+    resultado = pontuar(
+        vaga(),
+        ExtracaoDaVaga(
+            id_vaga="vaga-1",
+            area_da_vaga="direito",
+            cursos_aceitos=["Direito"],
+            habilidades_obrigatorias=["Excel avançado"],
+            habilidades_principais=["Excel"],
+        ),
+        perfil_de_direito(["Excel"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == ["Excel avançado"]
+
+
+def test_exigida_atendida_aparece_mesmo_com_desejavel_mais_exigente():
+    resultado = pontuar(
+        vaga(),
+        ExtracaoDaVaga(
+            id_vaga="vaga-1",
+            area_da_vaga="direito",
+            cursos_aceitos=["Direito"],
+            habilidades_obrigatorias=["Java"],
+            habilidades_desejaveis=["Java avançado"],
+        ),
+        perfil_de_direito(["Java"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Java"]
+
+
+def test_habilidade_composta_do_perfil_tambem_vale_pelo_nome_inteiro():
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["CI-CD"]), perfil(["CI/CD"]))
+
+    assert resultado.requisitos_atendidos == ["CI-CD"]
+
+
+def test_office_conta_para_quem_nao_e_de_computacao_mesmo_em_vaga_de_computacao():
+    vaga_de_computacao = extracao(
+        cursos_aceitos=["Direito"], habilidades_obrigatorias=["Excel", "Python"]
+    )
+
+    assert (
+        pontuar(vaga(), vaga_de_computacao, perfil_de_direito(["Excel"])).nota
+        > pontuar(vaga(), vaga_de_computacao, perfil_de_direito(["Cobol"])).nota
+    )
+
+
 def test_vaga_que_descreve_as_habilidades_do_perfil_passa_a_vaga_muda():
     estudante = perfil_de_direito(["Redação", "Pesquisa jurídica", "Contratos"])
     muda = ExtracaoDaVaga(id_vaga="vaga-1", area_da_vaga="direito", cursos_aceitos=["Direito"])
