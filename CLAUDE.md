@@ -446,13 +446,15 @@ sondas executáveis. O que mudou:
   anúncios reais (36 de 202 extrações); anúncio que aceitava só ele ficava incompatível (teto 35)
   para todo estudante de computação. A normalização agora tira um prefixo por vez e para no
   primeiro nome que o catálogo ou os sinônimos conhecem; o site espelha a regra, e
-  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (48 formas de escrever
+  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (52 formas de escrever
   o curso). Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
   Science, T.I, Gestão da TI, Processamento de Dados. Em 10/09/2026 entraram Ciências Jurídicas
   e Ciências Jurídicas e Sociais: a vaga que aceitava só esse nome dava curso incompatível (teto
   35) a quem cursa Direito, e "Estágio em Ciências Jurídicas" caía no pré-filtro porque o padrão
   de direito só aceitava "jurídico"/"jurídica" no singular (achado na mensagem de um estudante de
-  Direito do piloto).
+  Direito do piloto). O plural vale no título e na exclusão, mas não logo depois de "pessoa(s)":
+  "Crédito para Pessoas Jurídicas" é de finanças. Na descrição ficou o singular, porque o plural
+  só trouxe "atendimento a pessoas físicas e jurídicas" de agência bancária (auditoria de 10/09).
 - **Termo de área na descrição exige contexto.** Título genérico era mantido por "com direito a
   bolsas" (Direito), "ramo: recursos humanos" na assinatura de agências (RH), "mercado
   financeiro" no blurb da empresa (Economia), "farmácia online" nos benefícios (Saúde). Nos dados
