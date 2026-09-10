@@ -31,7 +31,13 @@ PADRAO_QUALQUER_FORMACAO = re.compile(
 )
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
+PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
+    r"\bnao\s+(?:\w+\s+){0,3}?(?:exig\w*|ped\w*|precis\w*|requer\w*|necessari\w*)"
+    r"|\bsem\s+(?:a\s+)?necessidade\b"
+    r"|\bdispensa\w*\b"
+)
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
+PALAVRAS_ANTES_DA_EXIGENCIA = 8
 
 
 def normalizar(texto: str) -> str:
@@ -89,13 +95,20 @@ def menciona_o_curso(descricao: str, curso_do_perfil: str) -> bool:
 
 def exige_anos_de_experiencia(vaga: Vaga) -> bool:
     texto = normalizar(f"{vaga.titulo} {vaga.descricao}")
-    anos_mencionados = (
+    anos_exigidos = (
         int(grupo)
         for ocorrencia in PADRAO_ANOS_DE_EXPERIENCIA.finditer(texto)
+        if not exigencia_negada(texto, ocorrencia.start())
         for grupo in ocorrencia.groups()
         if grupo
     )
-    return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_mencionados)
+    return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_exigidos)
+
+
+def exigencia_negada(texto: str, posicao: int) -> bool:
+    inicio_da_frase = texto.rfind(". ", 0, posicao) + 1
+    anteriores = texto[inicio_da_frase:posicao].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
+    return PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(anteriores)) is not None
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:

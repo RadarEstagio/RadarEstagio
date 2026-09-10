@@ -606,9 +606,7 @@ def test_extracao_de_outra_fonte_com_o_mesmo_id_externo_nao_se_confunde(
     repositorio.guardar_extracoes(
         [(vaga(1), da_adzuna), (vaga(1, fonte="gupy"), da_gupy)], "modelo-teste"
     )
-    guardadas = repositorio.extracoes_existentes(
-        [vaga(1), vaga(1, fonte="gupy")], "modelo-teste"
-    )
+    guardadas = repositorio.extracoes_existentes([vaga(1), vaga(1, fonte="gupy")], "modelo-teste")
 
     assert guardadas[("adzuna", "teste-1")].area_da_vaga == "computacao"
     assert guardadas[("gupy", "teste-1")].area_da_vaga == "direito"

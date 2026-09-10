@@ -38,7 +38,9 @@ def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
     assert "Requisitos a conferir no seu perfil:" in html
     assert ">match<" not in html.lower()
     assert "Fontes e tecnologias do Radar" in html
-    assert ".chat-message-kicker span { color: var(--muted); font-size: 8px; font-weight: 500;" in css
+    assert (
+        ".chat-message-kicker span { color: var(--muted); font-size: 8px; font-weight: 500;" in css
+    )
 
 
 def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():

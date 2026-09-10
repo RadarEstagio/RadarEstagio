@@ -282,9 +282,7 @@ def atender_usuario_travado(
     recusas = repositorio.recusas_do_usuario(usuario)
     usuario = com_areas_recusadas(usuario, recusas)
     candidatas = [
-        vaga
-        for vaga in filtrar(vagas, usuario.perfil)
-        if vaga.chave() not in ja_enviadas
+        vaga for vaga in filtrar(vagas, usuario.perfil) if vaga.chave() not in ja_enviadas
     ]
     candidatas = remover_republicacoes_de(
         candidatas,
