@@ -129,7 +129,7 @@ def test_java_nao_corresponde_a_javascript():
         extracao(habilidades_desejaveis=["JavaScript"]), perfil(habilidades=["JavaScript"])
     )
 
-    assert sem_correspondencia.nota == 75
+    assert sem_correspondencia.nota == 64
     assert com_correspondencia.nota == 98
 
 
@@ -153,7 +153,7 @@ def test_vaga_que_so_pede_idiomas_e_office_e_tratada_como_sem_stack():
 def test_wordpress_nao_e_confundido_com_word():
     resultado = resultado_da(extracao(habilidades_obrigatorias=["WordPress", "PHP"]))
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
 
 
 def test_desejavel_nao_atendida_fica_fora_da_lista_de_cobranca():
@@ -297,12 +297,73 @@ def test_vaga_sem_stack_nao_supera_vaga_detalhada_e_meio_compativel():
     assert detalhada.nota > sem_stack.nota
 
 
+def test_vaga_sem_requisito_atendido_nao_supera_vaga_sem_stack():
+    sem_stack = resultado_da(extracao())
+    pede_o_que_falta = resultado_da(
+        extracao(habilidades_obrigatorias=["Excel"], habilidades_desejaveis=["Power BI"])
+    )
+    pede_uma_coisa = resultado_da(extracao(habilidades_obrigatorias=["C#"]))
+
+    assert pede_o_que_falta.nota == sem_stack.nota
+    assert pede_uma_coisa.nota == sem_stack.nota
+
+
+def test_um_de_tres_atendido_fica_acima_de_um_so_requisito_nao_atendido():
+    nenhum = resultado_da(extracao(habilidades_obrigatorias=["C#"]))
+    um_de_tres = resultado_da(extracao(habilidades_obrigatorias=["Python", "C#", "Go"]))
+
+    assert um_de_tres.nota > nenhum.nota
+
+
+def test_office_atendido_nao_tira_vaga_de_computacao_do_teto_sem_atendidos():
+    resultado = resultado_da(
+        extracao(habilidades_obrigatorias=["Excel", "C#"]),
+        perfil(habilidades=["Python", "Excel"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Excel"]
+    assert resultado.nota == resultado_da(extracao()).nota
+
+
+def test_teto_sem_requisito_atendido_vale_fora_de_computacao():
+    candidato = perfil_de_direito(["Excel"])
+    sem_stack = pontuar(vaga(), extracao_juridica([]), candidato)
+    nao_atendido = pontuar(vaga(), extracao_juridica(["Contratos"]), candidato)
+
+    assert nao_atendido.nota == sem_stack.nota
+
+
+def test_perfil_sem_habilidades_fica_no_teto_e_recebe_o_aviso():
+    candidato = perfil_de_direito([])
+    sem_stack = pontuar(vaga(), extracao_juridica([]), candidato)
+    resultado = pontuar(vaga(), extracao_juridica(["Contratos"]), candidato)
+
+    assert resultado.nota == sem_stack.nota
+    assert "Nota calculada sem habilidades no seu perfil" in resultado.avisos_objetivos
+
+
+def test_requisito_com_nivel_acima_do_perfil_nao_tira_a_vaga_do_teto():
+    candidato = perfil_de_direito(["Inglês básico"])
+    sem_stack = pontuar(vaga(), extracao_juridica([]), candidato)
+    resultado = pontuar(vaga(), extracao_juridica(["Inglês fluente"]), candidato)
+
+    assert resultado.requisitos_atendidos == []
+    assert resultado.nota == sem_stack.nota
+
+
+@pytest.mark.parametrize("lista", ["habilidades_principais", "habilidades_desejaveis"])
+def test_requisito_atendido_em_qualquer_lista_tira_a_vaga_do_teto_sem_atendidos(lista):
+    resultado = resultado_da(extracao(habilidades_obrigatorias=["C#"], **{lista: ["Python"]}))
+
+    assert resultado.nota > resultado_da(extracao()).nota
+
+
 def test_c_nao_corresponde_a_csharp_nem_a_cpp():
     resultado = resultado_da(
         extracao(habilidades_desejaveis=["C#", "C++"]), perfil(habilidades=["C"])
     )
 
-    assert resultado.nota == 68
+    assert resultado.nota == 64
 
 
 def test_csharp_por_extenso_corresponde_ao_simbolo():
