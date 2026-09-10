@@ -4,7 +4,7 @@ import unicodedata
 from radar.domain.areas import (
     area_do_curso,
     descricao_e_da_area,
-    normalizar_curso,
+    nomes_do_curso,
     precedido_de_contexto_de_formacao,
     titulo_e_da_area,
     titulo_e_de_outra_area,
@@ -85,12 +85,10 @@ def aceita_qualquer_formacao(descricao: str) -> bool:
 
 
 def menciona_o_curso(descricao: str, curso_do_perfil: str) -> bool:
-    curso = normalizar_curso(curso_do_perfil)
-    if not curso:
-        return False
     return any(
         precedido_de_contexto_de_formacao(descricao, ocorrencia.start())
-        for ocorrencia in re.finditer(rf"\b{re.escape(curso)}\b", descricao)
+        for nome in nomes_do_curso(curso_do_perfil)
+        for ocorrencia in re.finditer(rf"\b{re.escape(nome)}\b", descricao)
     )
 
 

@@ -749,6 +749,28 @@ def test_mencao_ao_curso_na_frase_da_formacao_continua_valendo():
     )
 
 
+@pytest.mark.parametrize("curso", ["Ciências Contábeis", "Contabilidade"])
+def test_curso_citado_pelo_nome_que_o_catalogo_converte_mantem_a_vaga(curso: str):
+    descricao = "Requisitos: cursando Administração ou Ciências Contábeis."
+
+    assert menciona_o_curso(normalizar(descricao), curso)
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Estagiário Administrativo", descricao=descricao), perfil(curso=curso)
+    )
+
+
+def test_economia_reconhece_ciencias_economicas_no_anuncio():
+    descricao = "Estudantes de Ciências Econômicas a partir do 3º período."
+
+    assert menciona_o_curso(normalizar(descricao), "Economia")
+
+
+def test_sigla_curta_do_curso_nao_conta_como_citacao():
+    descricao = "Estudantes de todas as áreas que saibam trabalhar bem entre si."
+
+    assert not menciona_o_curso(normalizar(descricao), "Sistemas de Informação")
+
+
 def test_remoto_descarta_vaga_de_outra_cidade_sem_sinal_de_remoto():
     fortaleza = vaga(
         titulo="Estágio em Administração",

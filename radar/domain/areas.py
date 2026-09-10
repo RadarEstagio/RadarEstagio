@@ -808,6 +808,18 @@ def normalizar_curso(curso: str) -> str:
         texto = texto[prefixo.end() :]
 
 
+def nomes_do_curso(curso: str) -> tuple[str, ...]:
+    normalizado = normalizar_curso(curso)
+    if not normalizado:
+        return ()
+    compostos = tuple(
+        sinonimo
+        for sinonimo, alvo in SINONIMOS_DE_CURSO.items()
+        if alvo == normalizado and " " in sinonimo
+    )
+    return (normalizado, *compostos)
+
+
 def curso_e_generico(curso: str) -> bool:
     return bool(normalizar(curso)) and not normalizar_curso(curso)
 
