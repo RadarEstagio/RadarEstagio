@@ -145,11 +145,11 @@ AREAS = (
         ),
         cursos=("direito",),
         titulo=(
-            r"juridic[ao]s?|direito|advocacia|contencioso|societario|compliance|trabalhista|legal"
-            r"|cartorio|lgpd|tributari[ao]"
+            r"(?<!pessoa )(?<!pessoas )juridic[ao]s?|direito|advocacia|contencioso|societario"
+            r"|compliance|trabalhista|legal|cartorio|lgpd|tributari[ao]"
         ),
-        exclusao=r"juridic[ao]s?|direito|compliance",
-        descricao=r"direito|juridic[ao]s?|advocacia|contencioso|peticao|escritorio de advocacia",
+        exclusao=r"(?<!pessoa )(?<!pessoas )juridic[ao]s?|direito|compliance",
+        descricao=r"direito|juridic[ao]|advocacia|contencioso|peticao|escritorio de advocacia",
         termos_de_busca=("direito", "jurídico", "advocacia"),
         subareas=(
             ("direito_contencioso", "Contencioso"),

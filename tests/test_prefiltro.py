@@ -244,12 +244,33 @@ def test_plural_de_juridica_no_titulo_mantem_a_vaga_para_quem_e_de_direito(titul
     assert fora_da_area_do_curso(vaga(titulo=titulo), perfil())
 
 
-def test_plural_de_juridica_na_descricao_mantem_titulo_generico_para_quem_e_de_direito():
-    generico = vaga(
-        titulo="Programa de Estágio", descricao="Atuação na área de assessorias jurídicas."
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio Comercial - Pessoas Jurídicas",
+        "Estágio em Crédito para Pessoa Jurídica",
+        "Estágio Fiscal – Obrigações de Pessoas Jurídicas",
+    ],
+)
+def test_pessoa_juridica_no_titulo_nao_e_sinal_de_direito(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Direito"))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    ["Estágio em Crédito para Pessoa Jurídica", "Estágio Fiscal – Obrigações de Pessoas Jurídicas"],
+)
+def test_pessoa_juridica_no_titulo_nao_veta_vaga_de_financas(titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Ciências Contábeis"))
+
+
+def test_pessoas_juridicas_na_descricao_nao_mantem_vaga_para_quem_e_de_direito():
+    atendimento = vaga(
+        titulo="Estágio em Atendimento",
+        descricao="Atividades: atendimento a pessoas físicas e jurídicas.",
     )
 
-    assert not fora_da_area_do_curso(generico, perfil(curso="Direito"))
+    assert fora_da_area_do_curso(atendimento, perfil(curso="Direito"))
 
 
 @pytest.mark.parametrize(
