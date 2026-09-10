@@ -205,6 +205,7 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.equal(demo.classList.contains("is-waiting"), false);
     assert.equal(demo.classList.contains("is-playing"), true);
     assert.equal(demo.querySelectorAll(".chat-vacancy").length, 2);
+    assert.equal(demo.querySelector(".chat-vacancy-second .chat-vacancy-title").textContent, "2. Estágio em marketing e conteúdo");
     assert.ok(demo.querySelector(".chat-typing"));
     assert.ok(demo.querySelector(".chat-feedback"));
     assert.equal(demo.querySelector(".chat-composer-field").textContent.trim(), "Mensagem");
