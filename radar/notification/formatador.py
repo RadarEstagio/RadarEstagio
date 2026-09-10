@@ -228,6 +228,19 @@ def formatar_requisitos(requisitos: list[str]) -> str:
     return f"{exibidos} · e mais {ocultos}"
 
 
+def recomendacoes_por_parte(
+    partes: list[str], recomendacoes: list[Recomendacao]
+) -> list[list[Recomendacao]]:
+    ranqueadas = ranquear(recomendacoes)
+    grupos = []
+    inicio = 0
+    for parte in partes:
+        quantidade = parte.count(SEPARADOR_ENTRE_VAGAS) + 1
+        grupos.append(ranqueadas[inicio : inicio + quantidade])
+        inicio += quantidade
+    return grupos
+
+
 def dividir_em_mensagens(texto: str) -> list[str]:
     if len(texto) <= LIMITE_DE_CARACTERES_DO_TELEGRAM:
         return [texto]

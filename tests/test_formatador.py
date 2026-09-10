@@ -8,6 +8,7 @@ from radar.notification.formatador import (
     formatar_mensagem,
     formatar_mensagem_sem_vagas,
     formatar_resumo_da_execucao,
+    recomendacoes_por_parte,
 )
 
 MOMENTO_DE_TESTE = datetime(2026, 8, 26, 12, 0, tzinfo=UTC)
@@ -467,3 +468,36 @@ def test_corte_nao_deixa_entidade_html_pela_metade():
     texto = mensagem([com_ecomercial])
 
     assert "&am" not in texto.replace("&amp;", "")
+
+
+def test_recomendacoes_sao_distribuidas_entre_as_partes_na_ordem_da_mensagem():
+    resultados = [resultado(90 - numero, numero=numero) for numero in range(1, 6)]
+    recomendacoes = [Recomendacao(resultado=item) for item in resultados]
+    texto = formatar_mensagem(recomendacoes, MOMENTO_DE_TESTE)
+    partes = dividir_em_mensagens(texto)
+
+    grupos = recomendacoes_por_parte(partes, recomendacoes)
+
+    assert [len(grupo) for grupo in grupos] == [5]
+    assert [r.resultado.nota for r in grupos[0]] == [89, 88, 87, 86, 85]
+
+
+def test_cada_parte_leva_as_vagas_que_estao_dentro_dela():
+    resultados = [
+        ResultadoMatch(
+            vaga=vaga(numero=numero),
+            nota=90 - numero,
+            requisitos_atendidos=[f"requisito {i} " + "detalhado " * 20 for i in range(12)],
+            requisitos_nao_atendidos=[f"conferir {i} " + "detalhado " * 20 for i in range(12)],
+            diferenciais_nao_atendidos=[f"diferencial {i} " + "detalhado " * 20 for i in range(12)],
+        )
+        for numero in range(1, 5)
+    ]
+    recomendacoes = [Recomendacao(resultado=item) for item in resultados]
+    partes = dividir_em_mensagens(formatar_mensagem(recomendacoes, MOMENTO_DE_TESTE))
+
+    grupos = recomendacoes_por_parte(partes, recomendacoes)
+
+    assert len(partes) > 1
+    assert sum(len(grupo) for grupo in grupos) == 4
+    assert [r.resultado.nota for grupo in grupos for r in grupo] == [89, 88, 87, 86]

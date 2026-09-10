@@ -18,7 +18,9 @@ MOTIVOS_DE_RECUSA_DO_DESTINATARIO = (
 
 
 class ErroDeNotificacao(Exception):
-    pass
+    def __init__(self, mensagem: str, partes_entregues: int = 0) -> None:
+        super().__init__(mensagem)
+        self.partes_entregues = partes_entregues
 
 
 class DestinatarioRecusouAMensagem(ErroDeNotificacao):
@@ -31,11 +33,15 @@ class NotificadorTelegram:
         self._cliente_http = cliente_http
 
     def enviar(self, chat_id: str, texto: str) -> None:
-        for mensagem in dividir_em_mensagens(texto):
-            self._enviar_mensagem(chat_id, mensagem)
+        self._enviar_partes(chat_id, dividir_em_mensagens(texto), None)
 
     def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
         partes = dividir_em_mensagens(pergunta.texto)
+        self._enviar_partes(chat_id, partes, teclado(pergunta.linhas_de_botoes))
+
+    def _enviar_partes(
+        self, chat_id: str, partes: list[str], teclado_final: list[list[dict]] | None
+    ) -> None:
         for indice, parte in enumerate(partes):
             corpo = {
                 "chat_id": chat_id,
@@ -43,19 +49,12 @@ class NotificadorTelegram:
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True,
             }
-            if indice == len(partes) - 1:
-                corpo["reply_markup"] = {"inline_keyboard": teclado(pergunta.linhas_de_botoes)}
-            self._postar(corpo)
-
-    def _enviar_mensagem(self, chat_id: str, mensagem: str) -> None:
-        self._postar(
-            {
-                "chat_id": chat_id,
-                "text": mensagem,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            }
-        )
+            if teclado_final is not None and indice == len(partes) - 1:
+                corpo["reply_markup"] = {"inline_keyboard": teclado_final}
+            try:
+                self._postar(corpo)
+            except ErroDeNotificacao as erro:
+                raise type(erro)(str(erro), indice) from None
 
     def _postar(self, corpo: dict) -> None:
         try:
