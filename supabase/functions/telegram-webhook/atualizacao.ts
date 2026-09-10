@@ -3,7 +3,7 @@ export async function interpretarCorpo(
 ): Promise<Record<string, unknown> | null> {
   try {
     const corpo = await requisicao.json();
-    if (!corpo || typeof corpo !== "object") return null;
+    if (!corpo || typeof corpo !== "object" || Array.isArray(corpo)) return null;
     return corpo as Record<string, unknown>;
   } catch (erro) {
     console.error("corpo da atualização não é JSON de objeto", erro);

@@ -12,6 +12,7 @@ Deno.test("corpo que não é JSON vira nulo em vez de derrubar a função", asyn
 Deno.test("corpo que não é objeto vira nulo", async () => {
   assertEquals(await interpretarCorpo({ json: () => Promise.resolve("texto") }), null);
   assertEquals(await interpretarCorpo({ json: () => Promise.resolve(null) }), null);
+  assertEquals(await interpretarCorpo({ json: () => Promise.resolve([1, 2]) }), null);
 });
 
 Deno.test("corpo válido volta como objeto", async () => {
