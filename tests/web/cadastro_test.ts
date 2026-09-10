@@ -596,19 +596,28 @@ Deno.test("cadastro começa pelo perfil e só no final pede a conta", async () =
     const doc = a.w.document;
     const form = fill(a.w);
     const passoAtivo = () => doc.querySelector(".form-step.is-active").dataset.step;
+    const progresso = () => [
+      doc.querySelector("#progress-percent").textContent,
+      doc.querySelector("#progress-track").getAttribute("aria-valuenow"),
+      doc.querySelector("#progress-bar").style.width,
+    ];
     assert.equal(passoAtivo(), "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 4");
+    assert.deepEqual(progresso(), ["0%", "0", "0%"]);
     assert.equal(doc.querySelector("#previous-step").hidden, true);
     assert.equal(doc.querySelector("#submit-profile").hidden, true);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "3");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
+    assert.deepEqual(progresso(), ["25%", "25", "25%"]);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "4");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 3 de 4");
+    assert.deepEqual(progresso(), ["50%", "50", "50%"]);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "1");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
+    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
     assert.equal(a.calls.filter(([name]) => name === "signup").length, 0);
     assert.equal(form.elements.senha.value, "uma-senha-forte");
     await settle();
@@ -732,6 +741,7 @@ Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async 
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 3");
+    assert.equal(doc.querySelector("#progress-percent").textContent, "0%");
     assert.equal(doc.querySelector("#credenciais").hidden, true);
   } finally { a.close(); }
 });
@@ -1462,5 +1472,64 @@ Deno.test("editar o perfil preserva o rótulo e o indicador de envio do botão",
     a.w.setAuthMode("signup");
 
     assert.equal(doc.querySelector("#submit-label").textContent, "Criar conta e continuar");
+  } finally { a.close(); }
+});
+
+Deno.test("confirmar o cadastro leva a barra a 100% enquanto a conta é criada", async () => {
+  const a = app();
+  let liberarCadastro = () => {};
+  const cadastroLiberado = new Promise<void>((resolve) => { liberarCadastro = resolve; });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    const progresso = () => [
+      doc.querySelector("#progress-percent").textContent,
+      doc.querySelector("#progress-track").getAttribute("aria-valuenow"),
+      doc.querySelector("#progress-bar").style.width,
+    ];
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
+    a.client.auth.signUp = async (args: Signup) => {
+      a.calls.push(["signup", args]);
+      await cadastroLiberado;
+      return { data: { session: null } };
+    };
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.deepEqual(progresso(), ["100%", "100", "100%"]);
+    liberarCadastro();
+    await settle();
+  } finally { a.close(); }
+});
+
+Deno.test("cadastro recusado devolve a barra ao último passo", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    const progresso = () => [
+      doc.querySelector("#progress-percent").textContent,
+      doc.querySelector("#progress-track").getAttribute("aria-valuenow"),
+      doc.querySelector("#progress-bar").style.width,
+    ];
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#next-step").click();
+    a.client.auth.signUp = async (args: Signup) => {
+      a.calls.push(["signup", args]);
+      return { data: { session: null }, error: new Error("falha simulada") };
+    };
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(form.hidden, false);
+    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
   } finally { a.close(); }
 });

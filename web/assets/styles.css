@@ -371,7 +371,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .privacy-note { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: 11px; }.privacy-note span { color: var(--accent-light); }
 .dialog-form-area { overflow-y: auto; padding: 46px 54px 36px; }
 .progress-wrap { margin-bottom: 39px; }.progress-meta { display: flex; justify-content: space-between; margin-bottom: 9px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }.progress-track span { display: block; width: 33%; height: 100%; background: var(--accent); transition: width 260ms ease; }
+.progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }.progress-track span { display: block; width: 0; height: 100%; background: var(--accent); transition: width 260ms ease; }
 .form-step { display: none; padding: 0; border: 0; }.form-step.is-active { display: block; animation: step-in 220ms ease; }
 @keyframes step-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 .form-step legend { padding: 0; font-size: 28px; font-weight: 800; letter-spacing: -.04em; }.step-help { margin: 5px 0 28px; color: var(--muted); font-size: 13px; }

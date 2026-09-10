@@ -132,6 +132,7 @@ const PASSO_CONTA = 1;
 const PASSO_MOMENTO = 2;
 const PASSO_HABILIDADES = 3;
 const PASSO_PREFERENCIAS = 4;
+const PROGRESSO_AO_CONFIRMAR = 100;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
@@ -402,18 +403,25 @@ function landingJaContadaNestaSessao() {
   }
 }
 
+function percentualDoPasso() {
+  return Math.round((passosAtivos.indexOf(currentStep) / passosAtivos.length) * 100);
+}
+
+function mostrarProgresso(percent) {
+  progressPercent.textContent = `${percent}%`;
+  progressBar.style.width = `${percent}%`;
+  progressTrack.setAttribute("aria-valuenow", String(percent));
+}
+
 function showStep(step) {
   currentStep = passosAtivos.includes(step) ? step : passosAtivos[0];
   const posicao = passosAtivos.indexOf(currentStep);
   document.querySelectorAll(".form-step").forEach((element) => {
     element.classList.toggle("is-active", Number(element.dataset.step) === currentStep);
   });
-  const percent = Math.round(((posicao + 1) / passosAtivos.length) * 100);
   progressWrap.hidden = passosAtivos.length === 1;
   progressLabel.textContent = `Etapa ${posicao + 1} de ${passosAtivos.length}`;
-  progressPercent.textContent = `${percent}%`;
-  progressBar.style.width = `${percent}%`;
-  progressTrack.setAttribute("aria-valuenow", String(percent));
+  mostrarProgresso(percentualDoPasso());
   previousStep.hidden = posicao === 0;
   nextStep.hidden = posicao === passosAtivos.length - 1;
   submitProfile.hidden = posicao !== passosAtivos.length - 1;
@@ -1414,6 +1422,7 @@ form.addEventListener("submit", async (event) => {
   let profileSaveStarted = false;
   setFormMessage();
   setSubmitting(true);
+  mostrarProgresso(PROGRESSO_AO_CONFIRMAR);
   try {
     const profile = authMode === "login" ? null : profileFromForm();
     const existingSession = await currentSession();
@@ -1452,6 +1461,7 @@ form.addEventListener("submit", async (event) => {
     setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
   } finally {
     setSubmitting(false);
+    if (!form.hidden) mostrarProgresso(percentualDoPasso());
   }
 });
 
