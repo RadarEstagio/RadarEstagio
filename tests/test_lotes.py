@@ -59,7 +59,7 @@ class ExtratorDeLoteFalso:
             omitidos |= self._ids_omitidos_apenas_em_lote
         return [
             ExtracaoDaVaga(
-                id_vaga=vaga.id_externo,
+                id_vaga=vaga.identidade(),
                 area_da_vaga="computacao",
             )
             for vaga in lote
@@ -68,7 +68,7 @@ class ExtratorDeLoteFalso:
 
 
 def ids_de(extracoes: list[ExtracaoDaVaga]) -> list[str]:
-    return [extracao.id_vaga for extracao in extracoes]
+    return [extracao.id_vaga.removeprefix("adzuna:") for extracao in extracoes]
 
 
 def test_divide_as_vagas_em_lotes_do_tamanho_configurado():

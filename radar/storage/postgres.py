@@ -11,6 +11,7 @@ from radar.domain.areas import subareas_do_curso
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
+    ChaveDaVaga,
     EntregaParaJulgar,
     ExtracaoDaVaga,
     FunilDaCoorte,
@@ -48,7 +49,7 @@ SQL_PERFIS_SEM_VINCULO = (
 )
 
 SQL_EXTRACOES_EXISTENTES = """
-    select id_externo, extracao
+    select fonte, id_externo, extracao
     from vagas
     where extracao is not null
       and modelo_extracao = %(modelo)s
@@ -105,28 +106,35 @@ SQL_ENTREGAS_RECENTES = """
     order by e.enviada_em desc
 """
 
-SQL_AREAS_RECUSADAS = """
-    select area
+SQL_ULTIMA_RESPOSTA_POR_VAGA = """
+    select distinct on (e.vaga_id) e.vaga_id, e.nome, e.propriedades ->> 'motivo' as motivo
     from eventos_produto e
-    join vagas v on v.id = e.vaga_id,
-         jsonb_array_elements_text(v.extracao -> 'areas_da_vaga') area
     where e.perfil_id = %(perfil_id)s
-      and e.nome = 'vaga_irrelevante'
-      and e.propriedades ->> 'motivo' = 'motivo_area'
+      and e.nome in ('vaga_util', 'vaga_irrelevante')
       and e.ocorrido_em > now() - interval '30 days'
-    group by area
-    having count(distinct e.vaga_id) >= %(limiar)s
+    order by e.vaga_id, e.ocorrido_em desc, e.id desc
 """
 
-SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = """
+SQL_AREAS_RECUSADAS = f"""
+    with ultima_resposta as ({SQL_ULTIMA_RESPOSTA_POR_VAGA})
+    select area
+    from ultima_resposta r
+    join vagas v on v.id = r.vaga_id,
+         jsonb_array_elements_text(v.extracao -> 'areas_da_vaga') area
+    where r.nome = 'vaga_irrelevante'
+      and r.motivo = 'motivo_area'
+    group by area
+    having count(distinct r.vaga_id) >= %(limiar)s
+"""
+
+SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = f"""
+    with ultima_resposta as ({SQL_ULTIMA_RESPOSTA_POR_VAGA})
     select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
            v.publicada_em, v.modalidade
-    from eventos_produto e
-    join vagas v on v.id = e.vaga_id
-    where e.perfil_id = %(perfil_id)s
-      and e.nome = 'vaga_irrelevante'
-      and e.propriedades ->> 'motivo' = 'motivo_repetida'
-      and e.ocorrido_em > now() - interval '30 days'
+    from ultima_resposta r
+    join vagas v on v.id = r.vaga_id
+    where r.nome = 'vaga_irrelevante'
+      and r.motivo = 'motivo_repetida'
 """
 
 SQL_GUARDAR_VAGA = """
@@ -256,7 +264,9 @@ class RepositorioPostgres:
                 f"Falha ao conferir destinatário: {descrever(erro)}"
             ) from erro
 
-    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
+    def extracoes_existentes(
+        self, vagas: list[Vaga], modelo: str
+    ) -> dict[ChaveDaVaga, ExtracaoDaVaga]:
         if not vagas:
             return {}
         parametros = {
@@ -476,9 +486,10 @@ def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:
     return cursor.execute(SQL_REGISTRAR_ATIVACAO, {"perfil_id": perfil_id}).fetchone() is not None
 
 
-def interpretar_extracao(linha: dict) -> tuple[str, ExtracaoDaVaga] | None:
+def interpretar_extracao(linha: dict) -> tuple[ChaveDaVaga, ExtracaoDaVaga] | None:
     try:
-        return linha["id_externo"], ExtracaoDaVaga.model_validate(linha["extracao"])
+        chave = (linha["fonte"], linha["id_externo"])
+        return chave, ExtracaoDaVaga.model_validate(linha["extracao"])
     except ValidationError:
         logger.info("extração guardada da vaga %s está em formato antigo", linha["id_externo"])
         return None

@@ -24,6 +24,9 @@ class NivelCompatibilidade(StrEnum):
     INCOMPATIVEL = "incompativel"
 
 
+type ChaveDaVaga = tuple[str, str]
+
+
 class Vaga(BaseModel):
     id_externo: str
     fonte: str
@@ -35,6 +38,12 @@ class Vaga(BaseModel):
     publicada_em: datetime
     modalidade: Modalidade | None = None
     descricao_completa: bool = True
+
+    def chave(self) -> ChaveDaVaga:
+        return (self.fonte, self.id_externo)
+
+    def identidade(self) -> str:
+        return f"{self.fonte}:{self.id_externo}"
 
 
 class ExtracaoDaVaga(BaseModel):

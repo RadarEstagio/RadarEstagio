@@ -5,6 +5,7 @@ import unicodedata
 from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, ROTULOS_DAS_SUBAREAS, area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
+    ChaveDaVaga,
     ExtracaoDaVaga,
     Modalidade,
     NivelCompatibilidade,
@@ -33,6 +34,7 @@ INTERESSE_SEM_AREA_RECONHECIDA = 0.5
 INTERESSE_DE_OUTRA_SUBAREA = 0.5
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 AVISO_AREA_RECUSADA = "Área que você recusou nos últimos dias"
+AVISO_SEM_HABILIDADES_NO_PERFIL = "Nota calculada sem habilidades no seu perfil"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
 PESO_OBRIGATORIAS_COM_PRINCIPAIS = 0.7
@@ -286,11 +288,11 @@ ALIASES_DE_HABILIDADES = {
 
 
 def pontuar_vagas(
-    vagas: list[Vaga], extracoes: dict[str, ExtracaoDaVaga], perfil: Perfil
+    vagas: list[Vaga], extracoes: dict[ChaveDaVaga, ExtracaoDaVaga], perfil: Perfil
 ) -> list[ResultadoMatch]:
     resultados = []
     for vaga in vagas:
-        extracao = extracoes.get(vaga.id_externo)
+        extracao = extracoes.get(vaga.chave())
         if extracao is None:
             continue
         resultados.append(pontuar(vaga, extracao, perfil))
@@ -398,7 +400,15 @@ def _avisos_objetivos(
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
+    if _nota_sem_habilidades_declaradas(extracao, perfil):
+        avisos.append(AVISO_SEM_HABILIDADES_NO_PERFIL)
     return avisos
+
+
+def _nota_sem_habilidades_declaradas(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
+    if any(habilidade.strip() for habilidade in perfil.habilidades):
+        return False
+    return bool(_exigidas_pela_vaga(extracao))
 
 
 def aviso_de_area_recusada(areas: set[str]) -> str:
@@ -462,7 +472,7 @@ def _niveis_exigidos(requisitos: list[str]) -> dict[str, int]:
     for requisito in requisitos:
         if requisito.strip():
             nome = _normalizar_habilidade(requisito)
-            nivel = _nivel_exigido(requisito)
+            nivel = nivel_exigido(requisito)
             exigencias[nome] = min(exigencias.get(nome, nivel), nivel)
     return exigencias
 
@@ -472,17 +482,17 @@ def _niveis_do_perfil(perfil: Perfil) -> dict[str, int]:
     for habilidade in perfil.habilidades:
         if habilidade.strip():
             nome = _normalizar_habilidade(habilidade)
-            niveis[nome] = max(niveis.get(nome, NIVEL_NAO_INFORMADO), _nivel_declarado(habilidade))
+            niveis[nome] = max(niveis.get(nome, NIVEL_NAO_INFORMADO), nivel_declarado(habilidade))
     return niveis
 
 
-def _atende(nome: str, nivel_exigido: int, niveis_do_perfil: dict[str, int]) -> bool:
+def _atende(nome: str, nivel_minimo: int, niveis_do_perfil: dict[str, int]) -> bool:
     nivel_do_perfil = _nivel_no_perfil(nome, niveis_do_perfil)
     if nivel_do_perfil is None:
         return False
-    if nivel_exigido == NIVEL_NAO_INFORMADO:
+    if nivel_minimo == NIVEL_NAO_INFORMADO:
         return True
-    return nivel_do_perfil >= nivel_exigido
+    return nivel_do_perfil >= nivel_minimo
 
 
 def _nivel_no_perfil(nome: str, niveis_do_perfil: dict[str, int]) -> int | None:
@@ -505,14 +515,14 @@ def _membros_das_familias() -> dict[str, frozenset[str]]:
 
 
 def _perfil_atende(habilidade: str, niveis_do_perfil: dict[str, int]) -> bool:
-    return _atende(_normalizar_habilidade(habilidade), _nivel_exigido(habilidade), niveis_do_perfil)
+    return _atende(_normalizar_habilidade(habilidade), nivel_exigido(habilidade), niveis_do_perfil)
 
 
-def _nivel_exigido(habilidade: str) -> int:
+def nivel_exigido(habilidade: str) -> int:
     return min(_niveis_citados(habilidade), default=NIVEL_NAO_INFORMADO)
 
 
-def _nivel_declarado(habilidade: str) -> int:
+def nivel_declarado(habilidade: str) -> int:
     return max(_niveis_citados(habilidade), default=NIVEL_NAO_INFORMADO)
 
 

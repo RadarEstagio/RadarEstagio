@@ -67,8 +67,12 @@ Regras para habilidades:
 - Toda ferramenta ou habilidade relevante para executar o trabalho deve aparecer exatamente \
 uma vez entre obrigatórias, principais e desejáveis. Não omita uma habilidade apenas porque o \
 anúncio não usa as palavras "obrigatório" ou "desejável", nem porque não é técnica.
-- Extraia o nome da ferramenta ou habilidade sem nível nem qualificador: "Excel avançado" vira \
-"Excel", "inglês intermediário" vira "inglês", "boa redação" vira "redação".
+- Preserve o nível quando o anúncio exigir um, com as palavras do próprio anúncio: "Excel \
+avançado" continua "Excel avançado" e "inglês intermediário" continua "inglês intermediário". \
+O sistema compara esse nível com o que o estudante declarou; sem ele, um requisito avançado \
+parece atendido por quem tem só o básico.
+- Tire o qualificador que não é nível: "boa redação" vira "redação" e "sólidos conhecimentos de \
+Python" vira "Python".
 - Separe obrigatórias, principais e desejáveis pela linguagem do anúncio. "Necessário", \
 "obrigatório" e "requisito" indicam obrigatória; "desejável", "diferencial" e "será um plus" \
 indicam desejável; tecnologias da stack, atividades e responsabilidades sem esses qualificadores \
@@ -118,7 +122,7 @@ Subáreas por área:
 def descrever_vaga(vaga: Vaga) -> str:
     modalidade = f"Modalidade: {vaga.modalidade.value}\n" if vaga.modalidade else ""
     return (
-        f"### Vaga id={vaga.id_externo}\n"
+        f"### Vaga id={vaga.identidade()}\n"
         f"Título: {vaga.titulo}\n"
         f"Empresa: {vaga.empresa}\n"
         f"Localização: {vaga.localizacao}\n"

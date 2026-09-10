@@ -1,6 +1,7 @@
 from typing import Protocol
 
 from radar.domain.models import (
+    ChaveDaVaga,
     EntregaParaJulgar,
     ExtracaoDaVaga,
     FunilDaCoorte,
@@ -46,7 +47,9 @@ class RepositorioDeAvaliacoes(Protocol):
 
     def liberar_atendimento(self, usuario: Usuario) -> None: ...
 
-    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]: ...
+    def extracoes_existentes(
+        self, vagas: list[Vaga], modelo: str
+    ) -> dict[ChaveDaVaga, ExtracaoDaVaga]: ...
 
     def guardar_extracoes(
         self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str

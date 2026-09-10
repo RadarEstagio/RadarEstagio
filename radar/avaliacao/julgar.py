@@ -34,7 +34,7 @@ def julgar_entregas(
                 continue
             por_id = {julgamento.id_vaga: julgamento for julgamento in julgamentos}
             for entrega in lote:
-                julgamento = por_id.get(entrega.vaga.id_externo)
+                julgamento = por_id.get(entrega.vaga.identidade())
                 if julgamento is None:
                     resultado.sem_julgamento += 1
                     continue

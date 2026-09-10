@@ -3,6 +3,7 @@ from uuid import UUID
 
 from radar.domain.models import (
     AreaDeInteresse,
+    ChaveDaVaga,
     ExtracaoDaVaga,
     Modalidade,
     Perfil,
@@ -12,7 +13,7 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
-from radar.notification.telegram import ErroDeNotificacao
+from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -23,10 +24,10 @@ ID_USUARIO = UUID(int=1)
 ID_OUTRO_USUARIO = UUID(int=2)
 
 
-def vaga(numero: int, titulo: str = "Estágio Python") -> Vaga:
+def vaga(numero: int, titulo: str = "Estágio Python", fonte: str = "adzuna") -> Vaga:
     return Vaga(
         id_externo=str(numero),
-        fonte="adzuna",
+        fonte=fonte,
         titulo=titulo,
         empresa=f"Empresa {numero}",
         localizacao="Rio de Janeiro",
@@ -64,7 +65,7 @@ class ExtratorFalso:
         self.extraidas.extend(vaga.id_externo for vaga in vagas)
         return [
             ExtracaoDaVaga(
-                id_vaga=vaga.id_externo,
+                id_vaga=vaga.identidade(),
                 area_da_vaga="computacao",
             )
             for vaga in vagas
@@ -87,28 +88,37 @@ class PontuadorFalso:
                 pontos_a_favor=[f"Ponto {vaga.id_externo}"],
             )
             for vaga in vagas
-            if vaga.id_externo in self._notas and vaga.id_externo in extracoes
+            if vaga.id_externo in self._notas and vaga.chave() in extracoes
         ]
 
 
 class NotificadorFalso:
-    def __init__(self, chats_com_erro: set[str] = frozenset()) -> None:
+    def __init__(
+        self,
+        chats_com_erro: set[str] = frozenset(),
+        chats_com_falha_temporaria: set[str] = frozenset(),
+    ) -> None:
         self.textos: list[str] = []
         self.chats: list[str] = []
         self.perguntas: list[PerguntaDeFeedback] = []
         self._chats_com_erro = chats_com_erro
+        self._chats_com_falha_temporaria = chats_com_falha_temporaria
 
     def enviar(self, chat_id: str, texto: str) -> None:
-        if chat_id in self._chats_com_erro:
-            raise ErroDeNotificacao("chat not found")
+        self._recusar_se_preciso(chat_id)
         self.chats.append(chat_id)
         self.textos.append(texto)
 
     def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
-        if chat_id in self._chats_com_erro:
-            raise ErroDeNotificacao("chat not found")
+        self._recusar_se_preciso(chat_id)
         self.perguntas.append(pergunta)
         self.enviar(chat_id, pergunta.texto)
+
+    def _recusar_se_preciso(self, chat_id: str) -> None:
+        if chat_id in self._chats_com_erro:
+            raise DestinatarioRecusouAMensagem("Telegram respondeu HTTP 403: bot was blocked")
+        if chat_id in self._chats_com_falha_temporaria:
+            raise ErroDeNotificacao("Telegram respondeu HTTP 502: Bad Gateway")
 
 
 class RepositorioFalso(RepositorioEmMemoria):
@@ -134,22 +144,24 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.avisos_de_silencio: list[UUID] = []
         self.travas: list[tuple[str, UUID]] = []
         self.carencias_aplicadas: list[int] = []
-        self.extracoes_guardadas: dict[str, ExtracaoDaVaga] = {}
+        self.extracoes_guardadas: dict[ChaveDaVaga, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
 
-    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
-        ids = {vaga.id_externo for vaga in vagas}
+    def extracoes_existentes(
+        self, vagas: list[Vaga], modelo: str
+    ) -> dict[ChaveDaVaga, ExtracaoDaVaga]:
+        chaves = {vaga.chave() for vaga in vagas}
         return {
-            id_vaga: extracao
-            for id_vaga, extracao in self.extracoes_guardadas.items()
-            if id_vaga in ids
+            chave: extracao
+            for chave, extracao in self.extracoes_guardadas.items()
+            if chave in chaves
         }
 
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
         self.gravacoes_de_extracao += 1
         for vaga_extraida, extracao in extracoes:
-            self.extracoes_guardadas[vaga_extraida.id_externo] = extracao
+            self.extracoes_guardadas[vaga_extraida.chave()] = extracao
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set(self._enviadas)
@@ -723,7 +735,9 @@ def test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas():
 
 def test_extracao_ja_guardada_nao_volta_ao_extrator():
     repositorio = RepositorioFalso([usuario()])
-    repositorio.extracoes_guardadas["1"] = ExtracaoDaVaga(id_vaga="1", area_da_vaga="computacao")
+    repositorio.extracoes_guardadas[("adzuna", "1")] = ExtracaoDaVaga(
+        id_vaga="adzuna:1", area_da_vaga="computacao"
+    )
 
     extrator = executar_com(repositorio, [vaga(1), vaga(2)], {"1": 70, "2": 80})
 
@@ -735,7 +749,7 @@ def test_extracao_nova_e_gravada_uma_vez_por_vaga():
 
     executar_com(repositorio, [vaga(1), vaga(2)], {"1": 70, "2": 80})
 
-    assert sorted(repositorio.extracoes_guardadas) == ["1", "2"]
+    assert sorted(repositorio.extracoes_guardadas) == [("adzuna", "1"), ("adzuna", "2")]
     assert repositorio.gravacoes_de_extracao == 1
 
 
@@ -967,3 +981,43 @@ def test_falha_ao_ler_o_historico_de_um_usuario_nao_derruba_os_demais():
     assert notificador.chats == ["456"]
     assert set(resumo.enviadas_por_usuario) == {ID_OUTRO_USUARIO}
     assert ("liberar", ID_USUARIO) in repositorio.travas
+
+
+def test_vagas_de_fontes_diferentes_com_o_mesmo_id_nao_viram_a_mesma_vaga():
+    da_adzuna = vaga(42, titulo="Estágio Python")
+    da_gupy = vaga(42, titulo="Estágio de Dados", fonte="gupy")
+    notificador = NotificadorFalso()
+    repositorio = RepositorioEmMemoria([usuario()])
+
+    resumo = executar(
+        ColetorFalso([da_adzuna, da_gupy]),
+        ExtratorFalso({}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        pontuador=PontuadorFalso({"42": 90}),
+    )
+
+    entregues = resumo.enviadas_por_usuario[ID_USUARIO]
+    assert [recomendacao.resultado.vaga.identidade() for recomendacao in entregues] == [
+        "adzuna:42",
+        "gupy:42",
+    ]
+
+
+def test_falha_temporaria_do_telegram_nao_conta_para_pausar_o_perfil():
+    repositorio = RepositorioFalso([usuario(chat_id="fora-do-ar")])
+    notificador = NotificadorFalso(chats_com_falha_temporaria={"fora-do-ar"})
+
+    for _ in range(3):
+        rodar(
+            [vaga(1)],
+            {"1": 70},
+            repositorio=repositorio,
+            notificador=notificador,
+            falhas_ate_pausar=3,
+        )
+
+    assert repositorio.falhas_por_usuario == {}
+    assert repositorio.pausados == []

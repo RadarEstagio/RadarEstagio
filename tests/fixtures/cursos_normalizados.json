@@ -190,5 +190,13 @@
   "Nutrição - em curso": [
     "nutricao",
     "saude"
+  ],
+  "Letras – Português": [
+    "letras",
+    "educacao"
+  ],
+  "Engenharia – Civil": [
+    "engenharia",
+    null
   ]
 }

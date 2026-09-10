@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
@@ -171,3 +172,9 @@ def test_perfil_vinculado_explica_a_espera_sem_prometer_execucao():
     assert "A primeira busca pode aguardar a próxima execução diária." in javascript
     for promessa in ("busca iniciada", "busca concluída", "busca começou", "quatro minutos"):
         assert promessa not in javascript
+
+
+def test_cliente_supabase_tem_versao_fixa():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert re.search(r"@supabase/supabase-js@\d+\.\d+\.\d+", html)

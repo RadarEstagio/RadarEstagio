@@ -554,8 +554,14 @@ AREAS = (
 )
 
 
+TRAVESSOES = str.maketrans(
+    {"\u2010": "-", "\u2011": "-", "\u2013": "-", "\u2014": "-", "\u2212": "-"}
+)
+
+
 def normalizar(texto: str) -> str:
-    sem_acentos = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
+    com_hifen = texto.translate(TRAVESSOES)
+    sem_acentos = unicodedata.normalize("NFKD", com_hifen).encode("ascii", "ignore").decode("ascii")
     return " ".join(sem_acentos.casefold().split())
 
 

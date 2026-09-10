@@ -209,8 +209,8 @@ def test_prompt_identifica_todas_as_vagas_sem_citar_candidato():
     prompt = montar_prompt([vaga_exemplo(1), vaga_exemplo(2)])
 
     assert "Vagas (2)" in prompt
-    assert "Vaga id=1" in prompt
-    assert "Vaga id=2" in prompt
+    assert "Vaga id=adzuna:1" in prompt
+    assert "Vaga id=adzuna:2" in prompt
     assert "Estágio em Desenvolvimento Python 2" in prompt
     assert "cursos_aceitos" in prompt
     assert "periodo_minimo" in prompt

@@ -1,3 +1,4 @@
+import psycopg
 import pytest
 
 from radar.settings import Settings
@@ -6,6 +7,7 @@ from radar.storage.factory import (
     ID_DO_USUARIO_FIXO,
     abrir_repositorio,
     abrir_repositorio_em_memoria,
+    conectar,
 )
 from radar.storage.memoria import RepositorioEmMemoria
 
@@ -62,3 +64,19 @@ def test_banco_inacessivel_levanta_erro_de_armazenamento():
         abrir_repositorio(settings),
     ):
         pass
+
+
+def test_conexao_confirma_cada_operacao_sem_esperar_o_fim_do_processo(monkeypatch):
+    argumentos: dict[str, object] = {}
+
+    def registrar(url: str, **extras: object) -> object:
+        argumentos.update(extras)
+        argumentos["url"] = url
+        raise psycopg.OperationalError("sem banco neste teste")
+
+    monkeypatch.setattr(psycopg, "connect", registrar)
+
+    with pytest.raises(ErroDeArmazenamento):
+        conectar(settings_de_teste(database_url="postgresql://radar@banco/radar"))
+
+    assert argumentos["autocommit"] is True

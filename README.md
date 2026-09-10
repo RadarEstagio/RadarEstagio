@@ -112,12 +112,19 @@ Execute a partir da raiz, com `uv run python -m radar` seguido do comando:
 | `metricas` | Imprime o relatório de produto dos últimos 30 dias | Leitura do banco; exige `DATABASE_URL` |
 | `julgar --dias 7 --amostra 30 --semente 1` | Pede a um segundo modelo que avalie uma amostra das entregas recentes | Leitura do banco e chamada de IA com perfil e anúncios; não grava nem envia mensagens |
 | `gabarito --dias 7 --amostra 20 --saida gabarito.json` | Exporta entregas para avaliação humana | Leitura do banco e escrita no arquivo indicado; não chama IA nem envia mensagens |
+| `descartes --amostra 30 --saida descartes.json` | Exporta uma amostra do que o pré-filtro cortou, com o motivo | Consulta fontes e banco; escreve no arquivo indicado; não chama IA nem envia mensagens |
 
 `julgar` exige `DATABASE_URL` e usa `AVALIADOR` para escolher o provedor. Configure
 `JUIZ_MODELO` com um modelo disponível nesse provedor: o padrão `claude-sonnet-4-6` é
 destinado ao caminho AGY, não à Gemini Developer API. `--dias` e `--amostra` aceitam
 inteiros positivos; a semente torna a seleção reproduzível para a mesma lista de entregas.
 O julgamento é uma estimativa do modelo, não validação feita por estudantes.
+
+`descartes` roda a coleta real, aplica o pré-filtro para cada perfil ativo e grava uma amostra
+do que foi cortado, com o motivo do corte e `descarte_correto` em branco. Serve para medir o
+lado que o `julgar` não alcança: a vaga boa que desapareceu antes da IA. A amostra alterna
+entre os motivos antes de repetir um, e a semente torna a seleção reproduzível. Sem banco, usa
+o perfil de exemplo. O arquivo tem os mesmos cuidados do gabarito.
 
 `gabarito` exige banco e grava um JSON com `relevante` inicialmente nulo. Preencha esse
 campo com `true` ou `false` para cada entrega avaliada e use `julgar --gabarito gabarito.json`
@@ -188,6 +195,10 @@ Os testes das Edge Functions usam a configuração do próprio diretório. A par
 (cd supabase/functions/telegram-webhook && deno test)
 (cd supabase/functions/ir && deno test)
 ```
+
+Essas mesmas suítes rodam no GitHub Actions em todo push para a `main` e em todo pull
+request, pelo workflow [Testes](.github/workflows/testes.yml). Os testes de integração
+Postgres não rodam lá: dependem de um banco com o schema do Supabase.
 
 Inspeção visual e jornada publicada têm roteiro próprio no guia de publicação.
 

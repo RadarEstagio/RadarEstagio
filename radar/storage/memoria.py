@@ -1,4 +1,5 @@
 from radar.domain.models import (
+    ChaveDaVaga,
     EntregaParaJulgar,
     ExtracaoDaVaga,
     Recomendacao,
@@ -19,7 +20,9 @@ class RepositorioEmMemoria:
     def pode_entregar(self, usuario: Usuario) -> bool:
         return any(u.id == usuario.id and u.chat_id == usuario.chat_id for u in self._usuarios)
 
-    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
+    def extracoes_existentes(
+        self, vagas: list[Vaga], modelo: str
+    ) -> dict[ChaveDaVaga, ExtracaoDaVaga]:
         return {}
 
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:

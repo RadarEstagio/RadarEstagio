@@ -60,7 +60,7 @@ class ExtratorEmLotes:
             for vaga in faltantes:
                 self._extrair_lote([vaga], resultados)
         elif faltantes:
-            logger.warning("Vaga %s ignorada: extrator não a devolveu", lote[0].id_externo)
+            logger.warning("Vaga %s ignorada: extrator não a devolveu", lote[0].identidade())
 
     def _chamar_esperando_a_cota(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
         for tentativa in range(1, TENTATIVAS_APOS_COTA_EXCEDIDA + 1):
@@ -87,7 +87,7 @@ class ExtratorEmLotes:
         self, lote: list[Vaga], erro: ErroDeAvaliacao, resultados: list[ExtracaoDaVaga]
     ) -> None:
         if len(lote) == 1:
-            logger.warning("Vaga %s ignorada: %s", lote[0].id_externo, erro)
+            logger.warning("Vaga %s ignorada: %s", lote[0].identidade(), erro)
             return
         metade = len(lote) // 2
         logger.info("Lote de %d vagas falhou (%s); dividindo em dois", len(lote), erro)
@@ -97,4 +97,4 @@ class ExtratorEmLotes:
 
 def vagas_sem_resultado(vagas: list[Vaga], extracoes: list[ExtracaoDaVaga]) -> list[Vaga]:
     extraidas = {extracao.id_vaga for extracao in extracoes}
-    return [vaga for vaga in vagas if vaga.id_externo not in extraidas]
+    return [vaga for vaga in vagas if vaga.identidade() not in extraidas]

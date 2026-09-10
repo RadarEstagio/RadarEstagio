@@ -5,7 +5,11 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from radar.notification.formatador import LIMITE_DE_CARACTERES_DO_TELEGRAM
-from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
+from radar.notification.telegram import (
+    DestinatarioRecusouAMensagem,
+    ErroDeNotificacao,
+    NotificadorTelegram,
+)
 
 TOKEN_DE_TESTE = "token-de-teste"
 CHAT_ID_DE_TESTE = "123"
@@ -91,3 +95,59 @@ def test_feedback_fica_na_ultima_parte_sem_mensagem_extra(httpx_mock, notificado
     assert "reply_markup" not in corpos[0]
     assert corpos[-1]["text"].endswith("Deixe seu feedback 👇")
     assert corpos[-1]["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "feedback:token"
+
+
+def test_erro_sem_corpo_json_vira_erro_de_notificacao_e_nao_derruba_a_execucao(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram
+):
+    httpx_mock.add_response(status_code=502, text="<html>Bad Gateway</html>")
+
+    with pytest.raises(ErroDeNotificacao, match="502.*Bad Gateway"):
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+
+def test_bot_bloqueado_pelo_usuario_e_recusa_do_destinatario(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram
+):
+    httpx_mock.add_response(
+        status_code=403, json={"ok": False, "description": "Forbidden: bot was blocked by the user"}
+    )
+
+    with pytest.raises(DestinatarioRecusouAMensagem):
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+
+def test_chat_inexistente_e_recusa_do_destinatario(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram
+):
+    httpx_mock.add_response(
+        status_code=400, json={"ok": False, "description": "Bad Request: chat not found"}
+    )
+
+    with pytest.raises(DestinatarioRecusouAMensagem):
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+
+def test_mensagem_mal_formada_nao_e_culpa_do_destinatario(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram
+):
+    httpx_mock.add_response(
+        status_code=400,
+        json={"ok": False, "description": "Bad Request: can't parse entities"},
+    )
+
+    with pytest.raises(ErroDeNotificacao) as erro:
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+    assert not isinstance(erro.value, DestinatarioRecusouAMensagem)
+
+
+def test_indisponibilidade_do_telegram_nao_e_culpa_do_destinatario(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram
+):
+    httpx_mock.add_response(status_code=503, json={"ok": False, "description": "unavailable"})
+
+    with pytest.raises(ErroDeNotificacao) as erro:
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+    assert not isinstance(erro.value, DestinatarioRecusouAMensagem)

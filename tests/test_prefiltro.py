@@ -104,6 +104,7 @@ def test_senioridade_apenas_na_descricao_nao_descarta():
     "descricao",
     [
         "Requisito: 2 anos de experiência com Python.",
+        "Não usamos Java. Exigimos 2 anos de experiência com Python.",
         "Experiência mínima de 3 anos.",
         "5+ anos de experiencia em suporte técnico",
         "Experiência de 2 anos em redes",
@@ -119,6 +120,9 @@ def test_descarta_exigencia_de_dois_ou_mais_anos_de_experiencia(descricao: str):
         "Não exige experiência.",
         "1 ano de experiência é desejável.",
         "Empresa com 20 anos de experiência no mercado.",
+        "Não exigimos 2 anos de experiência. Buscamos iniciantes.",
+        "Não é necessário ter 3 anos de experiência prévia.",
+        "Dispensamos 2 anos de experiência para esta vaga.",
         "Experiência com Python é um diferencial.",
     ],
 )

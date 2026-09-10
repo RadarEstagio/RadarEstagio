@@ -65,7 +65,7 @@ def descrever_vagas(vagas: list[Vaga]) -> str:
         blocos.append(
             "\n".join(
                 [
-                    f"id: {vaga.id_externo}",
+                    f"id: {vaga.identidade()}",
                     f"título: {vaga.titulo}",
                     f"empresa: {vaga.empresa}",
                     f"local: {vaga.localizacao} · modalidade: {modalidade}",
@@ -88,4 +88,4 @@ def apenas_das_vagas(julgamentos: list[Julgamento], vagas: list[Vaga]) -> list[J
     por_id = {}
     for julgamento in julgamentos:
         por_id.setdefault(julgamento.id_vaga, julgamento)
-    return [por_id[vaga.id_externo] for vaga in vagas if vaga.id_externo in por_id]
+    return [por_id[vaga.identidade()] for vaga in vagas if vaga.identidade() in por_id]

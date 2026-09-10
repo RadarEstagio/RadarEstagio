@@ -272,8 +272,8 @@ def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection
     repositorio.guardar_extracoes([(vaga(1), extracao)], "modelo-teste")
 
     guardadas = repositorio.extracoes_existentes([vaga(1), vaga(2)], "modelo-teste")
-    assert list(guardadas) == ["teste-1"]
-    assert guardadas["teste-1"] == extracao
+    assert list(guardadas) == [("adzuna", "teste-1")]
+    assert guardadas[("adzuna", "teste-1")] == extracao
     assert (
         conexao.execute(
             "select modelo_extracao from vagas where id_externo = 'teste-1'"
@@ -545,4 +545,68 @@ def test_extracao_de_outra_versao_do_prompt_nao_e_reaproveitada(conexao: psycopg
     repositorio.guardar_extracoes([(vaga(1), extracao)], "gemini#versao-antiga")
 
     assert repositorio.extracoes_existentes([vaga(1)], "gemini#versao-nova") == {}
-    assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == ["teste-1"]
+    assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == [
+        ("adzuna", "teste-1")
+    ]
+
+
+def test_envio_gravado_fica_visivel_para_outra_conexao():
+    escrita = psycopg.connect(DATABASE_URL_TESTE, autocommit=True)
+    leitura = psycopg.connect(DATABASE_URL_TESTE, autocommit=True)
+    user_id = uuid4()
+    recomendacao = Recomendacao(
+        resultado=ResultadoMatch(vaga=vaga(90, fonte="visibilidade"), nota=80)
+    )
+    try:
+        escrita.execute(
+            "insert into auth.users (id, instance_id, aud, role, email) values "
+            "(%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+            (user_id, f"{user_id}@teste.local"),
+        )
+        perfil_id = escrita.execute(
+            "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
+            "telegram_chat_id) values (%s, 'Engenharia', 4, '{Python}', 'Rio de Janeiro, RJ', "
+            "'remoto', %s) returning id",
+            (user_id, str(uuid4().int)[:9]),
+        ).fetchone()[0]
+        dono = Usuario(
+            id=perfil_id,
+            perfil=Perfil(
+                curso="Engenharia",
+                periodo=4,
+                habilidades=["Python"],
+                cidade="Rio de Janeiro, RJ",
+                modalidade=Modalidade.REMOTO,
+            ),
+            chat_id="1",
+        )
+
+        RepositorioPostgres(escrita).registrar_envios(dono, [recomendacao])
+
+        assert (
+            leitura.execute(
+                "select count(*) from envios where token = %s", (recomendacao.token,)
+            ).fetchone()[0]
+            == 1
+        )
+    finally:
+        escrita.execute("delete from auth.users where id = %s", (user_id,))
+        escrita.execute("delete from vagas where fonte = 'visibilidade'")
+        escrita.close()
+        leitura.close()
+
+
+def test_extracao_de_outra_fonte_com_o_mesmo_id_externo_nao_se_confunde(
+    conexao: psycopg.Connection,
+):
+    repositorio = RepositorioPostgres(conexao)
+    da_adzuna = ExtracaoDaVaga(id_vaga="adzuna:teste-1", area_da_vaga="computacao")
+    da_gupy = ExtracaoDaVaga(id_vaga="gupy:teste-1", area_da_vaga="direito")
+
+    repositorio.guardar_extracoes(
+        [(vaga(1), da_adzuna), (vaga(1, fonte="gupy"), da_gupy)], "modelo-teste"
+    )
+    guardadas = repositorio.extracoes_existentes([vaga(1), vaga(1, fonte="gupy")], "modelo-teste")
+
+    assert guardadas[("adzuna", "teste-1")].area_da_vaga == "computacao"
+    assert guardadas[("gupy", "teste-1")].area_da_vaga == "direito"

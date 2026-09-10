@@ -45,9 +45,11 @@ Esta revisão não refez esses testes nem consultou o estado atual das contas ex
 
 ### 1. Confirmar onde o site está publicado
 
-- [ ] Confirmar com Ian o endereço `pages.dev`, a conta Cloudflare que contém o projeto e se
-  a publicação está conectada ao GitHub ou foi feita por upload.
+- [x] Confirmado em 09/09 que `radarestagio.pages.dev` serve os arquivos do `main`
+  ([guia](guia-publicacao-e-piloto.md)); falta a conta Cloudflare e a forma de publicação.
 - [ ] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade.
+      `radarestagio.com` ainda não resolve por HTTP: só tem MX, e os textos legais já apontam
+      para ele.
 - [ ] Confirmar se mudanças na `main` atualizam o frontend automaticamente.
 
 A conversa sobre publicação no Pages não confirma que ela terminou. Por isso, o estado aqui
@@ -57,9 +59,11 @@ integrado à main. A configuração de cada automação ainda deve ser verificad
 
 ### 2. Conectar o endereço ao cadastro
 
-- [ ] Conferir Site URL e Redirect URLs do Auth, incluindo recuperação de senha.
+- [x] Site URL corrigido para o endereço publicado em 09/09, depois do cadastro de ponta a
+      ponta ter caído em `radarestagio.com` ([guia](guia-publicacao-e-piloto.md), seção 5).
 - [ ] Trocar a `URL_DA_LANDING` provisória pelo endereço escolhido.
-- [ ] Configurar Turnstile no frontend e no Supabase e testar o desafio.
+- [ ] Configurar Turnstile no frontend e no Supabase e testar o desafio; hoje
+      `turnstileSiteKey` está vazio e o captcha do Auth está desligado.
 
 Não reaplicar as migrations já registradas nem republicar funções só para repetir etapas
 concluídas. Se o código ou o repositório mudar, atualizar as integrações afetadas.
@@ -92,6 +96,36 @@ As páginas seguem como rascunhos até essa revisão; a implementação não apr
 Sem quantidade mínima, roteiro obrigatório de entrevista, prazo de duas semanas ou metas
 formais. Consultar as métricas quando ajudarem a entender um problema; não é necessário criar
 um dashboard ou novas consultas para começar essa conversa.
+
+## 2.1 Rodada de confiabilidade (10/09/2026)
+
+Uma revisão externa apontou defeitos no núcleo do produto, e eles foram corrigidos com teste
+que reproduz cada falha. O detalhe operacional está no [CLAUDE.md](../CLAUDE.md); a decisão de
+arquitetura, em [arquitetura.md](arquitetura.md). Em resumo: fronteira de transação, identidade
+da vaga por fonte e id, deduplicação que preserva cidade, prompt preservando o nível da
+habilidade, recusa corrigida deixando de penalizar, negação no pré-filtro de experiência, falha
+temporária de entrega não pausando conta, travessão no nome do curso, suítes rodando em pull
+request e versão fixa do cliente supabase.
+
+**Antes da próxima execução:** a mudança do prompt invalidou o cache de extração. A execução
+seguinte reextrai as candidatas e gasta cota; ler o resumo das 07:23 e conferir "vagas sem
+extração".
+
+O que essa rodada deliberadamente não fez, e continua pendente:
+
+- **Pesos da nota.** A regra de não recalibrar sem `vaga_irrelevante` real continua valendo. O
+  que mudou foi a explicação: perfil sem habilidade cadastrada agora recebe um aviso na
+  mensagem em vez de uma nota alta sem ressalva.
+- **Detectar execução ausente.** Se o cron externo não disparar, nada avisa: o passo
+  `if: failure()` do workflow só cobre execução que começou. Falta escolher onde esse alerta
+  mora, e a opção mais simples é o próprio cron-job.org avisar por e-mail quando falhar.
+- **Rotular os descartes.** `python -m radar descartes` já exporta a amostra com o motivo, mas
+  ninguém preencheu `descarte_correto` ainda. Sem isso, continuamos medindo só a qualidade do
+  que foi entregue.
+- **Preencher o gabarito humano.** As 20 entregas de `docs/gabarito-2026-09-09.json` seguem com
+  `relevante` nulo, então o juiz automático ainda não foi validado.
+- **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
+  compartilhado; a recomendação é separar responsabilidades sem trocar de framework.
 
 ## 3. Limitações e decisões que continuam valendo
 

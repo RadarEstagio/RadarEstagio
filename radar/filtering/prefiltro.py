@@ -31,7 +31,13 @@ PADRAO_QUALQUER_FORMACAO = re.compile(
 )
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
+PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
+    r"\bnao\s+(?:\w+\s+){0,3}?(?:exig\w*|ped\w*|precis\w*|requer\w*|necessari\w*)"
+    r"|\bsem\s+(?:a\s+)?necessidade\b"
+    r"|\bdispensa\w*\b"
+)
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
+PALAVRAS_ANTES_DA_EXIGENCIA = 8
 
 
 def normalizar(texto: str) -> str:
@@ -89,13 +95,20 @@ def menciona_o_curso(descricao: str, curso_do_perfil: str) -> bool:
 
 def exige_anos_de_experiencia(vaga: Vaga) -> bool:
     texto = normalizar(f"{vaga.titulo} {vaga.descricao}")
-    anos_mencionados = (
+    anos_exigidos = (
         int(grupo)
         for ocorrencia in PADRAO_ANOS_DE_EXPERIENCIA.finditer(texto)
+        if not exigencia_negada(texto, ocorrencia.start())
         for grupo in ocorrencia.groups()
         if grupo
     )
-    return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_mencionados)
+    return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_exigidos)
+
+
+def exigencia_negada(texto: str, posicao: int) -> bool:
+    inicio_da_frase = texto.rfind(". ", 0, posicao) + 1
+    anteriores = texto[inicio_da_frase:posicao].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
+    return PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(anteriores)) is not None
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
@@ -127,17 +140,27 @@ def modalidade_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
     return exige_presenca and not admite_remoto
 
 
+MOTIVOS_DE_DESCARTE = (
+    ("nao_e_estagio", lambda vaga, perfil: nao_e_estagio(vaga)),
+    ("exige_senioridade", lambda vaga, perfil: exige_senioridade(vaga)),
+    ("exige_pos_graduacao", lambda vaga, perfil: exige_pos_graduacao(vaga)),
+    ("exige_ensino_medio", lambda vaga, perfil: exige_ensino_medio(vaga)),
+    ("fora_da_area_do_curso", fora_da_area_do_curso),
+    ("exige_anos_de_experiencia", lambda vaga, perfil: exige_anos_de_experiencia(vaga)),
+    ("localizacao_incompativel", localizacao_incompativel),
+    ("modalidade_incompativel", modalidade_incompativel),
+)
+
+
+def motivo_do_descarte(vaga: Vaga, perfil: Perfil) -> str | None:
+    for motivo, descarta in MOTIVOS_DE_DESCARTE:
+        if descarta(vaga, perfil):
+            return motivo
+    return None
+
+
 def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
-    return (
-        nao_e_estagio(vaga)
-        or exige_senioridade(vaga)
-        or exige_pos_graduacao(vaga)
-        or exige_ensino_medio(vaga)
-        or fora_da_area_do_curso(vaga, perfil)
-        or exige_anos_de_experiencia(vaga)
-        or localizacao_incompativel(vaga, perfil)
-        or modalidade_incompativel(vaga, perfil)
-    )
+    return motivo_do_descarte(vaga, perfil) is not None
 
 
 def filtrar(vagas: list[Vaga], perfil: Perfil) -> list[Vaga]:
