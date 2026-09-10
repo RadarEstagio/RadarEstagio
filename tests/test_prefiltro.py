@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from radar.domain.areas import titulo_e_de_outra_area
 from radar.domain.models import Modalidade, Perfil, Vaga
 from radar.filtering.prefiltro import (
     deve_descartar,
@@ -248,8 +249,10 @@ def test_plural_de_juridica_no_titulo_mantem_a_vaga_para_quem_e_de_direito(titul
     "titulo",
     [
         "Estágio Comercial - Pessoas Jurídicas",
+        "Estágio Comercial - Pessoas  Jurídicas",
         "Estágio em Crédito para Pessoa Jurídica",
         "Estágio Fiscal – Obrigações de Pessoas Jurídicas",
+        "Estágio Atendimento Pessoas Físicas e Jurídicas",
     ],
 )
 def test_pessoa_juridica_no_titulo_nao_e_sinal_de_direito(titulo: str):
@@ -258,10 +261,17 @@ def test_pessoa_juridica_no_titulo_nao_e_sinal_de_direito(titulo: str):
 
 @pytest.mark.parametrize(
     "titulo",
-    ["Estágio em Crédito para Pessoa Jurídica", "Estágio Fiscal – Obrigações de Pessoas Jurídicas"],
+    [
+        "Estágio Pessoas Jurídicas",
+        "Estágio Pessoas  Jurídicas",
+        "Estágio Pessoas\tJurídicas",
+        "Estágio Pessoas Físicas e Jurídicas",
+        "Estágio Pessoa-Jurídica",
+        "Estágio em Contas Jurídicas",
+    ],
 )
-def test_pessoa_juridica_no_titulo_nao_veta_vaga_de_financas(titulo: str):
-    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso="Ciências Contábeis"))
+def test_pessoa_juridica_no_titulo_nao_veta_vaga_de_outra_area(titulo: str):
+    assert not titulo_e_de_outra_area(normalizar(titulo), "financas")
 
 
 def test_pessoas_juridicas_na_descricao_nao_mantem_vaga_para_quem_e_de_direito():
@@ -271,6 +281,26 @@ def test_pessoas_juridicas_na_descricao_nao_mantem_vaga_para_quem_e_de_direito()
     )
 
     assert fora_da_area_do_curso(atendimento, perfil(curso="Direito"))
+
+
+def test_pessoa_juridica_no_singular_na_descricao_nao_mantem_vaga_para_quem_e_de_direito():
+    generico = vaga(
+        titulo="Programa de Estágio", descricao="Área de atendimento a pessoa jurídica."
+    )
+
+    assert fora_da_area_do_curso(generico, perfil(curso="Direito"))
+
+
+def test_espaco_duplo_no_titulo_nao_esconde_o_curso():
+    contabil = vaga(titulo="Estágio em Ciências  Contábeis", descricao="Sem detalhes.")
+
+    assert not fora_da_area_do_curso(contabil, perfil(curso="Ciências Contábeis"))
+
+
+def test_quebra_de_linha_no_nome_do_curso_ainda_conta_como_citacao():
+    descricao = "Requisitos: cursando Administração ou Ciências\nContábeis."
+
+    assert menciona_o_curso(normalizar(descricao), "Ciências Contábeis")
 
 
 @pytest.mark.parametrize(

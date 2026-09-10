@@ -19,6 +19,12 @@ class Area:
     cursos_sugeridos: tuple[str, ...] = ()
 
 
+JURIDICO_FORA_DE_PESSOA_JURIDICA = (
+    r"(?<!pessoa )(?<!pessoas )(?<!pessoa-)(?<!pessoas-)(?<!fisica e )(?<!fisicas e )"
+    r"(?<!contas )juridic[ao]"
+)
+
+
 AREAS = (
     Area(
         nome=COMPUTACAO,
@@ -145,11 +151,15 @@ AREAS = (
         ),
         cursos=("direito",),
         titulo=(
-            r"(?<!pessoa )(?<!pessoas )juridic[ao]s?|direito|advocacia|contencioso|societario"
+            JURIDICO_FORA_DE_PESSOA_JURIDICA + r"s?|direito|advocacia|contencioso|societario"
             r"|compliance|trabalhista|legal|cartorio|lgpd|tributari[ao]"
         ),
-        exclusao=r"(?<!pessoa )(?<!pessoas )juridic[ao]s?|direito|compliance",
-        descricao=r"direito|juridic[ao]|advocacia|contencioso|peticao|escritorio de advocacia",
+        exclusao=JURIDICO_FORA_DE_PESSOA_JURIDICA + r"s?|direito|compliance",
+        descricao=(
+            r"direito|"
+            + JURIDICO_FORA_DE_PESSOA_JURIDICA
+            + r"|advocacia|contencioso|peticao|escritorio de advocacia"
+        ),
         termos_de_busca=("direito", "jurídico", "advocacia"),
         subareas=(
             ("direito_contencioso", "Contencioso"),
