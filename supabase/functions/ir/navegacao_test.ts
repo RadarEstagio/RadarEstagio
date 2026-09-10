@@ -49,3 +49,21 @@ Deno.test("conta ativa registra GET, mas HEAD só navega", async () => {
   }
   assertEquals(registros, 1);
 });
+
+Deno.test("endereço fora de http(s) volta para a landing sem registrar abertura", async () => {
+  let registrou = false;
+  const suspeito: EnvioDaVaga = { ...envio, url: "javascript:alert(1)" };
+
+  const destino = await destinoDoEnvio(suspeito, "landing", true, async () => {
+    registrou = true;
+  });
+
+  assertEquals(destino, "landing");
+  assertEquals(registrou, false);
+});
+
+Deno.test("endereço https continua sendo o destino", async () => {
+  const destino = await destinoDoEnvio(envio, "landing", false, async () => {});
+
+  assertEquals(destino, "https://vaga.example/1");
+});

@@ -2,7 +2,7 @@ const FORMATO_DO_TOKEN =
   /^\/start\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i;
 
 export interface MensagemDoTelegram {
-  chat: { id: number };
+  chat: { id: number; type?: string };
   text?: string;
 }
 
@@ -32,6 +32,9 @@ export const RESPOSTA_CHAT_JA_VINCULADO =
   "Seu Telegram já está vinculado. Nada a fazer: as vagas chegam aqui todos os dias de manhã.";
 export const RESPOSTA_SEM_TOKEN =
   "Para vincular, use o botão do Telegram no site do Radar de Estágio.";
+export const RESPOSTA_SOMENTE_EM_PRIVADO =
+  "O vínculo só funciona na conversa privada com o bot, nunca em um grupo. " +
+  "Abra uma conversa direta comigo e clique de novo no botão do site.";
 
 export const RESPOSTAS_DO_VINCULO: Record<ResultadoDoVinculo, string> = {
   vinculado: RESPOSTA_VINCULADO,
@@ -40,11 +43,16 @@ export const RESPOSTAS_DO_VINCULO: Record<ResultadoDoVinculo, string> = {
   chat_ja_vinculado: RESPOSTA_CHAT_JA_VINCULADO,
 };
 
+export function conversaPrivada(atualizacao: AtualizacaoDoTelegram): boolean {
+  const tipo = atualizacao.message?.chat.type;
+  return tipo === undefined || tipo === "private";
+}
+
 export function extrairPedidoDeVinculo(
   atualizacao: AtualizacaoDoTelegram,
 ): PedidoDeVinculo | null {
   const mensagem = atualizacao.message;
-  if (!mensagem?.text) return null;
+  if (!mensagem?.text || !conversaPrivada(atualizacao)) return null;
   const encontrado = FORMATO_DO_TOKEN.exec(mensagem.text);
   if (!encontrado) return null;
   return {
