@@ -25,6 +25,7 @@ class NivelCompatibilidade(StrEnum):
 
 
 type ChaveDaVaga = tuple[str, str]
+type ChaveDaEntrega = tuple[UUID, str, str]
 
 
 class Vaga(BaseModel):
@@ -158,6 +159,9 @@ class EntregaParaJulgar(BaseModel):
     nota_do_radar: int | None = None
     feedback: str | None = None
     motivo_do_feedback: str | None = None
+
+    def chave(self) -> ChaveDaEntrega:
+        return (self.perfil_id, self.vaga.fonte, self.vaga.id_externo)
 
 
 class EntregaJulgada(BaseModel):

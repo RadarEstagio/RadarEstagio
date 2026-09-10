@@ -1,9 +1,8 @@
 from collections import Counter
 from statistics import median
-from uuid import UUID
 
 from radar.domain.datas import data_local
-from radar.domain.models import EntregaJulgada, ResultadoDoJulgamento
+from radar.domain.models import ChaveDaEntrega, EntregaJulgada, ResultadoDoJulgamento
 
 FEEDBACK_POSITIVO = "vaga_util"
 FEEDBACK_NEGATIVO = "vaga_irrelevante"
@@ -12,7 +11,7 @@ NOTA_ALTA_DO_RADAR = 70
 
 
 def formatar_julgamento(
-    resultado: ResultadoDoJulgamento, gabarito: dict[tuple[UUID, str], bool] | None = None
+    resultado: ResultadoDoJulgamento, gabarito: dict[ChaveDaEntrega, bool] | None = None
 ) -> str:
     linhas = [
         f"Juiz: {resultado.modelo} — {len(resultado.julgadas)} de {resultado.entregas_no_periodo} "
@@ -39,12 +38,12 @@ def formatar_julgamento(
 
 
 def linhas_de_gabarito(
-    julgadas: list[EntregaJulgada], gabarito: dict[tuple[UUID, str], bool]
+    julgadas: list[EntregaJulgada], gabarito: dict[ChaveDaEntrega, bool]
 ) -> list[str]:
     rotuladas = [
-        (item, gabarito[(item.entrega.perfil_id, item.entrega.vaga.id_externo)])
+        (item, gabarito[item.entrega.chave()])
         for item in julgadas
-        if (item.entrega.perfil_id, item.entrega.vaga.id_externo) in gabarito
+        if item.entrega.chave() in gabarito
     ]
     if not rotuladas:
         return ["  nenhuma entrega julgada está no gabarito"]
