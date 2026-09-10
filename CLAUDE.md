@@ -457,9 +457,12 @@ sondas executáveis. O que mudou:
   e Ciências Jurídicas e Sociais: a vaga que aceitava só esse nome dava curso incompatível (teto
   35) a quem cursa Direito, e "Estágio em Ciências Jurídicas" caía no pré-filtro porque o padrão
   de direito só aceitava "jurídico"/"jurídica" no singular (achado na mensagem de um estudante de
-  Direito do piloto). O plural vale no título e na exclusão, mas não logo depois de "pessoa(s)":
-  "Crédito para Pessoas Jurídicas" é de finanças. Na descrição ficou o singular, porque o plural
-  só trouxe "atendimento a pessoas físicas e jurídicas" de agência bancária (auditoria de 10/09).
+  Direito do piloto). O plural vale no título e na exclusão, e "jurídica(s)" não conta depois de
+  "pessoa(s) ", "pessoa(s)-", "física(s) e " nem "contas " (`JURIDICO_FORA_DE_PESSOA_JURIDICA`):
+  "Crédito para Pessoas Jurídicas" é de finanças e "atendimento do público pessoa jurídica" é de
+  agência bancária. Na descrição fica o singular, com a mesma trava. A trava só funciona porque o
+  pré-filtro usa a normalização do catálogo, que junta espaços: até a segunda auditoria de 10/09
+  ele tinha uma `normalizar` própria, e "Pessoas  Jurídicas" com espaço duplo escapava.
 - **Termo de área na descrição exige contexto.** Título genérico era mantido por "com direito a
   bolsas" (Direito), "ramo: recursos humanos" na assinatura de agências (RH), "mercado
   financeiro" no blurb da empresa (Economia), "farmácia online" nos benefícios (Saúde). Nos dados
