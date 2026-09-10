@@ -13,7 +13,9 @@ from radar.domain.ports import ColetorDeVagas
 from radar.domain.regioes import polo_da_regiao
 from radar.settings import Settings
 
-MODALIDADES_QUE_DEPENDEM_DA_CIDADE = frozenset({Modalidade.PRESENCIAL, Modalidade.HIBRIDO})
+MODALIDADES_QUE_DEPENDEM_DA_CIDADE = frozenset(
+    {Modalidade.PRESENCIAL, Modalidade.HIBRIDO, Modalidade.INDIFERENTE}
+)
 
 
 def criar_coletor(

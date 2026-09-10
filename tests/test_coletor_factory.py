@@ -98,7 +98,7 @@ def test_repassa_cidades_para_todas_as_fontes(httpx_mock: HTTPXMock):
     assert [p.get("city") for p in parametros if "jobName" in p] == [None, "Niterói"]
 
 
-def test_cidades_de_interesse_vem_de_perfis_presenciais_e_hibridos_sem_repetir():
+def test_cidades_de_interesse_vem_de_perfis_que_aceitam_presenca_sem_repetir():
     usuarios = [
         usuario(1, "Rio de Janeiro, RJ", Modalidade.PRESENCIAL),
         usuario(2, "rio de janeiro, RJ", Modalidade.HIBRIDO),
@@ -107,7 +107,12 @@ def test_cidades_de_interesse_vem_de_perfis_presenciais_e_hibridos_sem_repetir()
         usuario(5, "Curitiba, PR", Modalidade.INDIFERENTE),
     ]
 
-    assert cidades_de_interesse(usuarios) == ["Niterói", "Rio de Janeiro", "rio de janeiro"]
+    assert cidades_de_interesse(usuarios) == [
+        "Curitiba",
+        "Niterói",
+        "Rio de Janeiro",
+        "rio de janeiro",
+    ]
 
 
 def test_perfil_de_cidade_vizinha_tambem_busca_a_maior_cidade_da_regiao():
