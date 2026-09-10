@@ -156,7 +156,9 @@ no plano pago cada extração é requisição cobrada.
   atende "revisão de contratos"). Requisito composto ("Excel e Power BI") exige todas as partes,
   "ou" é alternativa, e requisito repetido só conta se todas as versões forem atendidas. O nível
   exigido é comparado com o maior nível que o perfil declara entre nome, família e palavras.
-  Desde 09/09, a cobertura neutra sem stack é 0,25; Office, idiomas e soft skills ficam
+  Desde 09/09, a cobertura neutra sem stack é 0,25, e desde 10/09 vaga em que nenhum requisito
+  que conta é atendido também fica no máximo nela: com um requisito só, a suavização dava 0,5 a
+  quem não atendia nada. Office, idiomas e soft skills ficam
   fora da cobertura apenas para computação. Desejáveis ausentes aparecem como
   “Diferenciais que a vaga cita”, separados dos requisitos a conferir, sem virar veto.
 - **A extração fica em `vagas.extracao`** (JSONB). Reexecução no mesmo dia, usuário novo
@@ -423,3 +425,8 @@ Antes de mudar pesos, investigar exemplos reais de `vaga_irrelevante`, especialm
 `motivo_nota`, comparando recusas com entregas por grupo. As habilidades declaradas estão
 em `vagas.extracao`. Limitar a nota de anúncios com poucos requisitos ou considerar a
 densidade de requisitos na cobertura são alternativas ainda não implementadas.
+
+Em 10/09/2026 entrou só a parte que era incoerência, não calibração: vaga sem nenhum requisito
+atendido não passa da cobertura neutra, porque com um requisito só a suavização dava 0,5 a quem
+não atendia nada. O viés de 1 de 1 contra 3 de 5 e o teto por lista (obrigatória não atendida
+com desejável atendido ainda vale 0,5 com peso 80%) continuam dependendo de `vaga_irrelevante`.

@@ -249,6 +249,7 @@ FAMILIAS_DE_HABILIDADES = {
     "mobile": MOBILE,
     "desenvolvimento mobile": MOBILE,
     "Pacote Office": OFFICE,
+    "planilhas": ("Excel",),
     "dados": FERRAMENTAS_DE_DADOS,
     "análise de dados": FERRAMENTAS_DE_DADOS,
     "inteligência artificial": INTELIGENCIA_ARTIFICIAL,
@@ -280,6 +281,9 @@ ALIASES_DE_HABILIDADES = {
     "microsoftteams": "teams",
     "microsoftword": "word",
     "planilhasgoogle": "planilhas",
+    "planilha": "planilhas",
+    "planilhaeletronica": "planilhas",
+    "planilhaseletronicas": "planilhas",
     "cpp": "c++",
     "csharp": "c#",
     "css3": "css",
@@ -339,6 +343,11 @@ class HabilidadeComparavel(NamedTuple):
     palavras: frozenset[str]
     alternativas: tuple[tuple[tuple[str, "HabilidadeComparavel"], ...], ...] = ()
     texto: str = ""
+
+
+class Cobertura(NamedTuple):
+    valor: float
+    atendidas: int
 
 
 def pontuar_vagas(
@@ -480,6 +489,23 @@ def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) ->
     obrigatorias = _cobertura(extracao.habilidades_obrigatorias, habilidades_do_perfil, computacao)
     principais = _cobertura(extracao.habilidades_principais, habilidades_do_perfil, computacao)
     desejaveis = _cobertura(extracao.habilidades_desejaveis, habilidades_do_perfil, computacao)
+    compatibilidade = _ponderar(_valor(obrigatorias), _valor(principais), _valor(desejaveis))
+    if _algum_requisito_atendido(obrigatorias, principais, desejaveis):
+        return compatibilidade
+    return min(compatibilidade, COBERTURA_NEUTRA_SEM_STACK_DECLARADA)
+
+
+def _valor(cobertura: Cobertura | None) -> float | None:
+    return None if cobertura is None else cobertura.valor
+
+
+def _algum_requisito_atendido(*coberturas: Cobertura | None) -> bool:
+    return any(cobertura is not None and cobertura.atendidas > 0 for cobertura in coberturas)
+
+
+def _ponderar(
+    obrigatorias: float | None, principais: float | None, desejaveis: float | None
+) -> float:
     if obrigatorias is not None and principais is not None and desejaveis is not None:
         return (
             PESO_OBRIGATORIAS_QUANDO_TODAS * obrigatorias
@@ -514,7 +540,7 @@ def _cobertura(
     requisitos: list[str],
     habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
     computacao: bool,
-) -> float | None:
+) -> Cobertura | None:
     exigencias = _exigencias(requisitos)
     if computacao:
         exigencias = {
@@ -527,7 +553,8 @@ def _cobertura(
         for nome, variantes in exigencias.items()
         if _todas_atendidas(nome, variantes, habilidades_do_perfil)
     ]
-    return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (SUAVIZACAO_DA_COBERTURA + len(exigencias))
+    valor = (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (SUAVIZACAO_DA_COBERTURA + len(exigencias))
+    return Cobertura(valor, len(atendidas))
 
 
 def _exigencias(requisitos: list[str]) -> dict[str, tuple[HabilidadeComparavel, ...]]:
