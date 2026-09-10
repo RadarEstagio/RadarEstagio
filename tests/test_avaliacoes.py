@@ -1213,12 +1213,28 @@ def test_desejavel_que_repete_uma_exigida_nao_vira_diferencial():
         ("Inglês: intermediário/avançado", "Inglês intermediário", True),
         ("Inglês intermediário, avançado", "Inglês intermediário", True),
         ("Inglês intermediário/avançado", "Inglês básico", False),
+        ("Inglês intermediário ou avançado", "Inglês intermediário", True),
+        ("Inglês intermediário ou avançado", "Inglês básico", False),
+        ("Inglês intermediário e avançado", "Inglês intermediário", True),
     ],
 )
 def test_faixa_de_nivel_escrita_com_separador_vale_pelo_menor(exigida, do_perfil, atende):
     resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
 
     assert (resultado.requisitos_atendidos == [exigida]) is atende
+
+
+@pytest.mark.parametrize(
+    "exigida", ["Inglês intermediário ou avançado", "Experiência", "Conhecimentos avançados"]
+)
+def test_nivel_solto_depois_de_ou_no_perfil_nao_atende_requisito_algum(exigida):
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica([exigida]),
+        perfil_de_direito(["Inglês básico", "Espanhol intermediário ou avançado"]),
+    )
+
+    assert resultado.requisitos_atendidos == []
 
 
 def test_parte_sem_nivel_baixa_o_nivel_do_nome_inteiro_da_habilidade_do_perfil():
