@@ -106,28 +106,35 @@ SQL_ENTREGAS_RECENTES = """
     order by e.enviada_em desc
 """
 
-SQL_AREAS_RECUSADAS = """
-    select area
+SQL_ULTIMA_RESPOSTA_POR_VAGA = """
+    select distinct on (e.vaga_id) e.vaga_id, e.nome, e.propriedades ->> 'motivo' as motivo
     from eventos_produto e
-    join vagas v on v.id = e.vaga_id,
-         jsonb_array_elements_text(v.extracao -> 'areas_da_vaga') area
     where e.perfil_id = %(perfil_id)s
-      and e.nome = 'vaga_irrelevante'
-      and e.propriedades ->> 'motivo' = 'motivo_area'
+      and e.nome in ('vaga_util', 'vaga_irrelevante')
       and e.ocorrido_em > now() - interval '30 days'
-    group by area
-    having count(distinct e.vaga_id) >= %(limiar)s
+    order by e.vaga_id, e.ocorrido_em desc, e.id desc
 """
 
-SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = """
+SQL_AREAS_RECUSADAS = f"""
+    with ultima_resposta as ({SQL_ULTIMA_RESPOSTA_POR_VAGA})
+    select area
+    from ultima_resposta r
+    join vagas v on v.id = r.vaga_id,
+         jsonb_array_elements_text(v.extracao -> 'areas_da_vaga') area
+    where r.nome = 'vaga_irrelevante'
+      and r.motivo = 'motivo_area'
+    group by area
+    having count(distinct r.vaga_id) >= %(limiar)s
+"""
+
+SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = f"""
+    with ultima_resposta as ({SQL_ULTIMA_RESPOSTA_POR_VAGA})
     select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
            v.publicada_em, v.modalidade
-    from eventos_produto e
-    join vagas v on v.id = e.vaga_id
-    where e.perfil_id = %(perfil_id)s
-      and e.nome = 'vaga_irrelevante'
-      and e.propriedades ->> 'motivo' = 'motivo_repetida'
-      and e.ocorrido_em > now() - interval '30 days'
+    from ultima_resposta r
+    join vagas v on v.id = r.vaga_id
+    where r.nome = 'vaga_irrelevante'
+      and r.motivo = 'motivo_repetida'
 """
 
 SQL_GUARDAR_VAGA = """
