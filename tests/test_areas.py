@@ -199,6 +199,8 @@ def test_nomes_comuns_de_curso_sao_reconhecidos_integralmente(curso: str, espera
         ("Engenharia Civil - completo", "engenharia civil"),
         ("Engenharia Civil completo", "engenharia civil"),
         ("Tecnólogo em ADS", "analise e desenvolvimento de sistemas"),
+        ("Ciências Jurídicas", "direito"),
+        ("Bacharelado em Ciências Jurídicas e Sociais", "direito"),
     ],
 )
 def test_normalizar_curso_tira_formacao_e_aplica_sinonimos(curso: str, esperado: str):

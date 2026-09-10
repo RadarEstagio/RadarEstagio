@@ -145,11 +145,11 @@ AREAS = (
         ),
         cursos=("direito",),
         titulo=(
-            r"juridic[ao]|direito|advocacia|contencioso|societario|compliance|trabalhista|legal"
+            r"juridic[ao]s?|direito|advocacia|contencioso|societario|compliance|trabalhista|legal"
             r"|cartorio|lgpd|tributari[ao]"
         ),
-        exclusao=r"juridic[ao]|direito|compliance",
-        descricao=r"direito|juridic[ao]|advocacia|contencioso|peticao|escritorio de advocacia",
+        exclusao=r"juridic[ao]s?|direito|compliance",
+        descricao=r"direito|juridic[ao]s?|advocacia|contencioso|peticao|escritorio de advocacia",
         termos_de_busca=("direito", "jurídico", "advocacia"),
         subareas=(
             ("direito_contencioso", "Contencioso"),
@@ -758,6 +758,8 @@ SINONIMOS_DE_CURSO = {
     "ti": "tecnologia da informacao",
     "rh": "recursos humanos",
     "ciencias economicas": "economia",
+    "ciencias juridicas": "direito",
+    "ciencias juridicas e sociais": "direito",
     "ciencias contabeis": "contabilidade",
     "ciencias atuariais": "atuaria",
     "gestao de recursos humanos": "recursos humanos",

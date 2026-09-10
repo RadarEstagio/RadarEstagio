@@ -431,7 +431,11 @@ sondas executáveis. O que mudou:
   primeiro nome que o catálogo ou os sinônimos conhecem; o site espelha a regra, e
   `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (48 formas de escrever
   o curso). Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
-  Science, T.I, Gestão da TI, Processamento de Dados.
+  Science, T.I, Gestão da TI, Processamento de Dados. Em 10/09/2026 entraram Ciências Jurídicas
+  e Ciências Jurídicas e Sociais: a vaga que aceitava só esse nome dava curso incompatível (teto
+  35) a quem cursa Direito, e "Estágio em Ciências Jurídicas" caía no pré-filtro porque o padrão
+  de direito só aceitava "jurídico"/"jurídica" no singular (achado na mensagem de um estudante de
+  Direito do piloto).
 - **Termo de área na descrição exige contexto.** Título genérico era mantido por "com direito a
   bolsas" (Direito), "ramo: recursos humanos" na assinatura de agências (RH), "mercado
   financeiro" no blurb da empresa (Economia), "farmácia online" nos benefícios (Saúde). Nos dados

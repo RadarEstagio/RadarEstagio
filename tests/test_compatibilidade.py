@@ -155,6 +155,16 @@ def test_medicina_nao_aceita_medicina_veterinaria_por_substring():
     )
 
 
+@pytest.mark.parametrize(
+    "aceito",
+    ["Ciências Jurídicas", "Ciências Jurídicas e Sociais", "Bacharelado em Ciências Jurídicas"],
+)
+def test_ciencias_juridicas_aceito_pela_vaga_vale_para_quem_cursa_direito(aceito: str):
+    anuncio = extracao(area_da_vaga="direito", cursos_aceitos=[aceito])
+
+    assert curso_de(anuncio, perfil(curso="Direito")) is NivelCompatibilidade.COMPATIVEL
+
+
 def test_prefixo_de_formacao_nao_impede_curso_explicitamente_aceito():
     anuncio = extracao(cursos_aceitos=["Bacharelado em Administração"])
     assert curso_de(anuncio, perfil(curso="Administração")) is NivelCompatibilidade.COMPATIVEL
