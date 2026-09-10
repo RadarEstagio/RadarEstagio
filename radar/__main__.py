@@ -8,6 +8,11 @@ from uuid import UUID
 import httpx
 from pydantic import ValidationError
 
+from radar.avaliacao.descartes import (
+    contar_por_motivo,
+    descartes_do_prefiltro,
+    exportar_descartes,
+)
 from radar.avaliacao.factory import criar_juiz
 from radar.avaliacao.gabarito import (
     carregar_gabarito,
@@ -58,6 +63,7 @@ DIAS_DO_JULGAMENTO = 7
 AMOSTRA_DO_JULGAMENTO = 30
 SEMENTE_DO_JULGAMENTO = 1
 AMOSTRA_DO_GABARITO = 20
+AMOSTRA_DOS_DESCARTES = 30
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -181,6 +187,20 @@ def gabarito(settings: Settings, dias: int, amostra: int, semente: int, saida: P
     itens = exportar_gabarito(entregas, amostra, semente)
     gravar_gabarito(itens, saida)
     print(f'{len(itens)} entregas gravadas em {saida}; preencha "relevante" com true ou false')
+
+
+def descartes(settings: Settings, amostra: int, semente: int, saida: Path) -> None:
+    usuarios = listar_usuarios(settings)
+    with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
+        coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
+    vagas = remover_duplicatas(coletadas)
+    descartados = descartes_do_prefiltro(vagas, usuarios)
+    print(f"{len(vagas)} vagas únicas para {len(usuarios)} perfis")
+    for motivo, total in contar_por_motivo(descartados).items():
+        print(f"  {motivo}: {total}")
+    itens = exportar_descartes(descartados, amostra, semente)
+    gravar_gabarito(itens, saida)
+    print(f'{len(itens)} descartes gravados em {saida}; preencha "descarte_correto"')
 
 
 def testar_telegram(settings: Settings) -> None:
@@ -360,6 +380,15 @@ def main() -> None:
     comando_gabarito.add_argument("--amostra", type=inteiro_positivo, default=AMOSTRA_DO_GABARITO)
     comando_gabarito.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
     comando_gabarito.add_argument("--saida", type=Path, required=True)
+    comando_descartes = subcomandos.add_parser(
+        "descartes",
+        help="exporta uma amostra do que o pré-filtro descartou, para as pessoas rotularem",
+    )
+    comando_descartes.add_argument(
+        "--amostra", type=inteiro_positivo, default=AMOSTRA_DOS_DESCARTES
+    )
+    comando_descartes.add_argument("--semente", type=int, default=SEMENTE_DO_JULGAMENTO)
+    comando_descartes.add_argument("--saida", type=Path, required=True)
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     subcomandos.add_parser(
         "testar-local",
@@ -384,6 +413,8 @@ def main() -> None:
                 argumentos.semente,
                 argumentos.gabarito,
             )
+        elif nome_do_comando == "descartes":
+            descartes(settings, argumentos.amostra, argumentos.semente, argumentos.saida)
         elif nome_do_comando == "gabarito":
             gabarito(
                 settings, argumentos.dias, argumentos.amostra, argumentos.semente, argumentos.saida

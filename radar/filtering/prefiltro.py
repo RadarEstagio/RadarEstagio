@@ -140,17 +140,27 @@ def modalidade_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
     return exige_presenca and not admite_remoto
 
 
+MOTIVOS_DE_DESCARTE = (
+    ("nao_e_estagio", lambda vaga, perfil: nao_e_estagio(vaga)),
+    ("exige_senioridade", lambda vaga, perfil: exige_senioridade(vaga)),
+    ("exige_pos_graduacao", lambda vaga, perfil: exige_pos_graduacao(vaga)),
+    ("exige_ensino_medio", lambda vaga, perfil: exige_ensino_medio(vaga)),
+    ("fora_da_area_do_curso", fora_da_area_do_curso),
+    ("exige_anos_de_experiencia", lambda vaga, perfil: exige_anos_de_experiencia(vaga)),
+    ("localizacao_incompativel", localizacao_incompativel),
+    ("modalidade_incompativel", modalidade_incompativel),
+)
+
+
+def motivo_do_descarte(vaga: Vaga, perfil: Perfil) -> str | None:
+    for motivo, descarta in MOTIVOS_DE_DESCARTE:
+        if descarta(vaga, perfil):
+            return motivo
+    return None
+
+
 def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
-    return (
-        nao_e_estagio(vaga)
-        or exige_senioridade(vaga)
-        or exige_pos_graduacao(vaga)
-        or exige_ensino_medio(vaga)
-        or fora_da_area_do_curso(vaga, perfil)
-        or exige_anos_de_experiencia(vaga)
-        or localizacao_incompativel(vaga, perfil)
-        or modalidade_incompativel(vaga, perfil)
-    )
+    return motivo_do_descarte(vaga, perfil) is not None
 
 
 def filtrar(vagas: list[Vaga], perfil: Perfil) -> list[Vaga]:
