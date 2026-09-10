@@ -12,8 +12,10 @@ from radar.filtering.prefiltro import (
     filtrar,
     fora_da_area_do_curso,
     localizacao_incompativel,
+    menciona_o_curso,
     modalidade_incompativel,
     nao_e_estagio,
+    normalizar,
 )
 
 
@@ -330,8 +332,8 @@ def test_curso_citado_com_contexto_de_formacao_mantem_a_vaga(
     assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
 
 
-def test_perfil_remoto_nao_avalia_a_cidade_da_vaga():
-    vaga_em_outra_cidade = vaga(localizacao="Salvador, Bahia")
+def test_perfil_remoto_aceita_vaga_remota_de_outra_cidade():
+    vaga_em_outra_cidade = vaga(localizacao="Salvador, Bahia", modalidade=Modalidade.REMOTO)
     assert not localizacao_incompativel(vaga_em_outra_cidade, perfil(modalidade=Modalidade.REMOTO))
 
 
@@ -449,7 +451,7 @@ def test_filtrar_remove_apenas_vagas_com_motivo_de_descarte():
 
 def test_filtrar_para_perfil_remoto_remove_presencial_e_mantem_sem_modalidade():
     remota = vaga(titulo="Estágio Dev", localizacao="Lisboa, Portugal", descricao="100% remoto.")
-    sem_modalidade = vaga(titulo="Estágio Dev", localizacao="São Paulo, São Paulo")
+    sem_modalidade = vaga(titulo="Estágio Dev")
     presencial = vaga(titulo="Estágio Dev", descricao="Trabalho presencial.")
 
     resultado = filtrar([remota, sem_modalidade, presencial], perfil(modalidade=Modalidade.REMOTO))
@@ -640,3 +642,63 @@ def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: s
 )
 def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
     assert not exige_ensino_medio(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio Técnico em Segurança do Trabalho - Barra",
+        "Estagio em Segurança do Trabalho- Nível Superior - Matriz (Rio de Janeiro)",
+    ],
+)
+def test_seguranca_do_trabalho_nao_e_vaga_de_computacao(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao="Sem detalhes."), perfil())
+
+
+def test_seguranca_da_informacao_continua_sendo_de_computacao():
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Estágio em Segurança da Informação", descricao="Sem detalhes."), perfil()
+    )
+
+
+def test_mencao_ao_curso_em_outra_frase_nao_conta_como_formacao():
+    descricao = (
+        "Consultoria de recursos humanos busca estagiário na área de gestão financeira "
+        "em Rio de Janeiro (Barra da Tijuca). O grupo é uma empresa especializada em "
+        "soluções criativas para marketing e comunicação."
+    )
+    assert not menciona_o_curso(normalizar(descricao), "Marketing")
+    assert deve_descartar(
+        vaga(titulo="Estagiário na Área de Gestão Financeira", descricao=descricao),
+        perfil(curso="Marketing"),
+    )
+
+
+def test_mencao_ao_curso_na_frase_da_formacao_continua_valendo():
+    descricao = "Requisitos: cursando Administração, Marketing ou Economia. Desejável Excel."
+    assert menciona_o_curso(normalizar(descricao), "Marketing")
+    assert not deve_descartar(
+        vaga(titulo="Estagiário na Área de Gestão Financeira", descricao=descricao),
+        perfil(curso="Marketing"),
+    )
+
+
+def test_remoto_descarta_vaga_de_outra_cidade_sem_sinal_de_remoto():
+    fortaleza = vaga(
+        titulo="Estágio em Administração",
+        descricao="Auxiliar nas rotinas administrativas.",
+        localizacao="Fortaleza, Ceará",
+    )
+    assert localizacao_incompativel(fortaleza, perfil(Modalidade.REMOTO))
+    assert deve_descartar(fortaleza, perfil(Modalidade.REMOTO, curso="Administração"))
+
+
+def test_remoto_mantem_vaga_de_outra_cidade_que_admite_remoto_e_qualquer_da_propria():
+    remoto = perfil(Modalidade.REMOTO)
+    assert not localizacao_incompativel(
+        vaga(localizacao="Fortaleza, Ceará", descricao="Trabalho em home office."), remoto
+    )
+    assert not localizacao_incompativel(
+        vaga(localizacao="Brasil", modalidade=Modalidade.REMOTO), remoto
+    )
+    assert not localizacao_incompativel(vaga(localizacao="Rio de Janeiro, Rio de Janeiro"), remoto)

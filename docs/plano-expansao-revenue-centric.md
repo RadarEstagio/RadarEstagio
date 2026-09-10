@@ -20,7 +20,7 @@ para divulgar. Pagamento, mídia paga, fontes adicionais e novas regras de elegi
 entram nas tarefas específicas, com dados e decisões registrados. O plano não autoriza envio
 de mensagens a terceiros. Não há dashboard, candidatura automática ou novo framework nesta fila.
 
-Mecanismos da [skill Revenue-Centric Design](../.agents/skills/revenue-centric-design/SKILL.md):
+Mecanismos da skill Revenue-Centric Design, mantida localmente fora do versionamento:
 promessa sustentada por prova (L01–L02), valor antes do pedido e fricção declarativa (C01–C05),
 tempo até o valor (M03), retenção por utilidade e jobs-to-be-done (R01–R03), Bullseye (E03),
 custo de servir e pagamento como evidência (E04–E05). Swiss Knife filter rege todo o escopo:

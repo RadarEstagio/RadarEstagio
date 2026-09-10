@@ -36,6 +36,24 @@ Estado registrado na atualização de 05/09 à noite, sem repetir os testes remo
 - A transferência para `RadarEstagio/RadarEstagio` foi confirmada em 08/09; conferir se
   Cloudflare, cron e dispatch do webhook usam a organização, conforme o registro em `CLAUDE.md`.
 
+Verificação de 09/09 à noite, contra o site publicado e o projeto real:
+
+- Os arquivos publicados são os do `main`; a página carrega sem erro de console no Chrome.
+- `signup` pelo mesmo pedido que o site faz, com e-mail real: conta criada, confirmação enviada
+  em 1 segundo, `cadastros_pendentes` com o perfil e `conta_criada` registrado pelo gatilho.
+  Com `@example.com` o Auth devolve 500 "Error sending confirmation email": o SMTP recusa o
+  domínio, não é falha do fluxo.
+- Anônimo não lê `perfis` (401) nem chama `concluir_meu_cadastro` (401). Webhook do bot sem
+  fila e sem erro; `ir` e `telegram-webhook` respondem.
+- O último cadastro completo (08/09 01:12) levou 33 s até confirmar e 18 s até vincular o
+  Telegram. Nenhum cadastro pendente ficou para trás.
+- O clique no link de confirmação confirmou a conta e criou o perfil, mas o Auth redirecionou
+  para `https://radarestagio.com`, que não resolve: o Site URL apontava para um domínio ainda
+  não associado ao Pages. Correção e valores certos na seção 5.
+- Continua pendente: Turnstile (`turnstileSiteKey` vazio em `web/config.js` e proteção por
+  captcha desligada no Auth, então o cadastro sem captcha passa). Sem evento de falha no passo
+  da conta, não dá para saber por que duas sessões concluíram as etapas e não criaram conta.
+
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
 
@@ -143,17 +161,26 @@ Em **Authentication → URL Configuration**, preencha:
 
 | Campo | Valor |
 |---|---|
-| Site URL | `https://radarestagio.com` |
-| Redirect URLs | `https://radarestagio.com` e `https://radarestagio.com/` |
-| Desenvolvimento local | `http://localhost:8000` e `http://localhost:8000/` |
+| Site URL | O endereço em que o site está publicado hoje: `https://radarestagio.pages.dev` enquanto `radarestagio.com` não estiver associado ao Pages |
+| Redirect URLs | `https://radarestagio.pages.dev/**` e `https://radarestagio.com/**` |
+| Desenvolvimento local | `http://localhost:8000/**` |
 
-Inclua o endereço provisório exato se testar confirmação nele. Mantenha confirmação de e-mail
-habilitada. Inclua também `https://radarestagio.com/?fluxo=recuperar` e, para teste local,
-`http://localhost:8000/?fluxo=recuperar`, usados pela recuperação implementada.
+O site manda `emailRedirectTo` com a própria origem (`window.location.origin`), então a origem
+em uso precisa estar na lista com o curinga `/**`; fora da lista, o Auth ignora o pedido e volta
+para o Site URL. Mantenha confirmação de e-mail habilitada. O curinga já cobre
+`/?fluxo=recuperar`, usado pela recuperação implementada.
 [URLs de retorno do Supabase](https://supabase.com/docs/guides/auth/redirect-urls).
 
-**Concluído quando:** a confirmação volta ao domínio correto. O teste em outro aparelho
-deve ser repetido após aplicar a `0014` e publicar o frontend atualizado.
+Falha vista em 09/09: o Site URL estava em `https://radarestagio.com` sem o domínio associado
+ao Pages (o DNS só tem MX, do e-mail). A conta era confirmada no banco, o perfil era criado,
+mas a pessoa caía em "não é possível acessar esse site" e, ao clicar de novo, em
+`otp_expired`. Quem confirmou nesse período precisa entrar pelo site com e-mail e senha para
+ver o botão do Telegram. Corrigido no painel na mesma noite, com Site URL e Redirect URLs em
+`radarestagio.pages.dev`; o cadastro seguinte confirmou e voltou ao site logado, na tela
+"Agora, ative as entregas", com o botão do Telegram.
+
+**Concluído quando:** a confirmação volta ao site publicado e mostra o botão do Telegram. O
+teste em outro aparelho deve ser repetido após qualquer troca de endereço.
 
 ## 6. Preparar Turnstile — ativar a exigência só depois do código
 

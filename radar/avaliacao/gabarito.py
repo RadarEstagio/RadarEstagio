@@ -4,6 +4,7 @@ from uuid import UUID
 
 from radar.avaliacao.julgar import amostrar
 from radar.domain.models import EntregaParaJulgar
+from radar.storage.errors import ErroDeArmazenamento
 
 Chave = tuple[UUID, str]
 
@@ -33,12 +34,20 @@ def gravar_gabarito(itens: list[dict], caminho: Path) -> None:
 
 
 def carregar_gabarito(caminho: Path) -> dict[Chave, bool]:
-    itens = json.loads(caminho.read_text())
-    return {
-        (UUID(item["perfil_id"]), item["id_externo"]): bool(item["relevante"])
-        for item in itens
-        if item.get("relevante") is not None
-    }
+    try:
+        itens = json.loads(caminho.read_text())
+    except FileNotFoundError as erro:
+        raise ErroDeArmazenamento(f"Gabarito não encontrado: {caminho}") from erro
+    except json.JSONDecodeError as erro:
+        raise ErroDeArmazenamento(f"Gabarito não é JSON válido: {caminho}") from erro
+    try:
+        return {
+            (UUID(item["perfil_id"]), item["id_externo"]): bool(item["relevante"])
+            for item in itens
+            if item.get("relevante") is not None
+        }
+    except (AttributeError, KeyError, TypeError, ValueError) as erro:
+        raise ErroDeArmazenamento(f"Gabarito inválido em {caminho}: {erro}") from erro
 
 
 def selecionar_do_gabarito(

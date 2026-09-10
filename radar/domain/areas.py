@@ -114,7 +114,7 @@ AREAS = (
             ("desenvolvimento_mobile", "Desenvolvimento mobile"),
             ("dados_ia", "Dados e IA"),
             ("infraestrutura_redes", "Infraestrutura e redes"),
-            ("seguranca", "Segurança"),
+            ("seguranca", "Segurança da informação"),
             ("suporte_tecnico", "Suporte técnico"),
             ("qa_testes", "QA e testes"),
         ),
@@ -604,6 +604,7 @@ CONTEXTO_DE_ATUACAO = (
 )
 PALAVRAS_ATE_O_TERMO = 24
 JANELA_DE_CONTEXTO = 260
+FIM_DE_FRASE = ". "
 
 
 def _padrao_de_contexto(alternativas: str) -> re.Pattern[str]:
@@ -625,7 +626,7 @@ def precedido_de_contexto_de_atuacao(texto: str, posicao: int) -> bool:
 
 
 def _precedido_de(padrao: re.Pattern[str], texto: str, posicao: int) -> bool:
-    inicio = max(0, posicao - JANELA_DE_CONTEXTO)
+    inicio = max(0, posicao - JANELA_DE_CONTEXTO, texto.rfind(FIM_DE_FRASE, 0, posicao))
     return padrao.search(texto[inicio:posicao]) is not None
 
 
