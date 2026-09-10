@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from html import escape
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 from radar.domain.models import (
     BotaoDeFeedback,
@@ -10,6 +11,7 @@ from radar.domain.models import (
     Vaga,
 )
 
+FUSO_DA_ENTREGA = ZoneInfo("America/Sao_Paulo")
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
@@ -38,15 +40,19 @@ def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
     return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
 
 
+def data_local(momento: datetime) -> date:
+    return momento.astimezone(FUSO_DA_ENTREGA).date()
+
+
 def formatar_mensagem(
-    recomendacoes: list[Recomendacao], data: date, url_de_rastreio: str = ""
+    recomendacoes: list[Recomendacao], momento: datetime, url_de_rastreio: str = ""
 ) -> str:
     ranqueadas = ranquear(recomendacoes)
     blocos = [
         formatar_vaga(posicao, recomendacao, url_de_rastreio)
         for posicao, recomendacao in enumerate(ranqueadas, start=1)
     ]
-    return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+    return cabecalho(momento) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
 
 
 def formatar_pergunta_de_feedback(recomendacoes: list[Recomendacao]) -> PerguntaDeFeedback:
@@ -69,9 +75,9 @@ def formatar_motivos_da_recusa(token: str) -> list[list[BotaoDeFeedback]]:
     ]
 
 
-def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None) -> str:
+def formatar_mensagem_sem_vagas(momento: datetime, dias_de_silencio: int | None = None) -> str:
     mensagem = (
-        f"{cabecalho(data)}\n\n"
+        f"{cabecalho(momento)}\n\n"
         "Nenhuma vaga nova compatível com o seu perfil hoje.\n"
         "O Radar volta a procurar amanhã de manhã."
     )
@@ -85,12 +91,12 @@ def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None)
     )
 
 
-def cabecalho(data: date) -> str:
-    return f"📡 <b>Radar de Estágio</b> — {data.strftime('%d/%m/%Y')}"
+def cabecalho(momento: datetime) -> str:
+    return f"📡 <b>Radar de Estágio</b> — {data_local(momento):%d/%m/%Y}"
 
 
 def formatar_resumo_da_execucao(
-    data: date,
+    momento: datetime,
     usuarios: int,
     atendidos: int,
     vagas_enviadas: int,
@@ -102,7 +108,7 @@ def formatar_resumo_da_execucao(
     extracoes_nao_gravadas: int = 0,
 ) -> str:
     linhas = [
-        f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>",
+        f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
         f"Usuários ativos: {usuarios}",
         f"Receberam recomendação: {atendidos}",
         f"Vagas enviadas: {vagas_enviadas}",
@@ -118,8 +124,8 @@ def formatar_resumo_da_execucao(
     return "\n".join(linhas)
 
 
-def formatar_falha_da_execucao(data: date, erro: str) -> str:
-    return f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')} falhou</b>\n{escape(erro)}"
+def formatar_falha_da_execucao(momento: datetime, erro: str) -> str:
+    return f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y} falhou</b>\n{escape(erro)}"
 
 
 def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str = "") -> str:

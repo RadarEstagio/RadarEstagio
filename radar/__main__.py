@@ -264,7 +264,7 @@ def executar_fluxo(
             apenas_o_perfil=apenas_o_perfil,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
-        avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora.date(), str(erro)))
+        avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
@@ -278,7 +278,7 @@ def executar_fluxo(
         settings,
         notificador,
         formatar_resumo_da_execucao(
-            agora.date(),
+            agora,
             resumo.usuarios,
             resumo.atendidos(),
             resumo.vagas_enviadas(),

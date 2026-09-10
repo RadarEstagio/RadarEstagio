@@ -319,7 +319,7 @@ def atender_usuario_travado(
     try:
         pergunta = formatar_pergunta_de_feedback(selecionadas)
         pergunta.texto = (
-            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio)
+            formatar_mensagem(selecionadas, agora, parametros.url_de_rastreio)
             + "\n\n"
             + pergunta.texto
         )
@@ -358,7 +358,7 @@ def avisar_que_nao_houve_vaga(
     if not revalidacao.permite(usuario):
         return
     try:
-        notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
+        notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
