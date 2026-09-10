@@ -349,11 +349,31 @@ def test_presencial_mantem_vaga_na_mesma_cidade():
 
 @pytest.mark.parametrize(
     "localizacao",
-    ["Salvador, Bahia", "Niterói, Rio de Janeiro", "Campinas, Estado de São Paulo", "Brasil"],
+    ["Salvador, Bahia", "Petrópolis, Rio de Janeiro", "Campinas, Estado de São Paulo", "Brasil"],
 )
 def test_presencial_descarta_vaga_em_outra_cidade(localizacao: str):
     presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
     assert localizacao_incompativel(vaga(localizacao=localizacao), presencial)
+
+
+@pytest.mark.parametrize(
+    "localizacao",
+    ["Niterói, Rio de Janeiro", "São Gonçalo, Estado do Rio de Janeiro", "Duque de Caxias, RJ"],
+)
+def test_presencial_mantem_vaga_de_cidade_vizinha_da_mesma_regiao(localizacao: str):
+    presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
+    assert not localizacao_incompativel(vaga(localizacao=localizacao), presencial)
+
+
+@pytest.mark.parametrize(
+    "modalidade", [Modalidade.PRESENCIAL, Modalidade.HIBRIDO, Modalidade.INDIFERENTE]
+)
+def test_quem_mora_em_niteroi_recebe_vaga_presencial_do_rio(modalidade: Modalidade):
+    de_niteroi = perfil(modalidade=modalidade, cidade="Niterói, RJ")
+    no_rio = vaga(
+        localizacao="Rio de Janeiro, Estado do Rio de Janeiro", descricao="Estágio presencial."
+    )
+    assert not localizacao_incompativel(no_rio, de_niteroi)
 
 
 @pytest.mark.parametrize(
