@@ -200,8 +200,11 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
-- **O custo não cresce com o número de usuários** (03/09/2026). O prompt não contém perfil, então
-  cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
+- **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
+  é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
+  mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
+  gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
+  O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
   modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
   6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
   15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
@@ -375,9 +378,9 @@ incapacidade, e o site limita 50 itens de 100 caracteres porque a `0018` cobra i
 O aviso "Área que você recusou" nomeia as subáreas pelo rótulo do catálogo.
 
 Sabidos e não corrigidos: republicação por outra fonte com descrição curta pode reenviar;
-extrações e enriquecimento são chaveados por `id_externo` sem `fonte` (colisão improvável entre
-Adzuna e Gupy); o banco ainda aceita subárea de outro curso (mitigado ao carregar); a Jooble
-multiplica consultas por termo (segue desligada).
+o banco ainda aceita subárea de outro curso (mitigado ao carregar); a Jooble multiplica
+consultas por termo (segue desligada). A chave por `id_externo` sem `fonte` foi corrigida em
+10/09/2026, na rodada de confiabilidade.
 
 ### Segunda rodada de falhas reproduzidas (08/09/2026, fim de tarde)
 
@@ -467,6 +470,57 @@ do Claude.
 porque com 5 slots vaga boa saía da janela sem ser enviada). A landing de 08/09 prometia "até
 cinco"; Ian decidiu manter 7, a landing passou a dizer "até sete" e o PR #22 do Igor adotou o
 mesmo valor no padrão do código, na copy e no plano de expansão.
+
+### Rodada de confiabilidade (10/09/2026)
+
+Correções de uma revisão externa, cada uma com o teste que reproduz a falha antes do conserto.
+O que muda para quem opera:
+
+- **A conexão do banco abre em `autocommit`.** Sem isso a primeira consulta abria transação
+  implícita e os blocos `transaction()` viravam savepoints: nada era confirmado para outra
+  conexão até o processo fechar. A mensagem chegava antes de o token do envio existir para o
+  webhook, e a trava do perfil era liberada antes da confirmação. Nunca voltar `autocommit`
+  para o padrão sem mover a fronteira da transação junto.
+- **Vaga é `(fonte, id_externo)` em todo dicionário do fluxo**, e o `id_vaga` do prompt é
+  `fonte:id_externo`. Antes, duas vagas com o mesmo número em fontes distintas viravam uma só e
+  o mesmo anúncio era entregue duas vezes. O `id_vaga` guardado nas extrações antigas continua
+  sendo só o número; a leitura não usa esse campo, usa as colunas.
+- **A chave de duplicata inclui a cidade.** Duas vagas presenciais da mesma empresa e título em
+  cidades diferentes viravam uma só antes do filtro por perfil, e quem era da outra cidade
+  perdia a vaga em silêncio.
+- **O prompt preserva o nível da habilidade.** Ele mandava apagar ("Excel avançado" → "Excel")
+  enquanto o pontuador distingue nível desde 08/09, então requisito avançado passava por
+  atendido. **Isso mudou `VERSAO_DA_EXTRACAO` de `ace8b756` para `7efdbc95`: a primeira
+  execução depois do merge reextrai as candidatas e gasta cota.** Acompanhar o resumo das 07:23.
+  `tests/test_contrato_extracao_pontuacao.py` cobre a fronteira; teste de etapa isolada não pega
+  esse tipo de falha, porque cada lado passa sozinho.
+- **Recusa corrigida deixa de penalizar.** As consultas de recusa por área e de vaga repetida
+  liam todo evento negativo, inclusive o que a pessoa depois trocou por "essa serviu". Agora leem
+  a última resposta por vaga, como as métricas já faziam. Os testes rodam em PGlite
+  (`tests/web/recusas_test.ts`), lendo o SQL direto do `postgres.py`, então não dependem de
+  banco de teste.
+- **Negação não conta como exigência de experiência**: "não exigimos 2 anos de experiência" era
+  descartado antes da IA. A negação vale só dentro da mesma frase.
+- **Falha de entrega temporária não pausa mais o perfil.** Só HTTP 403 e o 400 que nomeia o
+  destinatário (`chat not found`, bot bloqueado) contam para `falhas_de_envio`. Indisponibilidade
+  do Telegram e erro de formatação nosso viram aviso do dia. Além disso, resposta de erro sem
+  corpo JSON levantava `JSONDecodeError` de dentro do `except` e derrubava a execução inteira,
+  deixando sem mensagem quem vinha depois na fila.
+- **Travessão no nome do curso.** O Python descartava caracteres fora do ASCII, então "Letras –
+  Português" virava "letras portugues" e ficava sem área, enquanto o site já tratava travessão
+  como hífen e gravava os interesses. macOS e iOS trocam " - " por " – " sozinhos.
+- **`python -m radar descartes --amostra 30 --saida arquivo.json`** grava uma amostra do que o
+  pré-filtro cortou, com o motivo, para rotular à mão. É o lado que o `julgar` não alcança: ele
+  mede a vaga entregue, nunca a boa vaga que sumiu antes da IA.
+- **As suítes rodam em pull request** (`.github/workflows/testes.yml`): pytest, ruff e as três
+  suítes Deno. Os testes de integração Postgres continuam de fora, porque exigem o schema do
+  Supabase.
+- **O cliente supabase do site tem versão fixa** (`2.116.0`), não mais `@2`.
+
+Não corrigido de propósito: os pesos da nota. A regra de não recalibrar sem `vaga_irrelevante`
+real continua valendo. Perfil sem habilidade cadastrada recebia nota alta sem nada distinguir
+compatibilidade observada de informação ausente; a resposta foi um aviso na mensagem
+("Nota calculada sem habilidades no seu perfil"), não um peso novo.
 
 ### Juiz de recomendações: LLM as a judge (09/09/2026)
 
