@@ -18,7 +18,11 @@ import {
 } from "./feedback.ts";
 import { type EnvioDoToken, responderConsultaDeFeedback } from "./processar_feedback.ts";
 import { dispararEntregaImediata } from "./entrega_imediata.ts";
-import { cliqueQuePrecisaDeResposta, interpretarCorpo } from "./atualizacao.ts";
+import {
+  cliqueQuePrecisaDeResposta,
+  interpretarCorpo,
+  responderCliqueSemTratamento,
+} from "./atualizacao.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
 const CODIGO_DE_VALOR_DUPLICADO = "23505";
@@ -178,10 +182,10 @@ Deno.serve(async (requisicao) => {
   if (!consulta) {
     const cliqueSemTratamento = cliqueQuePrecisaDeResposta(atualizacao);
     if (cliqueSemTratamento) {
-      await chamarTelegram("answerCallbackQuery", {
-        callback_query_id: cliqueSemTratamento,
-      });
-      return new Response(null, { status: 200 });
+      return await responderCliqueSemTratamento(
+        cliqueSemTratamento,
+        (id) => chamarTelegram("answerCallbackQuery", { callback_query_id: id }),
+      );
     }
   }
   if (consulta) {
