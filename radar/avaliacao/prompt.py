@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from radar.domain.areas import ROTULOS_DAS_SUBAREAS
 from radar.domain.datas import data_de_publicacao
 from radar.domain.models import Julgamento, Perfil, Vaga
+from radar.domain.regioes import cidades_da_regiao
 
 LIMITE_DA_DESCRICAO = 2500
 PROBLEMAS_EXPLICADOS = (
@@ -21,9 +22,10 @@ INSTRUCOES = (
     "Julgue só com o texto do anúncio e o perfil do estudante. Não invente requisitos nem "
     "presuma informações que o anúncio não traz. Habilidades vazias significam que o estudante "
     "ainda não informou, não que ele é incapaz. Anúncio aberto a qualquer curso é relevante "
-    "quando a área de atuação faz sentido para a formação. Vaga em outra cidade só é viável se "
-    "for remota ou se o anúncio admitir trabalho remoto; estudante presencial precisa da própria "
-    "cidade; estudante remoto precisa de vaga remota.\n\n"
+    "quando a área de atuação faz sentido para a formação. Vaga em outra cidade é viável se essa "
+    "cidade estiver na região do estudante, listada no perfil e a um deslocamento diário, ou se a "
+    "vaga for remota ou admitir trabalho remoto; estudante presencial precisa da própria cidade "
+    "ou de uma cidade da região; estudante remoto precisa de vaga remota.\n\n"
     "Para cada vaga, responda:\n"
     "- relevante: true se você recomendaria a candidatura hoje, false caso contrário;\n"
     "- nota_juiz: de 0 a 100, sua confiança de que a candidatura vale a pena;\n"
@@ -46,12 +48,14 @@ def descrever_perfil(perfil: Perfil) -> str:
     interesses = ", ".join(
         ROTULOS_DAS_SUBAREAS.get(area.value, area.value) for area in perfil.areas_de_interesse
     )
+    regiao = ", ".join(cidades_da_regiao(perfil.cidade))
     return "\n".join(
         [
             "Estudante:",
             f"- curso: {perfil.curso}",
             f"- período: {perfil.periodo}",
             f"- cidade: {perfil.cidade}",
+            f"- cidades da mesma região: {regiao or 'só a própria cidade'}",
             f"- modalidade que aceita: {perfil.modalidade.value}",
             f"- habilidades: {habilidades}",
             f"- áreas de interesse: {interesses or 'não informadas'}",

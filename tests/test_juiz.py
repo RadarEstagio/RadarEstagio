@@ -12,6 +12,7 @@ from radar.avaliacao.gemini import JuizGemini
 from radar.avaliacao.prompt import (
     LIMITE_DA_DESCRICAO,
     apenas_das_vagas,
+    descrever_perfil,
     montar_prompt_do_juiz,
 )
 from radar.domain.models import (
@@ -84,6 +85,18 @@ def test_prompt_do_juiz_descreve_perfil_e_vagas_sem_a_nota_do_radar():
     assert "id: adzuna:1" in prompt and "id: adzuna:2" in prompt
     assert "Nota" not in prompt
     assert "híbrido" in prompt.casefold() or "hibrido" in prompt
+
+
+def test_prompt_do_juiz_lista_as_cidades_da_regiao_do_estudante():
+    de_niteroi = perfil().model_copy(update={"cidade": "Niterói, RJ"})
+    sem_regiao = perfil().model_copy(update={"cidade": "Cidade Inventada"})
+
+    linha = next(
+        linha for linha in descrever_perfil(de_niteroi).splitlines() if "mesma região" in linha
+    )
+
+    assert "Rio de Janeiro" in linha and "São Gonçalo" in linha
+    assert "- cidades da mesma região: só a própria cidade" in descrever_perfil(sem_regiao)
 
 
 def test_prompt_do_juiz_trata_perfil_sem_habilidades_como_nao_informado():
