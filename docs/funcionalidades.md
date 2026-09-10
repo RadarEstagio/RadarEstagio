@@ -43,13 +43,15 @@ passo, nunca ao avançar entre etapas; interface pública depende da hospedagem.
 
 #### 02. Preferências
 
-Selecionar uma cidade e uma modalidade; várias habilidades e áreas. As áreas oferecidas são as do
-curso informado, e "Ainda não quero informar habilidades" segue sem nenhuma.
+Selecionar uma cidade da lista de municípios do IBGE, sugerida conforme a digitação, e uma
+modalidade; várias habilidades e áreas. As áreas oferecidas são as do curso informado, e "Ainda não
+quero informar habilidades" segue sem nenhuma.
 
 **Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente. Até 50
 habilidades de até 100 caracteres. Lista vazia significa habilidade não informada, não incapacidade:
 a vaga continua sendo avaliada pelos demais critérios. Curso sem área conhecida não recebe
-sugestões de habilidade; a digitação livre continua valendo.
+sugestões de habilidade; a digitação livre continua valendo. Cidade fora da lista não avança; se a
+lista não carregar, o texto digitado vale e o formulário avisa.
 
 #### 03. Aceite e e-mails opcionais
 
