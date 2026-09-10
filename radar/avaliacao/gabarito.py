@@ -53,7 +53,8 @@ def carregar_gabarito(caminho: Path) -> dict[Chave, bool]:
 def rotulos_fora_da_janela(
     gabarito: dict[Chave, bool], selecionadas: list[EntregaParaJulgar]
 ) -> int:
-    return len(gabarito) - len(selecionadas)
+    com_entrega = {(entrega.perfil_id, entrega.vaga.id_externo) for entrega in selecionadas}
+    return len(gabarito.keys() - com_entrega)
 
 
 def selecionar_do_gabarito(

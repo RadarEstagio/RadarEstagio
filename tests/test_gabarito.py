@@ -113,3 +113,30 @@ def test_gabarito_inteiro_dentro_da_janela_nao_gera_aviso():
     rotulos = {(UUID(int=1), "1"): True}
 
     assert rotulos_fora_da_janela(rotulos, [entrega(1)]) == 0
+
+
+def entrega_de(numero: int, fonte: str) -> EntregaParaJulgar:
+    base = entrega(numero)
+    return base.model_copy(update={"vaga": base.vaga.model_copy(update={"fonte": fonte})})
+
+
+def test_rotulo_fora_da_janela_nao_some_quando_duas_fontes_repetem_o_id():
+    rotulos = {(PERFIL, "1"): True, (PERFIL, "2"): False}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+
+    assert rotulos_fora_da_janela(rotulos, dentro) == 1
+
+
+def test_contagem_de_rotulos_fora_nunca_fica_negativa():
+    rotulos = {(PERFIL, "1"): True}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+
+    assert rotulos_fora_da_janela(rotulos, dentro) == 0
+
+
+def test_rotulos_fora_mais_rotulos_com_entrega_somam_o_gabarito():
+    rotulos = {(PERFIL, str(n)): True for n in range(1, 6)}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy"), entrega_de(3, "adzuna")]
+    com_entrega = {(e.perfil_id, e.vaga.id_externo) for e in dentro}
+
+    assert rotulos_fora_da_janela(rotulos, dentro) + len(com_entrega & rotulos.keys()) == 5
