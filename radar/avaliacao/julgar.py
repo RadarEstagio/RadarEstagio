@@ -31,6 +31,7 @@ def julgar_entregas(
             except ErroDeAvaliacao as erro:
                 logger.warning("lote de %d entregas ficou sem julgamento: %s", len(lote), erro)
                 resultado.sem_julgamento += len(lote)
+                resultado.ultimo_erro = str(erro)
                 continue
             por_id = {julgamento.id_vaga: julgamento for julgamento in julgamentos}
             for entrega in lote:

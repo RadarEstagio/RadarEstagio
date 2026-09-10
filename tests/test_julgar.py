@@ -1,6 +1,11 @@
+from contextlib import contextmanager
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from uuid import UUID
 
+import pytest
+
+import radar.__main__
 from radar.avaliacao.julgar import TAMANHO_DO_LOTE, amostrar, julgar_entregas
 from radar.avaliacao.prompt import apenas_das_vagas
 from radar.domain.models import (
@@ -12,8 +17,9 @@ from radar.domain.models import (
     ResultadoDoJulgamento,
     Vaga,
 )
-from radar.matching.errors import AvaliadorIndisponivel
+from radar.matching.errors import AvaliadorIndisponivel, ErroDeAvaliacao
 from radar.reporting.julgamento import formatar_julgamento
+from radar.settings import Settings
 
 PERFIL_A = UUID(int=1)
 PERFIL_B = UUID(int=2)
@@ -165,3 +171,68 @@ def test_relatorio_sem_julgadas_e_sem_feedback():
     texto = formatar_julgamento(resultado)
     assert "nenhuma entrega julgada tem feedback registrado" in texto
     assert "Reprovadas pelo juiz com nota do Radar ≥ 70:\n  nenhuma" in texto
+
+
+def test_lote_que_falha_guarda_o_ultimo_erro_do_avaliador():
+    entregas = [entrega(1)]
+    juiz = JuizFalso(falhar_em={"1"})
+
+    resultado = julgar_entregas(entregas, juiz, 10, 1, "modelo", 7)
+
+    assert resultado.ultimo_erro == "HTTP 503"
+    assert resultado.nada_foi_julgado()
+
+
+def test_amostra_vazia_nao_e_tratada_como_falha():
+    resultado = julgar_entregas([], JuizFalso(), 10, 1, "modelo", 7)
+
+    assert not resultado.nada_foi_julgado()
+
+
+def test_julgamento_bem_sucedido_nao_e_tratado_como_falha():
+    resultado = julgar_entregas([entrega(1)], JuizFalso(relevantes={"1"}), 10, 1, "modelo", 7)
+
+    assert not resultado.nada_foi_julgado()
+    assert resultado.ultimo_erro == ""
+
+
+def settings_do_juiz() -> Settings:
+    return Settings(
+        _env_file=None,
+        adzuna_app_id="id",
+        adzuna_app_key="chave",
+        avaliador="agy",
+        telegram_bot_token="token",
+        telegram_chat_id="1",
+        database_url="postgresql://radar@banco/radar",
+    )
+
+
+def preparar_comando(monkeypatch, entregas: list[EntregaParaJulgar], juiz: JuizFalso) -> None:
+    @contextmanager
+    def repositorio_falso(settings):
+        yield SimpleNamespace(entregas_recentes=lambda dias: list(entregas))
+
+    monkeypatch.setattr(radar.__main__, "abrir_repositorio_de_metricas", repositorio_falso)
+    monkeypatch.setattr(radar.__main__, "criar_juiz", lambda settings: juiz)
+
+
+def test_juiz_que_falha_em_tudo_termina_em_erro_em_vez_de_relatorio_vazio(monkeypatch):
+    preparar_comando(monkeypatch, [entrega(1)], JuizFalso(falhar_em={"1"}))
+
+    with pytest.raises(ErroDeAvaliacao, match="HTTP 503"):
+        radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1)
+
+
+def test_juiz_que_julga_normalmente_nao_levanta_erro(monkeypatch, capsys):
+    preparar_comando(monkeypatch, [entrega(1)], JuizFalso(relevantes={"1"}))
+
+    radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1)
+
+    assert "Juiz:" in capsys.readouterr().out
+
+
+def test_periodo_sem_entrega_nao_vira_erro(monkeypatch):
+    preparar_comando(monkeypatch, [], JuizFalso())
+
+    radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1)

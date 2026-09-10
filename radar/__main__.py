@@ -179,6 +179,12 @@ def julgar(
         entregas, criar_juiz(settings), amostra, semente, settings.juiz_modelo, dias
     )
     print(formatar_julgamento(resultado, rotulos))
+    if resultado.nada_foi_julgado():
+        raise ErroDeAvaliacao(
+            "Nenhuma entrega foi julgada. Último erro do avaliador: "
+            f"{resultado.ultimo_erro or 'não informado'}"
+        )
+
 
 
 def gabarito(settings: Settings, dias: int, amostra: int, semente: int, saida: Path) -> None:
