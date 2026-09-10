@@ -1,6 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import {
   chatIdDaMensagem,
+  conversaPrivada,
   extrairPedidoDeVinculo,
   RESPOSTAS_DO_VINCULO,
   type ResultadoDoVinculo,
@@ -81,4 +82,36 @@ Deno.test("o link usado uma vez não promete vínculo", () => {
     RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"),
     true,
   );
+});
+
+Deno.test("mensagem de grupo não vincula o chat à conta", () => {
+  const emGrupo = {
+    message: {
+      chat: { id: -100200300, type: "supergroup" },
+      text: "/start 3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    },
+  };
+
+  assertEquals(extrairPedidoDeVinculo(emGrupo), null);
+  assertEquals(conversaPrivada(emGrupo), false);
+});
+
+Deno.test("conversa privada continua vinculando", () => {
+  const privada = {
+    message: {
+      chat: { id: 123, type: "private" },
+      text: "/start 3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    },
+  };
+
+  assertEquals(conversaPrivada(privada), true);
+  assertEquals(extrairPedidoDeVinculo(privada)?.chatId, "123");
+});
+
+Deno.test("payload sem tipo de chat é tratado como privado", () => {
+  const semTipo = {
+    message: { chat: { id: 5 }, text: "/start 3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d" },
+  };
+
+  assertEquals(extrairPedidoDeVinculo(semTipo)?.chatId, "5");
 });

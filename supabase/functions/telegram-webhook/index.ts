@@ -3,8 +3,10 @@ import { type PerfilDoDestinatario, podeProcessarInteracao } from "../_shared/pr
 import {
   type AtualizacaoDoTelegram,
   chatIdDaMensagem,
+  conversaPrivada,
   extrairPedidoDeVinculo,
   RESPOSTA_SEM_TOKEN,
+  RESPOSTA_SOMENTE_EM_PRIVADO,
   RESPOSTAS_DO_VINCULO,
   type ResultadoDoVinculo,
 } from "./vinculo.ts";
@@ -84,7 +86,10 @@ async function tratarAtualizacao(
   const pedido = extrairPedidoDeVinculo(atualizacao);
   if (!pedido) {
     const chatId = chatIdDaMensagem(atualizacao);
-    if (chatId) await responderNoTelegram(chatId, RESPOSTA_SEM_TOKEN);
+    const resposta = conversaPrivada(atualizacao)
+      ? RESPOSTA_SEM_TOKEN
+      : RESPOSTA_SOMENTE_EM_PRIVADO;
+    if (chatId) await responderNoTelegram(chatId, resposta);
     return;
   }
   const { resultado, perfilId } = await vincularChat(pedido.token, pedido.chatId);
