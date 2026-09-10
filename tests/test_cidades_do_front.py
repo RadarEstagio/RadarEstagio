@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from radar.domain.models import Modalidade, Perfil
-from scripts.gerar_cidades import montar_cidades, populacao_por_municipio
+from scripts.gerar_cidades import montar_cidades, montar_regioes, populacao_por_municipio
 
 ARQUIVO = Path(__file__).parent.parent / "web/assets/cidades.json"
 FORMATO_DO_PERFIL = re.compile(r"^[^,]+, [A-Z]{2}$")
@@ -66,3 +66,23 @@ def test_le_a_populacao_da_resposta_do_ibge():
     ]
 
     assert populacao_por_municipio(resposta) == {"3304557": 6211223}
+
+
+def test_agrupa_por_regiao_imediata_com_a_maior_cidade_primeiro():
+    do_rio = {"UF-sigla": "RJ", "UF-nome": "Rio de Janeiro"}
+    municipios = [
+        {"municipio-id": 1, "municipio-nome": "Niterói", "regiao-imediata-id": 330001, **do_rio},
+        {
+            "municipio-id": 2,
+            "municipio-nome": "Rio de Janeiro",
+            "regiao-imediata-id": 330001,
+            **do_rio,
+        },
+        {"municipio-id": 3, "municipio-nome": "Petrópolis", "regiao-imediata-id": 330002, **do_rio},
+    ]
+    populacao = {"1": 481, "2": 6211, "3": 278}
+
+    assert montar_regioes(municipios, populacao) == {
+        "ufs": {"Rio de Janeiro": "RJ"},
+        "regioes": [["Rio de Janeiro, RJ", "Niterói, RJ"], ["Petrópolis, RJ"]],
+    }
