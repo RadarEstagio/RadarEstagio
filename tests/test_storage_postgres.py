@@ -546,3 +546,49 @@ def test_extracao_de_outra_versao_do_prompt_nao_e_reaproveitada(conexao: psycopg
 
     assert repositorio.extracoes_existentes([vaga(1)], "gemini#versao-nova") == {}
     assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == ["teste-1"]
+
+
+def test_envio_gravado_fica_visivel_para_outra_conexao():
+    escrita = psycopg.connect(DATABASE_URL_TESTE, autocommit=True)
+    leitura = psycopg.connect(DATABASE_URL_TESTE, autocommit=True)
+    user_id = uuid4()
+    recomendacao = Recomendacao(
+        resultado=ResultadoMatch(vaga=vaga(90, fonte="visibilidade"), nota=80)
+    )
+    try:
+        escrita.execute(
+            "insert into auth.users (id, instance_id, aud, role, email) values "
+            "(%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+            (user_id, f"{user_id}@teste.local"),
+        )
+        perfil_id = escrita.execute(
+            "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
+            "telegram_chat_id) values (%s, 'Engenharia', 4, '{Python}', 'Rio de Janeiro, RJ', "
+            "'remoto', %s) returning id",
+            (user_id, str(uuid4().int)[:9]),
+        ).fetchone()[0]
+        dono = Usuario(
+            id=perfil_id,
+            perfil=Perfil(
+                curso="Engenharia",
+                periodo=4,
+                habilidades=["Python"],
+                cidade="Rio de Janeiro, RJ",
+                modalidade=Modalidade.REMOTO,
+            ),
+            chat_id="1",
+        )
+
+        RepositorioPostgres(escrita).registrar_envios(dono, [recomendacao])
+
+        assert (
+            leitura.execute(
+                "select count(*) from envios where token = %s", (recomendacao.token,)
+            ).fetchone()[0]
+            == 1
+        )
+    finally:
+        escrita.execute("delete from auth.users where id = %s", (user_id,))
+        escrita.execute("delete from vagas where fonte = 'visibilidade'")
+        escrita.close()
+        leitura.close()

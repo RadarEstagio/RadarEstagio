@@ -37,7 +37,9 @@ def abrir_repositorio_de_metricas(settings: Settings) -> Iterator[RepositorioDeM
 def conectar(settings: Settings) -> psycopg.Connection:
     try:
         return psycopg.connect(
-            settings.database_url, connect_timeout=TIMEOUT_DE_CONEXAO_EM_SEGUNDOS
+            settings.database_url,
+            connect_timeout=TIMEOUT_DE_CONEXAO_EM_SEGUNDOS,
+            autocommit=True,
         )
     except psycopg.Error as erro:
         raise ErroDeArmazenamento(
