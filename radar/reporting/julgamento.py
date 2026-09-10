@@ -2,6 +2,7 @@ from collections import Counter
 from statistics import median
 from uuid import UUID
 
+from radar.domain.datas import data_local
 from radar.domain.models import EntregaJulgada, ResultadoDoJulgamento
 
 FEEDBACK_POSITIVO = "vaga_util"
@@ -121,7 +122,7 @@ def linhas_de_reprovadas(julgadas: list[EntregaJulgada]) -> list[str]:
     if not reprovadas:
         return ["  nenhuma"]
     return [
-        f"  {item.entrega.nota_do_radar:>3} · {item.entrega.enviada_em:%d/%m}"
+        f"  {item.entrega.nota_do_radar:>3} · {data_local(item.entrega.enviada_em):%d/%m}"
         f" · {item.entrega.vaga.titulo[:50]}"
         f" · {item.julgamento.problema.value}: {item.julgamento.motivo}"
         for item in sorted(reprovadas, key=lambda i: -(i.entrega.nota_do_radar or 0))[

@@ -3,6 +3,7 @@ from pathlib import Path
 from uuid import UUID
 
 from radar.avaliacao.julgar import amostrar
+from radar.domain.datas import data_local
 from radar.domain.models import EntregaParaJulgar
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -20,7 +21,7 @@ def exportar_gabarito(entregas: list[EntregaParaJulgar], amostra: int, semente: 
             "empresa": entrega.vaga.empresa,
             "localizacao": entrega.vaga.localizacao,
             "url": entrega.vaga.url,
-            "enviada_em": entrega.enviada_em.date().isoformat(),
+            "enviada_em": data_local(entrega.enviada_em).isoformat(),
             "nota_do_radar": entrega.nota_do_radar,
             "relevante": None,
             "comentario": "",

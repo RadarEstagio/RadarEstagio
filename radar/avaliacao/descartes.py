@@ -1,5 +1,6 @@
 import random
 
+from radar.domain.datas import data_de_publicacao
 from radar.domain.models import Usuario, Vaga
 from radar.filtering.prefiltro import motivo_do_descarte
 
@@ -63,7 +64,7 @@ def exportar_descartes(
             "empresa": descarte.vaga.empresa,
             "localizacao": descarte.vaga.localizacao,
             "url": descarte.vaga.url,
-            "publicada_em": descarte.vaga.publicada_em.date().isoformat(),
+            "publicada_em": data_de_publicacao(descarte.vaga.publicada_em).isoformat(),
             "descarte_correto": None,
             "comentario": "",
         }

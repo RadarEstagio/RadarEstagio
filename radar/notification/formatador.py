@@ -1,9 +1,9 @@
 import re
-from datetime import UTC, date, datetime, time
+from datetime import datetime
 from html import escape
 from urllib.parse import urlsplit
-from zoneinfo import ZoneInfo
 
+from radar.domain.datas import data_de_publicacao, data_local
 from radar.domain.models import (
     BotaoDeFeedback,
     MotivoDeRecusa,
@@ -12,7 +12,6 @@ from radar.domain.models import (
     Vaga,
 )
 
-FUSO_DA_ENTREGA = ZoneInfo("America/Sao_Paulo")
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 LIMITE_DO_TITULO = 120
@@ -57,17 +56,6 @@ def escapar_limitado(texto: str, limite: int) -> str:
 
 def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
     return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
-
-
-def data_local(momento: datetime) -> date:
-    return momento.astimezone(FUSO_DA_ENTREGA).date()
-
-
-def data_de_publicacao(publicada_em: datetime) -> date:
-    em_utc = publicada_em.astimezone(UTC)
-    if em_utc.time() == time(0):
-        return em_utc.date()
-    return data_local(publicada_em)
 
 
 def formatar_mensagem(

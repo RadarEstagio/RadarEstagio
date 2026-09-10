@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from radar.domain.areas import ROTULOS_DAS_SUBAREAS
+from radar.domain.datas import data_de_publicacao
 from radar.domain.models import Julgamento, Perfil, Vaga
 
 LIMITE_DA_DESCRICAO = 2500
@@ -69,7 +70,7 @@ def descrever_vagas(vagas: list[Vaga]) -> str:
                     f"título: {vaga.titulo}",
                     f"empresa: {vaga.empresa}",
                     f"local: {vaga.localizacao} · modalidade: {modalidade}",
-                    f"publicada em: {vaga.publicada_em:%d/%m/%Y}",
+                    f"publicada em: {data_de_publicacao(vaga.publicada_em):%d/%m/%Y}",
                     f"descrição: {resumir(vaga.descricao)}",
                 ]
             )
