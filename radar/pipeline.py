@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from radar.domain.models import (
+    ChaveDaVaga,
     ExtracaoDaVaga,
     Perfil,
     Recomendacao,
@@ -29,7 +30,7 @@ from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
 
-Pontuador = Callable[[list[Vaga], dict[str, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
+Pontuador = Callable[[list[Vaga], dict[ChaveDaVaga, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
 Enriquecedor = Callable[[list[Vaga]], list[Vaga]]
 
 
@@ -138,8 +139,8 @@ def executar(
 
 
 def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:
-    por_id = {vaga.id_externo: vaga for vaga in candidatas}
-    return [por_id.get(vaga.id_externo, vaga) for vaga in unicas]
+    por_chave = {vaga.chave(): vaga for vaga in candidatas}
+    return [por_chave.get(vaga.chave(), vaga) for vaga in unicas]
 
 
 def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> None:
@@ -173,12 +174,12 @@ def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -
 def candidatas_de_algum_perfil(
     vagas: list[Vaga], usuarios: list[Usuario], repositorio: Repositorio
 ) -> list[Vaga]:
-    aprovadas: dict[str, Vaga] = {}
+    aprovadas: dict[ChaveDaVaga, Vaga] = {}
     for usuario in usuarios:
         ja_enviadas = ids_ja_enviadas_ou_nenhum(repositorio, usuario)
         for vaga in filtrar(vagas, usuario.perfil):
-            if (vaga.fonte, vaga.id_externo) not in ja_enviadas:
-                aprovadas.setdefault(vaga.id_externo, vaga)
+            if vaga.chave() not in ja_enviadas:
+                aprovadas.setdefault(vaga.chave(), vaga)
     return list(aprovadas.values())
 
 
@@ -198,22 +199,22 @@ class BalancoDaExtracao(BaseModel):
 
 def obter_extracoes(
     extrator: ExtratorDeVagas, repositorio: Repositorio, candidatas: list[Vaga], modelo: str
-) -> tuple[dict[str, ExtracaoDaVaga], BalancoDaExtracao]:
+) -> tuple[dict[ChaveDaVaga, ExtracaoDaVaga], BalancoDaExtracao]:
     try:
         extracoes = dict(repositorio.extracoes_existentes(candidatas, modelo))
     except ErroDeArmazenamento as erro:
         logger.warning("extrações guardadas não puderam ser lidas: %s", erro)
         extracoes = {}
-    pendentes = [vaga for vaga in candidatas if vaga.id_externo not in extracoes]
+    pendentes = [vaga for vaga in candidatas if vaga.chave() not in extracoes]
     logger.info("%d extrações reaproveitadas, %d vagas a extrair", len(extracoes), len(pendentes))
     novas = extrator.extrair(pendentes)
-    vagas_por_id = {vaga.id_externo: vaga for vaga in pendentes}
+    vagas_por_identidade = {vaga.identidade(): vaga for vaga in pendentes}
     guardadas = []
     for extracao in novas:
-        vaga = vagas_por_id.get(extracao.id_vaga)
-        if vaga is None or extracao.id_vaga in extracoes:
+        vaga = vagas_por_identidade.get(extracao.id_vaga)
+        if vaga is None or vaga.chave() in extracoes:
             continue
-        extracoes[extracao.id_vaga] = extracao
+        extracoes[vaga.chave()] = extracao
         guardadas.append((vaga, extracao))
     nao_gravadas = 0
     try:
@@ -234,7 +235,7 @@ def obter_extracoes(
 def atender_usuario(
     usuario: Usuario,
     vagas: list[Vaga],
-    extracoes: dict[str, ExtracaoDaVaga],
+    extracoes: dict[ChaveDaVaga, ExtracaoDaVaga],
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
@@ -269,7 +270,7 @@ def atender_usuario(
 def atender_usuario_travado(
     usuario: Usuario,
     vagas: list[Vaga],
-    extracoes: dict[str, ExtracaoDaVaga],
+    extracoes: dict[ChaveDaVaga, ExtracaoDaVaga],
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
@@ -283,7 +284,7 @@ def atender_usuario_travado(
     candidatas = [
         vaga
         for vaga in filtrar(vagas, usuario.perfil)
-        if (vaga.fonte, vaga.id_externo) not in ja_enviadas
+        if vaga.chave() not in ja_enviadas
     ]
     candidatas = remover_republicacoes_de(
         candidatas,

@@ -5,6 +5,7 @@ import unicodedata
 from radar.domain.areas import AREA_DA_SUBAREA, COMPUTACAO, ROTULOS_DAS_SUBAREAS, area_do_curso
 from radar.domain.models import (
     AreaDeInteresse,
+    ChaveDaVaga,
     ExtracaoDaVaga,
     Modalidade,
     NivelCompatibilidade,
@@ -286,11 +287,11 @@ ALIASES_DE_HABILIDADES = {
 
 
 def pontuar_vagas(
-    vagas: list[Vaga], extracoes: dict[str, ExtracaoDaVaga], perfil: Perfil
+    vagas: list[Vaga], extracoes: dict[ChaveDaVaga, ExtracaoDaVaga], perfil: Perfil
 ) -> list[ResultadoMatch]:
     resultados = []
     for vaga in vagas:
-        extracao = extracoes.get(vaga.id_externo)
+        extracao = extracoes.get(vaga.chave())
         if extracao is None:
             continue
         resultados.append(pontuar(vaga, extracao, perfil))

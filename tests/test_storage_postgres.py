@@ -272,8 +272,8 @@ def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection
     repositorio.guardar_extracoes([(vaga(1), extracao)], "modelo-teste")
 
     guardadas = repositorio.extracoes_existentes([vaga(1), vaga(2)], "modelo-teste")
-    assert list(guardadas) == ["teste-1"]
-    assert guardadas["teste-1"] == extracao
+    assert list(guardadas) == [("adzuna", "teste-1")]
+    assert guardadas[("adzuna", "teste-1")] == extracao
     assert (
         conexao.execute(
             "select modelo_extracao from vagas where id_externo = 'teste-1'"
@@ -545,7 +545,9 @@ def test_extracao_de_outra_versao_do_prompt_nao_e_reaproveitada(conexao: psycopg
     repositorio.guardar_extracoes([(vaga(1), extracao)], "gemini#versao-antiga")
 
     assert repositorio.extracoes_existentes([vaga(1)], "gemini#versao-nova") == {}
-    assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == ["teste-1"]
+    assert list(repositorio.extracoes_existentes([vaga(1)], "gemini#versao-antiga")) == [
+        ("adzuna", "teste-1")
+    ]
 
 
 def test_envio_gravado_fica_visivel_para_outra_conexao():
@@ -592,3 +594,21 @@ def test_envio_gravado_fica_visivel_para_outra_conexao():
         escrita.execute("delete from vagas where fonte = 'visibilidade'")
         escrita.close()
         leitura.close()
+
+
+def test_extracao_de_outra_fonte_com_o_mesmo_id_externo_nao_se_confunde(
+    conexao: psycopg.Connection,
+):
+    repositorio = RepositorioPostgres(conexao)
+    da_adzuna = ExtracaoDaVaga(id_vaga="adzuna:teste-1", area_da_vaga="computacao")
+    da_gupy = ExtracaoDaVaga(id_vaga="gupy:teste-1", area_da_vaga="direito")
+
+    repositorio.guardar_extracoes(
+        [(vaga(1), da_adzuna), (vaga(1, fonte="gupy"), da_gupy)], "modelo-teste"
+    )
+    guardadas = repositorio.extracoes_existentes(
+        [vaga(1), vaga(1, fonte="gupy")], "modelo-teste"
+    )
+
+    assert guardadas[("adzuna", "teste-1")].area_da_vaga == "computacao"
+    assert guardadas[("gupy", "teste-1")].area_da_vaga == "direito"

@@ -118,7 +118,7 @@ Subáreas por área:
 def descrever_vaga(vaga: Vaga) -> str:
     modalidade = f"Modalidade: {vaga.modalidade.value}\n" if vaga.modalidade else ""
     return (
-        f"### Vaga id={vaga.id_externo}\n"
+        f"### Vaga id={vaga.identidade()}\n"
         f"Título: {vaga.titulo}\n"
         f"Empresa: {vaga.empresa}\n"
         f"Localização: {vaga.localizacao}\n"

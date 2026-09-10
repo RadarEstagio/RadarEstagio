@@ -67,7 +67,7 @@ def vaga(numero: int, descricao: str = "Estágio com Python e SQL.") -> Vaga:
 
 def julgamento(numero: int, relevante: bool = True) -> dict:
     return {
-        "id_vaga": str(numero),
+        "id_vaga": f"adzuna:{numero}",
         "relevante": relevante,
         "nota_juiz": 80 if relevante else 20,
         "problema": "nenhum" if relevante else "outra_area",
@@ -81,7 +81,7 @@ def test_prompt_do_juiz_descreve_perfil_e_vagas_sem_a_nota_do_radar():
     assert "Engenharia de Software" in prompt
     assert "Python, SQL" in prompt
     assert "Dados e IA" in prompt
-    assert "id: 1" in prompt and "id: 2" in prompt
+    assert "id: adzuna:1" in prompt and "id: adzuna:2" in prompt
     assert "Nota" not in prompt
     assert "híbrido" in prompt.casefold() or "hibrido" in prompt
 
@@ -106,15 +106,15 @@ def test_prompt_do_juiz_corta_descricao_longa():
 
 def test_apenas_das_vagas_ignora_ids_inventados_e_repeticoes():
     julgamentos = [
-        Julgamento(id_vaga="2", relevante=True, nota_juiz=90),
-        Julgamento(id_vaga="9", relevante=False, nota_juiz=10),
-        Julgamento(id_vaga="2", relevante=False, nota_juiz=5),
-        Julgamento(id_vaga="1", relevante=False, nota_juiz=30),
+        Julgamento(id_vaga="adzuna:2", relevante=True, nota_juiz=90),
+        Julgamento(id_vaga="adzuna:9", relevante=False, nota_juiz=10),
+        Julgamento(id_vaga="adzuna:2", relevante=False, nota_juiz=5),
+        Julgamento(id_vaga="adzuna:1", relevante=False, nota_juiz=30),
     ]
 
     filtrados = apenas_das_vagas(julgamentos, [vaga(1), vaga(2)])
 
-    assert [(j.id_vaga, j.nota_juiz) for j in filtrados] == [("1", 30), ("2", 90)]
+    assert [(j.id_vaga, j.nota_juiz) for j in filtrados] == [("adzuna:1", 30), ("adzuna:2", 90)]
 
 
 @dataclass
@@ -142,8 +142,8 @@ def test_juiz_agy_usa_o_modelo_do_juiz_e_devolve_os_julgamentos():
     assert argumentos[argumentos.index("--model") + 1] == MODELO_DO_JUIZ
     assert "julgamentos" in argumentos[argumentos.index("--json-schema") + 1]
     assert [(j.id_vaga, j.relevante, j.problema) for j in resultado] == [
-        ("1", True, ProblemaJulgado.NENHUM),
-        ("2", False, ProblemaJulgado.OUTRA_AREA),
+        ("adzuna:1", True, ProblemaJulgado.NENHUM),
+        ("adzuna:2", False, ProblemaJulgado.OUTRA_AREA),
     ]
 
 

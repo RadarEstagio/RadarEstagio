@@ -11,6 +11,7 @@ from radar.domain.areas import subareas_do_curso
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
+    ChaveDaVaga,
     EntregaParaJulgar,
     ExtracaoDaVaga,
     FunilDaCoorte,
@@ -48,7 +49,7 @@ SQL_PERFIS_SEM_VINCULO = (
 )
 
 SQL_EXTRACOES_EXISTENTES = """
-    select id_externo, extracao
+    select fonte, id_externo, extracao
     from vagas
     where extracao is not null
       and modelo_extracao = %(modelo)s
@@ -256,7 +257,9 @@ class RepositorioPostgres:
                 f"Falha ao conferir destinatário: {descrever(erro)}"
             ) from erro
 
-    def extracoes_existentes(self, vagas: list[Vaga], modelo: str) -> dict[str, ExtracaoDaVaga]:
+    def extracoes_existentes(
+        self, vagas: list[Vaga], modelo: str
+    ) -> dict[ChaveDaVaga, ExtracaoDaVaga]:
         if not vagas:
             return {}
         parametros = {
@@ -476,9 +479,10 @@ def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:
     return cursor.execute(SQL_REGISTRAR_ATIVACAO, {"perfil_id": perfil_id}).fetchone() is not None
 
 
-def interpretar_extracao(linha: dict) -> tuple[str, ExtracaoDaVaga] | None:
+def interpretar_extracao(linha: dict) -> tuple[ChaveDaVaga, ExtracaoDaVaga] | None:
     try:
-        return linha["id_externo"], ExtracaoDaVaga.model_validate(linha["extracao"])
+        chave = (linha["fonte"], linha["id_externo"])
+        return chave, ExtracaoDaVaga.model_validate(linha["extracao"])
     except ValidationError:
         logger.info("extração guardada da vaga %s está em formato antigo", linha["id_externo"])
         return None
