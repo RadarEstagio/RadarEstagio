@@ -34,6 +34,7 @@ INTERESSE_SEM_AREA_RECONHECIDA = 0.5
 INTERESSE_DE_OUTRA_SUBAREA = 0.5
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 AVISO_AREA_RECUSADA = "Área que você recusou nos últimos dias"
+AVISO_SEM_HABILIDADES_NO_PERFIL = "Nota calculada sem habilidades no seu perfil"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
 PESO_OBRIGATORIAS_COM_PRINCIPAIS = 0.7
@@ -399,7 +400,15 @@ def _avisos_objetivos(
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
+    if _nota_sem_habilidades_declaradas(extracao, perfil):
+        avisos.append(AVISO_SEM_HABILIDADES_NO_PERFIL)
     return avisos
+
+
+def _nota_sem_habilidades_declaradas(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
+    if any(habilidade.strip() for habilidade in perfil.habilidades):
+        return False
+    return bool(_exigidas_pela_vaga(extracao))
 
 
 def aviso_de_area_recusada(areas: set[str]) -> str:

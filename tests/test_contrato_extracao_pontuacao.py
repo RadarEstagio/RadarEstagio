@@ -3,7 +3,12 @@ from datetime import UTC, datetime
 import pytest
 
 from radar.domain.models import ExtracaoDaVaga, Modalidade, Perfil, Vaga
-from radar.matching.avaliacoes import NIVEL_NAO_INFORMADO, nivel_exigido, pontuar
+from radar.matching.avaliacoes import (
+    AVISO_SEM_HABILIDADES_NO_PERFIL,
+    NIVEL_NAO_INFORMADO,
+    nivel_exigido,
+    pontuar,
+)
 from radar.matching.prompt import INSTRUCAO_DE_EXTRACAO
 
 EXEMPLOS_DE_NIVEL_NO_PROMPT = ("Excel avançado", "inglês intermediário")
@@ -72,3 +77,27 @@ def test_apagar_o_nivel_na_extracao_faria_o_basico_passar_por_avancado():
     assert com_nivel.requisitos_nao_atendidos == ["Excel avançado"]
     assert sem_nivel.requisitos_atendidos == ["Excel"]
     assert sem_nivel.nota > com_nivel.nota
+
+
+def test_perfil_sem_habilidades_recebe_a_nota_com_o_aviso_de_informacao_ausente():
+    extracao = extracao_exigindo("Excel avançado")
+
+    sem_habilidades = pontuar(vaga_de_teste(), extracao, perfil_com([]))
+
+    assert AVISO_SEM_HABILIDADES_NO_PERFIL in sem_habilidades.avisos_objetivos
+
+
+def test_perfil_que_informou_habilidades_nao_recebe_o_aviso():
+    extracao = extracao_exigindo("Excel avançado")
+
+    com_habilidades = pontuar(vaga_de_teste(), extracao, perfil_com(["Excel básico"]))
+
+    assert AVISO_SEM_HABILIDADES_NO_PERFIL not in com_habilidades.avisos_objetivos
+
+
+def test_vaga_sem_requisitos_declarados_nao_avisa_sobre_habilidades_do_perfil():
+    muda = ExtracaoDaVaga(id_vaga="adzuna:1", area_da_vaga="administracao")
+
+    resultado = pontuar(vaga_de_teste(), muda, perfil_com([]))
+
+    assert resultado.avisos_objetivos == []
