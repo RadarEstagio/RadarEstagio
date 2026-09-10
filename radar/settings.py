@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     url_de_rastreio: str = ""
     fontes: str = SEPARADOR_DE_FONTES.join(FONTES_PADRAO)
     dias_recentes: int = Field(default=3, ge=1)
-    quantidade_vagas_enviadas: int = 7
+    quantidade_vagas_enviadas: int = Field(default=7, ge=1)
     nota_minima: int = Field(default=40, ge=0, le=100)
     falhas_de_envio_ate_pausar: int = Field(default=3, ge=1)
     dias_de_silencio_ate_avisar: int = Field(default=7, ge=1)

@@ -68,13 +68,24 @@ def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
     ]
 
 
+def problemas_da_configuracao(erro: ValidationError) -> list[str]:
+    problemas = []
+    for detalhe in erro.errors():
+        nome = str(detalhe["loc"][0]).upper() if detalhe["loc"] else "configuração"
+        if detalhe["type"] in TIPOS_DE_ERRO_DE_PREENCHIMENTO:
+            problemas.append(f"{nome}: ausente ou vazia")
+            continue
+        problemas.append(f"{nome}: {detalhe['msg']}")
+    return problemas
+
+
 def carregar_settings() -> Settings | None:
     try:
         return Settings()
     except ValidationError as erro:
-        print("Variáveis de ambiente ausentes ou vazias:", file=sys.stderr)
-        for nome in nomes_das_variaveis_nao_preenchidas(erro):
-            print(f"  - {nome}", file=sys.stderr)
+        print("Configuração inválida:", file=sys.stderr)
+        for problema in problemas_da_configuracao(erro):
+            print(f"  - {problema}", file=sys.stderr)
         return None
 
 
