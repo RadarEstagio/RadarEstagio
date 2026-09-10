@@ -257,17 +257,36 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   de Direito, ficaram fora com 64 e passam a 86. Fora de computação, quando nome e família falham,
   o requisito é atendido se todas as palavras de um estão no outro, nos dois sentidos, com plural
   dobrado; palavra inteira, nunca pedaço, e "análise de dados" não atende "análise de crédito".
-  **Computação não compara por palavras**: a primeira versão deixou `JavaScript` atender "React
-  JS", `SQL` atender "PL/SQL" e `React` atender "React Native", e lá os requisitos são nomes de
-  tecnologia, que o nome exato e as famílias já tratam. Requisito com "e", "/", vírgula ou ponto e
-  vírgula exige todas as partes ("Excel e Power BI" não é atendido só por Excel), e habilidade do
-  perfil escrita assim vira várias, cada uma com o próprio nível. O nível é o maior entre nome,
-  família e palavras, para que acrescentar habilidade nunca derrube a nota; família decide sozinha
-  o requisito que nomeia; alias vale só para o nome inteiro. Medido em 343 extrações × 24 perfis:
-  nenhuma nota cai contra a regra anterior. Risco aceito: habilidade genérica de uma palavra
-  ("Organização", "Gestão", "Processos") atende toda atividade que a contém e pode subir vaga mais
-  administrativa; a da MUDES chegou ao topo do estudante de Direito por "organização de arquivos"
-  e "atendimento a clientes".
+  **Nem perfil nem vaga de computação comparam por palavras**: a primeira versão deixou
+  `JavaScript` atender "React JS", `SQL` atender "PL/SQL" e `React` atender "React Native", e lá
+  os requisitos são nomes de tecnologia, que o nome exato e as famílias já tratam. A trava olhava
+  só o curso até a segunda auditoria de 10/09, e um estudante de Estatística com React atendia
+  "React Native" (55 → 93); agora olha também a área da vaga. O custo, medido em 22 perfis × 343
+  extrações: em vaga de computação, perfil de outro curso perde também correspondência que não é
+  técnica ("inglês técnico" ← Inglês, "atendimento ao cliente" ← Atendimento, "manutenção de
+  computadores" ← Manutenção); 24 de 7.546 pares perdem requisito atendido, 4 com nota menor
+  (−15, −15, −10, −1), nenhum entre as candidatas reais. Vaga com `area_da_vaga` nula não é
+  travada: são programas abertos a várias formações, sem falso positivo encontrado. Requisito com " e ", "/", vírgula,
+  ";", "|" ou " & "/" + " com espaços exige todas as partes ("Excel e Power BI" não é atendido
+  só por Excel; "F&O" e "R&S" não se partem); separador dentro de parênteses não conta. " ou " e
+  "e/ou" são alternativas, e basta uma. O nível dito na última parte vale para as partes sem nível,
+  dentro da mesma alternativa ("Inglês e Espanhol avançados"); dito só na primeira, não se espalha
+  ("Excel avançado e Power BI"), e não atravessa um "ou". Parte que só tem nível se junta à
+  anterior, e a faixa vale pelo menor ("Inglês intermediário/avançado" é atendido por
+  intermediário). O nome inteiro do requisito composto exige o maior nível das partes, e o da
+  habilidade composta do perfil vale pelo menor, contando parte sem nível: "Inglês e Espanhol
+  básicos" não atende "Inglês avançado e Espanhol básico", nem "Inglês avançado e Espanhol"
+  atende "Inglês e Espanhol avançados". Limite conhecido: nível no plural depois de "ou" ("Inglês
+  ou Espanhol avançados") vale só para a última alternativa; não há caso nos dados. Habilidade do
+  perfil escrita assim vira várias, pela mesma regra. Requisito que aparece mais de uma vez com o
+  mesmo nome só conta como atendido se todas as versões forem, então a ordem em que a IA listou
+  não muda a nota, e a mensagem mostra a versão que falta ("a conferir: Excel avançado" para quem
+  tem Excel, não "Excel"). O nível é o maior entre nome, família e palavras,
+  para que acrescentar habilidade nunca derrube a nota; família decide sozinha o requisito que
+  nomeia; alias vale só para o nome inteiro. Risco aceito: habilidade genérica de uma palavra
+  ("Organização", "Gestão", "Processos") atende toda atividade que a contém, e requisito de uma
+  palavra ("redes", "segurança") é atendido por habilidade que a contenha ("Redes sociais",
+  "Segurança do trabalho"); o pré-filtro corta a maior parte desses cruzamentos entre áreas.
 - **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
   de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
   `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do

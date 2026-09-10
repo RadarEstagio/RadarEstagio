@@ -146,8 +146,11 @@ o vigésimo usuário não custa nada.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
   área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
   habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos:
-  SQL pode atender “banco de dados”, mas Java não atende JavaScript. O nível exigido
-  continua sendo comparado com o nível informado do melhor membro da família presente.
+  SQL pode atender “banco de dados”, mas Java não atende JavaScript. Quando nem o perfil nem a
+  vaga são de computação, um requisito também é atendido por palavras inteiras ("Contratos"
+  atende "revisão de contratos"). Requisito composto ("Excel e Power BI") exige todas as partes,
+  "ou" é alternativa, e requisito repetido só conta se todas as versões forem atendidas. O nível
+  exigido é comparado com o maior nível que o perfil declara entre nome, família e palavras.
   Desde 09/09, a cobertura neutra sem stack é 0,25; Office, idiomas e soft skills ficam
   fora da cobertura apenas para computação. Desejáveis ausentes aparecem como
   “Diferenciais que a vaga cita”, separados dos requisitos a conferir, sem virar veto.
