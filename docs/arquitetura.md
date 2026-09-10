@@ -92,9 +92,15 @@ def executar(coletor, extrator, notificador, repositorio, parametros, agora):
         notificador.enviar(usuario.chat_id, formatar_mensagem(ranquear(resultados), agora))
 ```
 
-Isso é literalmente o pipeline inteiro. Ele **recebe** as peças prontas (injeção de
-dependência) em vez de criá-las. Quem cria as peças reais é o `__main__.py`; quem cria as
-falsas são os testes.
+Esse é o esqueleto, não o código: faltam a trava por perfil, a releitura do histórico, as
+regras objetivas e a revalidação do destinatário antes de enviar. O que o esqueleto mostra é
+a forma: o pipeline **recebe** as peças prontas (injeção de dependência) em vez de criá-las.
+Quem cria as peças reais é o `__main__.py`; quem cria as falsas são os testes.
+
+Vaga é identificada pelo par `(fonte, id_externo)` em todo dicionário do fluxo, porque o
+banco distingue as duas colunas e duas fontes podem repetir o número. Com a chave só no
+`id_externo`, a candidata de uma fonte apagava a da outra e o mesmo anúncio saía duas vezes
+na mesma mensagem.
 
 ## Decisões de arquitetura
 
@@ -116,7 +122,8 @@ opções gratuitas piores). Ver a decisão 10.
 ### 2. Sem framework web
 
 É um script disparado por cron, não um serviço HTTP. Flask/FastAPI seriam peso morto.
-`httpx` para as duas chamadas HTTP (Adzuna e Telegram) basta.
+`httpx` basta para as chamadas que existem: Adzuna, Gupy, Jooble, o enriquecimento da
+descrição e o Telegram.
 
 ### 3. Extração por vaga, pontuação por perfil
 
@@ -127,10 +134,11 @@ o vigésimo usuário não custa nada.
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA devolve JSON no formato
-  `{id_vaga, area_da_vaga, areas_da_vaga, cursos_aceitos, aceita_qualquer_curso,
+  `{id_vaga, area_da_vaga, areas_da_vaga, modalidade, cursos_aceitos, aceita_qualquer_curso,
   periodo_minimo, experiencia_minima_anos, experiencia_desejavel, habilidades_obrigatorias,
   habilidades_principais, habilidades_desejaveis, alerta_pegadinha}`. Tudo é fato do anúncio;
-  nada depende de candidato.
+  nada depende de candidato. O `id_vaga` é `fonte:id_externo`, porque duas fontes podem usar
+  o mesmo número e o banco distingue as duas vagas.
 - **A comparação é determinística** (`matching/compatibilidade.py`): `cursos_aceitos` vira
   compatível/parcial/incompatível contra o catálogo de cursos de `domain/areas.py`;
   `periodo_minimo` e `experiencia_minima_anos` viram o nível de período; os pontos a favor e
@@ -158,6 +166,15 @@ o vigésimo usuário não custa nada.
 Regras baratas (regex) cortam o óbvio — "Desenvolvedor Sênior", "5 anos de experiência" —
 antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
+Regex não lê negação sozinho: "não exigimos 2 anos de experiência" descartava a vaga pela
+menção. A negação passou a valer dentro da mesma frase, e só dentro dela, para que um "não"
+da frase anterior não libere a exigência seguinte.
+
+Cortar antes da IA economiza cota e também esconde erro: quem só julga a vaga entregue nunca
+vê a boa vaga que sumiu aqui. `python -m radar descartes` grava uma amostra do que o
+pré-filtro cortou, com o motivo de cada corte, no mesmo formato do gabarito. A amostra cobre
+um motivo diferente por vez antes de repetir, senão o motivo mais frequente tomaria a lista.
+
 ### 5. Extração em lotes com tolerância a falhas
 
 O problema: a cota do Gemini varia por modelo e plano. Uma chamada por vaga multiplica custo,
@@ -183,7 +200,8 @@ conseguiu casar por id. Não sabe o que é "tentar de novo".
 | lote de 10 falha (JSON quebrado, erro 500) | divide em 5 + 5, tenta cada; repete até isolar a vaga com problema |
 | modelo esqueceu de responder 1 vaga | extrai só ela |
 | esqueceu mesmo sozinha | ignora e registra |
-| cota excedida (HTTP 429) | para tudo, envia o que já tem |
+| cota excedida (HTTP 429) | espera o "retry in Ns" e repete o mesmo lote; acima de 120 s desiste e envia o que já tem |
+| avaliador fora do ar (502, 503, 504) | espera e repete o **mesmo** lote, sem dividir |
 
 Por que separar: a estratégia de resiliência não tem nada a ver com o mecanismo de IA.
 `ExtratorEmLotes` embrulha os dois adapters sem conhecer Gemini API ou AGY.
@@ -223,6 +241,12 @@ que muda é a informação que chega ao extrator.
 `Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
 quando existe e só recorre a regex no texto quando a fonte não informa.
 
+A chave de duplicata inclui a cidade. Sem ela, duas vagas presenciais da mesma empresa com o
+mesmo título em cidades diferentes viravam uma só, e essa etapa roda antes do filtro por
+perfil: quem era de Recife perdia a vaga de Recife para a de São Paulo, sem erro na execução.
+A segunda etapa, a de republicações, continua comparando o início da descrição dentro da
+mesma cidade.
+
 ### 10. Banco atrás de interface, com objeto nulo
 
 O `pipeline.py` fala com um `Repositorio` (`domain/ports.py`) e nunca com o Postgres. Há
@@ -248,12 +272,16 @@ Regras para não afetar quem já usa:
   ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
   Um envio bem-sucedido zera a contagem. Sem isso, quem bloqueia o bot vira custo diário eterno.
 - **Transação por operação**: as avaliações de um usuário entram juntas ou não entram, e o mesmo
-  vale para os envios e a ativação.
+  vale para os envios e a ativação. A conexão é aberta em `autocommit`, então cada bloco
+  `transaction()` confirma sozinho ao terminar. Sem isso, a primeira consulta abriria uma
+  transação implícita, os blocos virariam savepoints dentro dela e nada ficaria visível para
+  outra conexão até o processo fechar: a mensagem chegaria ao estudante antes de o token do
+  envio existir para o webhook, e a trava do perfil seria liberada antes da confirmação.
 - **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
   contrato com o site: ninguém altera tabela pelo painel.
-- **RLS** em todas as tabelas. Só `perfis` tem policy (cada usuário lê e edita a própria
-  linha, para o site com a chave anônima); `eventos_produto` aceita apenas os eventos web
-  permitidos para a sessão ou usuário atual. O job usa a string de conexão do Postgres, que
+- **RLS** em todas as tabelas. `perfis` e `eventos_produto` têm policy: cada usuário lê e
+  edita a própria linha, e `eventos_produto` aceita apenas os eventos web permitidos para a
+  sessão ou usuário atual. As demais ficam sem policy, o que já bloqueia o cliente. O job usa a string de conexão do Postgres, que
   ignora RLS, e ela só existe no `.env` e nos secrets.
 - **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
 - **Toda execução se reporta.** Ao terminar, o job manda ao chat de operação
@@ -319,6 +347,22 @@ O [catálogo](funcionalidades.md) detalha as capacidades. Publicação e valida�
 [guia](guia-publicacao-e-piloto.md), e as pendências no [plano geral](plano-geral.md).
 Novos adapters devem cumprir os contratos do domínio; medir cobertura, custo e comportamento
 antes de ativá-los no piloto.
+
+## O contrato entre a extração e a nota
+
+A IA e o pontuador são etapas separadas, e a fronteira entre elas já falhou em silêncio: o
+pontuador distingue proficiência ("Excel básico" não atende "Excel avançado") enquanto o
+prompt mandava apagar o nível da habilidade. Cada etapa passava nos próprios testes, porque
+o teste do pontuador montava a extração à mão, com o nível que o extrator na prática não
+entregava. Um requisito avançado chegava como "Excel" e era dado por atendido.
+
+O prompt agora manda preservar o nível quando o anúncio o declara, e
+`tests/test_contrato_extracao_pontuacao.py` cobre o par: os exemplos de nível citados no
+prompt precisam ser reconhecidos pelo pontuador, e apagar o nível precisa mudar a nota.
+Teste de etapa isolada não cobre esse tipo de falha; contrato entre etapas, sim.
+
+Mudar o prompt muda `VERSAO_DA_EXTRACAO` e invalida o cache: a execução seguinte reextrai as
+candidatas. É o preço de corrigir o formato do que está guardado.
 
 ## Viés conhecido do ranking
 
