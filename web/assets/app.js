@@ -235,7 +235,9 @@ async function carregarAreas() {
 }
 
 function textoDeBusca(texto) {
-  return normalizarTexto(texto).replace(/[^a-z0-9]+/g, " ").trim();
+  return normalizarTexto(texto.replace(/[\u2018\u2019\u02bc\u2032]/g, " "))
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function carregarCidades() {
