@@ -532,7 +532,11 @@ O que muda para quem opera:
   deixando sem mensagem quem vinha depois na fila.
 - **Travessão no nome do curso.** O Python descartava caracteres fora do ASCII, então "Letras –
   Português" virava "letras portugues" e ficava sem área, enquanto o site já tratava travessão
-  como hífen e gravava os interesses. macOS e iOS trocam " - " por " – " sozinhos.
+  como hífen e gravava os interesses. macOS e iOS trocam " - " por " – " sozinhos. O inverso
+  também acontecia: o site só conhecia o "–", e "Direito — Bacharelado" (travessão longo, que o
+  macOS põe no lugar de "--") ficava sem área no cadastro e gravava o perfil sem interesses. Desde
+  10/09/2026 o `normalizarTexto` do site espelha o `normalizar` do Python: os mesmos cinco traços
+  viram hífen, caractere fora do ASCII sai e espaços se juntam; a fixture de paridade tem as formas.
 - **`python -m radar descartes --amostra 30 --saida arquivo.json`** grava uma amostra do que o
   pré-filtro cortou, com o motivo, para rotular à mão. É o lado que o `julgar` não alcança: ele
   mede a vaga entregue, nunca a boa vaga que sumiu antes da IA.
