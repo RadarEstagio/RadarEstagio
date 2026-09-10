@@ -654,7 +654,7 @@ function entrarNoModoEdicao() {
   form.elements.senha.required = false;
   document.querySelector("#signup-consent").hidden = true;
   form.elements.aceitou_termos.required = false;
-  submitProfile.textContent = "Salvar alterações";
+  submitLabel.textContent = "Salvar alterações";
   atualizarPassosAtivos();
 }
 

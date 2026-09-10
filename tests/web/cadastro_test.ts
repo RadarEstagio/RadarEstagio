@@ -1445,3 +1445,22 @@ Deno.test("normalizacao de curso do site bate com a do backend", async () => {
     a.close();
   }
 });
+
+Deno.test("editar o perfil preserva o rótulo e o indicador de envio do botão", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+
+    assert.equal(doc.querySelector("#submit-label").textContent, "Salvar alterações");
+    assert.ok(doc.querySelector("#submit-profile .button-spinner"));
+
+    doc.querySelector("#logout-account").click();
+    await settle();
+    a.w.setAuthMode("signup");
+
+    assert.equal(doc.querySelector("#submit-label").textContent, "Criar conta e continuar");
+  } finally { a.close(); }
+});
