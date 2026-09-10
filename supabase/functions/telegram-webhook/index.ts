@@ -18,6 +18,7 @@ import {
 } from "./feedback.ts";
 import { type EnvioDoToken, responderConsultaDeFeedback } from "./processar_feedback.ts";
 import { dispararEntregaImediata } from "./entrega_imediata.ts";
+import { cliqueQuePrecisaDeResposta, interpretarCorpo } from "./atualizacao.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
 const CODIGO_DE_VALOR_DUPLICADO = "23505";
@@ -171,8 +172,18 @@ Deno.serve(async (requisicao) => {
   if (requisicao.headers.get(CABECALHO_DO_SEGREDO) !== segredoDoWebhook) {
     return new Response(null, { status: 401 });
   }
-  const atualizacao = await requisicao.json();
+  const atualizacao = await interpretarCorpo(requisicao);
+  if (!atualizacao) return new Response(null, { status: 200 });
   const consulta = extrairClique(atualizacao);
+  if (!consulta) {
+    const cliqueSemTratamento = cliqueQuePrecisaDeResposta(atualizacao);
+    if (cliqueSemTratamento) {
+      await chamarTelegram("answerCallbackQuery", {
+        callback_query_id: cliqueSemTratamento,
+      });
+      return new Response(null, { status: 200 });
+    }
+  }
   if (consulta) {
     return await responderConsultaDeFeedback(consulta, {
       envioDoToken,
