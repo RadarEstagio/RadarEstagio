@@ -693,7 +693,9 @@ ligação das automações, porque cada uma guardava o dono no nome:
   antes do próximo push** — é o que torna visível a regra de nunca aplicar pelo painel.
 - **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
-  tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
+  tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade. Desde 10/09/2026
+  a cidade é escolhida na lista de municípios do IBGE (`web/assets/cidades.json`, gerada por
+  `scripts/gerar_cidades.py`) e gravada como `Nome, UF`; a regra é do site, o banco não a cobra.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
 - O `TELEGRAM_WEBHOOK_SECRET` vive em três lugares que precisam do MESMO valor: o
   `setWebhook` no Telegram, os secrets do Supabase (`supabase secrets set`) e os `.env`

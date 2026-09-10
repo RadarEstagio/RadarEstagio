@@ -388,6 +388,18 @@ p, h1, h2, h3 { margin-top: 0; }
 .skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
 .skill-picker { margin-bottom: 22px; }
 .catalog-notice { margin: -8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.field .catalog-notice { margin: 0; }
+.city-combobox { position: relative; }
+.city-combobox input { padding-inline-end: 52px; }
+.city-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 9px; color: var(--ink-soft); background: transparent; cursor: pointer; }
+.city-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: transform 160ms ease; }
+.city-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.city-options { position: absolute; z-index: 5; inset-inline: 0; inset-block-start: calc(100% + 6px); max-height: 280px; margin: 0; padding: 6px; overflow-y: auto; overscroll-behavior: contain; list-style: none; border: 1px solid var(--line); border-radius: 12px; background: var(--white); box-shadow: 0 14px 36px rgba(23, 32, 26, .14); }
+.city-options li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; }
+.city-options li span + span { color: var(--muted); font-size: 12px; font-weight: 700; }
+.city-options li[aria-selected="true"] { background: var(--paper); }
+.city-options li[aria-disabled="true"] { color: var(--muted); font-size: 13px; cursor: default; }
+@media (hover: hover) { .city-toggle:hover { color: var(--accent-deep); background: var(--paper); } .city-options li:not([aria-disabled="true"]):hover { background: var(--paper); } }
 .skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .skill-picker button:hover, .skill-picker button.is-selected { border-color: var(--accent); color: var(--accent); background: rgba(62,124,89,.08); }
 .selected-skills { min-height: 0; margin-top: 14px; }

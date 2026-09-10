@@ -58,6 +58,16 @@ Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `pres
 Editar perfil e preferências usa `update` na própria linha, limitado por grants e RLS.
 Não usar `upsert` como substituto do fluxo de criação.
 
+`cidade` é um município do IBGE no formato `Nome, UF` (`Rio de Janeiro, RJ`), escolhido na lista
+de `web/assets/cidades.json`, que sugere as cidades conforme a pessoa digita, sem exigir acento.
+O site recusa texto fora da lista e grava a forma da lista quando a pessoa digita sem acento ou
+sem o estado e o nome é de uma cidade só; nome repetido em mais de um estado pede a escolha na
+lista. O banco continua aceitando qualquer texto de 2 a 120 caracteres: a lista é regra do
+cadastro, não do schema, e o pipeline só usa o nome antes da vírgula. Se a lista não carregar, o
+cadastro aceita o texto digitado e avisa, para uma falha de rede não custar a conta. A lista vem
+de `uv run python scripts/gerar_cidades.py`, que lê os municípios e a população do Censo 2022
+nas APIs do IBGE; a população só ordena as sugestões. Regerar quando o IBGE criar município.
+
 `habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
 após retirar espaços nas pontas. Lista vazia significa que o estudante ainda não informou
 habilidades; não é convertida em texto sentinela nem implica incapacidade. O caminho de publicação
