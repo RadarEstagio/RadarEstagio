@@ -522,6 +522,21 @@ real continua valendo. Perfil sem habilidade cadastrada recebia nota alta sem na
 compatibilidade observada de informação ausente; a resposta foi um aviso na mensagem
 ("Nota calculada sem habilidades no seu perfil"), não um peso novo.
 
+### Entrega no Telegram (10/09/2026)
+
+- **Falha no meio da mensagem não apaga o que chegou.** A mensagem de sete vagas vai em várias
+  partes; se a segunda falhava, nada era gravado e no dia seguinte tudo voltava. O notificador
+  informa quantas partes o Telegram aceitou, `recomendacoes_por_parte` diz quais vagas estavam
+  nelas, e só essas entram no histórico. Efeito colateral aceito: o teclado de feedback fica na
+  última parte, então vaga entregue numa falha parcial fica sem botão.
+- **Texto vindo da fonte tem teto.** A divisão só corta no separador entre vagas, então um bloco
+  grande passava de 4096 e o Telegram recusava a mensagem inteira com 400, que ainda contava como
+  falha de envio do usuário. Título, empresa, localização, requisitos, pontos, avisos e alerta
+  são cortados **depois** do escape, para não partir uma entidade HTML. Pior caso medido: 3216
+  caracteres por bloco.
+- **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
+  chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
+
 ### Juiz de recomendações: LLM as a judge (09/09/2026)
 
 `python -m radar julgar --dias 7 --amostra 30` pede a um **segundo modelo** que julgue, às
