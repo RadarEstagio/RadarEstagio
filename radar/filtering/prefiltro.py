@@ -1,10 +1,10 @@
 import re
-import unicodedata
 
 from radar.domain.areas import (
     area_do_curso,
     descricao_e_da_area,
     nomes_do_curso,
+    normalizar,
     precedido_de_contexto_de_formacao,
     titulo_e_da_area,
     titulo_e_de_outra_area,
@@ -39,11 +39,6 @@ PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
 )
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
 PALAVRAS_ANTES_DA_EXIGENCIA = 8
-
-
-def normalizar(texto: str) -> str:
-    sem_acentos = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
-    return sem_acentos.casefold()
 
 
 def nao_e_estagio(vaga: Vaga) -> bool:
