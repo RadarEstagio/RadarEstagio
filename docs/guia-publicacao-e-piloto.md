@@ -175,7 +175,9 @@ Falha vista em 09/09: o Site URL estava em `https://radarestagio.com` sem o dom�
 ao Pages (o DNS só tem MX, do e-mail). A conta era confirmada no banco, o perfil era criado,
 mas a pessoa caía em "não é possível acessar esse site" e, ao clicar de novo, em
 `otp_expired`. Quem confirmou nesse período precisa entrar pelo site com e-mail e senha para
-ver o botão do Telegram.
+ver o botão do Telegram. Corrigido no painel na mesma noite, com Site URL e Redirect URLs em
+`radarestagio.pages.dev`; o cadastro seguinte confirmou e voltou ao site logado, na tela
+"Agora, ative as entregas", com o botão do Telegram.
 
 **Concluído quando:** a confirmação volta ao site publicado e mostra o botão do Telegram. O
 teste em outro aparelho deve ser repetido após qualquer troca de endereço.
