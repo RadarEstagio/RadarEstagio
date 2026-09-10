@@ -38,7 +38,7 @@ class ExtratorEmLotes:
                 logger.warning(
                     "Avaliador indisponível ou cota excedida; "
                     "%d de %d vagas ficaram sem extração: %s",
-                    len(vagas) - len(resultados),
+                    len(vagas_sem_resultado(vagas, resultados)),
                     len(vagas),
                     erro,
                 )

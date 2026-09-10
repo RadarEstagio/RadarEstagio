@@ -213,3 +213,25 @@ def test_falha_temporaria_numa_vaga_nao_apaga_o_que_o_lote_ja_extraiu():
 
     assert ids_de(resultados) == ["1"]
     assert interno.lotes_recebidos.count(["1", "2"]) == 1
+
+
+class ExtratorQueRepeteEDepoisEstouraACota:
+    def __init__(self) -> None:
+        self.chamadas = 0
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.chamadas += 1
+        if self.chamadas > 1:
+            raise CotaDeAvaliacaoExcedida("cota diária", aguardar_segundos=999)
+        extracoes = [
+            ExtracaoDaVaga(id_vaga=vaga.identidade(), area_da_vaga="computacao") for vaga in lote
+        ]
+        return extracoes + [extracoes[0]]
+
+
+def test_log_da_cota_conta_as_vagas_sem_extracao_e_nao_as_extracoes_devolvidas(caplog):
+    caplog.set_level("WARNING")
+
+    ExtratorEmLotes(ExtratorQueRepeteEDepoisEstouraACota(), 2).extrair(vagas(4))
+
+    assert "2 de 4 vagas ficaram sem extração" in caplog.text

@@ -244,8 +244,18 @@ def test_gabarito_avisa_quantos_rotulos_ficaram_fora_da_janela(monkeypatch, caps
     arquivo.write_text(
         json.dumps(
             [
-                {"perfil_id": str(PERFIL_A), "id_externo": "1", "relevante": True},
-                {"perfil_id": str(PERFIL_A), "id_externo": "99", "relevante": False},
+                {
+                    "perfil_id": str(PERFIL_A),
+                    "fonte": "adzuna",
+                    "id_externo": "1",
+                    "relevante": True,
+                },
+                {
+                    "perfil_id": str(PERFIL_A),
+                    "fonte": "adzuna",
+                    "id_externo": "99",
+                    "relevante": False,
+                },
             ]
         )
     )

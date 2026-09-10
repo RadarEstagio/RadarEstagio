@@ -60,15 +60,19 @@ def test_exporta_amostra_com_campos_para_rotular_e_le_de_volta(tmp_path: Path):
     rotulos = carregar_gabarito(caminho)
 
     assert rotulos == {
-        (PERFIL, itens[0]["id_externo"]): True,
-        (PERFIL, itens[1]["id_externo"]): False,
+        (PERFIL, "adzuna", itens[0]["id_externo"]): True,
+        (PERFIL, "adzuna", itens[1]["id_externo"]): False,
     }
     assert json.loads(caminho.read_text())[2]["relevante"] is None
 
 
 def test_seleciona_so_as_entregas_rotuladas_e_mede_a_concordancia():
     entregas = [entrega(n) for n in range(1, 5)]
-    rotulos = {(PERFIL, "1"): True, (PERFIL, "2"): False, (PERFIL, "3"): True}
+    rotulos = {
+        (PERFIL, "adzuna", "1"): True,
+        (PERFIL, "adzuna", "2"): False,
+        (PERFIL, "adzuna", "3"): True,
+    }
 
     escolhidas = selecionar_do_gabarito(entregas, rotulos)
     resultado = julgar_entregas(escolhidas, JuizFalso(relevantes={"1", "2"}), 10, 1, "m", 7)
@@ -103,13 +107,71 @@ def test_gabarito_ausente_ou_quebrado_vira_erro_claro(tmp_path: Path):
 
 
 def test_conta_os_rotulos_que_ficaram_fora_da_janela_de_dias():
-    rotulos = {(UUID(int=1), "1"): True, (UUID(int=1), "2"): False, (UUID(int=2), "3"): True}
+    rotulos = {
+        (UUID(int=1), "adzuna", "1"): True,
+        (UUID(int=1), "adzuna", "2"): False,
+        (UUID(int=2), "adzuna", "3"): True,
+    }
 
     assert rotulos_fora_da_janela(rotulos, []) == 3
     assert rotulos_fora_da_janela(rotulos, [entrega(1)]) == 2
 
 
 def test_gabarito_inteiro_dentro_da_janela_nao_gera_aviso():
-    rotulos = {(UUID(int=1), "1"): True}
+    rotulos = {(UUID(int=1), "adzuna", "1"): True}
 
     assert rotulos_fora_da_janela(rotulos, [entrega(1)]) == 0
+
+
+def entrega_de(numero: int, fonte: str) -> EntregaParaJulgar:
+    base = entrega(numero)
+    return base.model_copy(update={"vaga": base.vaga.model_copy(update={"fonte": fonte})})
+
+
+def test_rotulo_fora_da_janela_nao_some_quando_duas_fontes_repetem_o_id():
+    rotulos = {(PERFIL, "adzuna", "1"): True, (PERFIL, "adzuna", "2"): False}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+
+    assert rotulos_fora_da_janela(rotulos, dentro) == 1
+
+
+def test_contagem_de_rotulos_fora_nunca_fica_negativa():
+    rotulos = {(PERFIL, "adzuna", "1"): True}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+
+    assert rotulos_fora_da_janela(rotulos, dentro) == 0
+
+
+def test_rotulos_fora_mais_rotulos_com_entrega_somam_o_gabarito():
+    rotulos = {(PERFIL, "adzuna", str(n)): True for n in range(1, 6)}
+    dentro = [entrega_de(1, "adzuna"), entrega_de(1, "gupy"), entrega_de(3, "adzuna")]
+    com_entrega = {e.chave() for e in dentro}
+
+    assert rotulos_fora_da_janela(rotulos, dentro) + len(com_entrega & rotulos.keys()) == 5
+
+
+def test_rotulo_de_uma_fonte_nao_seleciona_a_vaga_de_outra_com_o_mesmo_id():
+    rotulos = {(PERFIL, "adzuna", "1"): True}
+    entregas = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+
+    escolhidas = selecionar_do_gabarito(entregas, rotulos)
+
+    assert [e.vaga.fonte for e in escolhidas] == ["adzuna"]
+
+
+def test_relatorio_aplica_o_rotulo_humano_a_uma_entrega_so():
+    entregas = [entrega_de(1, "adzuna"), entrega_de(1, "gupy")]
+    rotulos = {(PERFIL, "adzuna", "1"): True}
+    resultado = julgar_entregas(entregas, JuizFalso(relevantes={"1"}), 10, 1, "m", 7)
+
+    assert "1/1 concordam" in formatar_julgamento(resultado, rotulos)
+
+
+def test_item_do_gabarito_sem_a_fonte_vira_erro_claro(tmp_path: Path):
+    arquivo = tmp_path / "gabarito-antigo.json"
+    arquivo.write_text(
+        json.dumps([{"perfil_id": str(PERFIL), "id_externo": "1", "relevante": True}])
+    )
+
+    with pytest.raises(ErroDeArmazenamento, match="fonte"):
+        carregar_gabarito(arquivo)

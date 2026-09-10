@@ -1,9 +1,9 @@
 import re
-from datetime import date, datetime
+from datetime import datetime
 from html import escape
 from urllib.parse import urlsplit
-from zoneinfo import ZoneInfo
 
+from radar.domain.datas import data_de_publicacao, data_local
 from radar.domain.models import (
     BotaoDeFeedback,
     MotivoDeRecusa,
@@ -12,7 +12,6 @@ from radar.domain.models import (
     Vaga,
 )
 
-FUSO_DA_ENTREGA = ZoneInfo("America/Sao_Paulo")
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 LIMITE_DO_TITULO = 120
@@ -57,10 +56,6 @@ def escapar_limitado(texto: str, limite: int) -> str:
 
 def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
     return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
-
-
-def data_local(momento: datetime) -> date:
-    return momento.astimezone(FUSO_DA_ENTREGA).date()
 
 
 def formatar_mensagem(
@@ -155,7 +150,8 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
         f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
         f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
         f" · {escape(rotulo_modalidade(vaga))}",
-        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
+        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))}"
+        f" · Publicada em {data_de_publicacao(vaga.publicada_em):%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
     if resultado.requisitos_atendidos:
