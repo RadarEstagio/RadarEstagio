@@ -377,8 +377,8 @@ p, h1, h2, h3 { margin-top: 0; }
 .form-message:empty::before { content: none; }
 .form-message-aviso { color: var(--accent-deep); background: var(--paper-deep); }
 .form-message-aviso::before { content: "i"; background: var(--accent); }
-.success-state { max-width: 510px; padding-top: 45px; }.success-state[hidden] { display: none; }.success-icon { width: 66px; height: 66px; display: grid; place-items: center; margin-bottom: 30px; border-radius: 50%; color: var(--accent-deep); background: var(--paper-deep); font-size: 29px; font-weight: 800; }.success-state h2:focus:not(:focus-visible), .account-state h2:focus:not(:focus-visible) { outline: none; }
-.success-state h2 { margin-bottom: 16px; font-size: 38px; line-height: 1.05; letter-spacing: -.05em; }.success-state > p:not(.eyebrow) { margin-bottom: 28px; color: var(--muted); }.success-actions { display: flex; flex-wrap: wrap; gap: 14px; }.success-actions [hidden] { display: none; }
+.success-state { display: flex; flex-direction: column; align-items: center; max-width: 560px; margin-inline: auto; padding-top: 45px; text-align: center; }.success-state[hidden] { display: none; }.success-icon { width: 66px; height: 66px; display: grid; place-items: center; margin-bottom: 18px; border-radius: 50%; color: var(--accent-deep); background: var(--paper-deep); font-size: 29px; font-weight: 800; }.success-state h2:focus:not(:focus-visible), .account-state h2:focus:not(:focus-visible) { outline: none; }
+.success-state .eyebrow { margin-bottom: 10px; }.success-state h2 { margin-bottom: 12px; font-size: 38px; line-height: 1.05; letter-spacing: -.05em; }.success-state > p:not(.eyebrow) { max-width: 44ch; margin-bottom: 30px; color: var(--muted); }.success-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }.success-actions [hidden] { display: none; }
 @media (max-width: 980px) {
   .desktop-nav { display: none; }
   .transparency-layout { grid-template-columns: 1fr; }
@@ -429,4 +429,5 @@ p, h1, h2, h3 { margin-top: 0; }
 @media (max-width: 720px) {
   #account-content .dialog-form-area { padding: 24px 20px; }
   .account-actions .button, .account-danger .button { flex: 1 1 auto; }
+  .success-actions { flex-direction: column; align-items: stretch; width: 100%; }
 }
