@@ -213,7 +213,8 @@ ranking automaticamente. Regras e métricas têm finalidades diferentes.
 
 #### 01. Coleta por múltiplas fontes
 
-Adzuna e Gupy por padrão; buscas consideram as cidades dos perfis e a maior cidade da região de cada um.
+Adzuna e Gupy por padrão; buscas consideram a cidade de cada perfil presencial, híbrido ou
+indiferente e a maior cidade da região imediata dela. Perfil remoto não acrescenta cidade à busca.
 
 **Código de referência:** `radar/collectors/`.
 

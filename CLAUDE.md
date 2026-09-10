@@ -21,8 +21,9 @@ interesse (teto 65 e aviso próprio), tudo por usuário e sem IA; "pedem demais"
 modalidade" e o reforço positivo de "vaga útil" ficam para a v2, com dados do piloto.
 
 Pendências da Fase 2: validar o produto com estudantes. A cota do Gemini deixou de ser pendência
-em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o custo não
-cresce com a coorte e billing não é necessário para o piloto.
+em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o trabalho
+não se repete por usuário. Desde 10/09/2026 a API do Gemini está no plano pago: a cota diária
+deixou de ser o limite, e o que pesa é o custo por requisição e o tempo de execução.
 
 ## Stack
 
@@ -196,8 +197,8 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
 
 - Padrão `gemini-3.6-flash` (`GEMINI_MODELO`). O `gemini-2.5-flash` foi recusado pela API como
   indisponível para contas novas.
-- A cota gratuita do `gemini-3.6-flash` é de 20 requisições por minuto, mas os limites variam
-  por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
+- O projeto está no plano pago desde 10/09/2026. Na cota gratuita, o `gemini-3.6-flash` tinha 20
+  requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
 - **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
@@ -451,7 +452,7 @@ sondas executáveis. O que mudou:
   anúncios reais (36 de 202 extrações); anúncio que aceitava só ele ficava incompatível (teto 35)
   para todo estudante de computação. A normalização agora tira um prefixo por vez e para no
   primeiro nome que o catálogo ou os sinônimos conhecem; o site espelha a regra, e
-  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (52 formas de escrever
+  `tests/fixtures/cursos_normalizados.json` trava a paridade dos dois lados (59 formas de escrever
   o curso). Entraram sinônimos vistos nos anúncios: Sistemas da Informação, SI, Redes, Data
   Science, T.I, Gestão da TI, Processamento de Dados. Em 10/09/2026 entraram Ciências Jurídicas
   e Ciências Jurídicas e Sociais: a vaga que aceitava só esse nome dava curso incompatível (teto
@@ -542,6 +543,12 @@ O que muda para quem opera:
   macOS põe no lugar de "--") ficava sem área no cadastro e gravava o perfil sem interesses. Desde
   10/09/2026 o `normalizarTexto` do site espelha o `normalizar` do Python: os mesmos cinco traços
   viram hífen, caractere fora do ASCII sai e espaços se juntam; a fixture de paridade tem as formas.
+  A mesma função serve a busca de cidade: apagar o que não é ASCII fez o apóstrofo curvo (’ ‘ ʼ)
+  sumir ("d’Oeste" virava "doeste"), e as 47 cidades com apóstrofo digitadas assim deixaram de
+  ser achadas; com "'" ou "´" continuavam funcionando. A correção fica em `textoDeBusca`, que
+  é só da cidade e troca o apóstrofo curvo por espaço antes de normalizar. Pôr a troca em
+  `normalizarTexto` quebrava a paridade do curso ("Pedagogia’" ficava sem área no site), e a
+  fixture tem essas formas. Mudou `normalizarTexto`, teste a cidade junto com o curso.
 - **`python -m radar descartes --amostra 30 --saida arquivo.json`** grava uma amostra do que o
   pré-filtro cortou, com o motivo, para rotular à mão. É o lado que o `julgar` não alcança: ele
   mede a vaga entregue, nunca a boa vaga que sumiu antes da IA.
@@ -676,7 +683,8 @@ Adzuna, sem gastar extração; (2) "Banco de Talentos" não é vaga aberta e che
 
 A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
 escondia quase tudo (55 vagas em 5 dias no país inteiro). A busca passou a ser por termos, sem
-categoria, repetida por cidade de perfil presencial ou híbrido; a localização vem de
+categoria, repetida por cidade de perfil presencial, híbrido ou indiferente (desde 10/09/2026
+também pela maior cidade da região imediata do perfil; remoto não acrescenta cidade); a localização vem de
 `location.area` (cidade, estado), então bairro não quebra o filtro de cidade. A Gupy deixou de
 buscar por termos no título e traz todos os estágios do país e da cidade. Efeito medido: perfil
 Rio presencial saiu de 2 para 55 candidatas em um dia.
