@@ -16,11 +16,19 @@ class Area:
     subareas: tuple[tuple[str, str], ...]
     cursos_intercambiaveis: bool = False
     habilidades: tuple[str, ...] = ()
+    cursos_sugeridos: tuple[str, ...] = ()
 
 
 AREAS = (
     Area(
         nome=COMPUTACAO,
+        cursos_sugeridos=(
+            "Ciência da Computação",
+            "Engenharia de Software",
+            "Análise e Desenvolvimento de Sistemas",
+            "Sistemas de Informação",
+            "Ciência de Dados",
+        ),
         habilidades=(
             "Python",
             "JavaScript",
@@ -122,6 +130,7 @@ AREAS = (
     ),
     Area(
         nome="direito",
+        cursos_sugeridos=("Direito",),
         habilidades=(
             "Redação",
             "Pesquisa jurídica",
@@ -151,6 +160,12 @@ AREAS = (
     ),
     Area(
         nome="administracao",
+        cursos_sugeridos=(
+            "Administração",
+            "Administração Pública",
+            "Processos Gerenciais",
+            "Secretariado Executivo",
+        ),
         habilidades=(
             "Excel",
             "Pacote Office",
@@ -194,6 +209,12 @@ AREAS = (
     ),
     Area(
         nome="financas",
+        cursos_sugeridos=(
+            "Ciências Contábeis",
+            "Ciências Econômicas",
+            "Gestão Financeira",
+            "Ciências Atuariais",
+        ),
         habilidades=(
             "Excel",
             "Power BI",
@@ -238,6 +259,13 @@ AREAS = (
     ),
     Area(
         nome="marketing",
+        cursos_sugeridos=(
+            "Marketing",
+            "Publicidade e Propaganda",
+            "Jornalismo",
+            "Design Gráfico",
+            "Comunicação Social",
+        ),
         habilidades=(
             "Redes sociais",
             "Canva",
@@ -289,6 +317,11 @@ AREAS = (
     ),
     Area(
         nome="pessoas",
+        cursos_sugeridos=(
+            "Psicologia",
+            "Gestão de Recursos Humanos",
+            "Gestão de Pessoas",
+        ),
         habilidades=(
             "Recrutamento",
             "Entrevistas",
@@ -329,6 +362,11 @@ AREAS = (
     ),
     Area(
         nome="comercial",
+        cursos_sugeridos=(
+            "Comércio Exterior",
+            "Relações Internacionais",
+            "Gestão Comercial",
+        ),
         habilidades=(
             "Vendas",
             "Negociação",
@@ -367,6 +405,11 @@ AREAS = (
     ),
     Area(
         nome="logistica",
+        cursos_sugeridos=(
+            "Logística",
+            "Gestão de Logística",
+            "Transportes",
+        ),
         habilidades=(
             "Excel",
             "Controle de estoque",
@@ -395,6 +438,13 @@ AREAS = (
     ),
     Area(
         nome="engenharias",
+        cursos_sugeridos=(
+            "Engenharia Civil",
+            "Engenharia de Produção",
+            "Engenharia Mecânica",
+            "Engenharia Elétrica",
+            "Arquitetura e Urbanismo",
+        ),
         habilidades=(
             "AutoCAD",
             "Excel",
@@ -454,6 +504,13 @@ AREAS = (
     ),
     Area(
         nome="saude",
+        cursos_sugeridos=(
+            "Enfermagem",
+            "Fisioterapia",
+            "Nutrição",
+            "Farmácia",
+            "Educação Física",
+        ),
         habilidades=(
             "Atendimento ao paciente",
             "Biossegurança",
@@ -496,6 +553,12 @@ AREAS = (
     ),
     Area(
         nome="educacao",
+        cursos_sugeridos=(
+            "Pedagogia",
+            "Letras",
+            "História",
+            "Geografia",
+        ),
         habilidades=(
             "Didática",
             "Comunicação",
@@ -525,6 +588,12 @@ AREAS = (
     ),
     Area(
         nome="turismo",
+        cursos_sugeridos=(
+            "Turismo",
+            "Hotelaria",
+            "Gastronomia",
+            "Eventos",
+        ),
         habilidades=(
             "Atendimento ao cliente",
             "Inglês",
@@ -793,6 +862,7 @@ def catalogo_do_site() -> dict:
                 "cursos": list(area.cursos),
                 "subareas": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in area.subareas],
                 "habilidades": list(area.habilidades),
+                "cursos_sugeridos": list(area.cursos_sugeridos),
             }
             for area in AREAS
         ],
