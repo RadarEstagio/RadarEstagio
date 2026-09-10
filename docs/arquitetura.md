@@ -48,7 +48,10 @@ do curso desta pessoa?" e a pontuação compara a área extraída da vaga com a 
 Desde a revisão de 08/09, menção ao curso do perfil ou abertura a qualquer formação na
 descrição impede o veto antecipado por título: a extração e a compatibilidade verificam os
 requisitos depois. Nomes de cursos são comparados inteiros, com aliases explícitos e remoção
-de prefixos de formação. Um nome desconhecido não herda a área de um trecho do nome.
+de prefixos de formação. Um nome desconhecido não herda a área de um trecho do nome. A menção
+na descrição vale também pelos sinônimos de nome composto que o catálogo converte no curso
+("Ciências Contábeis" para quem cursa Contabilidade); sigla e palavra solta, como "si" e
+"redes", ficam de fora porque aparecem em texto comum.
 Quando algum perfil não tem área reconhecida, Adzuna e Jooble fazem busca geral de estágio,
 respeitando os limites de paginação existentes; isso não garante cobertura integral.
 
@@ -132,7 +135,8 @@ existe por custo: o prompt não contém perfil algum, então uma vaga é extraí
 extração serve todos os usuários. O custo de IA passou de O(usuários × vagas) para O(vagas), e
 o vigésimo usuário não custa nada.
 
-- **Por que Gemini**: camada gratuita, suficiente para validar o produto.
+- **Por que Gemini**: começou pela camada gratuita, suficiente para validar o produto; desde
+  10/09/2026 o projeto usa o plano pago.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA devolve JSON no formato
   `{id_vaga, area_da_vaga, areas_da_vaga, modalidade, cursos_aceitos, aceita_qualquer_curso,
   periodo_minimo, experiencia_minima_anos, experiencia_desejavel, habilidades_obrigatorias,
@@ -337,7 +341,8 @@ interações reais no Telegram; o contrato não fabrica comportamento futuro.
 
 ## Custo de IA por usuário
 
-A extração compartilhada é o que torna a coorte do piloto viável na cota gratuita. Antes, cada
+A extração compartilhada é o que tornou a coorte do piloto viável na cota gratuita, antes do
+plano pago de 10/09/2026. Antes, cada
 perfil reavaliava as mesmas vagas: 20 estudantes no primeiro dia pediam cerca de 120 requisições
 contra um limite de 20 por minuto, e o job morria no timeout antes de atender a fila inteira —
 sempre pelos usuários mais recentes, porque a fila é ordenada por `criado_em`.

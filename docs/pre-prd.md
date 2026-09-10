@@ -290,7 +290,7 @@ alterado por opinião; a regra é não ajustar sem `vaga_irrelevante` real.
 | Adzuna | Fonte oficial de vagas | API autenticada; 4.988 vagas disponíveis pelos termos das 12 áreas (08/09) |
 | Gupy | Segunda fonte | Endpoint público interno, sem garantia contratual |
 | Jooble | Terceira fonte, desligada | Sondagem de 05/09: +19 vagas inéditas no Rio (~35%) |
-| Gemini API (`gemini-3.6-flash`) | Extração de fatos no Actions | Cota gratuita de 20 requisições/min; incidente às 16:13 de 08/09 |
+| Gemini API (`gemini-3.6-flash`) | Extração de fatos no Actions | Plano pago desde 10/09/2026; antes, cota gratuita de 20 requisições/min e incidente às 16:13 de 08/09 |
 | Antigravity (`agy`) | Extração local para desenvolvimento | Não disponível no Actions |
 | Telegram Bot API | Entrega, feedback e resumo de operação | 154 entregas reais em 12 dias |
 | PostgreSQL/Supabase | Perfis, vagas, extrações, avaliações, envios e eventos | `0001`–`0017` aplicadas e conferidas com `migration list` |
@@ -378,6 +378,7 @@ conversa produzem sinal melhor que teste A/B.
 
 1. Habilitar billing no Gemini ou aceitar a cota gratuita, sabendo que a primeira execução com
    muitas áreas pode estourar 20 requisições por minuto e deixar vagas sem extração?
+   **Decidido em 10/09/2026: billing habilitado.**
 2. Ligar a Jooble em produção (+35% de cobertura no Rio, descrição curta) ou esperar sinal de
    falta de vaga em alguma área?
 3. Quem da área revisa as listas de habilidades sugeridas e as subáreas de cada uma das 11 áreas
@@ -396,7 +397,7 @@ conversa produzem sinal melhor que teste A/B.
 
 | Vulnerabilidade | Impacto | Situação em 08/09 | Mitigação ou decisão necessária |
 | --- | --- | --- | --- |
-| Cota gratuita do Gemini | Alto | Estouro real às 16:13 de 08/09: 0 de 36 vagas extraídas | Espera e repetição do mesmo lote, resumo denuncia "vagas sem extração"; decidir billing (10.2.1) |
+| Cota gratuita do Gemini | Alto | Estouro real às 16:13 de 08/09: 0 de 36 vagas extraídas | Espera e repetição do mesmo lote, resumo denuncia "vagas sem extração"; billing habilitado em 10/09/2026 |
 | Reextração total em 09/09 | Alto | Cache versionado por prompt recomeça do zero | Acompanhar o resumo das 07:23; vagas sem extração voltam no dia seguinte |
 | Matching errado nas áreas novas | Alto | Sem julgamento humano; nove falhas corrigidas por revisão adversarial | H2 por área e revisão das listas por quem é da área |
 | Cobertura irregular por área | Alto | Medida em quantidade, não em relevância | H3 com perfis de áreas distintas |
@@ -445,7 +446,7 @@ vagas, editar perfil, pausar e retomar, excluir conta. As que continuam abertas:
 | Dimensão | Avaliação | Evidência | Condição restante |
 | --- | --- | --- | --- |
 | Técnica | **Favorável** | Ciclo completo em produção há 12 dias; expansão implementada com catálogo único | Acompanhar a primeira execução com reextração total |
-| Financeira | **Favorável no piloto** | Serviços gratuitos suportam o volume; custo não cresce com usuários | Decidir billing do Gemini antes de ampliar áreas ativas |
+| Financeira | **Favorável no piloto** | Serviços gratuitos suportam o volume; custo não cresce com usuários | Billing do Gemini habilitado em 10/09/2026 |
 | Operacional | **Favorável com ressalvas** | Automação, resumo diário e alertas de vagas sem extração | Observar 7 dias após a expansão; renovação de token registrada |
 | Prazo | **Favorável** | Entrega de 02/09 realizada; expansão e publicação concluídas em 08/09 | Combinar a próxima entrega |
 | Privacidade | **Favorável** | Token de uso único, RLS, exportação e exclusão implementadas | Aprovar os textos legais |
@@ -483,7 +484,8 @@ Se cobertura, confiança ou um dos marcos de ativação falhar em alguma área, 
 4. **Convidar colegas** de ao menos três áreas distintas; anotar onde travaram e se alguma vaga
    serviu.
 5. **Revisar as listas** de subáreas e habilidades por área com quem é da área.
-6. **Decidir** billing do Gemini e Jooble com os dados da primeira semana.
+6. **Decidir** a Jooble com os dados da primeira semana (o billing do Gemini foi habilitado em
+   10/09/2026).
 7. **Próxima entrega:** apresentar a expansão, as evidências da seção 8 e as hipóteses ainda
    abertas, sem apresentar prova técnica como validação de produto.
 
@@ -492,7 +494,8 @@ Se cobertura, confiança ou um dos marcos de ativação falhar em alguma área, 
 1. A conclusão "viável e publicado, produto ainda não validado, expansão ainda não testada com
    ninguém das áreas novas" representa o entendimento do grupo?
 2. Quem convida colegas de quais áreas, e até quando?
-3. Billing do Gemini: aceitar vagas sem extração em dias de pico ou pagar?
+3. Billing do Gemini: aceitar vagas sem extração em dias de pico ou pagar? **Decidido em
+   10/09/2026: pagar.**
 4. Quem revisa subáreas e habilidades de cada área?
 5. Quais três evidências serão mostradas ao professor na próxima entrega?
 6. Domínio próprio, Turnstile e textos legais entram antes de divulgar?
