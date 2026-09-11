@@ -201,6 +201,17 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
+- **A extração tem prazo** (10/09/2026, G01 da auditoria do agendamento, PR #54). Ela roda antes
+  de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
+  mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
+  `PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
+  de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
+  extração". Cada chamada ao Gemini leva `GEMINI_TIMEOUT_SEGUNDOS` (padrão 120, extrator e juiz),
+  e o estouro é tratado como o 504: espera e repete o mesmo lote dentro do prazo. As candidatas
+  vão para a extração intercaladas por usuário, para o corte não cair sempre em quem entrou por
+  último. O job tem 30 minutos e o passo do radar 28. Números que sustentam os valores: ~20 s por
+  requisição medidos em 10/09 sem espera de cota, e ~17 s por usuário na entrega; em 30 minutos
+  cabem 10 de extração, a coleta e cerca de 60 usuários.
 - **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
   é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
   mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
@@ -858,8 +869,10 @@ ligação das automações, porque cada uma guardava o dono no nome:
   `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
 - **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
   operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
-  por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure()` do
-  workflow.
+  por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
+  cancelled()` do workflow. O passo do radar tem timeout próprio (28 min, abaixo dos 30 do job)
+  para o estouro contar como falha do passo: o GitHub trata o estouro do job como cancelamento,
+  e a documentação não diz se `failure()` vale nesse caso.
 - **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
   mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
   órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
