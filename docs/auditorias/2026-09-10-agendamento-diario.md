@@ -1,10 +1,14 @@
 # Auditoria do agendamento diário
 
-Base: `888a716`, 10/09/2026. Leitura do workflow `radar-diario.yml`, do pipeline, do extrator em
-lotes e da Edge Function `telegram-webhook`, confrontada com o histórico real das 33 execuções do
-workflow entre 26/08 e 10/09 (`gh run list` e `gh run view --log`). Sem alteração de código, sem
-chamada ao Gemini e sem envio ao Telegram. A configuração do cron-job.org fica fora do repositório
-e não foi consultada; dele só se vê o efeito nos runs.
+Base: `888a716`, 10/09/2026, revisada em 11/09 contra `ebc28f4` depois da revisão do PR #54. Entre
+as duas bases entraram o #52 (lote incompleto pede junto o que faltou) e o plano pago do Gemini,
+e os dois mudam o G01, o G02 e o G05. As demais referências de código continuam valendo.
+
+Leitura do workflow `radar-diario.yml`, do pipeline, do extrator em lotes e da Edge Function
+`telegram-webhook`, confrontada com o histórico real das execuções do workflow entre 26/08 e
+10/09 (`gh run list` e `gh run view --log`). Sem alteração de código, sem chamada ao Gemini e sem
+envio ao Telegram. A configuração do cron-job.org fica fora do repositório e não foi consultada;
+dele só se vê o efeito nos runs.
 
 ## Resumo
 
@@ -15,10 +19,10 @@ confirmada pelos dados. Os riscos estão no que acontece depois do disparo.
 | ID | Achado | Prioridade |
 |---|---|---|
 | G01 | Timeout de 15 min sem orçamento de tempo; estourar zera as entregas de todos | crítica |
-| G02 | Primeiro lote devolve 1 de 10 vagas e dobra as requisições | alta |
+| G02 | Lote devolve 1 de 10 vagas; repetição em lote entrou no #52, causa em aberto | média |
 | G03 | Reexecução no mesmo dia manda segunda mensagem a todos | alta |
 | G04 | Execução ausente não gera alerta | alta |
-| G05 | Run por perfil pode rodar em paralelo com o diário | média |
+| G05 | Run por perfil em paralelo com o diário extrai as mesmas vagas duas vezes | baixa |
 | G06 | Run por perfil coleta vagas para a coorte inteira | média |
 | G07 | `if: failure()` pode não cobrir o estouro do timeout | média |
 | G08 | O diário executa o `main` sem conferir o schema | baixa |
@@ -37,8 +41,8 @@ Execuções diárias mais longas e a única falha do diário:
 | 09/09 | 34339915721 | sucesso | 12,9 min |
 | 10/09 | 34465768648 | sucesso | 7,9 min |
 
-Onde o tempo foi gasto nos dois dias de cache zerado (09/09 depois das regras de 08/09; 10/09
-depois da mudança de `VERSAO_DA_EXTRACAO`):
+Os diários de 09/09 e 10/09 rodaram com o cache de extração zerado (regras de 08/09 e mudança de
+`VERSAO_DA_EXTRACAO`) e ainda no plano gratuito do Gemini, com 20 requisições por minuto:
 
 | | 09/09 | 10/09 |
 |---|---|---|
@@ -49,29 +53,47 @@ depois da mudança de `VERSAO_DA_EXTRACAO`):
 | Extração | 11,6 min | 6,3 min |
 | Entrega por usuário | ~16 s | ~17 s |
 
-Os piores dias são justamente os que seguem uma mudança de prompt ou de catálogo, porque o cache
-de extração recomeça do zero.
+Nesses dois dias o tempo era dominado pelas esperas de cota. O projeto passou ao plano pago em
+10/09, sem hora registrada; o commit que registra o billing é das 15:18. A entrega imediata das
+12:10 de 10/09 (34493849791, um perfil; 15:10 em UTC) coletou 957 vagas, extraiu 64 em 25
+requisições e não esperou a cota nenhuma vez, mas não dá para afirmar que já estava no plano pago:
+a cerca de 3 requisições por minuto, a ausência de espera não prova o plano. O que esse run mede,
+em qualquer plano, é a latência: a extração levou ~8,2 min, cerca de 20 s por requisição. Sem as
+esperas de cota, esse é o gargalo: a latência de cada chamada, somada em sequência.
 
 ## G01 — timeout de 15 min sem orçamento de tempo; estourar zera as entregas
 
 Prioridade crítica. `.github/workflows/radar-diario.yml:14`, `radar/pipeline.py:202`,
 `radar/pipeline.py:212`, `radar/pipeline.py:223` e `radar/matching/lotes.py:31`.
 
-A margem até o timeout foi de 1,3 min em 30/08 e de 2,1 min em 09/09. O desenho transforma um
-estouro em perda total:
+O desenho transforma um estouro em perda total:
 
 - a extração roda para todos **antes** de qualquer envio (`obter_extracoes`), então um kill
   durante ela deixa todos os usuários sem mensagem;
 - `guardar_extracoes` só é chamado depois que `extrator.extrair` devolve tudo, então o kill
-  descarta também a cota já gasta;
+  descarta também as extrações já pagas;
 - o extrator não tem noção de tempo: só desiste quando o 429 pede espera acima de 120 s
-  (`ESPERA_MAXIMA_EM_SEGUNDOS`), o que indica cota diária, não prazo.
+  (`ESPERA_MAXIMA_EM_SEGUNDOS`), o que indica cota diária, não prazo;
+- `GenerateContentConfig` (`radar/matching/gemini.py:43`) não define timeout por chamada, então
+  uma única chamada pendurada basta para levar o job ao kill.
 
-Cenário: mudança de prompt com uma coorte que traz 60 ou mais vagas novas. O job morre por volta
-dos 15 min, ninguém recebe, e no dia seguinte a mesma fila é reextraída e morre de novo. A entrega
-também cresce: a ~17 s por usuário, só ela passa de 15 min perto dos 50 usuários, sem extração
-alguma. Como o repositório é público, os minutos do Actions são gratuitos e o limite de 15 min
-não economiza nada.
+**Margem revista com o plano pago.** No plano gratuito a margem foi de 1,3 min em 30/08 e de
+2,1 min em 09/09, e o job morreria por volta de 55 vagas novas. Sem esperas de cota, o limite
+passa a ser a latência: descontados preparo, coleta e entrega, sobram cerca de 13 min, que a
+~20 s por requisição comportam perto de 39 requisições. Com o #52 cada lote custa em média um
+pouco mais de uma requisição, então o limite fica entre ~150 e ~350 vagas novas num run, conforme
+a latência de um lote de 10, que não foi medida separada da das chamadas avulsas.
+
+**Por que a prioridade continua crítica.** O limite subiu, mas as condições para atingi-lo são
+frequentes. O cache de extração zerou em três dias seguidos (08, 09 e 10/09) por mudança de prompt
+ou de catálogo; um único perfil já teve 66 candidatas às 12:10 de 10/09, antes da busca pela
+região imediata, que entrou às 13:43 e amplia a coleta; e as candidatas crescem com a variedade de
+cidades e áreas da coorte. Um dia de
+cache zerado com alguns usuários de áreas diferentes chega a 150 vagas. A consequência não mudou:
+ninguém recebe e, como as extrações não são gravadas, o dia seguinte repete a mesma fila. A
+entrega também cresce: a ~17 s por usuário, só ela passa de 15 min perto dos 50 usuários, sem
+extração alguma. Como o repositório é público, os minutos do Actions são gratuitos e o limite de
+15 min não economiza nada.
 
 Correção esperada:
 
@@ -81,9 +103,8 @@ Correção esperada:
    `PRAZO_DA_EXTRACAO_SEGUNDOS`, padrão 600. O resto do pipeline já trata vaga sem extração:
    quem não tem nenhuma aprovada fica para o dia seguinte (`radar/pipeline.py:298`), quem tem
    recebe, e o resumo mostra "vagas sem extração".
-2. **Timeout por chamada no Gemini.** O prazo só é conferido entre chamadas e
-   `GenerateContentConfig` (`radar/matching/gemini.py:43`) não define `http_options`; sem
-   timeout explícito, uma chamada lenta atravessa o prazo.
+2. **Timeout por chamada no Gemini**, com `http_options` em `GenerateContentConfig`. O prazo só é
+   conferido entre chamadas; sem timeout, uma chamada lenta atravessa o prazo.
 3. **Candidatas intercaladas por usuário** em `candidatas_de_algum_perfil`
    (`radar/pipeline.py:176`). Hoje a ordem é todas as candidatas do usuário mais antigo e depois
    as novas do seguinte, porque a fila segue `order by p.criado_em`
@@ -95,34 +116,47 @@ Correção esperada:
 
 Gravar a extração a cada lote foi considerado e descartado: com o prazo, o processo sempre chega
 a `guardar_extracoes` antes do kill, e gravar por lote exigiria um callback atravessando a
-interface `ExtratorDeVagas` para cobrir um caso que o prazo já evita. Nenhuma das mudanças mexe no
-prompt, então `VERSAO_DA_EXTRACAO` continua a mesma e nada é reextraído.
+interface `ExtratorDeVagas` para cobrir um caso que o prazo já evita. Com o plano pago, extrair
+lotes em paralelo passa a ser a alavanca direta do tempo; fica fora desta proposta até medir a
+latência por lote (G02) e o limite de requisições do plano. Nenhuma das mudanças mexe no prompt,
+então `VERSAO_DA_EXTRACAO` continua a mesma e nada é reextraído.
 
 Regressões: prazo esgotado antes de um lote devolve o que já foi extraído; prazo esgotado antes de
 uma espera de cota não espera; prazo não interrompe a extração uma a uma no meio de um resultado
 já recebido; o corte por prazo reparte vagas extraídas entre usuários.
 
-## G02 — primeiro lote devolve 1 de 10 vagas
+## G02 — lote devolve 1 de 10 vagas
 
-Prioridade alta, por ser a maior alavanca de tempo. `radar/matching/lotes.py:59`.
+Prioridade média, parcialmente resolvido pelo #52. `radar/matching/lotes.py:48`.
 
-Nos dois dias um lote registrou "9 vagas sem extração no lote; extraindo uma a uma". Em 10/09 foi
-o primeiro, 20 s depois do início. Em 09/09 o log não permite dizer qual: a primeira chamada levou
-429 quatro segundos após o início, e lote bem-sucedido não deixa linha, então há 3 min sem
-registro até o aviso. Nos dois dias as 9 foram extraídas sozinhas sem nenhum "Vaga … ignorada"
-no log, então as vagas não têm problema: a falha é do modo em lote. Isso transforma 1 requisição em 10 e é o que
-provoca as esperas de cota. Se o lote voltasse inteiro, 09/09 teria feito cerca de 5 requisições
-em vez de 17, e a extração cairia de 11,6 para uns 3 minutos.
+Nos três runs com cache zerado de 09 e 10/09, lotes voltaram com 1 de 10 extrações: um em cada
+diário e dois dos sete lotes da entrega imediata das 12:10 de 10/09. As 9 que faltavam foram
+extraídas sozinhas sem nenhum "Vaga … ignorada" no log, então as vagas não têm problema: a falha
+é do modo em lote, e é sistemática. Não é sempre o primeiro lote: em 10/09 às 07:23 foi o
+primeiro, mas às 12:10 o aviso saiu 1,5 min após o início, quando já tinham passado alguns lotes.
+Até o #52, cada lote assim custava 10 requisições em vez de 1.
 
-Causa não diagnosticada. O log só conta as faltantes e não separa duas hipóteses: o modelo
-devolveu 1 item só, ou devolveu 10 com o `id_vaga` alterado. O prompt pede o id "copiado sem
-alteração", mas nada confere o que volta. A repetição em dois dias seguidos, sempre no primeiro
-lote, aponta para algo sistemático e não para acaso.
+O que o #52 (mergeado em 10/09 às 17:23) resolveu:
 
-Correção esperada: registrar no log os `id_vaga` devolvidos que não casaram com nenhuma vaga do
-lote, e registrar também o fim de cada lote bem-sucedido, para que o log mostre qual lote falhou.
-Se for id alterado, a correção é no casamento; se for omissão, reenviar as faltantes em lote antes
-de extrair uma a uma. Não corrigir antes do diagnóstico.
+- o lote incompleto registra as ids que faltaram, as devolvidas sem vaga do lote e as repetidas
+  (`registrar_resposta_incompleta`), o que separa as duas hipóteses: modelo que omite vagas ou
+  modelo que altera o `id_vaga`;
+- as faltantes são pedidas juntas uma vez antes de ir uma a uma. A repetição é protegida: só
+  acontece quando a resposta veio curta e só com ids do lote, e é descartada inteira se voltar com
+  id fora do que faltou ou repetido. Custa no máximo uma requisição a mais por lote incompleto; o
+  run das 12:10 teria feito cerca de 9 requisições em vez de 25, se as repetições voltassem
+  completas.
+
+A correção entrou antes do diagnóstico, ao contrário do que a primeira versão desta auditoria
+recomendava, e a proteção acima justifica a inversão.
+
+Ainda em aberto:
+
+- **A causa.** Nenhum run rodou depois do #52; o próximo lote incompleto registra as ids e diz
+  qual das duas hipóteses vale.
+- **Registro do fim de cada lote, com a duração.** Lote bem-sucedido não deixa linha no log. Com o
+  plano pago, a duração de cada chamada é o número que falta para fechar a margem do G01 e para
+  decidir sobre lotes em paralelo.
 
 ## G03 — reexecução no mesmo dia manda segunda mensagem a todos
 
@@ -160,33 +194,38 @@ serviço alerta se o aviso não chegar até as 08:00. Outra opção é um workfl
 reserva que **execute** o radar só é seguro depois do G03. Registrar a configuração do
 cron-job.org no guia de publicação, sem o token.
 
-## G05 — run por perfil pode rodar em paralelo com o diário
+## G05 — run por perfil em paralelo com o diário extrai as mesmas vagas duas vezes
 
-Prioridade média. `supabase/functions/telegram-webhook/entrega_imediata.ts:3` e `:4`.
+Prioridade baixa (era média no plano gratuito).
+`supabase/functions/telegram-webhook/entrega_imediata.ts:3` e `:4`.
 
 A janela em que o vínculo espera o diário vai de 06:23 a 07:23, a hora **anterior** a ele, e
-serve para economizar um run. A sobreposição acontece **durante** o diário, que roda das 07:23 até
-cerca de 07:37 nos dias de cache zerado. Quem vincula nesse intervalo dispara um run por perfil em
-paralelo; os dois disputam a mesma cota de 20 requisições por minuto do Gemini e extraem as mesmas
-vagas, porque o cache só é gravado no fim (G01). O workflow não tem `concurrency`. A trava
+serve para economizar um run. A sobreposição acontece **durante** o diário. Quem vincula nesse
+intervalo dispara um run por perfil em paralelo, e o workflow não tem `concurrency`. A trava
 `pg_advisory_lock` por perfil (`radar/storage/postgres.py:322`) evita duas mensagens à mesma
-pessoa, mas não resolve a disputa de cota.
+pessoa.
+
+No plano gratuito os dois runs disputavam a mesma cota de 20 requisições por minuto e empurravam o
+diário para o timeout. No plano pago não há cota compartilhada a disputar; o custo que sobra é
+extrair e pagar as mesmas vagas duas vezes, porque o cache só é gravado no fim de cada run (G01).
 
 Estender a janela até as 08:00 **não** resolve: o diário lê a lista de usuários ao começar, então
 quem vincula entre 07:23 e 08:00 esperaria o dia seguinte inteiro. A opção viável é um grupo de
 `concurrency` comum ao diário e aos runs por perfil, com `cancel-in-progress: false`, que enfileira
 o run por perfil. Limite conhecido: o GitHub mantém um só run pendente por grupo, então um segundo
 vínculo durante o mesmo diário cancela o pendente do primeiro, que passa a receber no dia
-seguinte. Com o G01 e o G02 resolvidos, a sobreposição dura poucos minutos; a prioridade cai.
+seguinte. Com o custo atual, não vale fazer antes dos demais.
 
 ## G06 — run por perfil coleta vagas para a coorte inteira
 
 Prioridade média. `radar/__main__.py:267` e `radar/pipeline.py:167`.
 
 `executar_fluxo` monta o coletor com `repositorio.listar_ativos()`; o filtro por perfil só vem
-depois, em `selecionar_usuarios`. O run por perfil de 07/09 às 22:13 (34175940414) coletou 545
-vagas de todas as cidades e termos da coorte para atender uma pessoa. Cada vínculo custa uma coleta
-completa na Adzuna (até 10 páginas por região), e esse custo cresce com o número de cidades.
+depois, em `selecionar_usuarios`. Dois runs por perfil mostram o efeito: o de 07/09 às 22:13
+(34175940414) coletou 545 vagas e o de 10/09 às 12:10 (34493849791) coletou 957, cada um de todas
+as cidades e termos da coorte para atender uma pessoa. Cada vínculo custa uma coleta completa na
+Adzuna (até 10 páginas por região), e esse custo cresce com o número de cidades e com a busca pela
+região imediata.
 
 Correção esperada: montar o coletor com os usuários já selecionados. Regressão: `rodar --perfil`
 consulta só a cidade e os termos daquele perfil.
@@ -196,8 +235,13 @@ consulta só a cidade e os termos daquele perfil.
 Prioridade média. `.github/workflows/radar-diario.yml:48`.
 
 O GitHub trata o estouro de `timeout-minutes` do job como cancelamento, e a documentação não diz
-se `failure()` vale nesse caso. Não verificado na prática: nenhum run chegou ao timeout. O aviso
+se `failure()` vale nesse caso. Nenhum run chegou ao timeout, então não há evidência real. O aviso
 existe justamente para o kill que o Python não consegue reportar.
+
+Como verificar sem esperar um timeout real (sugestão da revisão do PR #54): um workflow descartável
+com `timeout-minutes: 1`, um passo `sleep 120` e um passo `if: failure()` mostra em dois minutos
+se o aviso dispara. Como `workflow_dispatch` só vale para workflow presente no branch padrão, o
+teste roda por `push` numa branch descartável, apagada depois.
 
 Correção esperada: `timeout-minutes` no passo do radar, abaixo do timeout do job, para que o passo
 falhe e `failure()` valha; ou `if: failure() || cancelled()`. A primeira opção entra com o G01.
@@ -246,19 +290,19 @@ token no guia.
 ## Não verificado
 
 - Configuração do cron-job.org: URL, corpo, fuso e se os avisos de falha estão ligados.
-- Comportamento de `failure()` quando o job estoura `timeout-minutes` (G07).
+- Comportamento de `failure()` quando o job estoura `timeout-minutes` (G07); o teste descrito lá
+  fecha a questão em dois minutos.
 - Validade do `GITHUB_DISPATCH_TOKEN` (G10).
-- Causa da perda de 9 vagas num lote (G02), e em 09/09 qual lote foi.
-- Por que a primeira chamada de 09/09 já recebeu 429, quatro segundos após o início, sem outro
-  run em andamento. Pode ser um limite diferente do de requisições por minuto.
+- Causa da perda de 9 vagas por lote (G02), que o log do #52 deve mostrar no próximo run.
+- Latência de um lote de 10 separada da das chamadas avulsas, que define a margem do G01.
 
 ## Ordem sugerida
 
 1. G01 e G07: prazo da extração, timeout por chamada, candidatas intercaladas e timeouts do
-   workflow. É o único achado capaz de zerar as entregas de todos.
-2. G02: log dos ids não casados; a correção vem depois do diagnóstico.
-3. G03: não reenviar a quem já foi atendido no dia.
-4. G04: alerta de execução ausente.
+   workflow, com o teste do G07 antes. É o único achado capaz de zerar as entregas de todos.
+2. G03: não reenviar a quem já foi atendido no dia.
+3. G04: alerta de execução ausente.
+4. G02: registro do fim de cada lote com a duração; ler o log do #52 no próximo lote incompleto.
 5. G06: coleta só dos usuários do run por perfil.
 6. G05, G08, G09 e G10.
 
