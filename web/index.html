@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#17201a" />
+    <script>try { if (localStorage.getItem("radar-tema") === "escuro") document.documentElement.dataset.tema = "escuro"; } catch {}</script>
     <title>Encontre estágios que combinam com seu curso e seu momento. | Radar de Estágio</title>
     <meta name="description" content="O Radar reúne oportunidades de diferentes áreas, compara com seu perfil e envia até sete recomendações explicadas no Telegram, quando houver vagas compatíveis." />
     <meta property="og:title" content="Encontre estágios que combinam com seu curso e seu momento." />
@@ -14,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260910-2" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260911-1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260910-2" defer></script>
+    <script src="assets/app.js?v=20260911-1" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -35,6 +36,10 @@
           <a href="#faq">FAQ</a>
           <a href="#sobre">Sobre</a>
         </nav>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Modo escuro" aria-pressed="false">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path></svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
+        </button>
         <button class="header-login js-open-login" type="button">Entrar</button>
         <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
       </div>
