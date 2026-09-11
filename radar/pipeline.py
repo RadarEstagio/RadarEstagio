@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from itertools import zip_longest
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -176,13 +177,22 @@ def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -
 def candidatas_de_algum_perfil(
     vagas: list[Vaga], usuarios: list[Usuario], repositorio: Repositorio
 ) -> list[Vaga]:
+    candidatas_por_usuario = [
+        candidatas_do_usuario(vagas, usuario, repositorio) for usuario in usuarios
+    ]
     aprovadas: dict[ChaveDaVaga, Vaga] = {}
-    for usuario in usuarios:
-        ja_enviadas = ids_ja_enviadas_ou_nenhum(repositorio, usuario)
-        for vaga in filtrar(vagas, usuario.perfil):
-            if vaga.chave() not in ja_enviadas:
+    for rodada in zip_longest(*candidatas_por_usuario):
+        for vaga in rodada:
+            if vaga is not None:
                 aprovadas.setdefault(vaga.chave(), vaga)
     return list(aprovadas.values())
+
+
+def candidatas_do_usuario(
+    vagas: list[Vaga], usuario: Usuario, repositorio: Repositorio
+) -> list[Vaga]:
+    ja_enviadas = ids_ja_enviadas_ou_nenhum(repositorio, usuario)
+    return [vaga for vaga in filtrar(vagas, usuario.perfil) if vaga.chave() not in ja_enviadas]
 
 
 def ids_ja_enviadas_ou_nenhum(repositorio: Repositorio, usuario: Usuario) -> set[tuple[str, str]]:
