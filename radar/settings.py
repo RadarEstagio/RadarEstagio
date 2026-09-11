@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     jooble_api_key: str = ""
     gemini_modelo: str = "gemini-3.6-flash"
     gemini_vagas_por_lote: int = Field(default=10, ge=1)
+    prazo_da_extracao_segundos: int = Field(default=600, ge=1)
     agy_modelo: str = "gemini-3.6-flash-low"
     agy_timeout_segundos: int = Field(default=300, ge=1)
     juiz_modelo: str = "claude-sonnet-4-6"

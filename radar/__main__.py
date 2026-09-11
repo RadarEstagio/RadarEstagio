@@ -244,7 +244,11 @@ def montar_coletor(
 
 
 def montar_extrator(settings: Settings) -> ExtratorEmLotes:
-    return ExtratorEmLotes(criar_extrator(settings), settings.gemini_vagas_por_lote)
+    return ExtratorEmLotes(
+        criar_extrator(settings),
+        settings.gemini_vagas_por_lote,
+        prazo_em_segundos=settings.prazo_da_extracao_segundos,
+    )
 
 
 def url_de_rastreio_utilizavel(settings: Settings) -> str:

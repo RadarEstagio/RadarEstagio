@@ -91,6 +91,19 @@ def test_busca_vagas_dos_ultimos_3_dias_por_padrao():
     assert Settings(_env_file=None, **configuracao_base(avaliador="agy")).dias_recentes == 3
 
 
+def test_prazo_da_extracao_padrao_e_de_dez_minutos():
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
+
+    assert settings.prazo_da_extracao_segundos == 600
+
+
+def test_prazo_da_extracao_zero_e_rejeitado():
+    with pytest.raises(ValidationError):
+        Settings(
+            _env_file=None, **configuracao_base(avaliador="agy", prazo_da_extracao_segundos="0")
+        )
+
+
 @pytest.mark.parametrize("nota", ["-1", "101"])
 def test_nota_minima_fora_de_0_a_100_e_rejeitada(nota: str):
     with pytest.raises(ValidationError):
