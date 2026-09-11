@@ -36,6 +36,9 @@
   --danger-line: #edcbc6;
   --error-text: #8c2f2f;
   --error-soft: #fdf0ee;
+  --toggle-line: #17201a;
+  --toggle-fill: #ffffff;
+  --toggle-hover: #e4f0e6;
   --container: 1100px;
 }
 :root[data-tema="escuro"] {
@@ -65,6 +68,9 @@
   --danger-line: #5c2d28;
   --error-text: #f5a79f;
   --error-soft: #331c1a;
+  --toggle-line: #ffffff;
+  --toggle-fill: #17201a;
+  --toggle-hover: #24312a;
 }
 
 * { box-sizing: border-box; }
@@ -113,11 +119,11 @@ p, h1, h2, h3 { margin-top: 0; }
 .desktop-nav a:hover { color: var(--accent-text); }
 .header-login { padding: 0 6px; border: 0; background: none; color: var(--ink-soft); font-size: 14px; font-weight: 600; cursor: pointer; }
 .header-login:hover { color: var(--accent-text); }
-.theme-toggle { display: grid; flex: 0 0 auto; width: 38px; height: 38px; margin-left: auto; padding: 0; place-items: center; border: 1.5px solid currentColor; border-radius: 50%; color: #17201a; background: var(--white); cursor: pointer; transition: background 160ms ease; }
-.theme-toggle svg { width: 20px; height: 20px; fill: var(--white); stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.theme-toggle { display: grid; flex: 0 0 auto; width: 38px; height: 38px; margin-left: auto; padding: 0; place-items: center; border: 1.5px solid currentColor; border-radius: 50%; color: var(--toggle-line); background: var(--toggle-fill); cursor: pointer; transition: background 160ms ease; }
+.theme-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
 :root[data-tema="escuro"] .theme-icon-sun, :root:not([data-tema="escuro"]) .theme-icon-moon { display: none; }
 .theme-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-@media (hover: hover) { .theme-toggle:hover { background: #e4f0e6; } }
+@media (hover: hover) { .theme-toggle:hover { background: var(--toggle-hover); } }
 
 .button {
   display: inline-flex; align-items: center; justify-content: center; gap: 12px;
