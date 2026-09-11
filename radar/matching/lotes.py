@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from collections.abc import Callable
 
@@ -14,22 +15,32 @@ MARGEM_DE_ESPERA_EM_SEGUNDOS = 1
 TENTATIVAS_APOS_COTA_EXCEDIDA = 3
 
 
+class PrazoDaExtracaoEsgotado(Exception):
+    pass
+
+
 class ExtratorEmLotes:
     def __init__(
         self,
         extrator: ExtratorDeVagas,
         tamanho_do_lote: int,
         esperar: Callable[[float], None] = time.sleep,
+        prazo_em_segundos: float = math.inf,
+        relogio: Callable[[], float] = time.monotonic,
     ) -> None:
         if tamanho_do_lote < 1:
             raise ValueError("tamanho_do_lote deve ser pelo menos 1")
         self._extrator = extrator
         self._tamanho_do_lote = tamanho_do_lote
         self._esperar = esperar
+        self._prazo_em_segundos = prazo_em_segundos
+        self._relogio = relogio
+        self._limite = math.inf
         self.requisicoes = 0
 
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         resultados: list[ExtracaoDaVaga] = []
+        self._limite = self._relogio() + self._prazo_em_segundos
         for inicio in range(0, len(vagas), self._tamanho_do_lote):
             lote = vagas[inicio : inicio + self._tamanho_do_lote]
             try:
@@ -41,6 +52,14 @@ class ExtratorEmLotes:
                     len(vagas_sem_resultado(vagas, resultados)),
                     len(vagas),
                     erro,
+                )
+                break
+            except PrazoDaExtracaoEsgotado:
+                logger.warning(
+                    "Prazo da extração de %.0f s esgotado; %d de %d vagas ficaram sem extração",
+                    self._prazo_em_segundos,
+                    len(vagas_sem_resultado(vagas, resultados)),
+                    len(vagas),
                 )
                 break
         return resultados
@@ -106,6 +125,7 @@ class ExtratorEmLotes:
                 espera = erro.aguardar_segundos or ESPERA_PADRAO_EM_SEGUNDOS
                 if espera > ESPERA_MAXIMA_EM_SEGUNDOS:
                     raise
+                self._garantir_que_cabe_no_prazo(espera + MARGEM_DE_ESPERA_EM_SEGUNDOS)
                 logger.info(
                     "Cota por minuto atingida; aguardando %.0f s (tentativa %d de %d)",
                     espera,
@@ -116,8 +136,13 @@ class ExtratorEmLotes:
         return self._chamar(lote)
 
     def _chamar(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self._garantir_que_cabe_no_prazo(0)
         self.requisicoes += 1
         return self._extrator.extrair(lote)
+
+    def _garantir_que_cabe_no_prazo(self, segundos_a_mais: float) -> None:
+        if self._relogio() + segundos_a_mais > self._limite:
+            raise PrazoDaExtracaoEsgotado
 
     def _dividir_e_tentar_de_novo(
         self, lote: list[Vaga], erro: ErroDeAvaliacao, resultados: list[ExtracaoDaVaga]
