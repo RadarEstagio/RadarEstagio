@@ -18,23 +18,43 @@ TEMPERATURA_DETERMINISTICA = 0
 HTTP_COTA_EXCEDIDA = 429
 HTTP_INDISPONIVEL = frozenset({502, 503, 504})
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
+RACIOCINIO_DO_MODELO = "padrao"
+
+
+def configuracao_de_raciocinio(raciocinio: str | None) -> types.ThinkingConfig | None:
+    if raciocinio is None:
+        return None
+    return types.ThinkingConfig(thinking_level=types.ThinkingLevel(raciocinio.upper()))
 
 
 class ExtratorGemini:
     def __init__(self, settings: Settings, cliente: genai.Client) -> None:
         self._modelo = settings.gemini_modelo
+        self._raciocinio = (
+            None
+            if settings.gemini_raciocinio == RACIOCINIO_DO_MODELO
+            else settings.gemini_raciocinio
+        )
         self._cliente = cliente
 
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
         return gerar_json(
-            self._cliente, self._modelo, montar_prompt(vagas), ExtracoesDeVagas
+            self._cliente,
+            self._modelo,
+            montar_prompt(vagas),
+            ExtracoesDeVagas,
+            raciocinio=self._raciocinio,
         ).extracoes
 
 
 def gerar_json[T: BaseModel](
-    cliente: genai.Client, modelo: str, prompt: str, formato: type[T]
+    cliente: genai.Client,
+    modelo: str,
+    prompt: str,
+    formato: type[T],
+    raciocinio: str | None = None,
 ) -> T:
     try:
         resposta = cliente.models.generate_content(
@@ -44,6 +64,7 @@ def gerar_json[T: BaseModel](
                 response_mime_type="application/json",
                 response_schema=formato,
                 temperature=TEMPERATURA_DETERMINISTICA,
+                thinking_config=configuracao_de_raciocinio(raciocinio),
             ),
         )
     except errors.APIError as erro:

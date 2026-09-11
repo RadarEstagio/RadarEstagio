@@ -201,6 +201,20 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
+- **Raciocínio da extração em `low`** (11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
+  pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
+  4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
+  US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
+  gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
+  `low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
+  padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
+  um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
+  cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
+  ~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
+  11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
+  41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
+  comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
+  trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
 - **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
   é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
   mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
