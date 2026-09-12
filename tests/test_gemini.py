@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import httpx
 import pytest
-from google.genai import errors
+from google.genai import errors, types
 
 from radar.domain.models import Vaga
 from radar.matching.errors import (
@@ -234,3 +234,21 @@ def test_prompt_identifica_todas_as_vagas_sem_citar_candidato():
     assert "alerta_pegadinha" in prompt
     assert "habilidades_obrigatorias" in prompt
     assert "habilidades_desejaveis" in prompt
+
+
+def test_extracao_pede_raciocinio_baixo_por_padrao():
+    extrator, cliente = extrator_com(RespostaFalsa('{"extracoes": []}'))
+
+    extrator.extrair([vaga_exemplo()])
+
+    config = cliente.models.chamadas[0]["config"]
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
+
+
+def test_raciocinio_padrao_deixa_o_modelo_decidir():
+    settings = settings_de_teste().model_copy(update={"gemini_raciocinio": "padrao"})
+    cliente = ClienteFalso(RespostaFalsa('{"extracoes": []}'))
+
+    ExtratorGemini(settings, cliente).extrair([vaga_exemplo()])
+
+    assert cliente.models.chamadas[0]["config"].thinking_config is None

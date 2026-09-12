@@ -29,6 +29,23 @@ if (cabecalhoDaLanding) {
   }, { passive: true });
 }
 
+const botaoDoTema = document.querySelector("#theme-toggle");
+const CHAVE_DO_TEMA = "radar-tema";
+
+function mostrarTema(tema) {
+  document.documentElement.dataset.tema = tema;
+  botaoDoTema.setAttribute("aria-pressed", String(tema === "escuro"));
+}
+
+mostrarTema(document.documentElement.dataset.tema === "escuro" ? "escuro" : "claro");
+botaoDoTema.addEventListener("click", () => {
+  const tema = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
+  mostrarTema(tema);
+  try {
+    localStorage.setItem(CHAVE_DO_TEMA, tema);
+  } catch {}
+});
+
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const ROLAGEM_MINIMA_ATE_CHAT = 90;

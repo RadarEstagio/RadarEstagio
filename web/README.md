@@ -19,6 +19,8 @@ As configurações externas estão no [guia de publicação e piloto](../docs/gu
 - explica coleta, matching e entrega em três passos;
 - explicita que modalidade ausente não é inferida pela localização;
 - oferece um único CTA para cadastro;
+- alterna entre tema claro e escuro pelo botão do cabeçalho, com sol no claro e lua no escuro, e
+  lembra a escolha no navegador;
 - cria ou acessa uma conta por e-mail e senha;
 - coleta curso e período, habilidades e preferências em três etapas curtas;
 - sugere cursos e habilidades comuns, mas mantém entrada livre para outros perfis;
@@ -91,6 +93,10 @@ O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a sta
   em `perfis`. Não existe API Python entre os dois componentes.
 - A sessão de eventos é um UUID aleatório no `localStorage`; propriedades não recebem e-mail,
   curso, cidade ou outros campos livres do perfil.
+- O tema escolhido fica em `radar-tema` no `localStorage` e é aplicado por um script no `<head>`,
+  antes da primeira pintura; sem escolha salva, o site abre no claro. O escuro só redefine tokens:
+  cor nova de cartão, faixa ou texto colorido entra como token (`--surface`, `--band`, `--*-text`),
+  senão fica igual nos dois temas.
 - O front não pedirá `@username` nem `chat_id` do Telegram.
 - Após salvar o perfil, o site lê `token_vinculo` e abre o bot. O comando `/start` vincula o
   usuário real do Telegram ao perfil cadastrado.

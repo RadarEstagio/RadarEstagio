@@ -108,3 +108,14 @@ def test_prazo_da_extracao_zero_e_rejeitado():
 def test_nota_minima_fora_de_0_a_100_e_rejeitada(nota: str):
     with pytest.raises(ValidationError):
         Settings(_env_file=None, **configuracao_base(avaliador="agy", nota_minima=nota))
+
+
+def test_raciocinio_da_extracao_e_baixo_por_padrao():
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
+
+    assert settings.gemini_raciocinio == "low"
+
+
+def test_raciocinio_fora_dos_niveis_do_gemini_e_rejeitado():
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **configuracao_base(avaliador="agy", gemini_raciocinio="alto"))

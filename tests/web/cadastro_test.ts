@@ -1,5 +1,5 @@
 import assert from "assert";
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 
 const html = await Deno.readTextFile(
   new URL("../../web/index.html", import.meta.url),
@@ -82,15 +82,38 @@ function app(
     savedProfile = null,
     url = "https://radarestagio.com/",
     key = "",
+    temaSalvo = null,
+    armazenamentoBloqueado = false,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
     url?: string;
     key?: string;
+    temaSalvo?: string | null;
+    armazenamentoBloqueado?: boolean;
   } = {},
 ) {
-  const dom = new JSDOM(html, { url, runScripts: "outside-only" });
+  const erros: Error[] = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.sendTo(console, { omitJSDOMErrors: true });
+  virtualConsole.on("jsdomError", (erro: Error) => erros.push(erro));
+  const dom = new JSDOM(html, {
+    url,
+    runScripts: "dangerously",
+    virtualConsole,
+    beforeParse: (janela: TestWindow) => {
+      if (temaSalvo) janela.localStorage.setItem("radar-tema", temaSalvo);
+      if (armazenamentoBloqueado) {
+        Object.defineProperty(janela, "localStorage", {
+          get() {
+            throw new janela.DOMException("armazenamento bloqueado", "SecurityError");
+          },
+        });
+      }
+    },
+  });
   const w = dom.window;
+  const temaAntesDoApp = w.document.documentElement.dataset.tema;
   w.scrollTo = () => {};
   w.requestAnimationFrame = (callback: (timestamp: number) => void) => {
     callback(0);
@@ -168,6 +191,8 @@ function app(
   w.eval(script);
   return {
     w,
+    erros,
+    temaAntesDoApp,
     calls,
     client,
     close: () => w.close(),
@@ -218,6 +243,51 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.equal(demo.querySelector(".chat-composer-field").textContent.trim(), "Mensagem");
     assert.equal(demo.querySelectorAll(".chat-composer-icon").length, 2);
   } finally { a.close(); }
+});
+
+Deno.test("tema começa claro e o botão do cabeçalho alterna e guarda a escolha", () => {
+  const a = app();
+  try {
+    const raiz = a.w.document.documentElement;
+    const botao = a.w.document.querySelector("#theme-toggle");
+    assert.equal(raiz.dataset.tema, "claro");
+    assert.equal(botao.getAttribute("aria-pressed"), "false");
+    botao.click();
+    assert.equal(raiz.dataset.tema, "escuro");
+    assert.equal(botao.getAttribute("aria-pressed"), "true");
+    assert.equal(a.w.localStorage.getItem("radar-tema"), "escuro");
+    botao.click();
+    assert.equal(raiz.dataset.tema, "claro");
+    assert.equal(botao.getAttribute("aria-pressed"), "false");
+    assert.equal(a.w.localStorage.getItem("radar-tema"), "claro");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("tema escuro salvo é aplicado no head, antes da aplicação carregar", () => {
+  const a = app({ temaSalvo: "escuro" });
+  try {
+    const scriptsDoHead = [...a.w.document.head.querySelectorAll("script:not([src])")];
+    assert.ok(scriptsDoHead.some((elemento) => elemento.textContent.includes("radar-tema")));
+    assert.equal(a.temaAntesDoApp, "escuro");
+    assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
+    assert.equal(a.w.document.querySelector("#theme-toggle").getAttribute("aria-pressed"), "true");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("tema alterna sem erro quando o navegador bloqueia o armazenamento", () => {
+  const a = app({ armazenamentoBloqueado: true });
+  try {
+    assert.equal(a.w.document.documentElement.dataset.tema, "claro");
+    a.w.document.querySelector("#theme-toggle").click();
+    assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
+    assert.deepEqual(a.erros.map((erro) => erro.message), []);
+  } finally {
+    a.close();
+  }
 });
 
 Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha localmente", async () => {
