@@ -245,21 +245,51 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
   } finally { a.close(); }
 });
 
-Deno.test("tema começa claro e o botão do cabeçalho alterna e guarda a escolha", () => {
+Deno.test("tema fica nas configurações, começa claro e guarda a escolha", () => {
   const a = app();
   try {
     const raiz = a.w.document.documentElement;
+    const configuracoes = a.w.document.querySelector("#header-settings");
     const botao = a.w.document.querySelector("#theme-toggle");
+    assert.equal(configuracoes.open, false);
+    assert.ok(configuracoes.contains(botao));
+    configuracoes.querySelector("summary").click();
+    assert.equal(configuracoes.open, true);
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
     botao.click();
     assert.equal(raiz.dataset.tema, "escuro");
     assert.equal(botao.getAttribute("aria-pressed"), "true");
     assert.equal(a.w.localStorage.getItem("radar-tema"), "escuro");
+    assert.equal(configuracoes.open, true);
     botao.click();
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
     assert.equal(a.w.localStorage.getItem("radar-tema"), "claro");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("configurações fecham com Escape, clique fora ou saída do foco", () => {
+  const a = app();
+  try {
+    const configuracoes = a.w.document.querySelector("#header-settings");
+    const abrir = configuracoes.querySelector("summary");
+    const tema = configuracoes.querySelector("#theme-toggle");
+    abrir.click();
+    tema.focus();
+    tema.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    assert.equal(configuracoes.open, false);
+    assert.equal(a.w.document.activeElement, abrir);
+    abrir.click();
+    a.w.document.querySelector(".hero h1").click();
+    assert.equal(configuracoes.open, false);
+    abrir.click();
+    tema.focus();
+    a.w.document.querySelector(".header-login").focus();
+    assert.equal(configuracoes.open, false);
+    assert.equal(a.w.document.activeElement, a.w.document.querySelector(".header-login"));
   } finally {
     a.close();
   }
