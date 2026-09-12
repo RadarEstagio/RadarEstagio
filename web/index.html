@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260912-header-compacto" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260912-secoes-lp" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
     <script src="assets/app.js?v=20260912-header-visivel" defer></script>
@@ -160,23 +160,41 @@
         </div>
       </section>
 
-      <section class="transparency section">
+      <section class="transparency section" aria-labelledby="transparency-title">
         <div class="container transparency-layout">
-          <div class="signal-panel" aria-hidden="true">
-            <div class="signal-rings"><span></span><span></span><span></span><i></i></div>
-            <div class="signal-label label-one">Habilidade compatível</div>
-            <div class="signal-label label-two">Localização verificada</div>
-            <div class="signal-label label-three">Modalidade não informada</div>
-          </div>
           <div class="transparency-copy">
-            <p class="eyebrow">Comparação sem certezas inventadas</p>
-            <h2>Recomendação boa <span class="continuacao">também sabe dizer “não informado”.</span></h2>
-            <ul>
-              <li><span>✓</span> Pontos a favor e contra em linguagem direta</li>
-              <li><span>✓</span> Alertas para exigências incompatíveis</li>
-              <li><span>✓</span> Link original para você conferir e decidir</li>
-            </ul>
+            <p class="eyebrow">Mais contexto. Menos dúvida.</p>
+            <h2 id="transparency-title">Entenda a vaga <span class="continuacao">antes de se candidatar.</span></h2>
+            <p class="transparency-lead">Veja o que combina com seu perfil, quais requisitos merecem atenção e o que o anúncio não informa.</p>
+            <div class="transparency-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" /></svg>
+              <p><strong>A decisão continua sua.</strong> Cada recomendação inclui o link do anúncio original para você conferir e se candidatar.</p>
+            </div>
           </div>
+          <figure class="analysis-example">
+            <div class="analysis-card">
+              <div class="analysis-heading">
+                <p class="analysis-kicker">Uma recomendação, por dentro</p>
+                <h3>Estágio em desenvolvimento</h3>
+              </div>
+              <dl class="analysis-details">
+                <div class="analysis-item analysis-item-match">
+                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></svg>Requisitos atendidos</dt>
+                  <dd>Java e SQL estão no anúncio e no seu perfil.</dd>
+                </div>
+                <div class="analysis-item">
+                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>Requisitos a conferir</dt>
+                  <dd>Spring aparece na vaga, mas não foi informado no seu perfil.</dd>
+                </div>
+                <div class="analysis-item">
+                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7h.01" /></svg>Modalidade não informada</dt>
+                  <dd>O anúncio não diz se a vaga é presencial, híbrida ou remota.</dd>
+                </div>
+              </dl>
+              <p class="analysis-principle">Se o anúncio não diz, o Radar não inventa.</p>
+            </div>
+            <figcaption>Exemplo ilustrativo · não é uma vaga real</figcaption>
+          </figure>
         </div>
       </section>
 
@@ -251,10 +269,17 @@
         </div>
       </section>
 
-      <section class="final-cta section" id="sobre">
+      <section class="final-cta section" id="sobre" aria-labelledby="final-title">
         <div class="container final-card">
-          <div><p class="eyebrow eyebrow-light">Menos tempo procurando</p><h2>Deixe o Radar procurar <span class="continuacao">enquanto você se prepara.</span></h2></div>
-          <div class="final-action"><button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button><p>Cadastro gratuito · você decide onde se candidatar</p></div>
+          <div class="final-copy">
+            <p class="eyebrow eyebrow-light">Seu próximo passo começa aqui</p>
+            <h2 id="final-title">Você cuida do seu futuro. <span class="continuacao">O Radar cuida da busca.</span></h2>
+            <p class="final-lead">Cadastre seu perfil e vincule o Telegram. Quando houver vagas compatíveis, as recomendações chegam até você.</p>
+          </div>
+          <div class="final-action">
+            <button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
+            <p>Grátis durante o piloto · Sem cartão de crédito</p>
+          </div>
         </div>
       </section>
     </main>
