@@ -1,6 +1,7 @@
 # Auditoria Revenue-Centric Design
 
-Data: 10/09/2026. Base: `main` em `11f32df`.
+Data: 10/09/2026. Base: `main` em `11f32df`; as citações de linha foram reconferidas contra
+`0750eba` em 11/09, depois do botão de tema, que deslocou `web/index.html` e `web/assets/app.js`.
 
 Esta auditoria aplica a skill Revenue-Centric Design (101 princípios de Richard, @richardrx,
 distribuídos em dez referências) ao Radar como produto: aquisição, ativação, retenção,
@@ -8,10 +9,12 @@ monetização e diferenciação. Não é revisão de código. Foi pedida para se
 
 ## Como foi feita
 
-- **Skill:** `SKILL.md` e as dez referências. O link `.claude/skills/revenue-centric-design`
-  deste repositório aponta para `.agents/skills/revenue-centric-design`, que não existe; a skill
-  foi lida de uma cópia local em outro projeto. Quem clonar o repositório não consegue
-  carregá-la, embora `plano-expansao-revenue-centric.md` cite seus mecanismos.
+- **Skill:** `SKILL.md` e as dez referências. Nesta máquina o link
+  `.claude/skills/revenue-centric-design` aponta para `.agents/skills/revenue-centric-design`,
+  que não existe, e a skill foi lida de uma cópia local em outro projeto. O problema é local, não
+  do repositório: `.agents/` e `.claude/skills/` são ignorados pelo Git e não têm arquivo
+  versionado algum, então quem clona não recebe skill nenhuma, embora
+  `plano-expansao-revenue-centric.md` cite os mecanismos dela.
 - **Produto:** `web/index.html`, `web/assets/app.js` (etapas, progresso e estados da conta),
   `radar/notification/formatador.py` (a mensagem), `supabase/functions/telegram-webhook/`
   (respostas do bot e feedback) e o workflow diário.
@@ -140,7 +143,9 @@ design.
 
 O Radar está entre o MVP e a sobrevivência. Em 08/09, o pré-PRD registrava 30 sessões na landing
 em 30 dias e nenhum estudante externo cadastrado; a semana de 07/09 já soma 79 sessões, parte
-delas da equipe. O gargalo era distribuição. O trabalho foi para outro lugar:
+delas da equipe. Sessão e identidade são medidas diferentes: as 79 sessões de uma semana não
+contradizem as 77 identidades de 30 dias do funil, porque a mesma pessoa abre a página várias
+vezes. O gargalo era distribuição. O trabalho foi para outro lugar:
 
 - **Volume:** 668 commits de 25/08 a 10/09; 338 entre 08 e 10/09; 181 do tipo `docs` (27% do
   total). São 6.394 linhas de Python em `radar/`, 9.694 de testes, 4.944 de documentação em
@@ -160,7 +165,7 @@ delas da equipe. O gargalo era distribuição. O trabalho foi para outro lugar:
   nunca foi confirmado (`docs/metricas.md`: "falta validar respostas positivas e negativas
   reais"); domínio, Turnstile e textos legais seguem pendentes.
 - **Iteração visual sem volume:** 36 commits `style` e 17 `copy`, boa parte na landing, para uma
-  página com 77 sessões, parte delas da equipe. Sem volume, a skill manda decidir por conversa,
+  página com 77 identidades distintas em 30 dias, parte delas da equipe. Sem volume, a skill manda decidir por conversa,
   não por iteração: "cinco boas entrevistas valem mais que um teste A/B sem amostra".
 
 A skill tem uma frase para o padrão: "velocidade de construção sem obsessão por ativação é só um
@@ -242,8 +247,8 @@ Zeigarnik); tratar a interface como dado.
 - A pergunta ("Deixe seu feedback 👇", `radar/notification/formatador.py:33`) fica no fim da
   última parte de uma mensagem longa, depois de o estudante já ter saído pelo link. Responder
   exige dois toques: o número abre outra mensagem
-  (`supabase/functions/telegram-webhook/index.ts:162`) com uma opção positiva e cinco negativas
-  (`feedback.ts:89-91`). O desenho pede uma taxonomia de reclamação, não uma decisão.
+  (`supabase/functions/telegram-webhook/index.ts:159`) com uma opção positiva e cinco negativas
+  (`feedback.ts:87-93`). O desenho pede uma taxonomia de reclamação, não uma decisão.
 - Candidatura não tem emissor (`docs/metricas.md`), então metade da definição de vaga útil é
   zero por construção.
 - A calibração da nota depende de `vaga_irrelevante` real, que este desenho não gera. As
@@ -277,9 +282,11 @@ usuários; o custo de servir decide se o gratuito funciona.
 - O mercado segue a lei. Agentes de integração conhecidos, como CIEE e Nube, não cobram do
   estudante e são pagos pelas empresas. LinkedIn, Indeed e a própria Adzuna oferecem alerta de
   vaga gratuito.
-- `docs/hipotese-comercial.md` compara assinatura e acesso por período, as duas com o estudante
-  como pagador, e não menciona a lei. A landing diz que "o preço sai do que os primeiros usuários
-  disserem que vale a pena" (`web/index.html:189`).
+- `docs/hipotese-comercial.md` compara assinatura e acesso por período. A assinatura já admite
+  "estudante ou instituição" e o texto registra a instituição patrocinadora como outra hipótese,
+  mas o estudante é a hipótese inicial, o acesso por período só tem ele como pagador e a lei não
+  aparece em lugar nenhum. A landing diz que "o preço sai do que os primeiros usuários disserem
+  que vale a pena" (`web/index.html:194`).
 - Como ICP pagador, o estudante falha no terceiro filtro da skill (dinheiro para pagar o ticket)
   e o trabalho que ele contrata é episódico (RCD-07).
 - Em compensação, servir um estudante custa pouco: a extração é por vaga (343 vagas extraídas
@@ -293,7 +300,7 @@ usuários; o custo de servir decide se o gratuito funciona.
    motivo para pedir um.
 2. Testar pagadores que têm dor e dinheiro: (a) instituições de ensino, pela coordenação de curso
    ou pelo núcleo de estágios, que ganham um canal para os alunos e uma leitura de oferta por
-   curso; (b) empresas que recrutam estagiários e querem candidatos já filtrados por curso e
+   curso — hipótese já registrada na `hipotese-comercial.md` e nunca testada com ninguém; (b) empresas que recrutam estagiários e querem candidatos já filtrados por curso e
    período (hoje "recrutadores seguem fora", pelo pré-PRD); (c) acordo de publicação com as
    fontes, se os termos de uso permitirem.
 3. Fazer isso com conversa e oferta concreta, não com página de preços: três conversas com
@@ -303,6 +310,29 @@ usuários; o custo de servir decide se o gratuito funciona.
    mesmo artigo responsabiliza civilmente o agente que indicar estágio incompatível com o curso:
    num modelo com instituição ou empresa, a compatibilidade de curso que o grupo construiu vira
    argumento de venda e também responsabilidade.
+
+### RCD-03 · Crítico · O esforço está fora do gargalo
+
+**Princípios:** diagnosticar o gargalo (distribuição ou design); construir mais rápido não resolve
+churn; o filtro do canivete suíço.
+
+**Evidência.** Está detalhada na seção 3, e o resumo é este: 668 commits em 17 dias, 338 deles
+entre 08 e 10/09, com documentação (181 commits, 27% do total) e motor de matching como categorias
+dominantes, enquanto a distribuição nunca foi medida (RCD-04), o feedback nunca produziu um único
+sinal (RCD-01) e a cobertura por área segue "não medido" em todas as linhas reais. Construído
+antes de existir uso: juiz automático com o gabarito humano ainda sem nenhum rótulo, motivo da
+pausa com um evento de pausa na história do banco, exclusão com carência, exportação, 12 áreas com
+105 cursos e as regiões imediatas do IBGE.
+
+**Impacto.** Cada regra nova do motor nasce de auditoria interna, de perfil sintético ou de um
+modelo julgando outro modelo, nunca de alguém que usou o produto. O projeto acumula precisão onde
+não tem como saber se estava errando, e nenhuma hora foi para o que está zerado: origem da visita,
+conversa com usuário e busca de pagador.
+
+**Recomendação.** Congelar ajuste de regra do motor sem caso vindo de usuário real (recusa,
+mensagem ou conversa), junto com a Jooble, novas áreas, novas métricas e evolução do juiz — é a
+linha final do plano da seção 7. Falha de entrega, privacidade e segurança ficam fora do
+congelamento, que vale até o ciclo de feedback do RCD-01 produzir a primeira resposta.
 
 ### RCD-04 · Grave · Distribuição sem origem e métricas contaminadas
 
@@ -320,7 +350,7 @@ cadastro não é tração.
 - O guia pede "identifique as contas e sessões de teste para separá-las das métricas do piloto"
   (`docs/guia-publicacao-e-piloto.md:311-312`). Isso não foi feito.
 
-**Impacto.** Com 77 visitas, cada testador move a taxa de conversão em mais de um ponto. O E03
+**Impacto.** Com 77 identidades, cada testador move a taxa de conversão em mais de um ponto. O E03
 (escolher canal) não tem como ser lido.
 
 **Recomendação.** Registrar na visita o domínio do `document.referrer` e o `utm_source`, o que
@@ -339,7 +369,7 @@ demonstração como padrão de onboarding; reduzir o tempo até o valor reordena
 - O caminho é site → caixa de e-mail → site → Telegram. Das 11 pessoas que abriram o cadastro,
   6 concluíram a primeira etapa; dos 6 perfis salvos, 4 vincularam o Telegram.
 - Antes da conta, a única prova é o cartão "Exemplo ilustrativo · não é uma vaga real"
-  (`web/index.html:72`). É honesto, mas é promessa sem prova. O valor real chega depois do
+  (`web/index.html:77`). É honesto, mas é promessa sem prova. O valor real chega depois do
   vínculo, e aí chega rápido: mediana de 1,4 minuto entre a criação do perfil e a primeira lista.
 - A conta no último passo (C05) foi a decisão certa; o que ficou pendente foi pôr valor real
   antes dela.
@@ -362,7 +392,7 @@ demonstração como padrão de onboarding; reduzir o tempo até o valor reordena
 mais que o benefício prometido"); o painel responde "o que eu faço agora?"; custo de troca.
 
 **Evidência.** A conta mostra resumo do perfil, habilidades, estado das entregas, preferência de
-e-mail, exportação, saída, desvínculo e exclusão (`web/index.html:449-527`). Nenhuma vaga
+e-mail, exportação, saída, desvínculo e exclusão (`web/index.html:445-534`). Nenhuma vaga
 recebida, aberta ou em andamento aparece ali. O pré-PRD adia o histórico "até H5". O único ativo
 que existe (o histórico de recomendações e aberturas) está no banco e ninguém o vê. O custo de
 sair é zero.
@@ -379,7 +409,7 @@ TurboTax); a tela de saída como última conversa.
 
 **Evidência.** O trabalho definido no pré-PRD ("mostre quais vagas recentes merecem minha
 atenção") termina quando a pessoa é contratada. O motivo "Consegui um estágio" existe
-(`web/index.html:472`), mas nada acontece depois dele.
+(`web/index.html:477`), mas nada acontece depois dele.
 
 **Recomendação.** Quando alguém pausar com "Consegui um estágio", comemorar (o fim de uma
 experiência pesa na memória tanto quanto o pico) e perguntar, de forma opcional, quando o estágio
@@ -395,19 +425,19 @@ expectativa); números precisos; camadas de confiança.
 
 **Evidência.**
 
-- A landing garante "100% automático" e "Vagas que atendem seu perfil" (`web/index.html:54-55`).
+- A landing garante "100% automático" e "Vagas que atendem seu perfil" (`web/index.html:59-60`).
   A nota mínima é 40, 16% das entregas ficam abaixo de 60 pela regra atual, e a própria mensagem
   lista "Requisitos a conferir".
 - O bot, no vínculo: "Você vai receber as vagas compatíveis com o seu perfil todos os dias de
   manhã" (`supabase/functions/telegram-webhook/vinculo.ts:25`). Existem dias com "Nenhuma vaga
   nova compatível" (`radar/notification/formatador.py:95`), e a FAQ avisa isso.
 - A faixa de prova é uma lista de fornecedores: "ADZUNA GUPY GEMINI TELEGRAM"
-  (`web/index.html:109`). Para o estudante isso não prova nada, e "Gemini" sinaliza IA de
+  (`web/index.html:114`). Para o estudante isso não prova nada, e "Gemini" sinaliza IA de
   prateleira.
 - A demonstração mostra Gupy, "Híbrido", "Remoto", "Publicada hoje" e notas 83 e 79. Na
   realidade, 94% das entregas vêm da Adzuna, 63% das entregas desde 05/09 saem sem modalidade,
   a idade mediana da vaga é de 20 horas (27% com mais de 48) e a nota mediana é 72.
-- O plano gratuito promete "Até sete recomendações por dia" (`web/index.html:179`); a FAQ fala
+- O plano gratuito promete "Até sete recomendações por dia" (`web/index.html:184`); a FAQ fala
   em "uma mensagem por execução", e 40 entregas passaram da sétima posição no mesmo dia por
   causa de reexecuções.
 
@@ -425,9 +455,9 @@ perfil por dia, ou trocar "por dia" por "por execução". Tornar a demonstraçã
 é problema de design; ouvir quem nunca viu o produto.
 
 **Evidência.** A FAQ diz: "Se ficar faltando alguma coisa, é só falar com a gente pelo Telegram"
-(`web/index.html:205`). Qualquer texto enviado ao bot que não seja um token de vínculo recebe
+(`web/index.html:210`). Qualquer texto enviado ao bot que não seja um token de vínculo recebe
 "Para vincular, use o botão do Telegram no site do Radar de Estágio"
-(`supabase/functions/telegram-webhook/index.ts:91-98`, `vinculo.ts:33-34`), inclusive quando o
+(`supabase/functions/telegram-webhook/index.ts:95-101`, `vinculo.ts:34`), inclusive quando o
 chat já está vinculado. A pessoa que escreve "essa vaga não é da minha área" ou "como pauso?"
 recebe uma instrução de vínculo.
 
@@ -493,7 +523,7 @@ link, e "ver as outras 4" na conta (RCD-06). A amostra é pequena: decidir depoi
 adeus.
 
 **Evidência.** A entrega é diária às 07:23, sem opção de frequência. Entre os motivos de pausa
-está "Minha frequência mudou" (`web/index.html:475`): o produto reconhece o problema, mas só
+está "Minha frequência mudou" (`web/index.html:480`): o produto reconhece o problema, mas só
 oferece tudo ou nada.
 
 **Recomendação.** Ao pausar, oferecer "receber só às segundas" antes de confirmar.
@@ -503,9 +533,9 @@ oferece tudo ou nada.
 **Princípios:** efeito de progresso ("quem vê 30% concluído termina mais do que quem vê 0%;
 começar em 0% é erro de design"); gradiente de meta.
 
-**Evidência.** `percentualDoPasso` (`web/assets/app.js:549-551`) divide a posição pelo total e
+**Evidência.** `percentualDoPasso` (`web/assets/app.js:566-568`) divide a posição pelo total e
 mostra 0%, 25%, 50% e 75%: começa em zero e nunca chega perto do fim. Desde a C05 a conta é a
-última etapa (`app.js:581`), mas o título continua "Comece pela sua conta" (`app.js:759`) e
+última etapa (`app.js:598`), mas o título continua "Comece pela sua conta" (`app.js:776`) e
 aparece em "Etapa 4 de 4", justamente no passo que pede e-mail e senha.
 
 **Recomendação.** "Último passo: crie sua conta para ativar seu Radar" e progresso calculado como
@@ -517,7 +547,7 @@ aparece em "Etapa 4 de 4", justamente no passo que pede e-mail e senha.
 caminho até a dúvida); preço é filtro.
 
 **Evidência.** O menu leva a "Preços", onde o segundo card diz "Depois do piloto · A definir"
-(`web/index.html:185-196`). Ele levanta a pergunta "vai virar pago?" sem ancorar valor algum e,
+(`web/index.html:193-194`). Ele levanta a pergunta "vai virar pago?" sem ancorar valor algum e,
 depois de RCD-02, talvez prometa algo que o grupo não deva fazer.
 
 **Recomendação.** Tirar o segundo card e deixar um compromisso firme: gratuito durante o piloto,
@@ -528,8 +558,8 @@ sem cartão, e nada muda sem aviso e aceite.
 **Princípio:** camadas de confiança (rosto humano real, prova específica e verificável, oferta
 que cabe no problema, mecanismo coerente com a promessa).
 
-**Evidência.** O item "Sobre" do menu (`web/index.html:36`) leva à seção do CTA final
-(`web/index.html:236`). Os nomes do grupo aparecem só no rodapé.
+**Evidência.** O item "Sobre" do menu (`web/index.html:37`) leva à seção do CTA final
+(`web/index.html:241`). Os nomes do grupo aparecem só no rodapé.
 
 **Recomendação.** Uma seção curta "quem faz", com autorização: produto de estudantes para
 estudantes tem na afinidade do fundador a prova mais barata que existe.
