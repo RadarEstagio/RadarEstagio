@@ -201,6 +201,20 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
+- **Raciocínio da extração em `low`** (11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
+  pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
+  4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
+  US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
+  gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
+  `low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
+  padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
+  um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
+  cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
+  ~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
+  11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
+  41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
+  comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
+  trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
 - **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
   é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
   mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
@@ -211,6 +225,25 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
   15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
   `criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
   `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
+- **Lote incompleto pede junto o que faltou** (10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
+  1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
+  de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
+  mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
+  uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
+  com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
+  com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
+  ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
+  Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
+  que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
+  conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
+  tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
+  acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
+  temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
+  troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
+  como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
+  na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
+  extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
+  os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
 
 ### Pontuação: por que os pesos são estes
@@ -221,9 +254,37 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   perfil vale como incerteza ("não informado"), nunca como veto. As travas de 60/70 pontos por
   habilidade ausente foram removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de
   Dados a 48 por "faltar Power BI") enquanto anúncios sem stack ocupavam o topo.
-- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, porém
-  atrás de qualquer vaga com requisito batido. Era 0.35 até 09/09/2026, quando a mensagem do
-  Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, atrás
+  de vaga com boa parte dos requisitos batidos, mas não de *qualquer* vaga com requisito batido:
+  quem atende 1 de 8 ou mais tem cobertura menor (2/9 < 0.25). Era 0.35 até 09/09/2026, quando a
+  mensagem do Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Vaga sem nenhum requisito atendido não passa da neutra** (10/09/2026). Com um requisito só,
+  a suavização dava 0.5 a quem não atendia nada, o dobro da vaga sem stack. A Monte Carlo
+  (obrigatório Excel, que não conta em computação, e desejável Power BI) tirava 75 para os dois
+  estudantes de Engenharia de Software sem atender nada: na execução de 10/09 ficou em 7º e 9º,
+  sem ser enviada, e entre as candidatas não enviadas estava em 1º e 2º. Agora, se nenhum
+  requisito que conta na nota é atendido, em nenhuma das listas, a cobertura fica no máximo em
+  0.25; quem atende ao menos um segue a fórmula. O teto nunca sobe nota e não é peso novo: é
+  coerência com a cobertura neutra, como a troca de 0.35 por 0.25. Office e idioma atendidos em
+  computação continuam fora da conta e não tiram a vaga do teto. Medido nas 119 extrações da
+  versão atual contra 18 perfis (6 reais e 12 do catálogo): 300 de 2.142 pares caem, 9 abaixo
+  da nota mínima. Nas candidatas das últimas 48 h ainda não enviadas dos 4 perfis reais com
+  candidatas, saem das 7 primeiras 9 vagas, todas sem requisito atendido; entram 9, seis que
+  batem algo do perfil e três sem requisito atendido que ganham pelos outros fatores (curso,
+  área, interesse). O teto é da vaga inteira, não de cada lista: obrigatória não atendida com
+  desejável atendido continua valendo 0.5 com peso 80%, e a Colégio IPA, que pede "Suporte" e
+  cita "Programação", tira 75. Por lista, os pares com nota 70 ou mais sem obrigatória atendida
+  cairiam de 15 para 8, mas mudaria também vaga com todas as obrigatórias batidas e um
+  desejável faltando; fica para decidir com `vaga_irrelevante`.
+- **"Planilhas" é família atendida por Excel** (10/09/2026). Era membro de Pacote Office, não
+  nome de família, então Excel não atendia "planilhas" (7 extrações), "planilhas eletrônicas"
+  nem "Google Sheets". Com o teto acima, a vaga de Administração que pedia só "planilhas
+  eletrônicas" caía de 65 para 54 para a estudante que tem Excel; agora sobe para 75, e 39
+  pares da medição acima sobem por isso. Custo aceito: "Controle de planilhas" no perfil deixa
+  de atender "planilhas" por palavras, porque a família decide sozinha o requisito que nomeia.
+  Seguem abertos: "Pacote Office" no perfil não atende "Excel" (56 extrações; é a única
+  habilidade de Office que o catálogo sugere para Direito, Saúde e Educação), e Excel não atende
+  "informática" nem "microinformática" (2 extrações cada).
 - **Requisito genérico é atendido por habilidade da mesma família** (09/09/2026): "banco de
   dados" por SQL/MySQL/Postgres, "back-end" por Java/Spring/Django/Node, "front-end" por
   React/HTML/CSS/JS, "programação" por qualquer linguagem, "ETL", "cloud", "versionamento",
