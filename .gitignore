@@ -47,3 +47,8 @@ HANDOFF.md
 .agents/
 .claude/skills/
 .claude/worktrees/
+
+# Arquivos de rotulagem: têm vagas reais e perfil_id, ficam fora do Git
+gabaritos/
+gabarito-*.json
+descartes-*.json

@@ -122,7 +122,7 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Rotular os descartes.** `python -m radar descartes` já exporta a amostra com o motivo, mas
   ninguém preencheu `descarte_correto` ainda. Sem isso, continuamos medindo só a qualidade do
   que foi entregue.
-- **Preencher o gabarito humano.** As 20 entregas de `docs/gabarito-2026-09-09.json` seguem com
+- **Preencher o gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem com
   `relevante` nulo, então o juiz automático ainda não foi validado.
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
   compartilhado; a recomendação dessa revisão foi separar responsabilidades sem trocar de
@@ -152,18 +152,14 @@ que saíram de lá:
 
 ## 2.3 Migração do frontend para React (12/09/2026)
 
-**Estado: planejamento em revisão; implementação não iniciada.** Igor solicitou registrar
-a migração em PR, mantendo React com JavaScript, sem TypeScript e sem redesenhar a interface.
-O [plano detalhado](plano-migracao-react.md) define arquitetura proposta, etapas, contratos,
-transição dos testes, critérios de aceite, publicação e reversão.
+**Estado: execução incremental autorizada e delegada ao Luna xhigh.** Após a revisão da
+PR #62, Igor pediu ajustar o plano e executar. O [plano detalhado](plano-migracao-react.md)
+mantém a landing estática nesta fase e migra Auth/cadastro/conta para React com JavaScript,
+sem redesign ou TypeScript, em PRs menores começando pelo build compatível.
 
-As PRs [#60](https://github.com/RadarEstagio/RadarEstagio/pull/60) e
-[#61](https://github.com/RadarEstagio/RadarEstagio/pull/61) já estão integradas à `main` na base
-`0f0ca45`: preservar header/seções atuais, faixa de logos removida e selos da Adzuna.
-Isso registra o estado do código, não uma conferência do site publicado.
-
-Próximo passo: revisar o plano com Igor e obter autorização para implementar. Este registro
-não instala dependências, altera o frontend ou autoriza mudanças remotas de publicação/Auth.
+Base atual: `main` em `5ddf9a0`, após #60/#61/#63. Igor confirmou preservar essa versão,
+incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
+remotas e publicação continuam dependendo de autorização própria e evidência no guia.
 
 ## 3. Limitações e decisões que continuam valendo
 

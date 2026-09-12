@@ -189,11 +189,14 @@ SELO_DA_ADZUNA = (
 )
 
 
-def test_site_nao_cita_a_gupy_nem_exibe_faixa_de_logos_das_fontes():
+def test_site_nao_cita_a_gupy_e_a_faixa_de_fontes_volta_sem_ela():
     html = (RAIZ / "web/index.html").read_text()
+    faixa = html[html.index('class="proof-strip"') :]
+    faixa = faixa[: faixa.index("</section>")]
 
     assert "gupy" not in html.lower()
-    assert "proof-items" not in html
+    assert "Fontes e tecnologias do Radar" in faixa
+    assert "<span>ADZUNA</span><span>GEMINI</span><span>TELEGRAM</span>" in faixa
     assert "Gupy" not in (RAIZ / "web/privacidade.html").read_text()
     assert "Gupy" not in (RAIZ / "docs/politica-de-privacidade.md").read_text()
 

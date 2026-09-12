@@ -1,439 +1,293 @@
-# Plano de migração do frontend para React
+# Plano de migração incremental do frontend para React
 
-**Proposta registrada em 12/09/2026. Implementação não iniciada.**
+**Revisado em 12/09/2026 após os comentários da PR #62. Execução delegada ao Luna xhigh.**
 
-Este documento coloca em revisão o plano solicitado pelo Igor: migrar o frontend para
-React com JavaScript, sem TypeScript e sem redesenhar a interface. O PR que adiciona este
-documento é exclusivamente de planejamento; não instala dependências, altera a aplicação,
-publica uma nova versão ou autoriza a execução das etapas abaixo.
+Igor autorizou ajustar o plano e iniciar a execução. Esta PR continua exclusivamente
+documental; implementação será entregue em PRs menores, sem merge ou mudanças remotas
+automáticas. O estado da iniciativa fica no [plano geral](plano-geral.md#23-migração-do-frontend-para-react-12092026).
 
-O estado da iniciativa fica no [plano geral](plano-geral.md#23-migração-do-frontend-para-react-12092026).
-Este documento detalha a proposta técnica, a sequência e os critérios de conclusão.
+## 1. Objetivo, decisão e escopo
 
-## 1. Objetivo e base
+Migrar autenticação, cadastro e conta para React com JavaScript, preservando aparência,
+URLs, sessão e contratos. A landing permanece HTML com JavaScript modular nesta primeira
+fase. Isso não é uma conversão completa de todo o frontend: converter o conteúdo público
+para React fica para uma decisão posterior, sem bloquear a adoção nos fluxos interativos.
 
-Separar a interface em componentes e retirar autenticação, acesso a dados e validações do
-arquivo monolítico, facilitando a evolução do produto com testes de comportamento. Para o
-usuário, a migração deve preservar aparência, conteúdo, URLs, sessão e regras atuais.
-React não substitui decisões de arquitetura nem garante ganho de desempenho ou capacidade
-do backend por si só.
+| Alternativa avaliada | Ganho e custo | Decisão |
+|---|---|---|
+| JavaScript em módulos ES, com Vite | Separa o arquivo monolítico com menor esforço; mantém coordenação manual entre estado e DOM | Alternativa válida se o objetivo fosse apenas separar arquivos |
+| React + JavaScript nos fluxos interativos | Estado declarativo do cadastro e componentes compartilhados entre modal/conta; exige build, dependências e adaptação de testes | Escolhida para a evolução desses fluxos e pela familiaridade do Igor com React |
+| Toda a landing em React com geração estática/hidratação | Unifica a autoria em JSX, mas acrescenta renderização no build e cuidados de hidratação para conteúdo pouco interativo | Adiada; sem `prerender.mjs`, SSR ou `hydrateRoot` nesta fase |
 
-Base verificada: `main`, commit `0f0ca45aec8188a265cb82a4d57423f27c72cebe`.
+O custo de React se justifica pelo reuso e pela coordenação do formulário e da sessão, não
+pelo número de linhas do arquivo. Não promete mais tráfego, ganho de velocidade ou aumento
+da capacidade do backend. A [adoção parcial é suportada pelo React](https://react.dev/learn/add-react-to-an-existing-project).
 
-- [PR #60](https://github.com/RadarEstagio/RadarEstagio/pull/60): header flutuante sempre
-  visível, blur suave, dimensões reduzidas, tema separado do login e reformulação das seções.
-- [PR #61](https://github.com/RadarEstagio/RadarEstagio/pull/61): atualizações das fontes,
-  remoção da faixa de logos e referências à Gupy, e selos “Jobs by Adzuna”.
-- A faixa de logos deve continuar removida, conforme confirmação do Igor. Preservar os
-  selos, links, dimensões e tratamento de fundo no tema escuro da Adzuna.
-- Os ajustes de coleta, cotas, banco e Telegram já integrados à `main` não são parte desta
-  migração e não devem ser revertidos.
+Incluído: diálogos, Auth, cadastro, perfil pendente, edição, preferências, pausa, Telegram,
+exportação/exclusão, serviços, testes, build e documentação. Landing, header, tema, hero,
+FAQ e páginas legais mantêm conteúdo e CSS; seu JavaScript pode ser separado em módulos.
 
-Antes da implementação, atualizar a base e registrar o novo SHA caso outras mudanças sejam
-integradas. Não usar screenshots anteriores à PR #61 como referência do conteúdo atual.
+Fora do escopo: TypeScript na aplicação, redesign, novas funcionalidades, Next.js, Redux,
+Tailwind, cobrança, regras de recomendação, fontes, schema, RLS, RPCs ou Edge Functions.
+Não mudar domínio, Auth, CAPTCHA ou publicar em produção sem autorização própria.
 
-### PR futuro de implementação
+## 2. Base e preservação do trabalho atual
 
-- Branch proposta: `feat/frontend-react`, criada da `main` atualizada após aprovação do plano.
-- Título: `refactor(web): migra frontend para React preservando os fluxos atuais`.
-- Um PR em rascunho, com commits por decisão e testes junto de cada etapa.
-- Não misturar implementação com nova reformulação visual ou funcionalidade.
+Base remota conferida: `main` em `5ddf9a0`, após as PRs #60, #61 e #63. Atualizar e
+registrar o SHA ao começar cada entrega; não recuperar dados reais ou alterações retiradas.
 
-## 2. Escopo
+- #60: preservar header sempre visível, blur, dimensões, tema/login separados e seções atuais.
+- #61: preservar selos “Jobs by Adzuna”, links e logo oficial; Gupy continua fora das fontes.
+- #63: preservar fixtures sintéticas e a retirada dos arquivos reais de rotulagem do Git.
+- A #63 restaurou a faixa de fontes sem Gupy. Igor confirmou preservar a `main` atual;
+  manter essa faixa na migração, substituindo a orientação anterior de removê-la.
 
-### Incluído
+A revisão não autoriza mudanças de copy, logo ou layout. Registrar referência visual somente
+depois de conciliar mudanças recentes; um teste antigo não é licença para revertê-las.
 
-- Landing, header, tema, navegação, demonstração do hero, FAQ, chamada final e footer.
-- Diálogos, login, confirmação, reenvio e recuperação de senha.
-- Cadastro em etapas, conclusão de perfil pendente e edição de perfil.
-- Conta, preferências de e-mail, pausa e retomada.
-- Vínculo e desvínculo do Telegram, exportação, exclusão e cancelamento de exclusão.
-- Integração com Supabase, catálogos e eventos de produto.
-- Migração da cobertura de interface, build, CI, documentação e preparação de publicação.
+## 3. Organização e limites de responsabilidade
 
-### Fora do escopo
+Stack: React/JSX com JavaScript, Vite/npm, CSS existente, Supabase e Vitest/Testing Library.
+Manter inicialmente o SDK Supabase `2.116.0`; fixar versões compatíveis e Node no ambiente
+local, CI e build. Usar estado local/`useReducer` e Context restrito à sessão, sem store geral.
 
-- TypeScript na aplicação, Next.js, Redux, Tailwind ou nova biblioteca de componentes.
-- Alterações de layout, copy, marca, cores, blur, responsividade ou regras de produto.
-- Mudanças em Python, schema, RLS, RPCs, Edge Functions ou regras de recomendação.
-- Cobrança, novas telas, mudança de fontes ou decisão acadêmica D01.
-- Troca de domínio, hospedagem, configurações remotas do Auth ou ativação de CAPTCHA.
-- Mudanças nos textos legais, sua versão aceita ou estado de revisão.
-
-Exceção técnica delimitada: ajustar caminhos em geradores e testes Python se assets forem
-movidos, sem mudar conteúdo ou regras. Testes Deno já escritos em TypeScript podem continuar
-assim; isso não introduz TypeScript na aplicação.
-
-## 3. Arquitetura proposta
-
-| Responsabilidade | Escolha |
-|---|---|
-| Interface | React, JavaScript e JSX |
-| Desenvolvimento e build | Vite, npm e lockfile versionado |
-| Estilos | CSS atual, preservando ordem, seletores e estrutura necessária |
-| Dados e autenticação | Supabase, com os mesmos contratos |
-| Formulários | Estado local e `useReducer` para as transições do cadastro |
-| Sessão | Context restrito à autenticação e coordenação da tela |
-| Testes de interface | Vitest, React Testing Library, user-event e JSDOM |
-| Testes no navegador | Playwright sobre o artefato de produção |
-| Backend e suas suítes | Python e Deno mantidos |
-
-Fixar versões compatíveis no lockfile e a versão de Node usada em desenvolvimento, CI e
-build remoto. Migrar o SDK do Supabase do CDN para npm inicialmente na versão já usada,
-`2.116.0`; uma atualização do SDK será uma decisão separada.
-
-### HTML público no build
-
-A landing deve continuar entregando conteúdo no HTML inicial. Gerar seu HTML a partir dos
-componentes React durante o build e ativar as interações no navegador com `hydrateRoot`.
-Não manter uma cópia manual paralela da landing.
-
-- A geração é estática, sem servidor Node em produção e sem chamadas ao Supabase no build.
-- O primeiro render do navegador precisa corresponder ao HTML gerado.
-- Não acessar `window`, storage ou sessão em módulos executados pelo gerador estático.
-- Resolver a sessão após a hidratação, sem exibir um modal incorreto nos retornos do Auth.
-- Nenhum perfil, token ou dado privado pode aparecer no HTML gerado.
-- Preservar títulos, metadados, conteúdo, âncoras e aplicação inicial do tema.
-- Termos e privacidade continuam como entradas HTML estáticas nos mesmos endereços, sem
-  carregar autenticação ou analytics. Preservar seu estado de rascunho e `noindex`.
-
-Validar essa configuração em uma pequena prova técnica na primeira etapa de implementação.
-A proposta usa a [geração estática do Vite](https://vite.dev/guide/ssr.html#pre-rendering-ssg)
-e a [hidratação do React](https://react.dev/reference/react-dom/client/hydrateRoot), sem
-introduzir renderização por requisição ou um framework full-stack.
-
-### Organização
+Estrutura-alvo resumida:
 
 ```text
+scripts/build-web.sh
 web/
-├── package.json
-├── package-lock.json
-├── vite.config.js
-├── index.html
-├── privacidade.html
-├── termos.html
-├── assets/
-│   └── styles.css
-├── public/
-│   ├── config.js
-│   └── assets/
-│       ├── areas.json
-│       ├── cidades.json
-│       └── adzuna-logo.png
-├── src/
-│   ├── main.jsx
-│   ├── entry-static.jsx
-│   ├── app/
-│   │   ├── App.jsx
-│   │   ├── SessionProvider.jsx
-│   │   └── navigation.js
-│   ├── features/
-│   │   ├── landing/
-│   │   ├── autenticacao/
-│   │   ├── cadastro/
-│   │   └── conta/
-│   ├── components/
-│   ├── services/
-│   └── domain/
-├── scripts/
-│   └── prerender.mjs
-└── tests/
-    ├── unit/
-    ├── integration/
-    └── e2e/
+  index.html, termos.html, privacidade.html, config.js
+  assets/                 CSS, catálogos e logo, nas fontes atuais
+  package.json, package-lock.json, vite.config.js
+  src/
+    main.jsx              monta apenas as raízes interativas
+    landing/              tema, hero, CTA e navegação pública
+    app/                  sessão única e coordenação das telas
+    features/
+      autenticacao/
+      cadastro/
+      conta/
+    components/           diálogo, campos e feedback compartilhados
+    services/             Supabase, Auth, perfis, RPCs, eventos, catálogos
+    domain/               validações e normalizações sem DOM/rede
+  tests/                  unitários, integração, artefato e e2e
 ```
 
-- `features`: telas e interações de cada área.
-- `components`: elementos realmente compartilhados, como diálogo e campo de senha.
-- `services`: cliente único do Supabase, Auth, perfis, RPCs, catálogos e eventos.
-- `domain`: validações e normalizações puras, sem DOM ou acesso a rede.
-- `app`: sessão e coordenação das telas existentes.
+Manter as fontes dos catálogos, logo e `config.js` nos caminhos atuais. O build copia os
+recursos públicos necessários para os mesmos URLs da saída; CSS pode ser processado pelo
+Vite nas entradas HTML. Não criar cópias versionadas concorrentes nem mover os arquivos
+apenas para seguir um template do Vite. Se um caminho precisar mudar, ajustar gerador e
+todos os leitores sem mudar os dados ou exigir regeneração online.
 
-`web/dist/` será o único artefato publicável. Dependências, coverage, relatórios, caches e
-saída intermediária da geração estática ficam ignorados pelo Git e fora desse diretório.
+### HTML, sessão e DOM
 
-Não colocar o `app.js` inteiro em um efeito, executá-lo com `eval` ou injetar a aplicação
-como uma grande string HTML. React deve controlar suas subárvores. Integrações imperativas
-ficam limitadas a APIs como `<dialog>`, foco e CAPTCHA, com ciclo de vida explícito.
+- `index.html` continua a única fonte da landing; conteúdo/metadados permanecem presentes
+  sem JavaScript. Termos e privacidade continuam HTML, sem Auth/analytics e com seu `noindex`.
+- React controla apenas raízes explícitas de Auth/cadastro/conta. Não montar sobre a landing
+  inteira, renderizar a aplicação como string ou executar o `app.js` dentro de um efeito.
+- Uma instância do cliente Supabase e uma fonte de sessão atendem legado e React durante a
+  transição. Definir uma interface pequena de abrir fluxo/receber sessão, sem dois controllers.
+- Ao migrar uma subárvore, retirar seus listeners e sua marcação antiga da entrada ativa.
+  Nenhum nó pertence simultaneamente ao React e ao código imperativo.
+- Cadastro e edição compartilham componentes; não mover nós React com `append`. Integrações
+  de `<dialog>`, CAPTCHA, foco e download têm montagem/desmontagem explícitas.
+- Tema antecipado continua no `<html>`, fora das raízes React. A ausência de hidratação
+  elimina essa fonte de divergência, sem remover o teste de tema salvo antes do carregamento.
 
-### Navegação e configuração
+### URLs e configuração
 
-Preservar `/`, `/index.html`, `?conta`, `?fluxo=recuperar`, âncoras das seções da conta e da
-landing, e os caminhos `.html` legais. Centralizar a leitura e atualização das URLs atuais;
-não criar uma nova hierarquia de rotas neste PR. Não usar `HashRouter`: fragmentos já são
-usados por âncoras e retornos de autenticação.
+Preservar `/`, `/index.html`, `?conta`, `?fluxo=recuperar`, âncoras da conta/landing e
+páginas legais. Centralizar navegação sem inventar novas rotas ou usar HashRouter. Deixar
+o SDK consumir `code`, tokens e erros do retorno antes de limpar a URL. Sessão na homepage
+não deve abrir a conta sem a intenção existente. Dev usa `localhost:8000` com `strictPort`.
 
-Preservar `code`, `access_token`, erros e tipo de fluxo até o SDK processar o retorno. Uma
-sessão existente na homepage não deve abrir a conta sem a intenção de navegação atual.
+Manter `/config.js`, `window.RADAR_CONFIG` e o formato público. Configuração inválida exige
+erro útil. Nunca copiar `.env`, `service_role`, conexão Postgres ou tokens para o frontend;
+variáveis `VITE_*` são públicas. Preview/testes não usam produção por fallback silencioso.
 
-Manter `/config.js`, `window.RADAR_CONFIG` e seu formato público. Validar configuração ausente
-com mensagem útil, sem tela quebrada. URL e chave pública do Supabase não são credenciais
-de servidor; nunca incluir `service_role`, conexão Postgres, tokens do bot ou conteúdo do
-`.env` no bundle. Variáveis `VITE_*` não são um cofre de segredos.
+## 4. Entregas pequenas
 
-## 4. Sequência de implementação e entregáveis
+O planejamento fica na PR #62; implementação usa branches/PRs próprias. Testes acompanham
+cada fatia. PRs dependentes podem ser preparados em sequência, com base declarada; não
+fazer merge automático nem antecipar uma troca de publicação ainda não autorizada.
 
-| Etapa | Trabalho | Critério de conclusão |
+| Entrega | Conteúdo | Saída verificável |
 |---|---|---|
-| R0 — Referência | Atualizar SHA, mapear telas, URLs, eventos e testes; capturar screenshots e medições; conferir publicação | Base verificável e matriz de equivalência |
-| R1 — Infraestrutura | React/Vite, lockfile, lint e testes; validar HTML estático e hidratação em entrada isolada | Build reproduzível, sem alterar a entrada publicada |
-| R2 — Regras e serviços | Separar cliente, Auth, perfis, RPCs, catálogos, eventos e validações | Payloads e regras cobertos sem mudar comportamento |
-| R3 — Landing | Converter seções, header, tema, FAQ e componentes compartilhados | HTML inicial completo e comparação visual aprovada |
-| R4 — Autenticação | Sessão, login, confirmação, reenvio, recuperação e CAPTCHA | Sucessos, falhas e retornos por URL equivalentes |
-| R5 — Cadastro | Etapas, catálogos, consentimentos, perfil pendente e edição | Sem perda de dados, corrida de resposta ou envio duplicado |
-| R6 — Conta | Preferências, pausa, Telegram, exportação e exclusão | Contratos preservados e ações sensíveis confirmadas |
-| R7 — Substituição | Trocar entrada, adaptar leitores de assets e testes; remover implementação antiga | Uma implementação ativa e todos os cenários mapeados |
-| R8 — Entrega | Completar CI, revisão de performance, documentação, preview e plano operacional | Evidências e aprovação antes do merge e publicação |
+| P1 — Build compatível | Script legado/Vite, testes isolados do artefato e roteiro Pages; sem mudar frontend ativo | HTML legado idêntico na saída, script falha corretamente e PR pronta para revisão |
+| P2 — Módulos e infraestrutura | Vite/React/testes, serviços e sessão únicos, landing modular; interface ainda equivalente | Build/testes verdes e fronteiras para migração, sem converter toda a LP |
+| P3 — Cadastro e Auth | Componentes compartilhados, login, confirmação, recuperação, CAPTCHA e wizard | Jornadas e edição compartilhada equivalentes, sem duplo controller |
+| P4 — Conta e fechamento | Controles da conta, limpeza do legado migrado, cobertura e documentação final | Todos os cenários mapeados e uma implementação ativa por fluxo |
 
-Os testes acompanham R1–R7; R8 não é a primeira validação. Enquanto coexistirem versões,
-usar uma entrada temporária de desenvolvimento/teste que não entre no artefato publicado.
-Não disponibilizar acidentalmente duas aplicações ou telas parcialmente migradas ao público.
+P3/P4 não devem ser separados artificialmente se a edição compartilhada depender do wizard:
+migrar o componente compartilhado com seu consumidor ou usar uma ponte explícita testada.
+Não publicar um fluxo incompleto só para reduzir o tamanho da PR.
 
-Manter o desenvolvimento local em `localhost:8000` com `strictPort`, sem avançar para outra
-porta silenciosamente e quebrar redirects já configurados.
+A execução começa por P1, que não depende da decisão visual nem de acesso ao Pages. O restante
+pode ser desenvolvido/testado localmente; a abertura de branches com nova entrada pública
+depende da preparação de preview da seção 7. Bloqueio de publicação não impede entregar código
+e evidências locais, mas precisa ser comunicado, sem alegar preview validado.
 
-Ao mover catálogos e logo para `public/assets`, preservar suas URLs públicas e atualizar
-`scripts/gerar_cidades.py`, testes Python/Deno e referências HTML afetadas. Não duplicar
-catálogos, regenerá-los pela internet ou alterar normalizações para acomodar a mudança de
-pasta. O CSS compartilhado também precisa ser processado corretamente nas páginas legais.
+## 5. Contratos e regressões obrigatórios
 
-## 5. Invariantes e cenários de regressão
+O [contrato frontend](contrato-front.md) é a referência completa. Estes são os pontos de
+maior risco para mapear aos testes; não repetir esta lista no checklist final.
 
-O [contrato frontend](contrato-front.md) prevalece sobre exemplos simplificados deste plano.
+### Cadastro e perfil
 
-### Cadastro, perfil e catálogos
-
-- Perfil antes da conta; `signUp` somente no envio final, com bloqueio de submissão duplicada.
-- Preservar `options.data.cadastro_radar`, consentimentos, versão dos termos e sessão de eventos.
-- Não inserir nem fazer upsert direto em `perfis`. Manter criação pelo fluxo de confirmação
-  e `concluir_meu_cadastro({ cadastro })` para usuário confirmado sem perfil.
+- Perfil antes da conta; `signUp` só no envio final e sem submissão duplicada.
+- Preservar `options.data.cadastro_radar`, consentimentos, versão dos termos e sessão do funil.
+  Não inserir/upsert direto em `perfis`; manter confirmação e `concluir_meu_cadastro`.
 - Confirmação em outro aparelho não depende de rascunho local. Login não sobrescreve perfil
-  existente com dados não salvos do formulário.
-- Atualizações de perfil limitadas às colunas permitidas e ao usuário autenticado.
-- Manter 0–50 habilidades, limite de 100 caracteres, limpeza de espaços e escolha explícita
-  para continuar sem habilidades. Nenhuma habilidade sentinela deve representar lista vazia.
-- Preservar regras de cursos, sugestões e áreas, inclusive curso desconhecido, falha de
-  catálogo, edição com dados salvos e descarte de respostas antigas.
-- Cidades mantêm normalização, estado para homônimos, oito sugestões e navegação por teclado;
-  indisponibilidade do catálogo permite entrada manual com aviso, como hoje.
-- Não persistir novo rascunho de perfil ou senha no navegador. Preservar tratamento e limpeza
-  compatíveis de `radar-perfil-pendente` legado.
+  existente; edição limita colunas e filtra o usuário autenticado.
+- Manter 0–50 habilidades, até 100 caracteres após trim, e escolha explícita por lista vazia.
+  Preservar cursos livres, normalizações, áreas e sugestões dependentes do curso.
+- Cidades: oito sugestões, normalização, estado para homônimos, teclado e fallback com aviso.
+  Falha de catálogo na edição não apaga seleções válidas.
+- Respostas antigas não sobrescrevem curso, perfil ou sessão novos. Manter tratamento do
+  `radar-perfil-pendente` legado, sem persistir novos perfis/senhas no navegador.
 
-### Autenticação e ciclo de vida
+### Auth e ciclo de vida
 
-- Manter persistência e renovação da sessão, detecção de retorno na URL e comportamento das
-  chaves de storage do SDK. Não exigir novo login por causa da migração.
-- Recuperação exige sessão/evento válido, não apenas query string. Após trocar a senha,
-  preservar o encerramento de sessão e retorno ao login.
-- Reenvio mantém e-mail editável, espera de 60 segundos e tratamento de resposta 429.
-- CAPTCHA permanece opcional conforme configuração; script/widget únicos, expiração, erro,
-  falha de carga e descarte do token após tentativa precisam estar cobertos.
-- Limpar assinaturas, listeners e timers. Strict Mode não pode duplicar widgets, analytics,
-  mutações, animações ou verificações de sessão.
-- Logout limpa estado transitório e invalida respostas pendentes, sem limpar todo o storage
-  do navegador. Senhas não aparecem em perfil, eventos, logs ou persistência própria.
+- Persistência, refresh e storage da sessão preservados; migração não exige novo login.
+- Recuperação exige sessão/evento válido, não só query string; preservar logout após troca.
+- Reenvio: e-mail editável, 60 segundos e tratamento de 429.
+- CAPTCHA opcional: script/widget únicos, expiração, erros e descarte do token por tentativa.
+- Limpar assinaturas/timers/listeners; Strict Mode não pode duplicar eventos ou mutações.
+  Logout invalida respostas e estado transitório, sem limpar todo o storage do navegador.
+- Senha vai apenas ao Auth, nunca a perfil, métricas, logs ou persistência própria.
 
-### Conta e privacidade
+### Conta, Telegram e privacidade
 
-- Pausar salva primeiro; motivo posterior opcional ou com falha não desfaz a pausa.
-- Retomar limpa o motivo na mesma atualização.
-- Preservar RPCs `desvincular_meu_telegram`, `baixar_meus_dados`, `excluir_minha_conta` e
-  `cancelar_exclusao_da_minha_conta`, sem substituí-las por escritas diretas.
-- A exclusão continua em duas etapas, com carência de 60 dias e sessão mantida para cancelar.
-  Não modificar o estado anterior de pausa; cancelamento exige novo vínculo quando aplicável.
-- Confirmar ações sensíveis e devolver o foco ao controle correto; falha de escrita não
-  pode apresentar sucesso ou remover opções necessárias para recuperação.
-- Exportação preserva `meus-dados-radar.json` e revoga a URL temporária após o download.
-- Link do Telegram usa token atualizado. Preservar releitura ao retornar à página e após
-  a abertura do bot, sem prometer que a busca começou apenas porque houve vínculo.
-- Compartilhar componentes entre modal e conta sem mover manualmente nós gerenciados pelo React.
+- Pausa salva antes do motivo opcional; falha/omissão do motivo não a desfaz. Retomar limpa o motivo.
+- Preservar RPCs de desvínculo, exportação, exclusão e cancelamento, sem escritas substitutas.
+- Exclusão: carência de 60 dias, sessão mantida, estado de pausa preservado e controles
+  incompatíveis bloqueados; cancelamento exige novo vínculo quando aplicável.
+- Ações sensíveis têm confirmação/foco corretos; falha não pode apresentar sucesso.
+- Exportar `meus-dados-radar.json` e revogar a URL temporária.
+- Telegram usa token atualizado e relê perfil ao retornar/abrir o bot, sem promessa de busca.
 
-### Visual, conteúdo e eventos
+### Interface e eventos
 
-- Header sempre visível; mesmo blur, dimensões e limites; tema e login separados.
-- Manter as seções atuais sem numeração e a faixa de logos removida.
-- Preservar os três selos “Jobs by Adzuna”, seus links e o asset oficial, sem recriar referências
-  à Gupy ou regras antigas de responsividade das seções substituídas.
-- Tema mantém `radar-tema` e aplicação antes da interface carregar, sem inconsistência de
-  hidratação. Preservar fallback para armazenamento bloqueado.
-- Preservar `radar-sessao-eventos`, `radar-landing-vista`, catálogo de eventos e origem dos CTAs.
-- `landing_visualizada` continua deduplicado por sessão de navegador. Falha de analytics
-  nunca bloqueia a jornada; eventos não levam senha, token ou texto livre de dados pessoais.
-- Manter foco, Escape, navegação por teclado, labels, preenchimento automático e preferências
-  de movimento reduzido, sem adicionar wrappers que quebrem CSS ou semântica.
+- Preservar CSS, foco, Escape, labels, autofill, teclado e movimento reduzido; wrappers não
+  podem quebrar seletores. Manter header, tema/login separados, seções e atribuição à Adzuna.
+- Preservar `radar-tema`, `radar-sessao-eventos`, `radar-landing-vista`, nomes/origens dos
+  eventos e deduplicação de `landing_visualizada` por sessão de navegador.
+- Storage bloqueado e falha de analytics não interrompem a jornada; eventos não carregam
+  senhas, tokens ou texto livre de dados pessoais.
 
-## 6. Estratégia de testes
+## 6. Testes e CI proporcionais
 
-A validação feita ao conciliar a PR #60 com a `main`, em 12/09, registrou 1.037 testes Python
-passando, 27 pulados, 82 testes web passando e lint/formatação passando. Os checks Python,
-web e Cloudflare Pages também passaram na PR antes do merge. Isso não é evidência de
-implementação React, validação visual ou conferência do deployment de produção.
+Referência histórica anterior à #63: 1.037 testes Python passaram, 27 pulados, e 82 testes
+web passaram. Reexecutar na base de cada entrega; não apresentar esses números como teste
+da migração. Mapear individualmente os 73 cenários de `cadastro_test.ts`, não só a contagem.
 
-Dos 82 testes web, 73 estão em `cadastro_test.ts` e usam HTML e `app.js` diretamente. Mapear
-cada cenário para o novo teste, não apenas manter a contagem. Os outros nove testes Deno de
-banco, métricas e privacidade, além dos testes das Edge Functions, continuam protegidos.
-
-### Matriz inicial de transição
-
-| Cobertura atual | Destino e cuidado |
+| Cobertura atual | Tratamento |
 |---|---|
-| `tests/web/cadastro_test.ts` | Vitest/Testing Library com serviços simulados; equivalência dos 73 cenários antes de retirar o harness antigo |
-| `tests/test_frontend_activation.py` | Comportamento de Auth/ativação nos testes React e contrato de recursos no artefato; remover dependência de strings de funções/CDN |
-| `tests/test_product_copy.py` | Conteúdo renderizado, exemplos, atribuição e estados; preservar verificações da Adzuna e ausência da faixa |
-| `tests/test_product_events.py` | Testar payloads, origens, falhas e deduplicação pela fronteira de eventos |
-| `tests/test_areas_do_front.py` | Manter contrato do catálogo no Python; verificar campos renderizados no React |
-| `tests/test_cidades_do_front.py` e `tests/test_regioes.py` | Ajustar caminho de dados sem perder equivalência com o domínio |
-| Demais testes Python/Deno e funções | Manter checks; só alterar consumidores de caminhos quando necessário |
+| `tests/web/cadastro_test.ts` | Portar cenários para Vitest/Testing Library por fluxo; remover harness antigo só após equivalência |
+| `tests/test_frontend_activation.py` | Migrar buscas por funções/CDN para comportamento de Auth e testes do artefato |
+| `tests/test_product_copy.py` | Preservar conteúdo, atribuição e referência visual atual; HTML estático continua testável |
+| `tests/test_product_events.py` | Verificar payloads, origem, deduplicação e falhas na fronteira do serviço |
+| Testes de áreas, cidades e regiões | Preservar contratos Python e dados; mover apenas verificações de UI quando necessário |
+| Demais testes Python, nove Deno e Edge Functions | Manter checks e cobertura, sem dependência nova de build no domínio Python |
 
-Testes de detalhes internos podem ser substituídos por verificações de comportamento, nunca
-apagados apenas para deixar o CI verde. Não conservar um `app.js` morto para satisfazer buscas
-de texto. A suíte Python de domínio não deve passar a depender de um build npm para rodar.
+Vitest cobre funções puras e componentes com serviços simulados. O teste do artefato verifica
+HTML/recursos e ausência de arquivos privados. Playwright roda **Chromium no CI**, em desktop
+e viewport mobile, para jornadas críticas; Safari e Firefox têm roteiro manual de login,
+cadastro, tema, header/blur, foco e autofill. Não alegar validação manual não realizada.
 
-### Camadas novas
+Comparar screenshots dos estados afetados e bytes carregados antes/depois, nas mesmas
+condições. Sem criar projeto de benchmark, meta arbitrária de cobertura ou nova matriz de
+três motores no CI. Regressão visual ou de carregamento relevante precisa ser explicada.
 
-1. Unitários: validações, normalização, transições de cadastro, URLs e montagem de payloads.
-2. Integração: fluxos completos por componentes, operações exatas do Supabase, concorrência,
-   indisponibilidade e efeitos repetidos. Preferir queries por papel, label e texto visível.
-3. Artefato: conteúdo público no HTML, metadados, documentos legais, paths de config/catálogos/
-   logo, ausência de dependências e arquivos privados na saída.
-4. Navegador: build real em Chromium, Firefox e WebKit, com desktop e mobile; cadastro,
-   login/retorno, conta, diálogos, tema, scroll, âncoras, downloads e recarga direta.
-5. Visual: screenshots antes/depois nos mesmos estados e viewports; conferir manualmente
-   Safari, blur e autofill. WebKit automatizado não substitui a conferência do Safari real.
+Mocks/fixtures são sintéticos; não incluir perfis reais, tokens, e-mails ou snapshots de
+produção. CI e preview não enviam e-mail/Telegram nem gravam eventos reais. Teste integrado
+real exige conta e ambiente autorizados. Não silenciar avisos genéricos para esconder falhas.
 
-Usar mocks na fronteira de serviços ou ambiente de teste. CI, screenshots e preview não podem
-gravar métricas de produção, enviar e-mails/Telegram reais ou incluir perfis e tokens reais.
-Teste real controlado exige ambiente, conta e autorização explícitos; não é requisito para
-rodar a suíte local simulada. Avisos preexistentes de storage no harness antigo devem ser
-distintos de regressões, não silenciados com captura genérica de erros.
+### Comandos e regra de comentários
 
-Registrar bytes transferidos e métricas de carregamento antes/depois na mesma condição.
-Definir orçamento a partir da referência medida; não inventar cobertura percentual ou
-prometer ganho de velocidade. Regressão relevante precisa de análise e aprovação.
+Preservar jobs Python/Deno. Adicionar, por etapa, Node fixado, instalação com lockfile, lint,
+Vitest, build, artefato e Chromium. Scripts planejados:
+`dev`, `lint`, `test:run`, `build`, `test:artifact`, `test:e2e`, `preview`.
 
-## 7. CI e comandos futuros
+A regra do `CLAUDE.md` vale também para JS/JSX e CSS próprios do projeto: adicionar uma
+checagem de comentários baseada nos tokens/AST do parser JS com JSX e no parser CSS.
+Rejeitar comentários de linha/bloco, JSX e CSS, com testes positivos/negativos; não tratar
+URLs/strings como comentários. Dependências e artefatos gerados ficam fora dessa checagem.
+Não depender do lint padrão ou de regex sobre o texto inteiro.
 
-Preservar os jobs Python e Deno de `.github/workflows/testes.yml`. Adicionar Node, instalação
-reproduzível, lint, testes React, build, validação do artefato e testes no navegador, com
-relatórios e screenshots de falhas. Instalar os navegadores compatíveis com a versão fixada
-do Playwright no job apropriado. Nenhum check depende de segredos de produção.
+Rodar `uv run pytest -q` em comando separado antes de cada commit e conferir o resultado,
+além dos testes afetados. Commits convencionais em português, identidade Git configurada,
+sem coautoria de IA; preservar o ciclo add → commit → push e não reescrever histórico.
 
-Comandos propostos, ainda inexistentes no projeto:
+## 7. Transição concreta do Cloudflare Pages
 
-```sh
-npm --prefix web ci
-npm --prefix web run dev
-npm --prefix web run lint
-npm --prefix web run test:run
-npm --prefix web run build
-npm --prefix web run test:artifact
-npm --prefix web run test:e2e
-npm --prefix web run preview
-```
+O [guia](guia-publicacao-e-piloto.md) registra `exit 0` e saída `web`. Não assumir configurações
+independentes entre preview e produção. A solução é um build compatível com saída fixa
+`web/dist`, instalado em uma entrega anterior à mudança de frontend.
 
-Manter `uv run pytest -q` em comando separado, com resultado conferido antes de cada commit,
-além dos testes da etapa, conforme `CLAUDE.md`. Não versionar `dist`, `node_modules`, perfis,
-tokens ou relatórios com informações sensíveis.
+### Contrato do script `scripts/build-web.sh`
 
-## 8. Publicação e reversão
+- Sem `web/package.json`: gerar `web/dist` copiando somente os HTML públicos, `config.js`
+  e os recursos estáticos necessários de `assets/`, por lista explícita.
+- Com configuração Vite: `npm --prefix web ci` e `npm --prefix web run build`; manifest
+  incompleto ou falha do build encerra com erro, nunca cai no caminho legado.
+- Não copiar `web/` recursivamente para dentro de si, `node_modules`, testes, fontes novas,
+  secrets ou relatórios. O destino de limpeza é somente `web/dist`, com path validado.
+- Testar ambos os modos em diretórios temporários: paths públicos, conteúdo e falhas; incluir
+  arquivos proibidos nas fixtures para comprovar que não entram na saída.
+- Retorno zero só com artefato válido. Preview/produção usam o mesmo contrato de arquivos;
+  configuração de teste não pode substituir silenciosamente a de produção.
 
-O [guia operacional](guia-publicacao-e-piloto.md) registra Cloudflare Pages com raiz do
-repositório, build `exit 0` e saída `web`. Confirmar configurações atuais no serviço antes
-de alterá-las; o sucesso de um check de preview não confirma a configuração da produção.
+### Ordem operacional e dependências
 
-| Item | Configuração-alvo proposta |
-|---|---|
-| Projeto, domínio e branch de produção | Manter os vigentes; confirmar que produção acompanha `main` |
-| Raiz de trabalho | Raiz do repositório |
-| Build | `npm --prefix web ci && npm --prefix web run build` |
-| Saída publicada | `web/dist` |
-| Configuração pública | `/config.js`, sem mudar o contrato |
-| Runtime | Arquivos estáticos; não usar `vite preview` como servidor de produção |
+1. Abrir P1 com script/testes fora da pasta pública; frontend ativo continua idêntico.
+2. Após autorização de merge, integrar P1 à `main` e atualizar branches relevantes com o script.
+3. Registrar settings e deployment anterior. Com autorização para alterar o Pages, definir
+   Node compatível, build `bash scripts/build-web.sh` e saída `web/dist`.
+4. Validar um deployment legado com a nova configuração antes de introduzir Vite na entrada
+   publicada. O site continua estático e os próximos commits da `main` continuam publicáveis.
+5. Só depois habilitar previews das branches migradas, usando a mesma saída e sem dados reais.
+   Se não houver autorização/acesso para 2–4, manter desenvolvimento/artefatos locais e PRs
+   sem ativar a nova entrada pública; comunicar a pendência, não mudar settings por conta própria.
+6. Aprovar visual/fluxos no preview, conferir redirects com conta de teste autorizada e
+   coordenar os merges seguintes. Não mudar domínio, Site URL, allowlist ou CAPTCHA.
+7. Após cada publicação, registrar SHA, URL e verificações no guia. Merge/CI não comprovam
+   sucesso do deployment ou funcionamento real de Auth.
 
-### Ordem operacional
+A Cloudflare documenta [builds condicionais por script](https://developers.cloudflare.com/pages/how-to/build-commands-branches/).
+Conferir settings continua necessário, mas valida essa estratégia definida, não substitui a
+solução. Testar a versão nova localmente não exige alterar o ambiente de produção.
 
-1. Registrar projeto, domínio efetivo, settings, SHA e deployment de produção anterior.
-2. Antes do primeiro push com dependências frontend, verificar como isolar o build e a saída
-   do preview. Não deixar a configuração antiga publicar `web/node_modules` ou fontes novas.
-3. Preparar preview apenas do artefato `dist`, sem mudar produção para viabilizá-lo. Se o
-   projeto não permitir separar as configurações, definir publicação do artefato por um
-   mecanismo de preview autorizado antes de prosseguir; não improvisar um cutover de produção.
-4. Confirmar preview sem indexação e sem escrita em serviços de produção por padrão. Não
-   adicionar um fallback silencioso para credenciais/configuração de produção.
-5. Validar HTML, assets, temas, cadastro simulado, conta, URLs e erros. Registrar SHA e URL.
-6. Conferir Auth real apenas com conta/ambiente autorizados e redirects permitidos. Não mudar
-   allowlist, Site URL ou exigência de CAPTCHA automaticamente para fazer o teste passar.
-7. Obter aprovação visual e funcional; coordenar settings de build e merge do PR.
-8. Após publicar, conferir o deployment efetivo, início, legal, assets e jornada autorizada.
-   Registrar resultado no guia. CI verde e merge não são prova de publicação ou de jornada real.
+### Reversão
 
-O Vite produz um [artefato estático](https://vite.dev/guide/static-deploy.html). O Pages
-oferece [previews separados de produção](https://developers.cloudflare.com/pages/configuration/preview-deployments/);
-verificar a configuração do projeto antes de depender desse comportamento.
+Perda de sessão, quebra de jornada, duplicação de operações ou assets ausentes bloqueiam
+publicação. Se detectados depois, restaurar o último deployment de produção válido e
+reverter a PR correspondente pelo fluxo normal do Git. Com P1 presente, o build compatível
+continua aceitando a versão antiga; se reverter também P1, restaurar `exit 0`/saída `web`
+para os próximos builds. Não há rollback de banco: contratos e dados permanecem compatíveis.
+A [reversão do Pages](https://developers.cloudflare.com/pages/configuration/rollbacks/) usa
+deployments de produção, não previews; conferir landing, assets, sessão e login depois.
 
-### Rollback
+## 8. Documentação e aceite por PR
 
-- Gatilhos: perda de sessão, quebra de cadastro/retorno, tela indisponível, assets faltantes,
-  operações duplicadas ou outra regressão crítica confirmada.
-- Restaurar o último deployment de produção válido, cujo identificador foi registrado.
-- Reverter o PR pelo fluxo normal do Git e restaurar build/saída anteriores para os próximos
-  deployments; não usar reset destrutivo nem reescrever a `main`.
-- Conferir landing, assets, sessão e login após a reversão.
-- Não há rollback de banco previsto: a migração não altera schema ou contratos. Dados criados
-  pelos fluxos existentes durante a nova versão precisam continuar utilizáveis pela antiga.
+Atualizar quando a implementação mudar, sem declarar recursos instalados antes da hora:
 
-A [reversão do Pages](https://developers.cloudflare.com/pages/configuration/rollbacks/)
-usa deployments anteriores de produção, não previews. A restauração do artefato e a correção
-das configurações dos próximos builds são passos distintos.
+- `README.md`: “Frontend local”, descrição da stack e comandos de desenvolvimento/testes.
+- `CLAUDE.md`: “Stack”, landing estática versus fluxos React, dependências e checagem de comentários.
+- `docs/arquitetura.md`: dono do DOM, sessão única, serviços e adoção incremental.
+- `docs/contrato-front.md`: novas referências executáveis, sem mudar regras de negócio.
+- `docs/guia-publicacao-e-piloto.md`: build compatível, settings/evidências reais e rollback.
+- Plano geral: avanço e pendências; `web/README.md` continua histórico.
 
-## 9. Commits e documentação
+Cada PR informa sua base/dependências, cenários migrados, comandos e resultados executados,
+screenshots quando aplicável, diferença de carregamento e pendências de validação/publicação.
 
-Sequência sugerida para o PR de implementação, mantendo cada fatia testável:
+- [ ] Escopo da entrega completo, sem redesign ou mudança de contrato.
+- [ ] Cenários afetados da seção 5 mapeados; testes, lint e artefato passam.
+- [ ] Uma fonte de sessão e um controlador por subárvore; sem código morto para satisfazer testes.
+- [ ] Comparação visual e roteiro manual registrados, com o não verificado explicitado.
+- [ ] Documentação, dependências de merge, preview e reversão claros.
+- [ ] Aprovação necessária obtida antes de merge, mudança remota ou publicação.
 
-1. `docs(web): registra referência e critérios da migração`
-2. `build(web): prepara React Vite e testes`
-3. `refactor(web): separa serviços e validações`
-4. `refactor(web): migra landing para componentes React`
-5. `refactor(web): migra autenticação e sessão`
-6. `refactor(web): migra cadastro e edição de perfil`
-7. `refactor(web): migra controles da conta`
-8. `refactor(web): substitui entrada legada e adapta cobertura`
-9. `ci(web): valida build e fluxos no navegador`
-10. `docs(web): atualiza arquitetura publicação e reversão`
-
-Os checks mínimos das etapas precisam existir desde o começo; o commit de CI final completa
-a proteção, não adia todos os testes. Usar exclusivamente a identidade Git configurada,
-sem coautoria de IA, seguindo as regras de commits do projeto.
-
-Na implementação, atualizar README principal, arquitetura, contrato frontend e guia
-operacional conforme o que realmente mudar. Não documentar React como stack já instalada
-neste PR de planejamento. `web/README.md` continua histórico, não a fonte de instruções.
-
-## 10. Evidências e checklist de aceite do PR de implementação
-
-A descrição deve apresentar objetivo, escopo, base de referência, mapa de cenários antigos
-para novos, resultados dos comandos executados, screenshots, comparação de carregamento,
-URL/SHA do preview, procedimento operacional e limitações conhecidas. Separar problemas
-preexistentes, testes simulados e validações reais; não tratar item não verificado como sucesso.
-
-- [ ] Plano aprovado e início da implementação autorizado.
-- [ ] Base atualizada e referência visual registrada após as PRs #60 e #61.
-- [ ] React com JavaScript, sem TypeScript na aplicação ou redesign.
-- [ ] Landing entrega HTML público, hidrata sem erro e mantém metadados e URLs.
-- [ ] Header e seções preservados; faixa de logos ausente; selos da Adzuna mantidos.
-- [ ] Sessões existentes, cadastro, confirmação, reenvio e recuperação equivalentes.
-- [ ] Perfil, catálogos, consentimentos e validações preservados.
-- [ ] Conta, pausa, Telegram, exportação e exclusão cobertos, inclusive falhas.
-- [ ] Eventos sem duplicação e sem dados pessoais indevidos.
-- [ ] Teclado, foco, temas, mobile e Safari conferidos.
-- [ ] Todos os cenários antigos têm cobertura equivalente registrada.
-- [ ] Python, Deno, React, lint, build, artefato e navegador passam.
-- [ ] Código legado removido, sem cópias concorrentes de interface ou catálogos.
-- [ ] Carregamento comparado com a referência, com desvios analisados.
-- [ ] Documentação atualizada e preview aprovado pelo Igor.
-- [ ] Publicação e rollback preparados, sem mudança remota implícita.
-
-Não fazer merge com regressão de contrato, perda de cobertura, diferença visual não aprovada,
-erro de hidratação, vazamento de configuração privada ou publicação sem reversão preparada.
-O resultado deve ser o Radar atual em uma base React organizada; evolução visual e de produto
-fica para outros PRs.
+A conclusão desta fase é React nos fluxos interativos e landing estática preservada. A
+conversão posterior da landing permanece uma decisão separada, não uma entrega concluída.

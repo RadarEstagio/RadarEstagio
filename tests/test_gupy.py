@@ -49,13 +49,15 @@ def test_converte_resposta_da_gupy_em_vagas(httpx_mock: HTTPXMock, coletor: Cole
 
     assert len(vagas) == 3
     primeira = vagas[0]
-    assert primeira.id_externo == "12262661"
+    assert primeira.id_externo == "90000001"
     assert primeira.fonte == "gupy"
-    assert primeira.titulo == "Estagiário de TI - Vila Olímpia/SP"
-    assert primeira.empresa == "LUZA GROUP BRASIL LTDA"
+    assert primeira.titulo == "Estágio em TI - Zona Sul/SP"
+    assert primeira.empresa == "Empresa Exemplo A"
     assert primeira.localizacao == "São Paulo, São Paulo"
-    assert primeira.descricao.startswith("Venha fazer parte de um ecossistema vivo")
-    assert primeira.url.startswith("https://luzagroup.gupy.io/job/")
+    assert primeira.descricao.startswith(
+        "Vaga ilustrativa de estágio em TI para os testes do Radar."
+    )
+    assert primeira.url.startswith("https://exemplo-a.gupy.io/job/")
     assert primeira.publicada_em == datetime(2026, 8, 26, 13, 50, 23, 283000, tzinfo=UTC)
 
 
