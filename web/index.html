@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260912-header-blur-suave" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260912-header-logo" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
     <script src="assets/app.js?v=20260912-header-visivel" defer></script>
@@ -27,7 +27,16 @@
     <header class="site-header" id="inicio">
       <div class="container header-inner">
         <a class="brand" href="#inicio" aria-label="Radar de Estágio, início">
-          <span class="radar-mark" aria-hidden="true"><i></i></span>
+          <svg class="brand-symbol" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <path d="M16 6a10 10 0 0 1 7.1 2.9L16 16Z" fill="currentColor" opacity=".2"></path>
+            <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M26 16a10 10 0 1 1-10-10" opacity=".55"></path>
+              <path d="M21 16a5 5 0 1 1-5-5" opacity=".8"></path>
+              <path d="m16 16 7.1-7.1"></path>
+            </g>
+            <circle cx="16" cy="16" r="1.7" fill="currentColor"></circle>
+            <circle cx="23.1" cy="8.9" r="1.8" fill="currentColor"></circle>
+          </svg>
           <span>Radar<span>Estágio</span></span>
         </a>
         <nav class="desktop-nav" aria-label="Navegação principal">

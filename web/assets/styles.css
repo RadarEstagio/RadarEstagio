@@ -117,7 +117,8 @@ p, h1, h2, h3 { margin-top: 0; }
   background: var(--surface);
   box-shadow: 0 2px 3px rgba(0, 0, 0, .025), var(--shadow);
 }
-.header-inner > .brand { min-height: 56px; padding: 10px 20px; }
+.header-inner > .brand { min-height: 52px; gap: 9px; padding: 10px 16px; font-size: 17px; font-weight: 700; letter-spacing: -.035em; }
+.brand-symbol { display: block; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; color: var(--white); background: var(--accent-deep); }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .header-utilities { display: flex; align-items: center; padding: 5px; }
 .header-actions > .button { min-height: 56px; padding: 10px 22px; font-size: 14px; }
@@ -510,7 +511,7 @@ p, h1, h2, h3 { margin-top: 0; }
 
 @media (max-width: 760px) {
   .container { width: min(calc(100% - 28px), var(--container)); }.section { padding: 78px 0; }
-  .site-header { padding-block: 12px; }.header-inner { gap: 12px; }.header-inner > .brand { min-height: 48px; padding: 8px 14px; }.header-actions { gap: 8px; }.header-utilities { padding: 1px; }.header-actions > .button { min-height: 48px; padding-inline: 16px; }.brand { font-size: 17px; }.radar-mark { width: 30px; height: 30px; }
+  .site-header { padding-block: 12px; }.header-inner { gap: 12px; }.header-inner > .brand { min-height: 46px; padding: 8px 12px; font-size: 16px; }.brand-symbol { width: 28px; height: 28px; border-radius: 8px; }.header-actions { gap: 8px; }.header-utilities { padding: 1px; }.header-actions > .button { min-height: 48px; padding-inline: 16px; }.brand { font-size: 17px; }.radar-mark { width: 30px; height: 30px; }
   .hero { padding: 58px 0 20px; }.hero-grid { background: radial-gradient(circle 420px at 50% 82%, #dcebdd 0%, transparent 68%); }.hero h1 { font-size: clamp(34px, 9.6vw, 42px); line-height: 1.15; }.hero-lead { font-size: 16px; }.hero-actions { align-items: stretch; flex-direction: column; }.button-large { width: 100%; }
   .trust-list { gap: 12px; flex-direction: column; align-items: center; }.hero-demo { min-height: 550px; }.orbit-one { width: 420px; height: 420px; }.orbit-two { width: 320px; height: 320px; }.telegram-chat { width: calc(100% - 8px); }.chat-header { padding-inline: 13px; }.chat-stage { min-height: 470px; padding-inline: 10px; }.chat-typing { inset-inline-start: 10px; }.chat-platform span { display: none; }.chat-message { padding-inline: 14px; }.chat-vacancy-title { font-size: 13px; }
   .pricing-grid { grid-template-columns: 1fr; }.plan { padding: 30px 25px; }.plan + .plan { border-left: 0; border-top: 1px solid var(--rail); }
