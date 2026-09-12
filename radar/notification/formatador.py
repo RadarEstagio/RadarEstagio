@@ -30,6 +30,10 @@ PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 NUMEROS_POR_LINHA = 5
 ACAO_DE_RECUSA = "feedback"
+FONTE_ADZUNA = "adzuna"
+URL_DA_ADZUNA = "https://www.adzuna.com.br"
+PROPORCAO_DE_ALERTA_DA_COTA = 0.8
+ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
 ROTULOS_DE_MOTIVO = {
     MotivoDeRecusa.NOTA: "A nota não fez sentido",
@@ -109,6 +113,10 @@ def cabecalho(momento: datetime) -> str:
     return f"📡 <b>Radar de Estágio</b> — {data_local(momento):%d/%m/%Y}"
 
 
+def formatar_milhar(numero: int) -> str:
+    return f"{numero:,}".replace(",", ".")
+
+
 def formatar_resumo_da_execucao(
     momento: datetime,
     usuarios: int,
@@ -120,6 +128,10 @@ def formatar_resumo_da_execucao(
     sem_entrega_por_revalidacao: int = 0,
     vagas_sem_extracao: int = 0,
     extracoes_nao_gravadas: int = 0,
+    adzuna_hoje: int | None = None,
+    adzuna_no_mes: int | None = None,
+    adzuna_limite: int | None = None,
+    adzuna_esgotada: bool = False,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -135,6 +147,16 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:
         linhas.append(f"⚠️ Extrações não gravadas no banco: {extracoes_nao_gravadas}")
+    if adzuna_hoje is not None and adzuna_no_mes is not None and adzuna_limite:
+        linhas.append(
+            f"Requisições à Adzuna: {formatar_milhar(adzuna_hoje)} hoje, "
+            f"{formatar_milhar(adzuna_no_mes)} de {formatar_milhar(adzuna_limite)} no mês "
+            f"({round(100 * adzuna_no_mes / adzuna_limite)}%)"
+        )
+        if adzuna_no_mes >= PROPORCAO_DE_ALERTA_DA_COTA * adzuna_limite:
+            linhas.append(f"⚠️ Adzuna passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite mensal")
+    if adzuna_esgotada:
+        linhas.append("⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim")
     return "\n".join(linhas)
 
 
@@ -150,7 +172,7 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
         f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
         f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
         f" · {escape(rotulo_modalidade(vaga))}",
-        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))}"
+        f"🏷️ {rotulo_da_origem(vaga)}"
         f" · Publicada em {data_de_publicacao(vaga.publicada_em):%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
@@ -203,6 +225,12 @@ def rotulo_modalidade(vaga: Vaga) -> str:
     if vaga.modalidade is None:
         return "Modalidade não informada"
     return ROTULOS_MODALIDADE[vaga.modalidade.value]
+
+
+def rotulo_da_origem(vaga: Vaga) -> str:
+    if vaga.fonte == FONTE_ADZUNA:
+        return ATRIBUICAO_DA_ADZUNA
+    return f"Fonte: {escape(rotulo_fonte(vaga.fonte))}"
 
 
 def rotulo_fonte(fonte: str) -> str:

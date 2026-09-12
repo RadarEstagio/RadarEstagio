@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from pathlib import Path
 from uuid import UUID
 
@@ -233,6 +234,19 @@ SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     where id = %(perfil_id)s
 """
 
+SQL_REQUISICOES_DA_FONTE = """
+    select coalesce(sum(requisicoes), 0)
+    from uso_das_fontes
+    where fonte = %(fonte)s and dia >= %(desde)s
+"""
+
+SQL_REGISTRAR_REQUISICOES_DA_FONTE = """
+    insert into uso_das_fontes (fonte, dia, requisicoes)
+    values (%(fonte)s, %(dia)s, %(requisicoes)s)
+    on conflict (fonte, dia)
+    do update set requisicoes = uso_das_fontes.requisicoes + excluded.requisicoes
+"""
+
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
 
@@ -422,6 +436,29 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao gravar o aviso de silêncio: {descrever(erro)}"
+            ) from erro
+
+    def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_REQUISICOES_DA_FONTE, {"fonte": fonte, "desde": desde}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler o uso da fonte {fonte}: {descrever(erro)}"
+            ) from erro
+
+    def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(
+                    SQL_REGISTRAR_REQUISICOES_DA_FONTE,
+                    {"fonte": fonte, "dia": dia, "requisicoes": requisicoes},
+                )
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao gravar o uso da fonte {fonte}: {descrever(erro)}"
             ) from erro
 
     def entregas_recentes(self, dias: int) -> list[EntregaParaJulgar]:

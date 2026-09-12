@@ -9,9 +9,12 @@ from pytest_httpx import HTTPXMock
 
 from radar.collectors.adzuna import (
     LIMITE_DE_PAGINAS_POR_REGIAO,
+    LIMITE_POR_MINUTO,
     RESULTADOS_POR_PAGINA,
     URL_BUSCA,
     ColetorAdzuna,
+    CotaDaAdzuna,
+    saldo_da_adzuna,
 )
 from radar.collectors.errors import ErroDeColeta
 from radar.settings import Settings
@@ -243,3 +246,81 @@ def test_erro_de_autenticacao_nao_e_tentado_de_novo(httpx_mock: HTTPXMock):
             coletor.coletar()
 
     assert esperas == []
+
+
+class Relogio:
+    def __init__(self) -> None:
+        self.agora = 0.0
+        self.esperas: list[float] = []
+
+    def __call__(self) -> float:
+        return self.agora
+
+    def esperar(self, segundos: float) -> None:
+        self.esperas.append(segundos)
+        self.agora += segundos
+
+
+def test_cota_segura_a_requisicao_que_passaria_do_limite_por_minuto():
+    relogio = Relogio()
+    cota = CotaDaAdzuna(relogio=relogio, esperar=relogio.esperar)
+
+    for _ in range(LIMITE_POR_MINUTO + 1):
+        cota.reservar()
+
+    assert relogio.esperas == [60]
+    assert cota.requisicoes == LIMITE_POR_MINUTO + 1
+
+
+def test_cota_nao_espera_depois_que_o_minuto_passou():
+    relogio = Relogio()
+    cota = CotaDaAdzuna(relogio=relogio, esperar=relogio.esperar)
+    for _ in range(LIMITE_POR_MINUTO):
+        cota.reservar()
+
+    relogio.agora += 61
+    cota.reservar()
+
+    assert relogio.esperas == []
+
+
+def test_saldo_e_o_menor_entre_dia_semana_e_mes():
+    assert saldo_da_adzuna(hoje=0, semana=0, mes=0) == 250
+    assert saldo_da_adzuna(hoje=10, semana=900, mes=100) == 100
+    assert saldo_da_adzuna(hoje=10, semana=10, mes=2450) == 50
+    assert saldo_da_adzuna(hoje=300, semana=0, mes=0) == 0
+
+
+def test_coleta_para_quando_o_saldo_acaba_e_devolve_o_que_ja_trouxe(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia(1))
+    cota = CotaDaAdzuna(saldo=1, esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http:
+        vagas = ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    assert len(vagas) == RESULTADOS_POR_PAGINA
+    assert len(httpx_mock.get_requests()) == 1
+    assert cota.esgotada
+
+
+def test_cota_conta_tambem_as_novas_tentativas(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=503, text="indisponível")
+    httpx_mock.add_response(json={"results": []})
+    cota = CotaDaAdzuna(esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http:
+        ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    assert cota.requisicoes == 2

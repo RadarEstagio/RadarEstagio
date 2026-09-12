@@ -203,6 +203,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .chat-company { margin: 2px 0 6px; color: var(--ink-soft); font-size: 11px; }
 .chat-vacancy p { margin: 2px 0 0; font-size: 11px; line-height: 1.42; }
 .chat-link { color: var(--chat-link); font-weight: 600; }
+.jobs-by-adzuna { display: inline-flex; align-items: center; gap: 4px; min-width: 116px; min-height: 23px; vertical-align: middle; }
+.jobs-by-adzuna a { color: inherit; font-weight: 600; }
+.jobs-by-adzuna img { display: block; width: auto; height: 23px; }
+:root[data-tema="escuro"] .jobs-by-adzuna img { padding-inline: 3px; border-radius: 4px; background: #ffffff; }
 .chat-message-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid var(--line); font-size: 10px; }
 .chat-message-footer time { color: var(--muted); font-weight: 500; }
 .chat-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 4px; }
@@ -231,11 +235,6 @@ p, h1, h2, h3 { margin-top: 0; }
 @keyframes chat-feedback-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 .section { border-top: 1px solid var(--rail); }
-.proof-strip + .section { border-top: 0; }
-.proof-strip { border-top: 1px solid var(--rail); border-bottom: 1px solid var(--rail); background: var(--surface); }
-.proof-inner { min-height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
-.proof-inner p { margin: 0; font-size: 13px; }
-.proof-items { display: flex; align-items: center; gap: 38px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .12em; }
 
 .section-heading { max-width: 780px; margin-bottom: 76px; }
 .section-heading h2, .frame-head h2, .transparency-copy h2, .final-card h2, .faq-intro h2 { margin-bottom: 0; font-size: clamp(32px, 3.2vw, 46px); font-weight: 600; line-height: 1.16; letter-spacing: -.018em; text-wrap: balance; }
@@ -481,7 +480,6 @@ p, h1, h2, h3 { margin-top: 0; }
   .hero-copy { max-width: 760px; }
   .faq-layout { grid-template-columns: 1fr; gap: 44px; }
   .how-layout { grid-template-columns: 1fr; }.steps { border-left: 0; border-top: 1px solid var(--rail-dark); }.final-card { grid-template-columns: 1fr; }.final-action { text-align: left; }
-  .proof-inner { align-items: flex-start; flex-direction: column; padding: 24px 0; }.proof-items { width: 100%; justify-content: space-between; }
 }
 
 @media (max-width: 760px) {
@@ -491,7 +489,7 @@ p, h1, h2, h3 { margin-top: 0; }
   .trust-list { gap: 12px; flex-direction: column; align-items: center; }.hero-demo { min-height: 550px; }.orbit-one { width: 420px; height: 420px; }.orbit-two { width: 320px; height: 320px; }.telegram-chat { width: calc(100% - 8px); }.chat-header { padding-inline: 13px; }.chat-stage { min-height: 470px; padding-inline: 10px; }.chat-typing { inset-inline-start: 10px; }.chat-platform span { display: none; }.chat-message { padding-inline: 14px; }.chat-vacancy-title { font-size: 13px; }
   .pricing-grid { grid-template-columns: 1fr; }.plan { padding: 30px 25px; }.plan + .plan { border-left: 0; border-top: 1px solid var(--rail); }
   .faq-list summary { padding: 19px 20px; font-size: 15px; }.faq-list details p { padding: 0 20px 22px 51px; }
-  .proof-items { gap: 18px; flex-wrap: wrap; justify-content: flex-start; }.benefit-grid, .transparency-layout { grid-template-columns: 1fr; }.benefit-card { min-height: 0; padding: 32px 26px; }.benefit-card + .benefit-card { border-left: 0; border-top: 1px solid var(--rail-dark); }
+  .benefit-grid, .transparency-layout { grid-template-columns: 1fr; }.benefit-card { min-height: 0; padding: 32px 26px; }.benefit-card + .benefit-card { border-left: 0; border-top: 1px solid var(--rail-dark); }
   .how { padding: 0; }.rail-band { height: 56px; }.hatch-band { height: 48px; }.frame-head, .how-copy { padding: 32px 26px; }.steps li { grid-template-columns: 58px 1fr; gap: 14px; padding: 28px 26px; }.signal-panel { min-height: 410px; }.signal-rings { width: 320px; height: 320px; }
   .final-cta { padding-top: 10px; }.final-card { gap: 35px; padding: 38px 25px; }.footer-inner { align-items: flex-start; flex-direction: column; gap: 18px; }.footer-inner p:nth-child(2) { margin-left: 0; }
   .signup-dialog { width: calc(100% - 12px); max-height: calc(100dvh - 12px); overflow-y: auto; border-radius: 19px; }.dialog-shell { display: block; min-height: 0; }.dialog-intro { padding: 28px 25px 24px; }.dialog-intro .radar-mark-dialog { width: 36px; height: 36px; margin-bottom: 27px; }.dialog-intro h2 { padding-right: 28px; margin-bottom: 10px; font-size: 27px; }.dialog-intro > p:not(.eyebrow) { display: none; }.privacy-note { padding-top: 18px; }.dialog-form-area { padding: 28px 23px; }.progress-wrap { margin-bottom: 26px; }.field-grid { grid-template-columns: 1fr; gap: 14px; }.field-full { grid-column: auto; }.option-grid { grid-template-columns: 1fr 1fr; }.form-actions .button { flex: 1; padding-inline: 13px; }.success-state { padding: 10px 0 25px; }
