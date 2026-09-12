@@ -71,14 +71,14 @@ def test_converte_resposta_da_adzuna_em_vagas(httpx_mock: HTTPXMock, coletor: Co
 
     assert len(vagas) == 3
     primeira = vagas[0]
-    assert primeira.id_externo == "5855737878"
+    assert primeira.id_externo == "9000000001"
     assert primeira.fonte == "adzuna"
     assert primeira.titulo == "Vaga de Estágio em TI"
-    assert primeira.empresa == "Premier Logistcs"
+    assert primeira.empresa == "Empresa Exemplo Tecnologia"
     assert primeira.localizacao == "Salvador, Bahia"
-    assert primeira.descricao.startswith("Estamos em busca de um(a) Estagiário(a) de TI")
+    assert primeira.descricao.startswith("Vaga ilustrativa de estágio em TI")
     assert primeira.url == (
-        "https://www.adzuna.com.br/details/5855737878?utm_medium=api&utm_source=teste"
+        "https://www.adzuna.com.br/details/9000000001?utm_medium=api&utm_source=teste"
     )
     assert primeira.publicada_em == datetime(2026, 8, 25, 18, 49, 50, tzinfo=UTC)
 
