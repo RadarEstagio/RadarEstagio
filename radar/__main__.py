@@ -22,6 +22,7 @@ from radar.avaliacao.gabarito import (
     selecionar_do_gabarito,
 )
 from radar.avaliacao.julgar import julgar_entregas
+from radar.collectors.adzuna import LIMITE_POR_MES, CotaDaAdzuna
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import (
     cidades_de_interesse,
@@ -29,6 +30,7 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
+from radar.cota import abrir_cota_da_adzuna, registrar_uso_da_adzuna, uso_da_adzuna
 from radar.domain.models import Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import ColetorDeVagas, Repositorio
@@ -235,12 +237,17 @@ def listar_usuarios(settings: Settings) -> list[Usuario]:
 
 
 def montar_coletor(
-    settings: Settings, cliente_http: httpx.Client, usuarios: list[Usuario]
+    settings: Settings,
+    cliente_http: httpx.Client,
+    usuarios: list[Usuario],
+    cota: CotaDaAdzuna | None = None,
 ) -> ColetorDeVagas:
     cidades = cidades_de_interesse(usuarios)
     termos = termos_de_interesse(usuarios)
     busca_geral = ha_curso_desconhecido(usuarios)
-    return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades, termos, busca_geral)
+    return criar_coletor(
+        settings, cliente_http, datetime.now(UTC), cidades, termos, busca_geral, cota
+    )
 
 
 def montar_extrator(settings: Settings) -> ExtratorEmLotes:
@@ -267,9 +274,10 @@ def executar_fluxo(
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
+    cota = abrir_cota_da_adzuna(repositorio, agora)
     try:
         resumo = executar(
-            montar_coletor(settings, cliente_http, repositorio.listar_ativos()),
+            montar_coletor(settings, cliente_http, repositorio.listar_ativos(), cota),
             extrator,
             notificador,
             repositorio,
@@ -289,13 +297,17 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
+    finally:
+        registrar_uso_da_adzuna(repositorio, cota, agora)
+    uso = uso_da_adzuna(repositorio, agora)
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
         f"em {extrator.requisicoes} requisições ao avaliador; "
         f"{resumo.usuarios_com_falha_de_revalidacao} usuários com falha de revalidação, "
         f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha; "
         f"{resumo.vagas_sem_extracao} vagas sem extração, "
-        f"{resumo.extracoes_nao_gravadas} extrações não gravadas"
+        f"{resumo.extracoes_nao_gravadas} extrações não gravadas; "
+        f"{cota.requisicoes} requisições à Adzuna"
     )
     avisar_operacao(
         settings,
@@ -311,6 +323,10 @@ def executar_fluxo(
             resumo.usuarios_sem_entrega_por_falha_de_revalidacao,
             resumo.vagas_sem_extracao,
             resumo.extracoes_nao_gravadas,
+            adzuna_hoje=uso[0] if uso else None,
+            adzuna_no_mes=uso[1] if uso else None,
+            adzuna_limite=LIMITE_POR_MES,
+            adzuna_esgotada=cota.esgotada,
         ),
     )
 

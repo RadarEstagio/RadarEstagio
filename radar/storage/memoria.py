@@ -1,3 +1,5 @@
+from datetime import date
+
 from radar.domain.models import (
     ChaveDaVaga,
     EntregaParaJulgar,
@@ -13,6 +15,7 @@ from radar.domain.models import (
 class RepositorioEmMemoria:
     def __init__(self, usuarios: list[Usuario]) -> None:
         self._usuarios = usuarios
+        self._uso: dict[tuple[str, date], int] = {}
 
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)
@@ -65,3 +68,13 @@ class RepositorioEmMemoria:
 
     def entregas_recentes(self, dias: int) -> list[EntregaParaJulgar]:
         return []
+
+    def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int:
+        return sum(
+            requisicoes
+            for (origem, dia), requisicoes in self._uso.items()
+            if origem == fonte and dia >= desde
+        )
+
+    def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
+        self._uso[(fonte, dia)] = self._uso.get((fonte, dia), 0) + requisicoes

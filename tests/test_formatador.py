@@ -557,3 +557,36 @@ def test_horario_real_depois_das_21h_de_brasilia_fica_no_proprio_dia():
 
     assert "Publicada em 04/09/2026" in mensagem([vaga_da_noite], MOMENTO_DE_TESTE)
 
+
+def test_resumo_mostra_o_uso_da_adzuna_e_avisa_perto_do_limite():
+    tranquilo = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=540, adzuna_limite=2500
+    )
+    perto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=2000, adzuna_limite=2500
+    )
+
+    assert "Requisições à Adzuna: 18 hoje, 540 de 2.500 no mês (22%)" in tranquilo
+    assert "⚠️" not in tranquilo
+    assert "⚠️ Adzuna passou de 80% do limite mensal" in perto
+
+
+def test_resumo_avisa_quando_a_cota_da_adzuna_esgotou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        adzuna_hoje=250,
+        adzuna_no_mes=900,
+        adzuna_limite=2500,
+        adzuna_esgotada=True,
+    )
+
+    assert "⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim" in texto
+
+
+def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():
+    assert "Adzuna" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
