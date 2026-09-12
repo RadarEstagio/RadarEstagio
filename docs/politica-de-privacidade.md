@@ -79,7 +79,7 @@ abaixo.
   interações com o bot. O Resend processa seu endereço de e-mail e o conteúdo das mensagens
   para enviar comunicações da conta.
 - **Busca e envio de recomendações.** O GitHub Actions processa o perfil, o identificador do
-  chat e os dados das recomendações durante as rotinas automáticas. Adzuna e Gupy recebem
+  chat e os dados das recomendações durante as rotinas automáticas. A Adzuna recebe
   termos de busca, incluindo a cidade dos perfis presenciais ou híbridos, sem identificador
   individual do estudante.
 - **Hospedagem e proteção do site.** A Cloudflare processa o tráfego do site e dados técnicos
