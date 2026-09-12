@@ -37,7 +37,6 @@ def test_demo_da_landing_e_identificada_e_repete_o_formato_da_entrega():
     assert "Requisitos atendidos:" in html
     assert "Requisitos a conferir no seu perfil:" in html
     assert ">match<" not in html.lower()
-    assert "Fontes e tecnologias do Radar" in html
     assert (
         ".chat-message-kicker span { color: var(--muted); font-size: 8px; font-weight: 500;" in css
     )
@@ -180,3 +179,31 @@ def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
     trecho = javascript[javascript.index('rpc("excluir_minha_conta")') :][:600]
 
     assert "signOut" not in trecho
+
+
+SELO_DA_ADZUNA = (
+    '<span class="jobs-by-adzuna">'
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by '
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">'
+    '<img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>'
+)
+
+
+def test_site_nao_cita_a_gupy_nem_exibe_faixa_de_logos_das_fontes():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "gupy" not in html.lower()
+    assert "proof-items" not in html
+    assert "Gupy" not in (RAIZ / "web/privacidade.html").read_text()
+    assert "Gupy" not in (RAIZ / "docs/politica-de-privacidade.md").read_text()
+
+
+def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert html.count(SELO_DA_ADZUNA) == 3
+    assert "Fonte: Adzuna" not in html
+    assert ".jobs-by-adzuna { display: inline-flex; align-items: center; gap: 4px;" in css
+    assert "min-width: 116px; min-height: 23px;" in css
+    assert (RAIZ / "web/assets/adzuna-logo.png").exists()

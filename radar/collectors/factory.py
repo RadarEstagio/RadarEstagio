@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import httpx
 
-from radar.collectors.adzuna import ColetorAdzuna
+from radar.collectors.adzuna import ColetorAdzuna, CotaDaAdzuna
 from radar.collectors.composto import ColetorComposto
 from radar.collectors.gupy import ColetorGupy
 from radar.collectors.jooble import ColetorJooble
@@ -25,6 +25,7 @@ def criar_coletor(
     cidades: Iterable[str] = (),
     termos: Iterable[str] = (),
     busca_geral: bool = False,
+    cota: CotaDaAdzuna | None = None,
 ) -> ColetorDeVagas:
     publicadas_desde = agora - timedelta(days=settings.dias_recentes)
     cidades_de_busca = tuple(cidades)
@@ -36,6 +37,7 @@ def criar_coletor(
             cidades_de_busca,
             termos=termos_de_interesse,
             busca_geral=busca_geral,
+            cota=cota,
         ),
         "gupy": ColetorGupy(cliente_http, publicadas_desde, cidades_de_busca),
         "jooble": ColetorJooble(

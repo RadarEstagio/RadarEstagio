@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Protocol
 
 from radar.domain.models import (
@@ -68,6 +69,10 @@ class RepositorioDeAvaliacoes(Protocol):
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None: ...
 
     def pausar(self, usuario: Usuario) -> None: ...
+
+    def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int: ...
+
+    def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None: ...
 
 
 class RepositorioDeMetricas(Protocol):

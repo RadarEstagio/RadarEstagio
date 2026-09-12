@@ -28,10 +28,10 @@ def test_modo_gemini_api_exige_chave():
         Settings(_env_file=None, **configuracao_base(avaliador="gemini_api"))
 
 
-def test_fontes_padrao_sao_adzuna_e_gupy():
+def test_fonte_padrao_e_so_a_adzuna():
     settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
 
-    assert settings.fontes_selecionadas() == ["adzuna", "gupy"]
+    assert settings.fontes_selecionadas() == ["adzuna"]
 
 
 def test_jooble_nao_entra_nas_fontes_padrao_e_exige_chave():

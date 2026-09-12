@@ -4,7 +4,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 FONTES_DISPONIVEIS = ("adzuna", "gupy", "jooble")
-FONTES_PADRAO = ("adzuna", "gupy")
+FONTES_PADRAO = ("adzuna",)
 SEPARADOR_DE_FONTES = ","
 
 

@@ -14,6 +14,10 @@ from radar.notification.formatador import (
 )
 
 MOMENTO_DE_TESTE = datetime(2026, 8, 26, 12, 0, tzinfo=UTC)
+ATRIBUICAO = (
+    '🏷️ <a href="https://www.adzuna.com.br">Jobs</a> by '
+    '<a href="https://www.adzuna.com.br">Adzuna</a>'
+)
 URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
 
 
@@ -216,7 +220,8 @@ def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     texto = mensagem([resultado(85).model_copy(update={"vaga": oportunidade})], MOMENTO_DE_TESTE)
 
     assert "📍 Rio de Janeiro · Híbrido" in texto
-    assert "🏷️ Fonte: Adzuna" in texto
+    assert ATRIBUICAO in texto
+    assert "Fonte: Adzuna" not in texto
     assert "Publicada em 25/08/2026" in texto
 
 
@@ -551,3 +556,37 @@ def test_horario_real_depois_das_21h_de_brasilia_fica_no_proprio_dia():
     )
 
     assert "Publicada em 04/09/2026" in mensagem([vaga_da_noite], MOMENTO_DE_TESTE)
+
+
+def test_resumo_mostra_o_uso_da_adzuna_e_avisa_perto_do_limite():
+    tranquilo = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=540, adzuna_limite=2500
+    )
+    perto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=2000, adzuna_limite=2500
+    )
+
+    assert "Requisições à Adzuna: 18 hoje, 540 de 2.500 no mês (22%)" in tranquilo
+    assert "⚠️" not in tranquilo
+    assert "⚠️ Adzuna passou de 80% do limite mensal" in perto
+
+
+def test_resumo_avisa_quando_a_cota_da_adzuna_esgotou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        adzuna_hoje=250,
+        adzuna_no_mes=900,
+        adzuna_limite=2500,
+        adzuna_esgotada=True,
+    )
+
+    assert "⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim" in texto
+
+
+def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():
+    assert "Adzuna" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)

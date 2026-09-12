@@ -52,7 +52,7 @@ positivo ou candidatura. O vocabulário desses marcos está em [`CONTEXT.md`](..
 ## 2. Resumo executivo e veredito
 
 O Radar de Estágio reduz o trabalho diário de estudantes que procuram o primeiro estágio. O
-sistema coleta vagas da Adzuna e da Gupy, elimina duplicatas e incompatibilidades evidentes,
+sistema coleta vagas da Adzuna, elimina duplicatas e incompatibilidades evidentes,
 extrai os fatos de cada anúncio com IA uma única vez, compara as oportunidades com o perfil do
 estudante por regras determinísticas e entrega pelo Telegram uma lista curta, ranqueada e
 explicada.
@@ -192,7 +192,7 @@ definições estão em [`metricas.md`](metricas.md).
 
 Catálogo completo em [funcionalidades](funcionalidades.md). Em resumo:
 
-- coleta combinada de Adzuna e Gupy, tolerando falha parcial; Jooble pronto e desligado;
+- coleta da Adzuna respeitando atribuição e limites dos termos; Gupy e Jooble com coletor, desligados;
 - busca dirigida pelos termos das áreas dos cursos cadastrados, somada a uma busca geral quando
   algum curso não é reconhecido; Adzuna com 10 páginas por região;
 - deduplicação dentro da coleta, entre fontes e contra republicações dos últimos 30 dias;
@@ -292,8 +292,8 @@ mais que não pedir nada.
 | Python e uv | Pipeline, regras e ambiente reproduzível | 638 testes passando, 24 ignorados sem PostgreSQL |
 | Deno | Testes do cadastro (DOM simulado) e Edge Functions | 36 testes de interface |
 | Adzuna | Fonte oficial de vagas | API autenticada; 4.988 vagas disponíveis pelos termos das 12 áreas (08/09) |
-| Gupy | Segunda fonte | Endpoint público interno, sem garantia contratual |
-| Jooble | Terceira fonte, desligada | Sondagem de 05/09: +19 vagas inéditas no Rio (~35%) |
+| Gupy | Desligada em 12/09/2026 | Termos proíbem agregar vagas; endpoint interno, sem contrato |
+| Jooble | Desligada | Sondagem de 05/09: +19 vagas inéditas no Rio (~35%); chave gratuita com 500 requisições no total |
 | Gemini API (`gemini-3.6-flash`) | Extração de fatos no Actions | Plano pago desde 10/09/2026; antes, cota gratuita de 20 requisições/min e incidente às 16:13 de 08/09 |
 | Antigravity (`agy`) | Extração local para desenvolvimento | Não disponível no Actions |
 | Telegram Bot API | Entrega, feedback e resumo de operação | 154 entregas reais em 12 dias |
@@ -337,7 +337,7 @@ religados um a um.
 ### 8.3 Ainda não comprovado
 
 - que o problema é frequente e importante para estudantes externos ao grupo;
-- que Adzuna e Gupy entregam vagas relevantes na maioria dos dias **em cada área**;
+- que a Adzuna entrega vagas relevantes na maioria dos dias **em cada área**;
 - que a nota concorda com estudantes das áreas novas (as listas de habilidades por área foram
   escritas pelo grupo e não passaram por revisão de quem é da área);
 - que o Telegram é aceito como canal de uso recorrente;
@@ -406,7 +406,7 @@ conversa produzem sinal melhor que teste A/B.
 | Reextração total em 09/09 | Alto | Cache versionado por prompt recomeça do zero | Acompanhar o resumo das 07:23; vagas sem extração voltam no dia seguinte |
 | Matching errado nas áreas novas | Alto | Sem julgamento humano; nove falhas corrigidas por revisão adversarial | H2 por área e revisão das listas por quem é da área |
 | Cobertura irregular por área | Alto | Medida em quantidade, não em relevância | H3 com perfis de áreas distintas |
-| Mudança no endpoint da Gupy | Alto | Risco permanente | Coletor isolado; Adzuna continua sozinha |
+| Estoque de uma fonte só (Adzuna) | Alto | Termos exigem atribuição e limitam a 2.500 requisições/mês; descrição completa depende de resposta da Adzuna | Pedido de parceria e limites; alternativas medidas em CLAUDE.md |
 | Job exceder 15 minutos | Médio | Mais áreas e 10 páginas por região aumentam a coleta | Medir duração no resumo; reduzir páginas se necessário |
 | Token do cron vencer | Alto | Vence em 09/09/2027; o radar para sem aviso | Registrar renovação com antecedência |
 | Não observar ação após a mensagem | Alto | Feedback implementado, zero respostas | Convidar colegas e ler o relatório |

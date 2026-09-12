@@ -8,7 +8,7 @@ próximos passos em `docs/plano-geral.md`.
 
 ## Fase atual: MVP de validação com usuários (Fase 2, em andamento)
 
-Funcionando hoje: duas fontes de vagas somadas (Adzuna e Gupy), banco Supabase com perfis,
+Funcionando hoje: vagas da Adzuna (a Gupy saiu em 12/09 pelos termos de uso), banco Supabase com perfis,
 vagas, avaliações, envios e eventos de produto por usuário, cadastro web com conta e vínculo
 com o Telegram, extração de fatos por IA e pontuação determinística de compatibilidade, entrega da mensagem ranqueada no Telegram,
 agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
@@ -30,10 +30,10 @@ deixou de ser o limite, e o que pesa é o custo por requisição e o tempo de ex
 Python; dependências em `pyproject.toml`. O que o manifesto e o código não dizem sozinhos:
 
 - **Adzuna**: API oficial e gratuita, com chave.
-- **Gupy**: API interna do portal (`employability-portal.gupy.io/api/v1/jobs`), sem chave, com
-  modalidade estruturada no campo `workplaceType`. LinkedIn está fora de escopo: bloqueia
-  coleta automatizada.
-- **Fontes ativas** vêm de `FONTES` (padrão `adzuna,gupy`) e são somadas por `ColetorComposto`,
+- **Gupy**: desligada desde 12/09/2026. Os termos proíbem agregar vagas e o endpoint usado
+  (`employability-portal.gupy.io/api/v1/jobs`) é interno; ver "Termos de uso das fontes". LinkedIn
+  está fora de escopo: bloqueia coleta automatizada.
+- **Fontes ativas** vêm de `FONTES` (padrão `adzuna`) e são somadas por `ColetorComposto`,
   que ignora uma fonte fora do ar e só falha se nenhuma responder. Fonte nova só entra se a
   validação comprovar cobertura insuficiente.
 - **Jooble**: coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
@@ -41,10 +41,10 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
   33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
   ~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
-  vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. Para ligar em produção:
-  secret `JOOBLE_API_KEY` + `FONTES: "adzuna,gupy,jooble"` no workflow. Upgrade futuro se a
-  fonte se provar: enriquecedor específico do InfoJobs (40% das vagas dela) destrava a
-  descrição completa.
+  vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
+  parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
+  várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
+  (40% das vagas dela) destrava a descrição completa.
 - **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
   para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
   padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele.
@@ -192,6 +192,46 @@ contrato completo para o front está em `docs/contrato-front.md`.
 
 O catálogo atual está em `docs/funcionalidades.md`. Abaixo
 só o conhecimento operacional que não dá para reconstituir lendo o código.
+
+### Termos de uso das fontes (12/09/2026)
+
+Leitura dos termos no texto original, depois do alerta do Igor. O que vale para o Radar:
+
+- **Adzuna, uso 1.** Os termos permitem "Publishing Adzuna ad listings" sem prazo. O teste de
+  14 dias e a proibição de agregação ("vacancy counts, average salaries") estão no parágrafo de
+  "Any other use". O Radar publica anúncios com link para a página da Adzuna (o `redirect_url`,
+  com o nosso app id), então cai no uso 1. Confirmação por escrito pedida no e-mail à Adzuna.
+- **Atribuição em cada anúncio exibido**: "Jobs by Adzuna", com "Jobs" ligado a adzuna.com.br e
+  "Adzuna" sendo o logo, também com link, em pelo menos 116×23 px. No Telegram vai o texto com
+  os dois links, porque mensagem de texto não tem imagem (aprovação pedida no e-mail). No site
+  vai o selo com `web/assets/adzuna-logo.png`, o logo oficial servido pelo site de
+  desenvolvedores da Adzuna; no tema escuro ele ganha fundo branco, sem mudar as cores.
+- **Limites**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
+  `CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
+  acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
+  `uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
+  sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
+  12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
+  mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
+  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso.
+- **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
+  where they provide listings content, will be considered a breach".
+- **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
+- **Pendente, a descrição completa.** O enriquecimento lê a página do anúncio no site da Adzuna
+  (`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
+  site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
+  12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
+  sai e a extração passa a ler só os 500 caracteres da API.
+- **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
+  and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
+  envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
+- **Jooble não é saída sem parceria**: a chave gratuita tem "a total lifetime limit of 500
+  requests per key" e devolve só um trecho da descrição.
+- **Alternativas medidas.** Greenhouse, Lever e Ashby têm API pública de vagas sem login, mas a
+  documentação trata das vagas da própria empresa e não dá licença a terceiros; em 12/09 havia 36
+  estágios em 6 empresas brasileiras nesses boards, quase todos em SP e BH. A Adzuna tem programa
+  de parceiros ("a sponsored feed of ads for your site… generate more revenue for you"), o
+  caminho para receita sem cobrar do estudante.
 
 ### Cota e modelo do Gemini
 
@@ -693,7 +733,7 @@ distante, lendo `radar/domain/regioes_imediatas.json` (510 regiões, gerado por
 - **Mesma região vale como a cidade** no pré-filtro e na trava de 30 para híbrido e indiferente.
 - **Na logística vale metade** da cidade, cerca de 2,5 pontos a menos: a própria cidade continua
   na frente, sem enterrar a vizinha.
-- **A coleta busca também a maior cidade da região** do perfil (Adzuna `where`, Gupy `city`),
+- **A coleta busca também a maior cidade da região** do perfil (Adzuna `where`),
   senão um perfil de Niterói sozinho dependeria de haver alguém do Rio para as vagas do Rio
   serem coletadas.
 - **O juiz recebe as cidades da região** no perfil; sem isso ele marcaria `logistica` na vaga
