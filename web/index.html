@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260912-secoes-lp" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260912-filtro-radar" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
     <script src="assets/app.js?v=20260912-header-visivel" defer></script>
@@ -161,40 +161,32 @@
       </section>
 
       <section class="transparency section" aria-labelledby="transparency-title">
-        <div class="container transparency-layout">
-          <div class="transparency-copy">
-            <p class="eyebrow">Mais contexto. Menos dúvida.</p>
-            <h2 id="transparency-title">Entenda a vaga <span class="continuacao">antes de se candidatar.</span></h2>
-            <p class="transparency-lead">Veja o que combina com seu perfil, quais requisitos merecem atenção e o que o anúncio não informa.</p>
-            <div class="transparency-note">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" /></svg>
-              <p><strong>A decisão continua sua.</strong> Cada recomendação inclui o link do anúncio original para você conferir e se candidatar.</p>
+        <div class="container">
+          <div class="transparency-heading">
+            <div class="transparency-copy">
+              <p class="eyebrow">Antes de chegar até você</p>
+              <h2 id="transparency-title">Menos ruído na busca.<br /><span class="continuacao">Mais critério na escolha.</span></h2>
             </div>
+            <p class="transparency-lead">Encontrar uma vaga é só o começo. O Radar cruza os anúncios com seu perfil e separa o que faz sentido do que só ocupa seu tempo.</p>
           </div>
-          <figure class="analysis-example">
-            <div class="analysis-card">
-              <div class="analysis-heading">
-                <p class="analysis-kicker">Uma recomendação, por dentro</p>
-                <h3>Estágio em desenvolvimento</h3>
-              </div>
-              <dl class="analysis-details">
-                <div class="analysis-item analysis-item-match">
-                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></svg>Requisitos atendidos</dt>
-                  <dd>Java e SQL estão no anúncio e no seu perfil.</dd>
-                </div>
-                <div class="analysis-item">
-                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>Requisitos a conferir</dt>
-                  <dd>Spring aparece na vaga, mas não foi informado no seu perfil.</dd>
-                </div>
-                <div class="analysis-item">
-                  <dt><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7h.01" /></svg>Modalidade não informada</dt>
-                  <dd>O anúncio não diz se a vaga é presencial, híbrida ou remota.</dd>
-                </div>
-              </dl>
-              <p class="analysis-principle">Se o anúncio não diz, o Radar não inventa.</p>
-            </div>
-            <figcaption>Exemplo ilustrativo · não é uma vaga real</figcaption>
-          </figure>
+          <ol class="filter-principles">
+            <li>
+              <span class="filter-index" aria-hidden="true">01</span>
+              <h3>Anúncio repetido <br />não é novidade.</h3>
+              <p>Fontes diferentes podem publicar a mesma vaga. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
+            </li>
+            <li>
+              <span class="filter-index" aria-hidden="true">02</span>
+              <h3>Seu perfil <br />é o critério.</h3>
+              <p>Curso, período, habilidades, cidade e modalidade orientam a comparação. Não basta ter “estágio” no título.</p>
+            </li>
+            <li>
+              <span class="filter-index" aria-hidden="true">03</span>
+              <h3>Faltou informação? <br />Isso fica claro.</h3>
+              <p>Exigências incompatíveis e dados ausentes são sinalizados. O que o anúncio não diz não vira uma certeza.</p>
+            </li>
+          </ol>
+          <p class="transparency-boundary"><strong>Compatibilidade não é promessa de contratação.</strong> Você confere a vaga e decide onde se candidatar.</p>
         </div>
       </section>
 
