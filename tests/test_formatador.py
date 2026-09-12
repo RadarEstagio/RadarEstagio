@@ -14,6 +14,10 @@ from radar.notification.formatador import (
 )
 
 MOMENTO_DE_TESTE = datetime(2026, 8, 26, 12, 0, tzinfo=UTC)
+ATRIBUICAO = (
+    '🏷️ <a href="https://www.adzuna.com.br">Jobs</a> by '
+    '<a href="https://www.adzuna.com.br">Adzuna</a>'
+)
 URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
 
 
@@ -216,7 +220,8 @@ def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     texto = mensagem([resultado(85).model_copy(update={"vaga": oportunidade})], MOMENTO_DE_TESTE)
 
     assert "📍 Rio de Janeiro · Híbrido" in texto
-    assert "🏷️ Fonte: Adzuna" in texto
+    assert ATRIBUICAO in texto
+    assert "Fonte: Adzuna" not in texto
     assert "Publicada em 25/08/2026" in texto
 
 
@@ -551,3 +556,4 @@ def test_horario_real_depois_das_21h_de_brasilia_fica_no_proprio_dia():
     )
 
     assert "Publicada em 04/09/2026" in mensagem([vaga_da_noite], MOMENTO_DE_TESTE)
+

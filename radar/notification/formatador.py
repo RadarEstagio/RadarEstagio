@@ -30,6 +30,9 @@ PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 NUMEROS_POR_LINHA = 5
 ACAO_DE_RECUSA = "feedback"
+FONTE_ADZUNA = "adzuna"
+URL_DA_ADZUNA = "https://www.adzuna.com.br"
+ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
 ROTULOS_DE_MOTIVO = {
     MotivoDeRecusa.NOTA: "A nota não fez sentido",
@@ -150,7 +153,7 @@ def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str
         f" — {escapar_limitado(vaga.empresa, LIMITE_DA_EMPRESA)}",
         f"📍 {escapar_limitado(vaga.localizacao, LIMITE_DA_LOCALIZACAO)}"
         f" · {escape(rotulo_modalidade(vaga))}",
-        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))}"
+        f"🏷️ {rotulo_da_origem(vaga)}"
         f" · Publicada em {data_de_publicacao(vaga.publicada_em):%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
@@ -203,6 +206,12 @@ def rotulo_modalidade(vaga: Vaga) -> str:
     if vaga.modalidade is None:
         return "Modalidade não informada"
     return ROTULOS_MODALIDADE[vaga.modalidade.value]
+
+
+def rotulo_da_origem(vaga: Vaga) -> str:
+    if vaga.fonte == FONTE_ADZUNA:
+        return ATRIBUICAO_DA_ADZUNA
+    return f"Fonte: {escape(rotulo_fonte(vaga.fonte))}"
 
 
 def rotulo_fonte(fonte: str) -> str:
