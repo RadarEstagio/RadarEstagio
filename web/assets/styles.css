@@ -99,11 +99,9 @@ p, h1, h2, h3 { margin-top: 0; }
 .site-header {
   position: sticky; top: 0; z-index: 50;
   padding-block: 16px;
-  transition: transform 260ms cubic-bezier(0.2, 0, 0, 1);
 }
+#conteudo > section[id] { scroll-margin-top: 100px; }
 .header-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px; }
-.site-header.header-oculto { transform: translateY(-100%); }
-.site-header.header-oculto:focus-within { transform: none; }
 .header-inner > .brand, .desktop-nav, .header-utilities {
   border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   border-radius: 999px;
@@ -515,6 +513,7 @@ p, h1, h2, h3 { margin-top: 0; }
 }
 
 @media (max-width: 580px) {
+  #conteudo > section[id] { scroll-margin-top: 140px; }
   .header-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
   .header-inner > .brand { justify-self: start; gap: 8px; }
   .header-actions { display: contents; }
@@ -530,6 +529,7 @@ p, h1, h2, h3 { margin-top: 0; }
   .chat-message, .chat-feedback { opacity: 1 !important; transform: none !important; }
 }
 
+#landing-page { display: contents; }
 #landing-page[hidden], #account-page[hidden] { display: none; }
 .account-page-open > .wave-divider, .account-page-open > .site-footer { display: none; }
 .account-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100dvh; background: var(--paper); }
