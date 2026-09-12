@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260911-1" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260912-header" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
     <script src="assets/app.js?v=20260911-1" defer></script>
@@ -36,12 +36,16 @@
           <a href="#faq">FAQ</a>
           <a href="#sobre">Sobre</a>
         </nav>
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Modo escuro" aria-pressed="false">
-          <svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path></svg>
-          <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
-        </button>
-        <button class="header-login js-open-login" type="button">Entrar</button>
-        <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+        <div class="header-actions">
+          <div class="header-utilities">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Modo escuro" aria-pressed="false">
+              <svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path></svg>
+              <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
+            </button>
+            <button class="header-login js-open-login" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="9" r="3"></circle><path d="M5.8 18.5a6.5 6.5 0 0 1 12.4 0"></path></svg>Entrar</button>
+          </div>
+          <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+        </div>
       </div>
     </header>
 
