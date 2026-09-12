@@ -2,8 +2,9 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+import httpx
 import pytest
-from google.genai import errors
+from google.genai import errors, types
 
 from radar.domain.models import Vaga
 from radar.matching.errors import (
@@ -188,6 +189,22 @@ def test_avaliador_fora_do_ar_e_erro_temporario_e_nao_cota(codigo: int):
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
 
 
+def test_cada_chamada_leva_o_timeout_configurado_em_milissegundos():
+    extrator, cliente = extrator_com(RespostaFalsa('{"extracoes": []}'))
+
+    extrator.extrair([vaga_exemplo()])
+
+    assert cliente.models.chamadas[0]["config"].http_options.timeout == 120_000
+
+
+def test_chamada_que_estoura_o_timeout_e_indisponibilidade_temporaria():
+    extrator, _ = extrator_com(httpx.ReadTimeout("tempo esgotado"))
+
+    with pytest.raises(AvaliadorIndisponivel, match="120 s") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
+
+
 def test_cota_excedida_levanta_erro_especifico():
     extrator, _ = extrator_com(erro_da_api(429, "quota"))
 
@@ -217,3 +234,29 @@ def test_prompt_identifica_todas_as_vagas_sem_citar_candidato():
     assert "alerta_pegadinha" in prompt
     assert "habilidades_obrigatorias" in prompt
     assert "habilidades_desejaveis" in prompt
+
+
+def test_extracao_pede_raciocinio_baixo_por_padrao():
+    extrator, cliente = extrator_com(RespostaFalsa('{"extracoes": []}'))
+
+    extrator.extrair([vaga_exemplo()])
+
+    config = cliente.models.chamadas[0]["config"]
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
+
+
+def test_raciocinio_padrao_deixa_o_modelo_decidir():
+    settings = settings_de_teste().model_copy(update={"gemini_raciocinio": "padrao"})
+    cliente = ClienteFalso(RespostaFalsa('{"extracoes": []}'))
+
+    ExtratorGemini(settings, cliente).extrair([vaga_exemplo()])
+
+    assert cliente.models.chamadas[0]["config"].thinking_config is None
+
+
+def test_falha_de_rede_e_indisponibilidade_temporaria():
+    extrator, _ = extrator_com(httpx.ConnectError("conexão recusada"))
+
+    with pytest.raises(AvaliadorIndisponivel, match="Falha de rede") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)

@@ -30,6 +30,10 @@ para evitar data fixa envelhecida; não é data de anúncio real nem consulta di
 Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summary` nativo
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
+Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. A
+escolha fica no navegador e vale também para o cadastro e a página da conta; sem escolha salva,
+o site abre no claro. Termos e Privacidade mantêm o próprio visual escuro.
+
 ### Conta e acesso
 
 #### 01. Cadastro por e-mail e senha

@@ -1,5 +1,6 @@
 import re
 
+import httpx
 from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
@@ -17,24 +18,48 @@ from radar.settings import Settings
 TEMPERATURA_DETERMINISTICA = 0
 HTTP_COTA_EXCEDIDA = 429
 HTTP_INDISPONIVEL = frozenset({502, 503, 504})
+MILISSEGUNDOS_POR_SEGUNDO = 1000
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
+RACIOCINIO_DO_MODELO = "padrao"
+
+
+def configuracao_de_raciocinio(raciocinio: str | None) -> types.ThinkingConfig | None:
+    if raciocinio is None:
+        return None
+    return types.ThinkingConfig(thinking_level=types.ThinkingLevel(raciocinio.upper()))
 
 
 class ExtratorGemini:
     def __init__(self, settings: Settings, cliente: genai.Client) -> None:
         self._modelo = settings.gemini_modelo
+        self._timeout_segundos = settings.gemini_timeout_segundos
+        self._raciocinio = (
+            None
+            if settings.gemini_raciocinio == RACIOCINIO_DO_MODELO
+            else settings.gemini_raciocinio
+        )
         self._cliente = cliente
 
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
         return gerar_json(
-            self._cliente, self._modelo, montar_prompt(vagas), ExtracoesDeVagas
+            self._cliente,
+            self._modelo,
+            montar_prompt(vagas),
+            ExtracoesDeVagas,
+            self._timeout_segundos,
+            raciocinio=self._raciocinio,
         ).extracoes
 
 
 def gerar_json[T: BaseModel](
-    cliente: genai.Client, modelo: str, prompt: str, formato: type[T]
+    cliente: genai.Client,
+    modelo: str,
+    prompt: str,
+    formato: type[T],
+    timeout_segundos: int,
+    raciocinio: str | None = None,
 ) -> T:
     try:
         resposta = cliente.models.generate_content(
@@ -44,8 +69,16 @@ def gerar_json[T: BaseModel](
                 response_mime_type="application/json",
                 response_schema=formato,
                 temperature=TEMPERATURA_DETERMINISTICA,
+                http_options=types.HttpOptions(
+                    timeout=timeout_segundos * MILISSEGUNDOS_POR_SEGUNDO
+                ),
+                thinking_config=configuracao_de_raciocinio(raciocinio),
             ),
         )
+    except httpx.TimeoutException:
+        raise AvaliadorIndisponivel(f"Gemini não respondeu em {timeout_segundos} s") from None
+    except httpx.TransportError as erro:
+        raise AvaliadorIndisponivel(f"Falha de rede ao falar com o Gemini: {erro}") from None
     except errors.APIError as erro:
         mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
         if erro.code == HTTP_COTA_EXCEDIDA:

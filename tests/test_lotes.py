@@ -447,3 +447,134 @@ def test_repeticao_que_falha_segue_uma_a_uma_sem_dividir_nem_repetir_em_lote():
     ]
     assert em_lotes.requisicoes == 11
     assert ids_de(resultados) == [str(numero) for numero in range(1, 11)]
+
+
+class Relogio:
+    def __init__(self) -> None:
+        self.agora = 0.0
+        self.esperas: list[float] = []
+
+    def __call__(self) -> float:
+        return self.agora
+
+    def esperar(self, segundos: float) -> None:
+        self.esperas.append(segundos)
+        self.agora += segundos
+
+
+class ExtratorQueDemora:
+    def __init__(
+        self, interno: ExtratorDeLoteFalso, relogio: Relogio, segundos_por_chamada: float
+    ) -> None:
+        self._interno = interno
+        self._relogio = relogio
+        self._segundos_por_chamada = segundos_por_chamada
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self._relogio.agora += self._segundos_por_chamada
+        return self._interno.extrair(lote)
+
+
+def extrator_com_prazo(
+    interno: ExtratorDeLoteFalso,
+    relogio: Relogio,
+    tamanho_do_lote: int,
+    segundos_por_chamada: float,
+    prazo_em_segundos: float,
+) -> ExtratorEmLotes:
+    return ExtratorEmLotes(
+        ExtratorQueDemora(interno, relogio, segundos_por_chamada),
+        tamanho_do_lote,
+        esperar=relogio.esperar,
+        prazo_em_segundos=prazo_em_segundos,
+        relogio=relogio,
+    )
+
+
+def test_prazo_esgotado_para_antes_do_proximo_lote_e_devolve_o_que_ja_extraiu(caplog):
+    interno = ExtratorDeLoteFalso()
+    em_lotes = extrator_com_prazo(
+        interno, Relogio(), tamanho_do_lote=2, segundos_por_chamada=20, prazo_em_segundos=45
+    )
+
+    resultados = em_lotes.extrair(vagas(8))
+
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"], ["5", "6"]]
+    assert ids_de(resultados) == ["1", "2", "3", "4", "5", "6"]
+    assert "Prazo da extração de 45 s esgotado; 2 de 8 vagas ficaram sem extração" in caplog.text
+
+
+def test_espera_de_cota_que_nao_cabe_no_prazo_nao_acontece():
+    interno = ExtratorDeLoteFalso(
+        falhas_temporarias_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 30)}
+    )
+    relogio = Relogio()
+    em_lotes = extrator_com_prazo(
+        interno, relogio, tamanho_do_lote=2, segundos_por_chamada=10, prazo_em_segundos=50
+    )
+
+    resultados = em_lotes.extrair(vagas(6))
+
+    assert relogio.esperas == []
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"]]
+    assert ids_de(resultados) == ["1", "2"]
+
+
+def test_espera_de_cota_que_cabe_no_prazo_segue_a_extracao():
+    interno = ExtratorDeLoteFalso(
+        falhas_temporarias_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 30)}
+    )
+    relogio = Relogio()
+    em_lotes = extrator_com_prazo(
+        interno, relogio, tamanho_do_lote=2, segundos_por_chamada=10, prazo_em_segundos=100
+    )
+
+    resultados = em_lotes.extrair(vagas(6))
+
+    assert relogio.esperas == [31]
+    assert ids_de(resultados) == ["1", "2", "3", "4", "5", "6"]
+
+
+def test_prazo_interrompe_a_repeticao_sem_perder_o_que_o_lote_ja_devolveu():
+    interno = ExtratorDeLoteFalso(ids_omitidos_apenas_em_lote={"2", "3", "4"})
+    em_lotes = extrator_com_prazo(
+        interno, Relogio(), tamanho_do_lote=4, segundos_por_chamada=20, prazo_em_segundos=15
+    )
+
+    resultados = em_lotes.extrair(vagas(4))
+
+    assert interno.lotes_recebidos == [["1", "2", "3", "4"]]
+    assert em_lotes.requisicoes == 1
+    assert ids_de(resultados) == ["1"]
+
+
+def test_chamada_que_nao_cabe_no_prazo_nao_e_feita():
+    interno = ExtratorDeLoteFalso()
+    relogio = Relogio()
+    em_lotes = ExtratorEmLotes(
+        ExtratorQueDemora(interno, relogio, 20),
+        2,
+        esperar=relogio.esperar,
+        prazo_em_segundos=50,
+        timeout_da_chamada_em_segundos=30,
+        relogio=relogio,
+    )
+
+    resultados = em_lotes.extrair(vagas(6))
+
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"]]
+    assert ids_de(resultados) == ["1", "2", "3", "4"]
+
+
+def test_prazo_que_corta_a_espera_de_cota_registra_o_motivo(caplog):
+    interno = ExtratorDeLoteFalso(
+        falhas_temporarias_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 30)}
+    )
+    relogio = Relogio()
+    em_lotes = extrator_com_prazo(
+        interno, relogio, tamanho_do_lote=2, segundos_por_chamada=10, prazo_em_segundos=50
+    )
+
+    em_lotes.extrair(vagas(6))
+
+    assert "esgotado enquanto esperava a cota (HTTP 429)" in caplog.text
