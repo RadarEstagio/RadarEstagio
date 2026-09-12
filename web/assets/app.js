@@ -1,6 +1,4 @@
 const botaoDoTema = document.querySelector("#theme-toggle");
-const configuracoesDoHeader = document.querySelector("#header-settings");
-const botaoDasConfiguracoes = configuracoesDoHeader.querySelector("summary");
 const CHAVE_DO_TEMA = "radar-tema";
 
 function mostrarTema(tema) {
@@ -15,24 +13,6 @@ botaoDoTema.addEventListener("click", () => {
   try {
     localStorage.setItem(CHAVE_DO_TEMA, tema);
   } catch {}
-});
-
-configuracoesDoHeader.addEventListener("keydown", (evento) => {
-  if (evento.key !== "Escape" || !configuracoesDoHeader.open) return;
-  evento.preventDefault();
-  evento.stopPropagation();
-  configuracoesDoHeader.open = false;
-  botaoDasConfiguracoes.focus();
-});
-
-configuracoesDoHeader.addEventListener("focusout", (evento) => {
-  if (evento.relatedTarget && !configuracoesDoHeader.contains(evento.relatedTarget)) {
-    configuracoesDoHeader.open = false;
-  }
-});
-
-document.addEventListener("click", (evento) => {
-  if (!configuracoesDoHeader.contains(evento.target)) configuracoesDoHeader.open = false;
 });
 
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");

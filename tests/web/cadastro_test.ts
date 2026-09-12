@@ -245,23 +245,20 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
   } finally { a.close(); }
 });
 
-Deno.test("tema fica nas configurações, começa claro e guarda a escolha", () => {
+Deno.test("tema fica direto no cabeçalho, começa claro e guarda a escolha", () => {
   const a = app();
   try {
     const raiz = a.w.document.documentElement;
-    const configuracoes = a.w.document.querySelector("#header-settings");
     const botao = a.w.document.querySelector("#theme-toggle");
-    assert.equal(configuracoes.open, false);
-    assert.ok(configuracoes.contains(botao));
-    configuracoes.querySelector("summary").click();
-    assert.equal(configuracoes.open, true);
+    assert.equal(a.w.document.querySelector("#header-settings"), null);
+    assert.ok(botao.matches(".header-utilities > button"));
+    assert.equal(botao.getAttribute("aria-label"), "Modo escuro");
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
     botao.click();
     assert.equal(raiz.dataset.tema, "escuro");
     assert.equal(botao.getAttribute("aria-pressed"), "true");
     assert.equal(a.w.localStorage.getItem("radar-tema"), "escuro");
-    assert.equal(configuracoes.open, true);
     botao.click();
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
@@ -271,25 +268,22 @@ Deno.test("tema fica nas configurações, começa claro e guarda a escolha", () 
   }
 });
 
-Deno.test("configurações fecham com Escape, clique fora ou saída do foco", () => {
+Deno.test("tema e login são controles separados com ações independentes", async () => {
   const a = app();
   try {
-    const configuracoes = a.w.document.querySelector("#header-settings");
-    const abrir = configuracoes.querySelector("summary");
-    const tema = configuracoes.querySelector("#theme-toggle");
-    abrir.click();
-    tema.focus();
-    tema.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    assert.equal(configuracoes.open, false);
-    assert.equal(a.w.document.activeElement, abrir);
-    abrir.click();
-    a.w.document.querySelector(".hero h1").click();
-    assert.equal(configuracoes.open, false);
-    abrir.click();
-    tema.focus();
-    a.w.document.querySelector(".header-login").focus();
-    assert.equal(configuracoes.open, false);
-    assert.equal(a.w.document.activeElement, a.w.document.querySelector(".header-login"));
+    await settle();
+    const doc = a.w.document;
+    const tema = doc.querySelector("#theme-toggle");
+    const entrar = doc.querySelector(".header-login");
+    assert.equal(tema.nextElementSibling, entrar);
+    tema.click();
+    assert.equal(doc.documentElement.dataset.tema, "escuro");
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    entrar.click();
+    await settle();
+    assert.equal(doc.documentElement.dataset.tema, "escuro");
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
   } finally {
     a.close();
   }
