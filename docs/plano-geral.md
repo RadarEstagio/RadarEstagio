@@ -122,7 +122,7 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Rotular os descartes.** `python -m radar descartes` já exporta a amostra com o motivo, mas
   ninguém preencheu `descarte_correto` ainda. Sem isso, continuamos medindo só a qualidade do
   que foi entregue.
-- **Preencher o gabarito humano.** As 20 entregas de `docs/gabarito-2026-09-09.json` seguem com
+- **Preencher o gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem com
   `relevante` nulo, então o juiz automático ainda não foi validado.
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
   compartilhado; a recomendação é separar responsabilidades sem trocar de framework.
