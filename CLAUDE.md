@@ -779,7 +779,8 @@ rótulos ficaram fora da janela de `--dias`, em vez de descartá-los em silênci
 O gabarito humano nasce de `python -m radar gabarito --dias 2 --amostra 20 --saida arquivo.json`:
 o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com true ou false;
 `julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
-primeiro arquivo está em `docs/gabarito-2026-09-09.json`, com 20 entregas de 08 e 09/09.
+primeiro arquivo, com 20 entregas de 08 e 09/09, saiu do Git em 12/09 porque trazia vagas reais e o
+`perfil_id` de cada usuário: fica em `gabaritos/`, ignorada, e vai em privado a quem for rotular.
 
 ### Quarta rodada: auditoria após a reescrita do `main` (09/09/2026)
 

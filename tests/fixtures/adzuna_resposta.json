@@ -7,7 +7,7 @@
       "adref": "adref-de-teste",
       "salary_max": 9720,
       "longitude": -38.686774,
-      "redirect_url": "https://www.adzuna.com.br/details/5855737878?utm_medium=api&utm_source=teste",
+      "redirect_url": "https://www.adzuna.com.br/details/9000000001?utm_medium=api&utm_source=teste",
       "created": "2026-08-25T18:49:50Z",
       "__CLASS__": "Adzuna::API::Response::Job",
       "salary_is_predicted": "0",
@@ -22,9 +22,9 @@
       "latitude": -13.198315,
       "company": {
         "__CLASS__": "Adzuna::API::Response::Company",
-        "display_name": "Premier Logistcs"
+        "display_name": "Empresa Exemplo Tecnologia"
       },
-      "id": "5855737878",
+      "id": "9000000001",
       "location": {
         "display_name": "Salvador, Bahia",
         "area": [
@@ -35,11 +35,11 @@
         ],
         "__CLASS__": "Adzuna::API::Response::Location"
       },
-      "description": "Estamos em busca de um(a) Estagiário(a) de TI que tenha interesse em desenvolver seus conhecimentos na prática e crescer profissionalmente na área de Tecnologia da Informação. Principais atividades: Prestar suporte técnico aos usuários (Help Desk), auxiliando na identificação e solução de problemas; Apoiar na instalação, configuração e manutenção de computadores; Realizar suporte básico em hardware e software; Auxiliar na instalação e atualização de programas e sistemas; Apoiar na configuração …"
+      "description": "Vaga ilustrativa de estágio em TI para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em TI para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em TI para os testes do Radar. Atividades de apoio ao time,  …"
     },
     {
       "created": "2026-08-24T18:45:10Z",
-      "redirect_url": "https://www.adzuna.com.br/details/5854597840?utm_medium=api&utm_source=teste",
+      "redirect_url": "https://www.adzuna.com.br/details/9000000002?utm_medium=api&utm_source=teste",
       "adref": "adref-de-teste",
       "longitude": -46.75454,
       "salary_max": 18000,
@@ -49,7 +49,7 @@
         "__CLASS__": "Adzuna::API::Response::Category",
         "tag": "it-jobs"
       },
-      "description": "Empresa de tecnologia , fabricante de equipamentos, localizada em Osasco, contrata: Estagiários em eletrônica Local: Vila Ayrosa - Osasco Horário de trabalho das 7:00Hrs as 12:00hrs de segunda a sexta. Bolsa Auxilio: R$ 1.500,00 Ajuda de custo para alimentação e transporte de R$ 15,00 por dia. REQUISITOS Ensino médio completo Cursando técnico na área de eletrônica / mecatrônica / eletroeletrônica Disponibilidade para fazer o mínimo de 1 ano de estágio Interesse em atuar na área técnica PRINCIPA…",
+      "description": "Vaga ilustrativa de estágio em eletrônica para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em eletrônica para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em eletrônica para os testes do Radar. Ativi …",
       "location": {
         "area": [
           "Brasil",
@@ -60,9 +60,9 @@
         "display_name": "Osasco, Estado de São Paulo",
         "__CLASS__": "Adzuna::API::Response::Location"
       },
-      "id": "5854597840",
+      "id": "9000000002",
       "company": {
-        "display_name": "WILLISA",
+        "display_name": "Empresa Exemplo Eletrônica",
         "__CLASS__": "Adzuna::API::Response::Company"
       },
       "__CLASS__": "Adzuna::API::Response::Job",
@@ -95,13 +95,13 @@
         "__CLASS__": "Adzuna::API::Response::Location"
       },
       "created": "2026-08-26T05:36:46Z",
-      "description": "Área e especialização profissional: Informática, TI, Telecomunicações - Suporte Técnico Nível hierárquico: Estagiário Local de trabalho: Porto Alegre, RS Regime de contratação de tipo Estágio Jornada Parcial tardes Realizar atendimento, acompanhamento e triagem de chamados abertos por nossos usuários, auxiliando-os a utilizar o nosso sistema Gemed da melhor forma possível. Os atendimentos são feitos via e-mail, chat ou telefone, utilizamos a ferramenta Zoho para controle dos chamados e obtenção…",
-      "id": "5856578382",
+      "description": "Vaga ilustrativa de estágio em suporte técnico para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em suporte técnico para os testes do Radar. Atividades de apoio ao time, documentação e testes. Requisitos: cursando ensino superior na área; noções de Python, SQL e Excel; boa comunicação. Vaga ilustrativa de estágio em suporte técnico para os testes  …",
+      "id": "9000000003",
       "company": {
-        "display_name": "Interprocess Tecnologia da Informação Ltda",
+        "display_name": "Empresa Exemplo Suporte",
         "__CLASS__": "Adzuna::API::Response::Company"
       },
-      "redirect_url": "https://www.adzuna.com.br/details/5856578382?utm_medium=api&utm_source=teste"
+      "redirect_url": "https://www.adzuna.com.br/details/9000000003?utm_medium=api&utm_source=teste"
     }
   ]
 }
