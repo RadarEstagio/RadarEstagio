@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260911-1" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260912-tema-login-separados" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260911-1" defer></script>
+    <script src="assets/app.js?v=20260912-tema-direto" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -27,7 +27,16 @@
     <header class="site-header" id="inicio">
       <div class="container header-inner">
         <a class="brand" href="#inicio" aria-label="Radar de Estágio, início">
-          <span class="radar-mark" aria-hidden="true"><i></i></span>
+          <svg class="brand-symbol" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <path d="M16 6a10 10 0 0 1 7.1 2.9L16 16Z" fill="currentColor" opacity=".2"></path>
+            <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M26 16a10 10 0 1 1-10-10" opacity=".55"></path>
+              <path d="M21 16a5 5 0 1 1-5-5" opacity=".8"></path>
+              <path d="m16 16 7.1-7.1"></path>
+            </g>
+            <circle cx="16" cy="16" r="1.7" fill="currentColor"></circle>
+            <circle cx="23.1" cy="8.9" r="1.8" fill="currentColor"></circle>
+          </svg>
           <span>Radar<span>Estágio</span></span>
         </a>
         <nav class="desktop-nav" aria-label="Navegação principal">
@@ -36,12 +45,16 @@
           <a href="#faq">FAQ</a>
           <a href="#sobre">Sobre</a>
         </nav>
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Modo escuro" aria-pressed="false">
-          <svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path></svg>
-          <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
-        </button>
-        <button class="header-login js-open-login" type="button">Entrar</button>
-        <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+        <div class="header-actions">
+          <div class="header-utilities">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Modo escuro" aria-pressed="false">
+              <svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path></svg>
+              <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
+            </button>
+            <button class="header-login js-open-login" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="9" r="3"></circle><path d="M5.8 18.5a6.5 6.5 0 0 1 12.4 0"></path></svg>Entrar</button>
+          </div>
+          <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+        </div>
       </div>
     </header>
 
@@ -140,23 +153,30 @@
         </div>
       </section>
 
-      <section class="transparency section">
-        <div class="container transparency-layout">
-          <div class="signal-panel" aria-hidden="true">
-            <div class="signal-rings"><span></span><span></span><span></span><i></i></div>
-            <div class="signal-label label-one">Habilidade compatível</div>
-            <div class="signal-label label-two">Localização verificada</div>
-            <div class="signal-label label-three">Modalidade não informada</div>
+      <section class="transparency section" aria-labelledby="transparency-title">
+        <div class="container">
+          <div class="transparency-heading">
+            <div class="transparency-copy">
+              <p class="eyebrow">Antes de chegar até você</p>
+              <h2 id="transparency-title">Menos ruído na busca.<br /><span class="continuacao">Mais critério na escolha.</span></h2>
+            </div>
+            <p class="transparency-lead">Encontrar uma vaga é só o começo. O Radar cruza os anúncios com seu perfil e separa o que faz sentido do que só ocupa seu tempo.</p>
           </div>
-          <div class="transparency-copy">
-            <p class="eyebrow">Comparação sem certezas inventadas</p>
-            <h2>Recomendação boa <span class="continuacao">também sabe dizer “não informado”.</span></h2>
-            <ul>
-              <li><span>✓</span> Pontos a favor e contra em linguagem direta</li>
-              <li><span>✓</span> Alertas para exigências incompatíveis</li>
-              <li><span>✓</span> Link original para você conferir e decidir</li>
-            </ul>
-          </div>
+          <ul class="filter-principles">
+            <li>
+              <h3>Anúncio repetido <br />não é novidade.</h3>
+              <p>Fontes diferentes podem publicar a mesma vaga. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
+            </li>
+            <li>
+              <h3>Seu perfil <br />é o critério.</h3>
+              <p>Curso, período, habilidades, cidade e modalidade orientam a comparação. Não basta ter “estágio” no título.</p>
+            </li>
+            <li>
+              <h3>Faltou informação? <br />Isso fica claro.</h3>
+              <p>Exigências incompatíveis e dados ausentes são sinalizados. O que o anúncio não diz não vira uma certeza.</p>
+            </li>
+          </ul>
+          <p class="transparency-boundary"><strong>Compatibilidade não é promessa de contratação.</strong> Você confere a vaga e decide onde se candidatar.</p>
         </div>
       </section>
 
@@ -231,10 +251,17 @@
         </div>
       </section>
 
-      <section class="final-cta section" id="sobre">
+      <section class="final-cta section" id="sobre" aria-labelledby="final-title">
         <div class="container final-card">
-          <div><p class="eyebrow eyebrow-light">Menos tempo procurando</p><h2>Deixe o Radar procurar <span class="continuacao">enquanto você se prepara.</span></h2></div>
-          <div class="final-action"><button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button><p>Cadastro gratuito · você decide onde se candidatar</p></div>
+          <div class="final-copy">
+            <p class="eyebrow eyebrow-light">Seu próximo passo começa aqui</p>
+            <h2 id="final-title">Você cuida do seu futuro. <span class="continuacao">O Radar cuida da busca.</span></h2>
+            <p class="final-lead">Cadastre seu perfil e vincule o Telegram. Quando houver vagas compatíveis, as recomendações chegam até você.</p>
+          </div>
+          <div class="final-action">
+            <button class="button button-primary button-large js-open-signup" data-event-origin="cta_final" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
+            <p>Grátis durante o piloto · Sem cartão de crédito</p>
+          </div>
         </div>
       </section>
     </main>

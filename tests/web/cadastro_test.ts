@@ -245,11 +245,14 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
   } finally { a.close(); }
 });
 
-Deno.test("tema começa claro e o botão do cabeçalho alterna e guarda a escolha", () => {
+Deno.test("tema fica direto no cabeçalho, começa claro e guarda a escolha", () => {
   const a = app();
   try {
     const raiz = a.w.document.documentElement;
     const botao = a.w.document.querySelector("#theme-toggle");
+    assert.equal(a.w.document.querySelector("#header-settings"), null);
+    assert.ok(botao.matches(".header-utilities > button"));
+    assert.equal(botao.getAttribute("aria-label"), "Modo escuro");
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
     botao.click();
@@ -260,6 +263,27 @@ Deno.test("tema começa claro e o botão do cabeçalho alterna e guarda a escolh
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
     assert.equal(a.w.localStorage.getItem("radar-tema"), "claro");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("tema e login são controles separados com ações independentes", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const tema = doc.querySelector("#theme-toggle");
+    const entrar = doc.querySelector(".header-login");
+    assert.equal(tema.nextElementSibling, entrar);
+    tema.click();
+    assert.equal(doc.documentElement.dataset.tema, "escuro");
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    entrar.click();
+    await settle();
+    assert.equal(doc.documentElement.dataset.tema, "escuro");
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
   } finally {
     a.close();
   }

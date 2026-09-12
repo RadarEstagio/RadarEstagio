@@ -1,34 +1,3 @@
-const cabecalhoDaLanding = document.querySelector("#inicio");
-const ROLAGEM_ATE_ESCONDER = 10;
-const ROLAGEM_ATE_MOSTRAR = 64;
-let ultimoDeslocamento = Math.max(window.scrollY, 0);
-let rolagemAcumulada = 0;
-let leituraDeRolagemAgendada = false;
-
-function ajustarCabecalho() {
-  leituraDeRolagemAgendada = false;
-  const deslocamentoAtual = Math.max(window.scrollY, 0);
-  const variacao = deslocamentoAtual - ultimoDeslocamento;
-  ultimoDeslocamento = deslocamentoAtual;
-  if (variacao === 0) return;
-  const mudouDeDirecao = Math.sign(variacao) !== Math.sign(rolagemAcumulada);
-  rolagemAcumulada = mudouDeDirecao ? variacao : rolagemAcumulada + variacao;
-  if (deslocamentoAtual <= cabecalhoDaLanding.offsetHeight) {
-    cabecalhoDaLanding.classList.remove("header-oculto");
-    return;
-  }
-  if (rolagemAcumulada > ROLAGEM_ATE_ESCONDER) cabecalhoDaLanding.classList.add("header-oculto");
-  else if (rolagemAcumulada < -ROLAGEM_ATE_MOSTRAR) cabecalhoDaLanding.classList.remove("header-oculto");
-}
-
-if (cabecalhoDaLanding) {
-  window.addEventListener("scroll", () => {
-    if (leituraDeRolagemAgendada) return;
-    leituraDeRolagemAgendada = true;
-    requestAnimationFrame(ajustarCabecalho);
-  }, { passive: true });
-}
-
 const botaoDoTema = document.querySelector("#theme-toggle");
 const CHAVE_DO_TEMA = "radar-tema";
 
