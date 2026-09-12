@@ -248,6 +248,7 @@ def montar_extrator(settings: Settings) -> ExtratorEmLotes:
         criar_extrator(settings),
         settings.gemini_vagas_por_lote,
         prazo_em_segundos=settings.prazo_da_extracao_segundos,
+        timeout_da_chamada_em_segundos=settings.gemini_timeout_segundos,
     )
 
 

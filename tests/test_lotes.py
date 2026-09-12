@@ -546,3 +546,35 @@ def test_prazo_interrompe_a_repeticao_sem_perder_o_que_o_lote_ja_devolveu():
     assert interno.lotes_recebidos == [["1", "2", "3", "4"]]
     assert em_lotes.requisicoes == 1
     assert ids_de(resultados) == ["1"]
+
+
+def test_chamada_que_nao_cabe_no_prazo_nao_e_feita():
+    interno = ExtratorDeLoteFalso()
+    relogio = Relogio()
+    em_lotes = ExtratorEmLotes(
+        ExtratorQueDemora(interno, relogio, 20),
+        2,
+        esperar=relogio.esperar,
+        prazo_em_segundos=50,
+        timeout_da_chamada_em_segundos=30,
+        relogio=relogio,
+    )
+
+    resultados = em_lotes.extrair(vagas(6))
+
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"]]
+    assert ids_de(resultados) == ["1", "2", "3", "4"]
+
+
+def test_prazo_que_corta_a_espera_de_cota_registra_o_motivo(caplog):
+    interno = ExtratorDeLoteFalso(
+        falhas_temporarias_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 30)}
+    )
+    relogio = Relogio()
+    em_lotes = extrator_com_prazo(
+        interno, relogio, tamanho_do_lote=2, segundos_por_chamada=10, prazo_em_segundos=50
+    )
+
+    em_lotes.extrair(vagas(6))
+
+    assert "esgotado enquanto esperava a cota (HTTP 429)" in caplog.text
