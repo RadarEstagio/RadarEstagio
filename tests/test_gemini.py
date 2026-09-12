@@ -252,3 +252,11 @@ def test_raciocinio_padrao_deixa_o_modelo_decidir():
     ExtratorGemini(settings, cliente).extrair([vaga_exemplo()])
 
     assert cliente.models.chamadas[0]["config"].thinking_config is None
+
+
+def test_falha_de_rede_e_indisponibilidade_temporaria():
+    extrator, _ = extrator_com(httpx.ConnectError("conexão recusada"))
+
+    with pytest.raises(AvaliadorIndisponivel, match="Falha de rede") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)

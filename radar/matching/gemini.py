@@ -77,6 +77,8 @@ def gerar_json[T: BaseModel](
         )
     except httpx.TimeoutException:
         raise AvaliadorIndisponivel(f"Gemini não respondeu em {timeout_segundos} s") from None
+    except httpx.TransportError as erro:
+        raise AvaliadorIndisponivel(f"Falha de rede ao falar com o Gemini: {erro}") from None
     except errors.APIError as erro:
         mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
         if erro.code == HTTP_COTA_EXCEDIDA:
