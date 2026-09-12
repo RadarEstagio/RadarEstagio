@@ -14,7 +14,7 @@ from radar.domain.models import (
     Vaga,
 )
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
-from radar.pipeline import ParametrosDaExecucao, executar
+from radar.pipeline import ParametrosDaExecucao, candidatas_de_algum_perfil, executar
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
 
@@ -775,6 +775,20 @@ def test_vaga_reprovada_no_prefiltro_de_todos_os_perfis_nao_e_extraida():
     extrator = executar_com(RepositorioFalso([usuario()]), [vaga(1), fora_da_area], {"1": 70})
 
     assert extrator.extraidas == ["1"]
+
+
+def test_candidatas_de_varios_perfis_sao_intercaladas_para_o_prazo_repartir_o_corte():
+    direito = usuario(ID_OUTRO_USUARIO, chat_id="456").model_copy(
+        update={"perfil": perfil_exemplo().model_copy(update={"curso": "Direito"})}
+    )
+    computacao = [vaga(numero) for numero in (1, 2, 3)]
+    juridicas = [vaga(numero, titulo="Estágio em Direito") for numero in (4, 5)]
+
+    candidatas = candidatas_de_algum_perfil(
+        computacao + juridicas, [usuario(), direito], RepositorioFalso([usuario(), direito])
+    )
+
+    assert [item.id_externo for item in candidatas] == ["1", "4", "2", "5", "3"]
 
 
 def test_link_da_mensagem_usa_o_token_gravado_no_envio():

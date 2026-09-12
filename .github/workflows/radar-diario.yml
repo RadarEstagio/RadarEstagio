@@ -11,7 +11,7 @@ on:
 jobs:
   enviar-vagas:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Baixar o repositório
@@ -26,6 +26,7 @@ jobs:
         run: uv sync --frozen --no-dev
 
       - name: Executar o radar
+        timeout-minutes: 28
         run: |
           if [ -n "$PERFIL" ]; then
             uv run --no-dev python -m radar rodar --perfil "$PERFIL"
@@ -45,7 +46,7 @@ jobs:
           QUANTIDADE_VAGAS_ENVIADAS: "7"
 
       - name: Avisar que a execução falhou
-        if: failure()
+        if: failure() || cancelled()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -56,5 +57,5 @@ jobs:
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "parse_mode=HTML" \
             --data-urlencode "text=🛠️ <b>Radar — o job diário não terminou</b>
-          O passo do radar falhou ou foi interrompido pelo timeout.
+          O passo do radar falhou, estourou o tempo ou foi cancelado.
           ${RUN_URL}"
