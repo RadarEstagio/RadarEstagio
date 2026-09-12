@@ -14,7 +14,9 @@ o [guia de publicação](docs/guia-publicacao-e-piloto.md) registra evidências 
 
 ## Como funciona
 
-1. Adzuna e Gupy fornecem anúncios; Jooble é uma fonte opcional, desligada por padrão.
+1. A Adzuna fornece os anúncios, com "Jobs by Adzuna" em cada vaga. Gupy e Jooble têm coletor,
+   mas ficam desligados: os termos da Gupy proíbem agregar vagas e a chave gratuita do Jooble
+   tem 500 requisições no total.
 2. O pipeline remove duplicatas e aplica filtros de formação, localização e outros requisitos.
 3. A IA extrai fatos dos anúncios em lotes; extrações compatíveis são reaproveitadas entre perfis.
 4. Python recalcula as notas, seleciona até sete vagas e prepara as explicações.
@@ -64,7 +66,7 @@ vazio: o Radar usará o [perfil sintético de exemplo](radar/domain/perfil_fixo.
 O `.env.example` seleciona `agy`. Se usar a API direta, altere para `AVALIADOR=gemini_api`
 e preencha a chave. O padrão de `Settings` e o workflow usam `gemini_api`.
 Para `agy`, é necessário ter o CLI instalado e autenticado; o modelo vem de `AGY_MODELO`.
-Gupy não exige chave; Jooble exige `JOOBLE_API_KEY` quando incluído em `FONTES`.
+Jooble exige `JOOBLE_API_KEY` quando incluído em `FONTES`; a Gupy fica fora por causa dos termos.
 
 No Telegram, crie o bot com `/newbot` no `@BotFather` e envie `/start` ao seu novo bot.
 Para descobrir o chat ID de um bot sem webhook, consulte `getUpdates` na API do Telegram
