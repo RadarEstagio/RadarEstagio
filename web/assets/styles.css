@@ -101,13 +101,14 @@ p, h1, h2, h3 { margin-top: 0; }
   padding-block: 16px;
 }
 .site-header::before {
+  --header-blur-mask: linear-gradient(to bottom, #000 calc(100% - 48px), rgba(0, 0, 0, .9) calc(100% - 36px), rgba(0, 0, 0, .5) calc(100% - 24px), rgba(0, 0, 0, .1) calc(100% - 12px), transparent 100%);
   content: "";
-  position: absolute; inset: 0 0 40%; z-index: -1;
+  position: absolute; inset: 0 0 -48px; z-index: -1;
   pointer-events: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+  -webkit-mask-image: var(--header-blur-mask);
+  mask-image: var(--header-blur-mask);
 }
 #conteudo > section[id] { scroll-margin-top: 100px; }
 .header-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px; }
