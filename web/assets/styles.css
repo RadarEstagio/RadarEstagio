@@ -97,13 +97,14 @@ p, h1, h2, h3 { margin-top: 0; }
 .skip-link:focus { top: 16px; }
 
 .site-header {
+  --header-padding: 16px;
   position: sticky; top: 0; z-index: 50;
-  padding-block: 16px;
+  padding-block: var(--header-padding);
 }
 .site-header::before {
-  --header-blur-mask: linear-gradient(to bottom, #000 calc(100% - 48px), rgba(0, 0, 0, .9) calc(100% - 36px), rgba(0, 0, 0, .5) calc(100% - 24px), rgba(0, 0, 0, .1) calc(100% - 12px), transparent 100%);
+  --header-blur-mask: linear-gradient(to bottom, #000 calc(100% - 24px), rgba(0, 0, 0, .9) calc(100% - 18px), rgba(0, 0, 0, .5) calc(100% - 12px), rgba(0, 0, 0, .1) calc(100% - 6px), transparent 100%);
   content: "";
-  position: absolute; inset: 0 0 -48px; z-index: -1;
+  position: absolute; inset: 0 0 var(--header-padding); z-index: -1;
   pointer-events: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -512,7 +513,7 @@ p, h1, h2, h3 { margin-top: 0; }
 
 @media (max-width: 760px) {
   .container { width: min(calc(100% - 28px), var(--container)); }.section { padding: 78px 0; }
-  .site-header { padding-block: 12px; }.header-inner { gap: 12px; }.header-inner > .brand { min-height: 46px; padding: 8px 12px; font-size: 16px; }.brand-symbol { width: 28px; height: 28px; border-radius: 8px; }.header-actions { gap: 8px; }.header-utilities { padding: 1px; }.header-actions > .button { min-height: 48px; padding-inline: 16px; }.brand { font-size: 17px; }.radar-mark { width: 30px; height: 30px; }
+  .site-header { --header-padding: 12px; }.header-inner { gap: 12px; }.header-inner > .brand { min-height: 46px; padding: 8px 12px; font-size: 16px; }.brand-symbol { width: 28px; height: 28px; border-radius: 8px; }.header-actions { gap: 8px; }.header-utilities { padding: 1px; }.header-actions > .button { min-height: 48px; padding-inline: 16px; }.brand { font-size: 17px; }.radar-mark { width: 30px; height: 30px; }
   .hero { padding: 58px 0 20px; }.hero-grid { background: radial-gradient(circle 420px at 50% 82%, #dcebdd 0%, transparent 68%); }.hero h1 { font-size: clamp(34px, 9.6vw, 42px); line-height: 1.15; }.hero-lead { font-size: 16px; }.hero-actions { align-items: stretch; flex-direction: column; }.button-large { width: 100%; }
   .trust-list { gap: 12px; flex-direction: column; align-items: center; }.hero-demo { min-height: 550px; }.orbit-one { width: 420px; height: 420px; }.orbit-two { width: 320px; height: 320px; }.telegram-chat { width: calc(100% - 8px); }.chat-header { padding-inline: 13px; }.chat-stage { min-height: 470px; padding-inline: 10px; }.chat-typing { inset-inline-start: 10px; }.chat-platform span { display: none; }.chat-message { padding-inline: 14px; }.chat-vacancy-title { font-size: 13px; }
   .pricing-grid { grid-template-columns: 1fr; }.plan { padding: 30px 25px; }.plan + .plan { border-left: 0; border-top: 1px solid var(--rail); }
