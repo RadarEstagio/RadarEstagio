@@ -106,6 +106,8 @@ p, h1, h2, h3 { margin-top: 0; }
   pointer-events: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
 }
 #conteudo > section[id] { scroll-margin-top: 100px; }
 .header-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px; }
