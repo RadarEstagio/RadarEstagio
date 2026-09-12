@@ -127,6 +127,27 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
   compartilhado; a recomendação é separar responsabilidades sem trocar de framework.
 
+## 2.2 Auditoria do agendamento diário (10/09/2026)
+
+A auditoria está em
+[auditorias/2026-09-10-agendamento-diario.md](auditorias/2026-09-10-agendamento-diario.md), com
+dez achados numerados e o histórico real das execuções. O disparo externo é confiável: 13 de 13
+dias no horário desde 28/08. O risco está no que acontece depois dele, e estas são as pendências
+que saíram de lá:
+
+- **G01 e G07 — prazo da extração e timeouts do workflow.** É o único achado capaz de zerar as
+  entregas de todos: a extração roda para todos antes de qualquer envio e só é gravada no fim,
+  então um kill por timeout deixa a coorte sem mensagem e joga fora o que já foi pago ao Gemini.
+  Em correção no PR #57.
+- **G03 — não reenviar a quem já foi atendido no dia.** Sem essa marca não existe recuperação
+  segura depois de uma falha parcial nem agendador de reserva, e quem vincula no fim da janela
+  pode receber duas mensagens na mesma manhã. Exige migration.
+- **G04 — detectar execução ausente**, o mesmo item da rodada de confiabilidade acima.
+- **G06 — run por perfil coleta para a coorte inteira**: cada vínculo custa uma coleta completa
+  na Adzuna, e esse custo cresce com o número de cidades.
+- **G02 — registrar o fim de cada lote com a duração.** Fecha a margem do G01 e mede o efeito do
+  raciocínio `low` na latência.
+
 ## 3. Limitações e decisões que continuam valendo
 
 - **Candidatura:** acontece na fonte; o Radar não se candidata e não captura novas candidaturas.
