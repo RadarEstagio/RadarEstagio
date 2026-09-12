@@ -102,12 +102,10 @@ p, h1, h2, h3 { margin-top: 0; }
 }
 .site-header::before {
   content: "";
-  position: absolute; inset: 0; z-index: -1;
+  position: absolute; inset: 0 0 40%; z-index: -1;
   pointer-events: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 75%);
-  mask-image: linear-gradient(to bottom, #000 20%, transparent 75%);
 }
 #conteudo > section[id] { scroll-margin-top: 100px; }
 .header-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px; }
