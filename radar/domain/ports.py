@@ -1,5 +1,6 @@
 from datetime import date
 from typing import Protocol
+from uuid import UUID
 
 from radar.domain.models import (
     ChaveDaVaga,
@@ -35,6 +36,10 @@ class RepositorioDeUsuarios(Protocol):
     def listar_ativos(self) -> list[Usuario]: ...
 
     def pode_entregar(self, usuario: Usuario) -> bool: ...
+
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]: ...
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None: ...
 
 
 class RepositorioDeAvaliacoes(Protocol):

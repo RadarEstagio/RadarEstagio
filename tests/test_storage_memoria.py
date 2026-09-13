@@ -44,3 +44,12 @@ def test_nao_guarda_nada_entre_chamadas():
     assert repositorio.travar_atendimento(usuario) is None
     assert repositorio.liberar_atendimento(usuario) is None
     assert repositorio.registrar_falha_de_envio(usuario) == 0
+
+
+def test_entrega_imediata_sem_banco_atende_so_o_perfil_pedido():
+    usuario = usuario_exemplo()
+    repositorio = RepositorioEmMemoria([usuario])
+
+    assert repositorio.reivindicar_entregas_imediatas(usuario.id) == {usuario.id}
+    assert repositorio.reivindicar_entregas_imediatas(uuid4()) == set()
+    assert repositorio.marcar_entregas_imediatas_atendidas([usuario.id]) is None
