@@ -42,6 +42,7 @@ const dialogShell = document.querySelector(".dialog-shell");
 const landingTitle = document.title;
 const form = document.querySelector("#signup-form");
 const successState = document.querySelector("#success-state");
+const successMessage = document.querySelector("#success-message");
 const progressWrap = document.querySelector(".progress-wrap");
 const progressLabel = document.querySelector("#progress-label");
 const progressPercent = document.querySelector("#progress-percent");
@@ -959,6 +960,7 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
   progressWrap.hidden = true;
   successState.hidden = false;
   setFormMessage();
+  successMessage.textContent = "";
   rotularDialogo("success-title");
   document.querySelector("#success-kicker").textContent = kicker;
   document.querySelector("#success-title").textContent = title;
@@ -1899,10 +1901,11 @@ document.querySelector("#download-data").addEventListener("click", async (event)
 });
 
 document.querySelector("#success-account").addEventListener("click", async () => {
+  successMessage.textContent = "";
   try {
     showAccount(await perfilAtual());
   } catch (error) {
-    setFormMessage(humanizeError(error));
+    successMessage.textContent = humanizeError(error);
   }
 });
 

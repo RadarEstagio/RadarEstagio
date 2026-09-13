@@ -746,6 +746,30 @@ Deno.test("endereço da conta sem sessão exige login", async () => {
   } finally { a.close(); }
 });
 
+function visivel(elemento: ReturnType<TestWindow["document"]["querySelector"]>): boolean {
+  for (let no = elemento; no; no = no.parentElement) {
+    if (no.hidden) return false;
+    if (no.tagName === "DIALOG" && !no.open) return false;
+  }
+  return Boolean(elemento);
+}
+
+Deno.test("erro ao abrir minha conta na tela de ativação aparece na própria tela", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+    a.client.auth.getSession = async () => ({ data: { session: null } });
+    doc.querySelector("#success-account").click();
+    await settle();
+    const aviso = doc.querySelector("#success-message");
+    assert.match(aviso?.textContent ?? "", /sessão expirou/);
+    assert.equal(visivel(aviso), true);
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+  } finally { a.close(); }
+});
+
 Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
   const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
   try {
