@@ -54,3 +54,30 @@ jobs:
       - name: Rodar os testes da ir
         working-directory: supabase/functions/ir
         run: deno test
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v7
+
+      - name: Instalar o Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar as dependências
+        run: npm --prefix web ci
+
+      - name: Conferir o lint e os comentários
+        run: npm --prefix web run lint
+
+      - name: Rodar os testes
+        run: npm --prefix web run test:run
+
+      - name: Gerar e conferir o artefato publicado
+        run: bash scripts/build-web.sh && node web/scripts/check-web-artifact.mjs web/dist
