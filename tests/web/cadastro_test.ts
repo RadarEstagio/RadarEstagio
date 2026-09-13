@@ -1581,6 +1581,71 @@ Deno.test("e-mail digitado num login não fica para quem abre o cadastro depois 
   }
 });
 
+function conferirEnvioRecusado(a: ReturnType<typeof app>, contexto: string) {
+  assert.equal(a.calls.some(([nome, tabela]) => nome === "update" && tabela === "perfis"), false, contexto);
+  assert.equal(a.calls.some(([nome, alvo]) => nome === "rpc" && alvo === "concluir_meu_cadastro"), false, contexto);
+  assert.equal(a.calls.some(([nome]) => nome === "logout" || nome === "signup" || nome === "login"), false, contexto);
+  assert.match(a.w.document.querySelector("#form-message").textContent, /Sua sessão mudou/, contexto);
+  conferirCadastroVazio(a, contexto);
+}
+
+Deno.test("edição aberta de uma conta não é gravada em outra que entrou em outra aba", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    sessaoPassaASer(a, { user: outraPessoa });
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "edição de outra conta");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("perfil sendo completado por uma conta não vai para outra que entrou em outra aba", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = fill(a.w);
+    sessaoPassaASer(a, { user: outraPessoa });
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "perfil a completar de outra conta");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("rascunho de visitante não é concluído numa conta que apareceu em outra aba", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const form = fill(a.w);
+    for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+    await settle();
+    sessaoPassaASer(a, { user });
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "rascunho de visitante numa sessão de outra aba");
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
   const a = app();
   let liberarCadastro = () => {};

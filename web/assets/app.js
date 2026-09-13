@@ -90,6 +90,7 @@ const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para con
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
+const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
 const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
@@ -873,6 +874,14 @@ function limparRascunhoDoCadastro() {
   campoDeAreas.hidden = true;
   document.querySelector("#skills-catalog-notice").hidden = true;
   renderSkills();
+}
+
+function recusarRascunhoDeOutraSessao(mensagem) {
+  sairDoModoEdicao();
+  limparRascunhoDoCadastro();
+  setAuthMode("login");
+  showStep(PASSO_CONTA);
+  setFormMessage(mensagem);
 }
 
 function reconhecerDonoDoRascunho(session) {
@@ -1745,20 +1754,23 @@ form.addEventListener("submit", async (event) => {
       setFormMessage(MENSAGEM_SEM_SESSAO);
       return;
     }
+    if (authMode !== "login" && donoDoRascunho !== VISITANTE && existingSession?.user.id !== donoDoRascunho) {
+      recusarRascunhoDeOutraSessao(existingSession ? MENSAGEM_SESSAO_MUDOU : MENSAGEM_SEM_SESSAO);
+      return;
+    }
     if (!editandoPerfilExistente && existingSession && existingSession.user.email !== email) {
       const { error } = await getClient().auth.signOut();
       if (error) throw error;
       esquecerPerfilCarregado();
     }
-    const session = editandoPerfilExistente || existingSession?.user.email === email
-      ? existingSession
-      : await authenticate(email, password, profile);
+    const autenticarAgora = !editandoPerfilExistente && existingSession?.user.email !== email;
+    const session = autenticarAgora ? await authenticate(email, password, profile) : existingSession;
     form.elements.senha.value = "";
     if (!session) {
       showConfirmation(email);
       return;
     }
-    donoDoRascunho = session.user.id;
+    if (autenticarAgora) donoDoRascunho = session.user.id;
     const existing = await loadProfile(session.user.id);
     if (existing && !editandoPerfilExistente) {
       mostrarEstadoDoPerfil(existing);
@@ -1766,6 +1778,10 @@ form.addEventListener("submit", async (event) => {
     }
     if (authMode === "login") {
       prepareMissingProfile(session);
+      return;
+    }
+    if (donoDoRascunho !== session.user.id) {
+      recusarRascunhoDeOutraSessao(MENSAGEM_SESSAO_MUDOU);
       return;
     }
     contaSemPerfil = !existing;
