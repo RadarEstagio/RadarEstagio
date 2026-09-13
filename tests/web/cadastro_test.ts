@@ -2364,6 +2364,29 @@ Deno.test("a 51ª digitada seguida de Continuar fica na etapa com o aviso, sem s
   }
 });
 
+Deno.test("curso com menos de 2 caracteres fica na etapa com aviso e não chega ao banco", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    form.elements.curso.value = " A ";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /pelo menos 2 caracteres/);
+
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.calls.some(([nome]) => nome === "signup"), false);
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "2");
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("habilidade digitada com vírgula é uma só na tela e no envio", async () => {
   const a = app();
   try {
@@ -2447,6 +2470,11 @@ Deno.test("campos do cadastro limitam a digitação aos tetos que o banco aceita
     for (const campo of Object.keys(noBanco)) {
       for (const valor of noBanco[campo]) assert.equal(valor, noSite[campo], campo);
     }
+    assert.equal(
+      numero(tetos, /btrim\(perfil->>'curso'\)\) not between (\d+) and/),
+      form.elements.curso.minLength,
+      "mínimo do curso",
+    );
     const maximoDeHabilidades = constanteDoSite("MAXIMO_DE_HABILIDADES");
     const listaNoCadastro = numero(tetos, /jsonb_array_length\(perfil->lista\) > (\d+)/);
     assert.equal(listaNoCadastro, maximoDeHabilidades);

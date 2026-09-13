@@ -95,6 +95,7 @@ const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
 const TAMANHO_MAXIMO_DA_HABILIDADE = 100;
+const TAMANHO_MINIMO_DO_CURSO = 2;
 const MOTIVOS_PAUSA = new Set([
   "conseguiu_estagio",
   "interrompeu_busca",
@@ -605,6 +606,14 @@ function limparErroSeCorrigido(event) {
   if (campoComErro.checkValidity()) limparErroDoCampo();
 }
 
+function mensagemDoCampo(campo) {
+  if (campo.name === "cidade") return mensagemDaCidade();
+  if (campo.name === "curso" && campo.value.trim()) {
+    return `Use pelo menos ${TAMANHO_MINIMO_DO_CURSO} caracteres no nome do curso.`;
+  }
+  return mensagensValidacao[campo.name];
+}
+
 function validateStep(step) {
   limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0 && !continuarSemHabilidades) {
@@ -620,12 +629,13 @@ function validateStep(step) {
   if (cidade) campoDeCidade.value = cidade;
   const invalid = fields.find((field) => {
     if (field.name === "cidade" && !cidade) return true;
+    if (field.name === "curso" && field.value.trim().length < TAMANHO_MINIMO_DO_CURSO) return true;
     if (field.name === "modalidade" && !modalidadesAceitas.has(form.elements.modalidade.value)) return true;
     return !field.checkValidity();
   });
   if (invalid) {
     showStep(step);
-    const mensagem = invalid.name === "cidade" ? mensagemDaCidade() : mensagensValidacao[invalid.name];
+    const mensagem = mensagemDoCampo(invalid);
     marcarErroNoCampo(invalid, mensagem ?? "Revise os campos antes de continuar.");
     return false;
   }
