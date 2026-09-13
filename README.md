@@ -211,7 +211,11 @@ conferência do artefato publicado. Os testes de interface não verificam layout
 npm --prefix web run lint
 npm --prefix web run test:run
 npm --prefix web run test:artifact
+npm --prefix web run test:e2e
 ```
+
+O `test:e2e` roda as jornadas principais no Chromium com um Supabase simulado pelo próprio teste;
+na primeira vez, instale o navegador com `npx --prefix web playwright install chromium`.
 Os testes das Edge Functions usam a configuração do próprio diretório. A partir da raiz:
 
 ```bash

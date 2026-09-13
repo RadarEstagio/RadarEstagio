@@ -181,6 +181,39 @@ o SHA e o deployment anterior antes da alteração; validar primeiro um build le
 ativar previews das branches com Vite. Não alterar domínio, Auth, CAPTCHA ou produção como parte
 da preparação local.
 
+### Validação da migração para React antes do merge da #67
+
+**Testes automáticos, sem rede nem produção.** `npm --prefix web run test:run` roda os cenários
+de interface no jsdom. `npm --prefix web run test:e2e` roda as jornadas principais no Chromium,
+sobre o build de produção, em desktop e celular; na primeira vez, instale o navegador com
+`npx --prefix web playwright install chromium`. Nos dois casos o `config.js` e o Supabase são
+respondidos pelo próprio teste: nenhuma conta, evento ou e-mail chega ao projeto de produção.
+
+**Teste manual com conta de teste autorizada.** O `web/config.js` aponta para o Supabase de
+produção, então todo cadastro manual cria dados reais. Use um e-mail de teste combinado com a
+equipe e exclua a conta pelo próprio site ao terminar.
+
+- Localmente: `npm --prefix web ci` e `npm --prefix web run dev`, em `http://localhost:8000`. O
+  link de confirmação por e-mail só volta para esse endereço se `http://localhost:8000/**`
+  estiver nas Redirect URLs do Auth, que ainda é pendência.
+- No preview do Pages: só funciona depois de o build usar `bash scripts/build-web.sh`.
+
+Roteiro, em Chrome, Safari e Firefox, no desktop e no celular:
+
+1. Cadastro completo: curso, período, habilidades, cidade pela lista, modalidade, conta e termos;
+   o e-mail de confirmação chega, o link volta logado e mostra a ativação do Telegram.
+2. Fechar o cadastro no meio e reabrir: o rascunho volta na mesma etapa, sem senha nem e-mail.
+3. Login, "Esqueci minha senha" até definir a nova senha, e reenvio da confirmação com a espera
+   de 60 segundos.
+4. Conta: editar o perfil, pausar com motivo, retomar, mudar a preferência de e-mail, baixar os
+   dados, desvincular o Telegram, excluir a conta e cancelar a exclusão.
+5. Conta confirmada sem perfil: excluir na hora.
+6. Tema escuro, teclado (Tab, Esc, setas e Enter na lista de cidades), preenchimento automático
+   de senha no Safari e o blur do cabeçalho.
+
+Registre na PR #67 o navegador, a versão, a data e o que falhou; item não testado fica marcado
+como não testado.
+
 ## 5. Configurar o retorno do Auth
 
 Em **Authentication → URL Configuration**, preencha:
