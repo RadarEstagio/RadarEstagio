@@ -136,6 +136,16 @@ BANCOS_DE_DADOS = (
     "DynamoDB",
     "Firebase",
 )
+BANCOS_RELACIONAIS = (
+    "MySQL",
+    "PostgreSQL",
+    "Postgres",
+    "SQL Server",
+    "Oracle",
+    "SQLite",
+    "MariaDB",
+)
+DIALETOS_DE_SQL = ("PL/SQL", "T-SQL")
 BACK_END = (
     "Java",
     "Spring",
@@ -228,6 +238,7 @@ FAMILIAS_DE_HABILIDADES = {
     "SGBD": BANCOS_DE_DADOS,
     "banco de dados relacional": BANCOS_DE_DADOS,
     "bancos de dados relacionais": BANCOS_DE_DADOS,
+    "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
     "back-end": BACK_END,
     "desenvolvimento back-end": BACK_END,
     "front-end": FRONT_END,

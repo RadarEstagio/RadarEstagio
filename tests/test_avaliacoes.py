@@ -818,6 +818,54 @@ def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
     assert resultado.requisitos_nao_atendidos == []
 
 
+BANCOS_RELACIONAIS_DO_PERFIL = [
+    "MySQL",
+    "PostgreSQL",
+    "Postgres",
+    "SQL Server",
+    "Oracle",
+    "SQLite",
+    "MariaDB",
+    "PL/SQL",
+    "T-SQL",
+]
+BANCOS_NAO_RELACIONAIS = ["MongoDB", "Redis", "DynamoDB", "Firebase", "NoSQL"]
+
+
+@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS_DO_PERFIL)
+def test_requisito_sql_e_atendido_por_banco_relacional_do_perfil(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([banco]))
+
+    assert resultado.requisitos_atendidos == ["SQL"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+@pytest.mark.parametrize("banco", BANCOS_NAO_RELACIONAIS)
+def test_requisito_sql_nao_e_atendido_por_banco_nao_relacional(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([banco]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_banco_relacional_atendendo_sql_tira_a_vaga_do_teto_sem_atendidos():
+    exige_sql = extracao(habilidades_obrigatorias=["SQL"])
+
+    com_mysql = pontuar(vaga(), exige_sql, perfil(["MySQL"]))
+    com_mongodb = pontuar(vaga(), exige_sql, perfil(["MongoDB"]))
+
+    assert com_mysql.nota > com_mongodb.nota
+
+
+def test_sql_com_nivel_exige_o_nivel_declarado_no_banco_relacional():
+    exigente = extracao(habilidades_obrigatorias=["SQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["MySQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["MySQL básico"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["MySQL avançado"])).requisitos_atendidos == [
+        "SQL avançado"
+    ]
+
+
 def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
     resultado = pontuar(
         vaga(),
