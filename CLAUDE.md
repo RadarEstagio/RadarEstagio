@@ -129,6 +129,11 @@ por migration em `supabase/migrations/`.
 Sem framework web: a aplicação é um script disparado por cron, não um serviço HTTP.
 `psycopg` 3 acessa o PostgreSQL com SQL puro, sem ORM.
 
+O frontend tem build com Vite em `web/package.json`, sem dependência de Node no `radar/`.
+`web/scripts/check-frontend-comments.mjs` aplica a regra de comentários a JS, JSX e CSS pelo
+parser e roda em `npm --prefix web run lint`. React e o SDK do Supabase por npm entram com o
+primeiro fluxo migrado, não antes.
+
 `python-telegram-bot` não entra em fase alguma: o bot só envia mensagens (uma requisição
 HTTP simples). O `/start` do vínculo e os callbacks de feedback chegam por webhook a uma Edge
 Function do Supabase, fora do `radar/`.

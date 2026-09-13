@@ -148,7 +148,9 @@ esse resumo no Python. Sem banco, o chat ID é obrigatório.
 ## Frontend local
 
 O site usa HTML, CSS e JavaScript estáticos, com Supabase Auth e acesso ao banco por RLS/RPCs.
-Não há etapa de build. O perfil é preenchido antes da conta, e o banco preserva uma cópia
+O build com Vite gera `web/dist` sem mudar o que o navegador executa: páginas, `config.js`,
+`assets/app.js` e catálogos saem nos mesmos caminhos; React entra com o primeiro fluxo
+migrado ([plano](docs/plano-migracao-react.md)). O perfil é preenchido antes da conta, e o banco preserva uma cópia
 protegida até a confirmação, inclusive entre aparelhos; não depende de perfil no `localStorage`.
 
 Para desenvolver com seu próprio ambiente, ajuste os campos de [web/config.js](web/config.js):
@@ -168,6 +170,9 @@ URLs autorizadas do Auth, SMTP e CAPTCHA antes de testar cadastro e vínculo.
 ```bash
 uv run python -m http.server 8000 -d web
 ```
+
+Com Node na versão do `.nvmrc`, `npm --prefix web ci` instala as ferramentas e
+`npm --prefix web run dev` serve o mesmo site na mesma porta.
 
 Abra `http://localhost:8000`; autenticação precisa de HTTP, não de abrir o HTML diretamente.
 O [contrato frontend](docs/contrato-front.md) detalha cadastro, permissões, eventos e controles
@@ -193,6 +198,15 @@ deno test --config tests/web/deno.json --allow-read --allow-env tests/web/
 ```
 
 Essa suíte usa JSDOM e PGlite; não testa layout nem entrega real de e-mails.
+
+As ferramentas do frontend têm lint, checagem de comentários em JS e CSS, testes e
+conferência do artefato publicado:
+
+```bash
+npm --prefix web run lint
+npm --prefix web run test:run
+npm --prefix web run test:artifact
+```
 Os testes das Edge Functions usam a configuração do próprio diretório. A partir da raiz:
 
 ```bash
