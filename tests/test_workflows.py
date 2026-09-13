@@ -28,11 +28,16 @@ def sem_aspas(valor):
     return valor.strip().strip("\"'")
 
 
+def acao_da_linha(linha):
+    encontrada = LINHA_COM_USES.match(linha)
+    return sem_aspas(encontrada.group(1)) if encontrada else None
+
+
 def acoes_usadas(workflow):
     return [
-        encontrada.group(1).strip("\"'")
+        acao
         for linha in workflow.read_text().splitlines()
-        if (encontrada := LINHA_COM_USES.match(linha))
+        if (acao := acao_da_linha(linha)) is not None
     ]
 
 
@@ -70,7 +75,7 @@ def entradas_do_passo(passo, coluna):
     depois_do_with = passo[passo.index(linha_do_with) + 1 :]
     bloco = takewhile(lambda seguinte: recuo(seguinte) > coluna, depois_do_with)
     return {
-        nome: valor.strip().strip("\"'")
+        nome: sem_aspas(valor)
         for nome, _, valor in (entrada.strip().partition(":") for entrada in bloco)
     }
 
@@ -79,8 +84,8 @@ def entradas_de_cada_uso(workflow, acao):
     linhas = workflow.read_text().splitlines()
     usos = []
     for indice, linha in enumerate(linhas):
-        encontrada = LINHA_COM_USES.match(linha)
-        if not (encontrada and encontrada.group(1).startswith(f"{acao}@")):
+        usada = acao_da_linha(linha)
+        if not (usada and usada.startswith(f"{acao}@")):
             continue
         coluna = linha.index("uses:")
         inicio = max(i for i in range(indice + 1) if linhas[i][coluna - 2 : coluna] == "- ")
@@ -93,15 +98,41 @@ def entradas_de_cada_uso(workflow, acao):
     return usos
 
 
-def test_toda_acao_de_terceiros_e_fixada_pelo_hash_do_commit():
-    fora_da_regra = [
-        f"{workflow.name}: {acao}"
-        for workflow in workflows()
+def acoes_fora_da_regra(workflow):
+    return [
+        acao
         for acao in acoes_usadas(workflow)
         if not (ACAO_FIXADA_POR_HASH.fullmatch(acao) or ACAO_LOCAL.fullmatch(acao))
     ]
 
+
+def test_toda_acao_de_terceiros_e_fixada_pelo_hash_do_commit():
+    fora_da_regra = [
+        f"{workflow.name}: {acao}"
+        for workflow in workflows()
+        for acao in acoes_fora_da_regra(workflow)
+    ]
+
     assert fora_da_regra == []
+
+
+@pytest.mark.parametrize("aspas", ['"', "'"])
+def test_uses_entre_aspas_vale_como_a_forma_sem_aspas(tmp_path, aspas):
+    fixada = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+    workflow = tmp_path / "exemplo.yml"
+    workflow.write_text(
+        "jobs:\n  a:\n    steps:\n"
+        f"      - uses: {aspas}{fixada}{aspas}\n"
+        "        with:\n"
+        "          persist-credentials: false\n"
+        f"      - uses: {aspas}actions/checkout@v7{aspas}\n"
+    )
+
+    assert acoes_fora_da_regra(workflow) == ["actions/checkout@v7"]
+    assert entradas_de_cada_uso(workflow, "actions/checkout") == [
+        {"persist-credentials": "false"},
+        {},
+    ]
 
 
 def test_todo_hash_usado_tem_a_versao_registrada_e_nenhum_registro_sobra():
