@@ -1646,6 +1646,60 @@ Deno.test("rascunho de visitante não é concluído numa conta que apareceu em o
   }
 });
 
+function contaSemPerfilNoBanco(a: ReturnType<typeof app>) {
+  const from = a.client.from;
+  a.client.from = (tabela: string) => {
+    const consulta = from(tabela);
+    consulta.maybeSingle = async () => ({ data: null });
+    return consulta;
+  };
+}
+
+Deno.test("sessão que falha ao renovar não deixa o perfil da conta no formulário nem para o próximo login", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    assert.equal(form.elements.curso.value, "Computação");
+    a.w.document.querySelector("#back-to-site").click();
+    Object.assign(a.client.auth, {
+      getSession: async () => ({
+        data: { session: null },
+        error: new Error("Invalid Refresh Token: Refresh Token Not Found"),
+      }),
+    });
+    await reabrirCadastro(a.w);
+    assert.match(a.w.document.querySelector("#form-message").textContent, /Não conseguimos carregar sua conta/);
+
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    assert.equal(form.elements.curso.value, "", "Criar conta depois do erro");
+    assert.equal(form.elements.cidade.value, "", "Criar conta depois do erro");
+    assert.deepEqual(habilidadesNaTela(a.w), [], "Criar conta depois do erro");
+
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    sessaoPassaASer(a, null);
+    Object.assign(a.client.auth, { signInWithPassword: async () => ({ data: { session: { user: outraPessoa } } }) });
+    contaSemPerfilNoBanco(a);
+    form.elements.email.value = outraPessoa.email;
+    form.elements.senha.value = "senha-da-outra-pessoa";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "", "login seguinte");
+    assert.deepEqual(habilidadesNaTela(a.w), [], "login seguinte");
+    assert.equal(form.elements.email.value, outraPessoa.email);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
   const a = app();
   let liberarCadastro = () => {};

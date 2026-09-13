@@ -884,6 +884,10 @@ function recusarRascunhoDeOutraSessao(mensagem) {
   setFormMessage(mensagem);
 }
 
+function esquecerRascunhoDeConta() {
+  if (donoDoRascunho !== VISITANTE) limparRascunhoDoCadastro();
+}
+
 function reconhecerDonoDoRascunho(session) {
   const dono = session?.user.id ?? VISITANTE;
   if (donoDoRascunho !== VISITANTE && donoDoRascunho !== dono) limparRascunhoDoCadastro();
@@ -1403,6 +1407,7 @@ async function openSignup() {
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    esquecerRascunhoDeConta();
     abrirLogin();
     setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
@@ -1433,6 +1438,7 @@ async function resumeConfirmedSignup() {
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    esquecerRascunhoDeConta();
     abrirLogin();
     setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
