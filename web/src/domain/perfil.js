@@ -6,6 +6,7 @@ export const DIAS_ATE_APAGAR = 60;
 export const MODALIDADES_ACEITAS = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 export const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 export const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
+export const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
 export const MENSAGEM_ENTREGAS_JA_MUDARAM =
   "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 export const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";

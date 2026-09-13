@@ -13,6 +13,7 @@ import {
   MENSAGEM_SEM_CONFIGURACAO,
   MENSAGEM_SEM_PERFIL,
   MENSAGEM_SEM_SESSAO,
+  MENSAGEM_SESSAO_MUDOU,
   MODALIDADES_ACEITAS,
   TAMANHO_MAXIMO_DA_HABILIDADE,
   TAMANHO_MINIMO_DO_CURSO,
@@ -38,6 +39,7 @@ export const HABILIDADES_INICIAIS = ["Python", "JavaScript", "Java", "React", "S
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 const PROGRESSO_AO_CONFIRMAR = 100;
 const CHAVE_DO_PERFIL_PENDENTE = "radar-perfil-pendente";
+const VISITANTE = "visitante";
 const COLUNAS_DO_PERFIL =
   "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const CAMPOS_DO_PASSO = {
@@ -141,6 +143,9 @@ export function criarControlador({ janela, criarCliente }) {
   let requisicaoDeHabilidades = 0;
   let requisicaoDeAreas = 0;
   let areasSalvas = [];
+  let passoDoRascunho = PASSO_MOMENTO;
+  let donoDoRascunho = VISITANTE;
+  let emailDoCadastroEnviado = "";
 
   function configuracao() {
     return janela.RADAR_CONFIG ?? {};
@@ -547,7 +552,6 @@ export function criarControlador({ janela, criarCliente }) {
       erro: null,
       mensagem: { texto: "", tom: "erro" },
       enviando: false,
-      semHabilidades: false,
       semPerfil: { ...atual.semPerfil, visivel: false },
     }));
     sairDoModoEdicao();
@@ -555,7 +559,19 @@ export function criarControlador({ janela, criarCliente }) {
     mostrarPasso(PASSO_CONTA);
   }
 
+  function limparSenhas() {
+    mudar((atual) => ({
+      campos: { ...atual.campos, senha: "" },
+      assistencia: { ...atual.assistencia, senha: "" },
+      senhasVisiveis: {},
+    }));
+  }
+
   function limparRascunhoDoCadastro() {
+    limparSenhas();
+    passoDoRascunho = PASSO_MOMENTO;
+    donoDoRascunho = VISITANTE;
+    emailDoCadastroEnviado = "";
     areasSalvas = [];
     mudar(() => ({
       campos: camposVazios(),
@@ -565,6 +581,27 @@ export function criarControlador({ janela, criarCliente }) {
       subareas: null,
       avisoDeHabilidades: false,
     }));
+  }
+
+  function recusarRascunhoDeOutraSessao(mensagem) {
+    sairDoModoEdicao();
+    limparRascunhoDoCadastro();
+    definirModo("login");
+    mostrarPasso(PASSO_CONTA);
+    mostrarMensagem(mensagem);
+  }
+
+  function esquecerRascunhoDeConta() {
+    if (donoDoRascunho !== VISITANTE) limparRascunhoDoCadastro();
+  }
+
+  function reconhecerDonoDoRascunho(sessao) {
+    const dono = sessao?.user.id ?? VISITANTE;
+    const cadastroFeitoAqui = donoDoRascunho === VISITANTE
+      && Boolean(emailDoCadastroEnviado)
+      && sessao?.user.email?.toLowerCase() === emailDoCadastroEnviado;
+    if (donoDoRascunho !== dono && !cadastroFeitoAqui) limparRascunhoDoCadastro();
+    donoDoRascunho = dono;
   }
 
   function mostrarChamadaDeConta(autenticado) {
@@ -603,6 +640,11 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   function fecharCadastro() {
+    if (estado.superficie === "dialogo" && estado.tela === "formulario" && estado.modo === "signup" && !estado.edicao) {
+      passoDoRascunho = estado.passo;
+    }
+    limparSenhas();
+    mudarCampos({ email: "" });
     mudarConta({ confirmacao: null });
     sairDaPaginaDaConta();
     paginas.fecharDialogo();
@@ -720,6 +762,7 @@ export function criarControlador({ janela, criarCliente }) {
   async function perfilAtual() {
     const sessao = await sessaoAtual();
     if (!sessao) throw erroDeValidacao(MENSAGEM_SEM_SESSAO);
+    reconhecerDonoDoRascunho(sessao);
     const perfil = await carregarPerfil(sessao.user.id);
     if (!perfil) throw erroDeValidacao(MENSAGEM_SEM_PERFIL);
     return perfil;
@@ -807,6 +850,7 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   function prepararPerfilAusente(sessao) {
+    reconhecerDonoDoRascunho(sessao);
     reiniciarPainel();
     abrirPaginaDaConta();
     definirModo("signup");
@@ -841,19 +885,25 @@ export function criarControlador({ janela, criarCliente }) {
         mostrarMensagem(MENSAGEM_SEM_SESSAO);
         return;
       }
+      if (estado.modo !== "login" && donoDoRascunho !== VISITANTE && sessaoExistente?.user.id !== donoDoRascunho) {
+        recusarRascunhoDeOutraSessao(sessaoExistente ? MENSAGEM_SESSAO_MUDOU : MENSAGEM_SEM_SESSAO);
+        return;
+      }
       if (!estado.edicao && sessaoExistente && sessaoExistente.user.email !== email) {
         const { error } = await obterCliente().auth.signOut();
         if (error) throw error;
         esquecerPerfilCarregado();
       }
-      const sessao = estado.edicao || sessaoExistente?.user.email === email
-        ? sessaoExistente
-        : await autenticar(email, senha, perfil);
+      const autenticarAgora = !estado.edicao && sessaoExistente?.user.email !== email;
+      const sessao = autenticarAgora ? await autenticar(email, senha, perfil) : sessaoExistente;
       mudarCampos({ senha: "" });
       if (!sessao) {
+        if (estado.modo === "signup") emailDoCadastroEnviado = email.toLowerCase();
         mostrarConfirmacao(email);
         return;
       }
+      if (autenticarAgora && estado.modo === "signup") donoDoRascunho = sessao.user.id;
+      else if (autenticarAgora) reconhecerDonoDoRascunho(sessao);
       const existente = await carregarPerfil(sessao.user.id);
       if (existente && !estado.edicao) {
         mostrarEstadoDoPerfil(existente);
@@ -861,6 +911,10 @@ export function criarControlador({ janela, criarCliente }) {
       }
       if (estado.modo === "login") {
         prepararPerfilAusente(sessao);
+        return;
+      }
+      if (donoDoRascunho !== sessao.user.id) {
+        recusarRascunhoDeOutraSessao(MENSAGEM_SESSAO_MUDOU);
         return;
       }
       contaSemPerfil = !existente;
@@ -910,15 +964,15 @@ export function criarControlador({ janela, criarCliente }) {
 
   async function abrirCadastro() {
     reiniciarPainel();
-    if (!estado.autenticado && estado.modo === "signup") mostrarPasso(PASSO_MOMENTO);
+    if (!estado.autenticado && estado.modo === "signup") mostrarPasso(passoDoRascunho);
     if (!estado.autenticado) abrirDialogo();
     try {
       const sessao = await sessaoAtual();
       mostrarChamadaDeConta(Boolean(sessao));
+      reconhecerDonoDoRascunho(sessao);
       if (!sessao) {
-        limparRascunhoDoCadastro();
         definirModo("signup");
-        mostrarPasso(PASSO_MOMENTO);
+        mostrarPasso(passoDoRascunho);
         abrirDialogo();
         return;
       }
@@ -927,6 +981,7 @@ export function criarControlador({ janela, criarCliente }) {
       if (perfil) mostrarEstadoDoPerfil(perfil);
       else prepararPerfilAusente(sessao);
     } catch (erro) {
+      esquecerRascunhoDeConta();
       abrirLogin();
       mostrarMensagem(mensagemHumana(erro, { carregandoConta: true }));
     }
@@ -951,11 +1006,13 @@ export function criarControlador({ janela, criarCliente }) {
         return;
       }
       if (!retorno.voltandoDoAuth && !lerPerfilPendente() && !retorno.consulta.has("conta")) return;
+      reconhecerDonoDoRascunho(sessao);
       const perfil = await carregarPerfil(sessao.user.id);
       limparPerfilPendente();
       if (perfil) mostrarEstadoDoPerfil(perfil);
       else prepararPerfilAusente(sessao);
     } catch (erro) {
+      esquecerRascunhoDeConta();
       abrirLogin();
       mostrarMensagem(mensagemHumana(erro, { carregandoConta: true }));
     }
