@@ -239,6 +239,7 @@ FAMILIAS_DE_HABILIDADES = {
     "banco de dados relacional": BANCOS_DE_DADOS,
     "bancos de dados relacionais": BANCOS_DE_DADOS,
     "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
+    **dict.fromkeys(BANCOS_RELACIONAIS, ("SQL",)),
     "back-end": BACK_END,
     "desenvolvimento back-end": BACK_END,
     "front-end": FRONT_END,

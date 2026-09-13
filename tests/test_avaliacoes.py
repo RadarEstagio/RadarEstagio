@@ -818,7 +818,7 @@ def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
     assert resultado.requisitos_nao_atendidos == []
 
 
-BANCOS_RELACIONAIS_DO_PERFIL = [
+BANCOS_RELACIONAIS = [
     "MySQL",
     "PostgreSQL",
     "Postgres",
@@ -826,13 +826,12 @@ BANCOS_RELACIONAIS_DO_PERFIL = [
     "Oracle",
     "SQLite",
     "MariaDB",
-    "PL/SQL",
-    "T-SQL",
 ]
+DIALETOS_DE_SQL = ["PL/SQL", "T-SQL"]
 BANCOS_NAO_RELACIONAIS = ["MongoDB", "Redis", "DynamoDB", "Firebase", "NoSQL"]
 
 
-@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS_DO_PERFIL)
+@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS + DIALETOS_DE_SQL)
 def test_requisito_sql_e_atendido_por_banco_relacional_do_perfil(banco: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([banco]))
 
@@ -863,6 +862,55 @@ def test_sql_com_nivel_exige_o_nivel_declarado_no_banco_relacional():
     assert pontuar(vaga(), exigente, perfil(["MySQL básico"])).requisitos_atendidos == []
     assert pontuar(vaga(), exigente, perfil(["MySQL avançado"])).requisitos_atendidos == [
         "SQL avançado"
+    ]
+
+
+@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS)
+def test_banco_relacional_exigido_e_atendido_por_sql_do_perfil(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[banco]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == [banco]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_um_banco_relacional_nao_atende_outro():
+    resultado = pontuar(
+        vaga(), extracao(habilidades_obrigatorias=["MySQL"]), perfil(["PostgreSQL"])
+    )
+
+    assert resultado.requisitos_atendidos == []
+    assert resultado.requisitos_nao_atendidos == ["MySQL"]
+
+
+@pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
+def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("banco", BANCOS_NAO_RELACIONAIS)
+def test_banco_nao_relacional_exigido_nao_e_atendido_por_sql(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[banco]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_banco_relacional_com_nivel_exige_o_nivel_declarado_no_sql():
+    exigente = extracao(habilidades_obrigatorias=["MySQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["SQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["SQL avançado"])).requisitos_atendidos == [
+        "MySQL avançado"
+    ]
+
+
+def test_banco_relacional_em_requisito_composto_nao_dispensa_as_outras_partes():
+    composto = extracao(habilidades_obrigatorias=["MySQL e Python"])
+
+    assert pontuar(vaga(), composto, perfil(["SQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), composto, perfil(["SQL", "Python"])).requisitos_atendidos == [
+        "MySQL e Python"
     ]
 
 
@@ -1097,13 +1145,13 @@ def test_vaga_de_computacao_nao_compara_por_palavras_nem_para_quem_e_de_outro_cu
     estatistica = Perfil(
         curso="Estatística",
         periodo=4,
-        habilidades=["React", "SQL", "Spring"],
+        habilidades=["React", "Angular", "Spring"],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
     )
     de_computacao = extracao(
         cursos_aceitos=["Estatística"],
-        habilidades_obrigatorias=["React Native", "SQL Server", "Spring Boot"],
+        habilidades_obrigatorias=["React Native", "Angular JS", "Spring Boot"],
     )
 
     assert pontuar(vaga(), de_computacao, estatistica).requisitos_atendidos == []
@@ -1139,7 +1187,7 @@ def test_plural_nao_impede_a_correspondencia_por_palavras(do_perfil: str, exigid
     [
         ("Java", "JavaScript"),
         ("Word", "WordPress"),
-        ("SQL", "MySQL"),
+        ("SQL", "NoSQL"),
         ("Análise de dados", "análise de crédito"),
         ("Power BI", "Power Apps"),
         ("Redes", "Red Hat"),
@@ -1275,11 +1323,11 @@ def test_trava_pela_area_da_vaga_vale_tambem_na_nota():
 
     de_computacao = extracao(
         cursos_aceitos=["Estatística"],
-        habilidades_obrigatorias=["React Native", "SQL Server", "Spring Boot"],
+        habilidades_obrigatorias=["React Native", "Angular JS", "Spring Boot"],
     )
 
     assert (
-        pontuar(vaga(), de_computacao, estatistica(["React", "SQL", "Spring"])).nota
+        pontuar(vaga(), de_computacao, estatistica(["React", "Angular", "Spring"])).nota
         == pontuar(vaga(), de_computacao, estatistica(["Cobol"])).nota
     )
 
