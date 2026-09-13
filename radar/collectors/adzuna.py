@@ -131,7 +131,14 @@ class ColetorAdzuna:
             lambda: self._requisitar(pagina, cidade, termos),
             self._esperar,
         )
-        return resposta.json()["results"]
+        try:
+            corpo = resposta.json()
+        except ValueError:
+            raise ErroDeColeta("Adzuna respondeu com corpo que não é JSON") from None
+        resultados = corpo.get("results") if isinstance(corpo, dict) else None
+        if not isinstance(resultados, list):
+            raise ErroDeColeta("Adzuna respondeu sem a lista de vagas em results")
+        return resultados
 
     def _requisitar(self, pagina: int, cidade: str | None, termos: str) -> httpx.Response:
         self._cota.reservar()

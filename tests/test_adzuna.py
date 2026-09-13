@@ -273,6 +273,40 @@ def test_falha_antes_de_qualquer_vaga_continua_erro_de_coleta(httpx_mock: HTTPXM
     assert not isinstance(capturado.value, ColetaIncompleta)
 
 
+@pytest.mark.parametrize(
+    "resposta",
+    [
+        {"text": "<html>Service temporarily unavailable</html>"},
+        {"json": {"exception": "AUTH_FAIL"}},
+        {"json": {"results": {"id": 1}}},
+        {"json": {"results": None}},
+        {"json": [1, 2]},
+    ],
+    ids=["html", "sem_results", "results_dicionario", "results_nulo", "corpo_lista"],
+)
+def test_resposta_200_com_corpo_invalido_vira_erro_de_coleta(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna, resposta: dict
+):
+    httpx_mock.add_response(**resposta)
+
+    with pytest.raises(ErroDeColeta, match="Adzuna") as capturado:
+        coletor.coletar()
+
+    assert APP_KEY_DE_TESTE not in str(capturado.value)
+
+
+def test_corpo_invalido_numa_pagina_tardia_mantem_as_vagas_ja_coletadas(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia(1))
+    httpx_mock.add_response(url=url_da_pagina(2), text="<html>erro</html>")
+
+    with pytest.raises(ColetaIncompleta) as capturada:
+        coletor.coletar()
+
+    assert len(capturada.value.vagas) == RESULTADOS_POR_PAGINA
+
+
 def test_coletas_sucessivas_nao_compartilham_estado(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
     httpx_mock.add_response(json=resposta_gravada())
     httpx_mock.add_response(json={"results": []})
