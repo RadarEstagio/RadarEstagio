@@ -3,11 +3,13 @@ from uuid import UUID
 
 import pytest
 
-from radar.collectors.adzuna import CotaDaAdzuna, CotaDaAdzunaEsgotada
+from radar.collectors.adzuna import LIMITE_POR_MINUTO, CotaDaAdzuna, CotaDaAdzunaEsgotada
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import (
+    FONTE_DO_DIARIO,
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
+    registrar_diario_da_adzuna,
     registrar_uso_da_adzuna,
     reserva_do_diario,
     uso_da_adzuna,
@@ -149,3 +151,119 @@ def test_reserva_do_diario_cobre_todas_as_paginas_de_cada_regiao_e_busca():
 
     assert reserva_do_diario([no_rio, remoto]) == 20
     assert reserva_do_diario([no_rio, remoto, sem_area]) == 40
+
+
+DIA_DO_DIARIO = date(2026, 9, 13)
+HORARIO_DO_DIARIO = datetime(2026, 9, 13, 10, 23, tzinfo=UTC)
+ANTES_DO_DIARIO = datetime(2026, 9, 13, 8, 0, tzinfo=UTC)
+DEPOIS_DO_DIARIO = datetime(2026, 9, 13, 15, 0, tzinfo=UTC)
+NOITE_DE_BRASILIA = datetime(2026, 9, 14, 0, 30, tzinfo=UTC)
+RESERVA = 40
+
+
+def requisicoes_permitidas(cota: CotaDaAdzuna) -> int:
+    for feitas in range(LIMITE_POR_MINUTO):
+        try:
+            cota.reservar()
+        except CotaDaAdzunaEsgotada:
+            return feitas
+    return LIMITE_POR_MINUTO
+
+
+def uso_no_dia(dia: date, requisicoes: int) -> RepositorioEmMemoria:
+    repositorio = RepositorioEmMemoria([])
+    repositorio.registrar_requisicoes_da_fonte("adzuna", dia, requisicoes)
+    return repositorio
+
+
+def test_entrega_imediata_antes_do_diario_guarda_a_reserva():
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 200)
+
+    cota = abrir_cota_da_adzuna(repositorio, ANTES_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 10
+
+
+def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_a_reserva():
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 230)
+    registrar_diario_da_adzuna(repositorio, 140, HORARIO_DO_DIARIO)
+
+    cota = abrir_cota_da_adzuna(repositorio, DEPOIS_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 20
+
+
+def test_diario_sem_nenhuma_requisicao_tambem_conta_como_rodado():
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 230)
+    registrar_diario_da_adzuna(repositorio, 0, HORARIO_DO_DIARIO)
+
+    cota = abrir_cota_da_adzuna(repositorio, DEPOIS_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 20
+
+
+def test_entrega_imediata_na_noite_de_brasilia_guarda_a_reserva_do_diario_da_manha():
+    repositorio = uso_no_dia(date(2026, 9, 14), 200)
+    registrar_diario_da_adzuna(repositorio, 140, HORARIO_DO_DIARIO)
+
+    cota = abrir_cota_da_adzuna(repositorio, NOITE_DE_BRASILIA, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 10
+
+
+def test_diario_que_falhou_ou_nao_rodou_mantem_a_reserva_o_dia_todo():
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 200)
+
+    cota = abrir_cota_da_adzuna(repositorio, DEPOIS_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 10
+
+
+@pytest.mark.parametrize(
+    ("dia_do_uso_anterior", "uso_anterior"),
+    [
+        pytest.param(date(2026, 9, 8), 1000 - 100 - RESERVA - 15, id="semana"),
+        pytest.param(date(2026, 9, 1), 2500 - 100 - RESERVA - 15, id="mes"),
+    ],
+)
+def test_depois_do_diario_a_reserva_ainda_protege_o_diario_de_amanha_na_semana_e_no_mes(
+    dia_do_uso_anterior: date, uso_anterior: int
+):
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 100)
+    repositorio.registrar_requisicoes_da_fonte("adzuna", dia_do_uso_anterior, uso_anterior)
+    registrar_diario_da_adzuna(repositorio, 100, HORARIO_DO_DIARIO)
+
+    cota = abrir_cota_da_adzuna(repositorio, DEPOIS_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 15
+
+
+def test_diario_registra_o_que_gastou_sem_mudar_o_uso_da_adzuna():
+    repositorio = uso_no_dia(DIA_DO_DIARIO, 140)
+
+    registrar_diario_da_adzuna(repositorio, 140, HORARIO_DO_DIARIO)
+
+    assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, DIA_DO_DIARIO) == 140
+    assert uso_da_adzuna(repositorio, DEPOIS_DO_DIARIO) == (140, 140)
+
+
+class RegistroDoDiarioIlegivel(RepositorioEmMemoria):
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        raise ErroDeArmazenamento("connection reset")
+
+
+def test_registro_do_diario_ilegivel_mantem_a_reserva(caplog: pytest.LogCaptureFixture):
+    repositorio = RegistroDoDiarioIlegivel([])
+    repositorio.registrar_requisicoes_da_fonte("adzuna", DIA_DO_DIARIO, 200)
+    registrar_diario_da_adzuna(repositorio, 140, HORARIO_DO_DIARIO)
+
+    cota = abrir_cota_da_adzuna(repositorio, DEPOIS_DO_DIARIO, reserva=RESERVA)
+
+    assert requisicoes_permitidas(cota) == 10
+    assert "connection reset" in caplog.text
+
+
+def test_falha_ao_registrar_o_diario_so_avisa(caplog: pytest.LogCaptureFixture):
+    registrar_diario_da_adzuna(RepositorioSemTabela([]), 140, HORARIO_DO_DIARIO)
+
+    assert "uso_das_fontes" in caplog.text
