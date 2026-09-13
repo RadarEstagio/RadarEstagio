@@ -567,6 +567,11 @@ Três revisores independentes e uma medição em produção depois da expansão.
   esperam e repetem o **mesmo** lote (`AvaliadorIndisponivel`), e o resumo do Telegram e o stdout
   mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
   total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
+  O **500** tem regra própria desde 13/09/2026 (`FalhaInternaDoAvaliador`): o lote repete a
+  chamada uma vez, depois de 10 s, e se o 500 voltar é dividido como erro não temporário. Até
+  então o 500 dividia o lote na hora, como erro comum; tratá-lo igual ao 503, na primeira correção,
+  fazia um 500 persistente parar a extração inteira (0 de 30 contra 29 de 30), e o 500 costuma
+  vir da própria entrada. Três esperas de 61 s custariam 30% do prazo por lote.
 
 As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`) e são montadas
 ao entrar na etapa de habilidades; a lista de computação é a mesma de antes. Curso sem área
@@ -602,7 +607,17 @@ falhava antes da correção:
 - **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
   candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
   uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
-  e volta a ser candidata no dia seguinte.
+  e volta a ser candidata no dia seguinte. **A retenção tem limite por vaga desde 13/09/2026**:
+  uma vaga que nunca é extraída (resposta vazia, JSON inválido) segurava a mensagem todos os dias.
+  A `0022` conta em `vagas.dias_sem_extracao` os dias distintos de Brasília em que a vaga terminou
+  a execução sem extração; a mensagem só sai quando todas as candidatas não avaliadas já faltaram
+  em 3 dias, e uma vaga nova sem extração continua segurando. Extração gravada zera a contagem.
+  A primeira versão contava desde a última recomendação e soltava "nenhuma vaga compatível" já no
+  primeiro dia de falha para quem tinha recebido vagas havia 3 dias, inclusive como primeira
+  mensagem de quem criou o perfil antes de vincular. Registro que falha (banco sem a `0022`)
+  mantém a retenção; o `testar-local` (`RepositorioDoModoLocal`) não segura. Uma queda do Gemini
+  de 3 dias seguidos solta a mensagem no 3º dia; o resumo de operação mostra as vagas sem
+  extração. Coleta incompleta também segura, por outro motivo: ver "Coleta resiliente".
 - **Logout herdava áreas de interesse.** `#logout-account` limpava formulário e habilidades,
   mas não `areasEscolhidas`/`areasSalvas`, e a grade da etapa 4 é remontada a partir delas. O
   mesmo esquecimento vale ao trocar de conta dentro do formulário, onde as salvas eram reserva
