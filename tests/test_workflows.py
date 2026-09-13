@@ -228,3 +228,4 @@ def test_dependabot_propoe_em_pr_as_versoes_novas_das_acoes_depois_de_uma_espera
     assert '- package-ecosystem: "github-actions"' in linhas
     assert 'directory: "/"' in linhas
     assert "cooldown:" in linhas
+    assert "groups:" in linhas
