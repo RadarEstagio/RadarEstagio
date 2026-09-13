@@ -8,7 +8,7 @@ diferentes. Esta revisão reorganizou registros locais; não consultou serviços
 - [Funcionalidades](funcionalidades.md): capacidades implementadas, dependências e limitações.
 - [Plano geral](plano-geral.md): acompanhamento único de pendências e decisões da equipe.
 - [Plano de migração para React](plano-migracao-react.md): execução incremental autorizada,
-  com JavaScript, landing estática e entregas separadas; preparação delegada ao Luna xhigh.
+  com JavaScript, landing estática e entregas separadas.
 - [Guia de publicação e piloto](guia-publicacao-e-piloto.md): configuração, evidências datadas,
   ordem de publicação, reversão e roteiro de validação.
 - [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.

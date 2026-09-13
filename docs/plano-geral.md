@@ -152,7 +152,7 @@ que saíram de lá:
 
 ## 2.3 Migração do frontend para React (12/09/2026)
 
-**Estado: execução incremental autorizada e delegada ao Luna xhigh.** Após a revisão da
+**Estado: execução incremental autorizada.** Após a revisão da
 PR #62, Igor pediu ajustar o plano e executar. O [plano detalhado](plano-migracao-react.md)
 mantém a landing estática nesta fase e migra Auth/cadastro/conta para React com JavaScript,
 sem redesign ou TypeScript, em PRs menores começando pelo build compatível.
@@ -161,7 +161,7 @@ Base atual: `main` em `5ddf9a0`, após #60/#61/#63. Igor confirmou preservar ess
 incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
 remotas e publicação continuam dependendo de autorização própria e evidência no guia.
 
-P1 entregue pelo Luna xhigh na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
+P1 entregue na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
 em rascunho, commit `17810b4`: build compatível, 14 testes novos e roteiro Pages, sem alterar
 arquivos de `web/`. Validação local: 1.053 testes Python passaram, 27 pulados; lint e sintaxe
 do script passaram. Próximo passo: revisar/integrar P1 com autorização e preparar a transição

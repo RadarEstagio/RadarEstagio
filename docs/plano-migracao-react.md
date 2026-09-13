@@ -1,6 +1,6 @@
 # Plano de migração incremental do frontend para React
 
-**Revisado em 12/09/2026 após os comentários da PR #62. Execução delegada ao Luna xhigh.**
+**Revisado em 12/09/2026 após os comentários da PR #62.**
 
 Igor autorizou ajustar o plano e iniciar a execução. Esta PR continua exclusivamente
 documental; implementação será entregue em PRs menores, sem merge ou mudanças remotas
@@ -114,8 +114,8 @@ fazer merge automático nem antecipar uma troca de publicação ainda não autor
 | Entrega | Conteúdo | Saída verificável |
 |---|---|---|
 | P1 — Build compatível | Script legado/Vite, testes isolados do artefato e roteiro Pages; sem mudar frontend ativo | HTML legado idêntico na saída, script falha corretamente e PR pronta para revisão |
-| P2 — Módulos e infraestrutura | Vite/React/testes, serviços e sessão únicos, landing modular; interface ainda equivalente | Build/testes verdes e fronteiras para migração, sem converter toda a LP |
-| P3 — Cadastro e Auth | Componentes compartilhados, login, confirmação, recuperação, CAPTCHA e wizard | Jornadas e edição compartilhada equivalentes, sem duplo controller |
+| P2 — Ferramentas do frontend | Vite, lint com checagem de comentários, Vitest, conferência do artefato e job de CI; o navegador executa os mesmos arquivos | Build pelo `build-web.sh` com os caminhos públicos atuais e referências locais conferidas |
+| P3 — Cadastro e Auth | React e SDK do Supabase por npm, serviços e sessão únicos, landing modular; componentes compartilhados, login, confirmação, recuperação, CAPTCHA e wizard | Jornadas e edição compartilhada equivalentes, sem duplo controller |
 | P4 — Conta e fechamento | Controles da conta, limpeza do legado migrado, cobertura e documentação final | Todos os cenários mapeados e uma implementação ativa por fluxo |
 
 P3/P4 não devem ser separados artificialmente se a edição compartilhada depender do wizard:
