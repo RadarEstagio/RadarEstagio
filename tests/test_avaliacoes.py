@@ -925,6 +925,25 @@ def test_banco_nao_relacional_nao_atende_banco_relacional(do_perfil: str):
     assert resultado.requisitos_atendidos == []
 
 
+@pytest.mark.parametrize("exigida", ["ETL", "análise de dados", "dados"])
+@pytest.mark.parametrize("do_perfil", ["MySQL", "PostgreSQL", "SQL Server"])
+def test_membro_da_classe_vale_pelo_sql_dentro_da_familia(do_perfil: str, exigida: str):
+    exige_familia = extracao(habilidades_obrigatorias=[exigida])
+
+    com_banco = pontuar(vaga(), exige_familia, perfil([do_perfil]))
+    com_sql = pontuar(vaga(), exige_familia, perfil(["SQL"]))
+
+    assert com_banco.requisitos_atendidos == com_sql.requisitos_atendidos == [exigida]
+    assert com_banco.nota == com_sql.nota
+
+
+@pytest.mark.parametrize("do_perfil", ["Oracle", "MongoDB"])
+def test_quem_esta_fora_da_classe_nao_ganha_familia_pelo_sql(do_perfil: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["ETL"]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
 def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))

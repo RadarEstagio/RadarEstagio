@@ -693,12 +693,15 @@ def _nivel_no_perfil(
     nome: str, palavras: frozenset[str], habilidades_do_perfil: Mapping[str, HabilidadeComparavel]
 ) -> int | None:
     familia = _membros_das_familias().get(nome)
-    equivalentes = _membros_equivalentes().get(nome, frozenset())
+    membros = (familia or frozenset()) | _membros_equivalentes().get(nome, frozenset())
+    membros |= {
+        equivalente
+        for membro in membros
+        for equivalente in _membros_equivalentes().get(membro, frozenset())
+    }
     niveis = [habilidades_do_perfil[nome].nivel] if nome in habilidades_do_perfil else []
     niveis += [
-        habilidades_do_perfil[membro].nivel
-        for membro in (familia or frozenset()) | equivalentes
-        if membro in habilidades_do_perfil
+        habilidades_do_perfil[membro].nivel for membro in membros if membro in habilidades_do_perfil
     ]
     if familia is None:
         niveis += [
