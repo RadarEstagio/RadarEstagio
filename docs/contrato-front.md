@@ -95,15 +95,18 @@ preservando perfis e permissões, e só então liberar o frontend que oferece es
 Decisões de interface preservadas da revisão de 08/09: o campo de habilidade limita a
 digitação a 100 caracteres (`maxlength` e recorte em `addCustomSkill`), sem aviso de corte; a dica
 do campo diz "Uma por vez, com até 100 caracteres".
-A 51ª habilidade é recusada com erro no campo; o envio também valida o limite para listas
+A 51ª habilidade é recusada com erro no campo, digitada ou sugerida, e Continuar não sai da etapa
+com a 51ª pendente; o corte de 100 é por ponto de código. O curso exige 2 caracteres na tela, como
+no banco. O envio também valida o limite para listas
 legadas. Foi escolhido o limite nativo para texto e erro explícito para quantidade, evitando
 apagar uma seleção sem explicação. Remover a proteção do site deixaria a recusa só no banco.
 
 Logout e troca de conta limpam interesses e dados de perfil em memória; respostas pendentes
 do catálogo não podem restaurar outra sessão. Ao editar a mesma conta, seleções existentes
-devem ser preservadas. Fechar o diálogo de cadastro (Esc, X ou clique fora) não limpa: o
-rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa; perfil carregado
-de uma conta é descartado se a sessão acabar. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
+devem ser preservadas. Fechar o diálogo de cadastro (Esc, X, clique fora ou voltar) não limpa: o
+rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa, sem senha e só para
+a mesma dona, o usuário da sessão ou o visitante. Sessão de outra conta, ou nenhuma sessão depois de
+uma conta, limpa tudo; visitante que cria a conta mantém o rascunho. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
 resposta não desfaz a pausa; retomar limpa o motivo.
 
 | Operação | Caminho |

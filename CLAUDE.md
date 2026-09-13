@@ -218,16 +218,27 @@ no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. S
 cru (espaços nas pontas furavam o `btrim`); mantê-los evita que um cadastro pendente, validado antes,
 falhe na confirmação do e-mail. A folga vem dos catálogos: o maior curso sugerido tem 37 caracteres,
 84 com o maior prefixo e sufixo que a normalização conhece, e a maior cidade do IBGE tem 36. O site
-limita a digitação com o mesmo `maxlength`, e um teste lê os números da migration. Habilidade
-digitada nunca é separada por vírgula: cada item na tela é um item no banco. O envio partia o campo
-oculto por vírgula, então "Pacote Office (Word, Excel)" virava dois pedaços e 50 itens na tela
-viravam mais de 50 no banco, que recusava. Separar ao adicionar exigiria copiar no site as regras com
-que o Python já parte a habilidade composta (parênteses, " e ", nível da última parte). Fechar o
-diálogo (Esc, X, clique fora) não apaga o rascunho: ele fica na memória da página, sem
-armazenamento, e reabre na mesma etapa. Limpam o rascunho o logout, a troca de conta, a exclusão sem
-perfil, o "Entrar" do cabeçalho e o fim da sessão com o perfil de uma conta no formulário
-(`formularioComPerfilDaConta`), para ele não reaparecer como rascunho. Custo aceito: depois do envio,
-reabrir o cadastro mostra o que foi enviado, sem a senha.
+limita a digitação com o mesmo `maxlength` e cobra na etapa o mínimo de 2 no curso, porque o
+navegador só marca texto curto que a pessoa digitou. O teste de coerência compara com o site os
+checks, os dois números de cada texto em `validar_cadastro_radar` e o limite das listas da `0018`, e
+exige que perfil e cadastro aceitem todas as subáreas de um curso; lendo só os checks, mudar a
+validação do cadastro passava. Habilidade digitada nunca é separada por vírgula: cada item na tela é
+um item no banco. O envio partia o campo oculto por vírgula, então "Pacote Office (Word, Excel)"
+virava dois pedaços e 50 itens na tela viravam mais de 50 no banco, que recusava. Separar ao adicionar
+exigiria copiar no site as regras com que o Python já parte a habilidade composta (parênteses, " e ",
+nível da última parte). O corte de 100 é por ponto de código, como em `propriedadesDoEvento`: o
+`slice` partia emoji e o Postgres recusava o JSON. O limite de 50 vale também para a sugerida e para
+Continuar, que antes passavam sem aviso. Fechar o diálogo (Esc, X, clique fora, voltar) não apaga o
+rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas nunca com
+senha e só para a mesma pessoa. Fechar apaga os campos de senha e esconde de novo a senha mostrada. O
+rascunho guarda a dona (`donoDoRascunho`): o id do usuário da sessão, ou visitante. Ao reabrir, na
+volta do link, ao completar o perfil e ao ler a conta, sessão de outra dona limpa tudo; visitante que
+vira conta mantém o rascunho, porque é a mesma pessoa se cadastrando, e quem entra pelo formulário
+vira dona do que digitou. A primeira versão só marcava o perfil aberto em Editar perfil, e o e-mail da
+sessão e o rascunho de quem completava o perfil apareciam para quem abria o cadastro depois que a
+sessão acabava sem logout. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito:
+depois do envio, reabrir o cadastro mostra o que foi enviado. Sabido e igual ao `main`: com erro ao
+renovar a sessão, trocar o login para Criar conta mostra o perfil que estava no formulário.
 
 ## Regras do projeto (obrigatórias)
 
