@@ -1242,12 +1242,17 @@ async function authenticate(email, password, profile) {
   }
 }
 
+function aguardandoVinculoDoTelegram() {
+  return (dialog.open || !accountPage.hidden) && !successState.hidden && !telegramLink.hidden;
+}
+
 async function refreshActivationStatus() {
+  if (!aguardandoVinculoDoTelegram()) return;
   try {
     const session = await currentSession();
     if (!session) return;
     const profile = await loadProfile(session.user.id);
-    if (profile) mostrarEstadoDoPerfil(profile);
+    if (profile && aguardandoVinculoDoTelegram()) mostrarEstadoDoPerfil(profile);
   } catch {
     document.querySelector("#success-copy").textContent =
       "O Telegram foi aberto, mas ainda não conseguimos confirmar o vínculo. Tente voltar a esta janela novamente.";
@@ -1654,8 +1659,7 @@ telegramLink.addEventListener("click", () => {
 });
 
 window.addEventListener("focus", () => {
-  if ((!dialog.open && accountPage.hidden) || telegramLink.hidden) return;
-  refreshActivationStatus();
+  void refreshActivationStatus();
 });
 
 dialog.addEventListener("click", (event) => {

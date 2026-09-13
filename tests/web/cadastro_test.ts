@@ -1006,6 +1006,108 @@ Deno.test("retomar limpa o motivo no mesmo update", async () => {
   } finally { a.close(); }
 });
 
+async function contaRecemVinculadaAoVoltarAAba() {
+  const salvo: Profile = { ...profile };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  await settle();
+  assert.equal(a.w.document.querySelector("#success-state").hidden, false);
+  salvo.telegram_chat_id = "123";
+  a.w.dispatchEvent(new a.w.Event("focus"));
+  await settle();
+  assert.equal(a.w.document.querySelector("#success-state").hidden, true);
+  assert.equal(a.w.document.querySelector("#account-state").hidden, false);
+  return a;
+}
+
+Deno.test("voltar à aba na ativação mostra a conta assim que o Telegram é vinculado", async () => {
+  const a = await contaRecemVinculadaAoVoltarAAba();
+  try {
+    assert.equal(a.w.document.querySelector("#account-delivery-title").textContent, "Entregas ativas");
+  } finally { a.close(); }
+});
+
+Deno.test("voltar à aba durante a edição do perfil não descarta o que foi digitado", async () => {
+  const a = await contaRecemVinculadaAoVoltarAAba();
+  try {
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const formulario = doc.querySelector("#signup-form");
+    formulario.elements.curso.value = "Direito";
+    a.w.dispatchEvent(new a.w.Event("focus"));
+    await settle();
+    assert.equal(formulario.hidden, false);
+    assert.equal(formulario.elements.curso.value, "Direito");
+    assert.equal(doc.querySelector("#account-state").hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("voltar à aba com a confirmação aberta não esconde o diálogo modal", async () => {
+  const a = await contaRecemVinculadaAoVoltarAAba();
+  try {
+    const confirmacao = a.w.document.querySelector("#account-confirm");
+    let fechou = false;
+    confirmacao.showModal = () => confirmacao.setAttribute("open", "");
+    confirmacao.close = () => {
+      fechou = true;
+      confirmacao.removeAttribute("open");
+    };
+    a.w.document.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    a.w.dispatchEvent(new a.w.Event("focus"));
+    await settle();
+    assert.equal(confirmacao.hidden, false);
+    assert.equal(confirmacao.open, true);
+    assert.equal(fechou, false);
+    assert.equal(confirmacao.dataset.acao, "excluir");
+  } finally { a.close(); }
+});
+
+Deno.test("voltar à aba mantém a pergunta do motivo da pausa", async () => {
+  const a = await contaRecemVinculadaAoVoltarAAba();
+  try {
+    const doc = a.w.document;
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    assert.equal(doc.querySelector("#pause-reason").hidden, false);
+    a.w.dispatchEvent(new a.w.Event("focus"));
+    await settle();
+    assert.equal(doc.querySelector("#pause-reason").hidden, false);
+  } finally { a.close(); }
+});
+
+Deno.test("consulta do vínculo que termina depois de a pessoa sair da ativação não mexe na tela", async () => {
+  const salvo: Profile = { ...profile };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const getSession = a.client.auth.getSession;
+    let liberar = () => {};
+    let primeira = true;
+    a.client.auth.getSession = async () => {
+      if (primeira) {
+        primeira = false;
+        await new Promise<void>((resolve) => { liberar = resolve; });
+      }
+      return getSession();
+    };
+    a.w.dispatchEvent(new a.w.Event("focus"));
+    await settle();
+    salvo.telegram_chat_id = "123";
+    doc.querySelector("#success-account").click();
+    await settle();
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const formulario = doc.querySelector("#signup-form");
+    formulario.elements.curso.value = "Direito";
+    liberar();
+    await settle();
+    assert.equal(formulario.hidden, false);
+    assert.equal(formulario.elements.curso.value, "Direito");
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },
