@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -9,9 +9,9 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from radar.__main__ import executar_fluxo
-from radar.collectors.adzuna import RESULTADOS_POR_PAGINA, URL_BUSCA
+from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
-from radar.domain.models import Usuario, Vaga
+from radar.domain.models import Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
 from radar.settings import Settings
@@ -145,3 +145,80 @@ def test_perfil_sem_entrega_a_fazer_retorna_sem_coletar_nem_avisar(httpx_mock: H
         )
 
     assert httpx_mock.get_requests() == []
+
+
+CHAT_DO_ESTUDANTE = "555"
+
+
+def estudante_de_direito_no_rio() -> Usuario:
+    return Usuario(
+        id=UUID(int=1),
+        perfil=Perfil(
+            curso="Direito",
+            periodo=4,
+            habilidades=[],
+            cidade="Rio de Janeiro, RJ",
+            modalidade=Modalidade.PRESENCIAL,
+        ),
+        chat_id=CHAT_DO_ESTUDANTE,
+    )
+
+
+def pagina_de_ti(quantidade: int) -> dict:
+    return {"results": pagina_cheia()["results"][:quantidade]}
+
+
+def mensagens_para(httpx_mock: HTTPXMock, chat_id: str) -> list[str]:
+    corpos = [
+        json.loads(requisicao.content)
+        for requisicao in httpx_mock.get_requests(url=URL_DO_TELEGRAM)
+    ]
+    return [corpo["text"] for corpo in corpos if corpo["chat_id"] == chat_id]
+
+
+def test_coleta_que_para_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock: HTTPXMock):
+    def adzuna(requisicao: httpx.Request) -> httpx.Response:
+        if requisicao.url.params.get("where"):
+            return httpx.Response(200, json=pagina_de_ti(10))
+        return httpx.Response(400, text="pedido inválido")
+
+    httpx_mock.add_callback(adzuna, url=re.compile(re.escape(URL_BUSCA)), is_reusable=True)
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(
+            settings_de_teste(), cliente_http, RepositorioEmMemoria([estudante_de_direito_no_rio()])
+        )
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert "⚠️ Coleta da Adzuna incompleta" in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+
+
+def test_cota_que_acaba_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock: HTTPXMock):
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+    repositorio.registrar_requisicoes_da_fonte(
+        "adzuna", datetime.now(UTC).date(), LIMITE_POR_DIA - 1
+    )
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia())
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert "⚠️ Cota da Adzuna esgotada" in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+
+
+def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(
+            settings_de_teste(), cliente_http, RepositorioEmMemoria([estudante_de_direito_no_rio()])
+        )
+
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE)
+    assert "Nenhuma vaga nova compatível" in mensagem

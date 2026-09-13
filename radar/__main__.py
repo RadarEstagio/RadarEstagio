@@ -306,6 +306,7 @@ def executar_fluxo(
             agora,
             enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
             apenas_o_perfil=apenas_o_perfil,
+            coleta_incompleta=lambda: bool(coletor.incompletas) or cota.esgotada,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
