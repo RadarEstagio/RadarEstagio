@@ -34,6 +34,7 @@ from radar.collectors.factory import (
 from radar.cota import (
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
+    registrar_diario_da_adzuna,
     reserva_do_diario,
     uso_da_adzuna,
 )
@@ -311,6 +312,8 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
+    if apenas_o_perfil is None:
+        registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "

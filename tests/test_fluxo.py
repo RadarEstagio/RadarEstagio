@@ -11,6 +11,7 @@ from pytest_httpx import HTTPXMock
 from radar.__main__ import executar_fluxo
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
+from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
 from radar.domain.models import Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
@@ -222,3 +223,54 @@ def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_moc
 
     [mensagem] = mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE)
     assert "Nenhuma vaga nova compatível" in mensagem
+
+
+def test_diario_que_termina_registra_que_rodou_e_quanto_gastou(httpx_mock: HTTPXMock):
+    repositorio = RepositorioEmMemoria([])
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    hoje = datetime.now(UTC).date()
+    assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, hoje)
+    assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == 1
+
+
+def test_diario_que_falha_nao_registra_que_rodou(httpx_mock: HTTPXMock):
+    repositorio = RepositorioEmMemoria([])
+    httpx_mock.add_response(url=url_da_pagina(1), status_code=401, text="não autorizado")
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta):
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    assert not repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, datetime.now(UTC).date())
+
+
+def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_se_registrar_como_diario(
+    httpx_mock: HTTPXMock,
+):
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+    hoje = datetime.now(UTC).date()
+    gasto_do_diario = repositorio.requisicoes_da_fonte_desde("adzuna", hoje)
+    reserva = reserva_do_diario([estudante])
+    repositorio.registrar_requisicoes_da_fonte(
+        "adzuna", hoje, LIMITE_POR_DIA - reserva - gasto_do_diario
+    )
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio, apenas_o_perfil=estudante.id)
+
+    assert repositorio.requisicoes_da_fonte_desde("adzuna", hoje) == (
+        LIMITE_POR_DIA - reserva + gasto_do_diario
+    )
+    assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == gasto_do_diario
