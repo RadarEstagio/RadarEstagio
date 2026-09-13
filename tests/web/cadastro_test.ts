@@ -1249,6 +1249,114 @@ Deno.test("alternar para login e voltar preserva o rascunho do perfil", async ()
   } finally { a.close(); }
 });
 
+function fecharComEsc(w: TestWindow) {
+  w.document.querySelector("#cidade").dispatchEvent(
+    new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+  );
+}
+
+async function reabrirCadastro(w: TestWindow) {
+  w.document.querySelector(".js-open-signup").click();
+  await settle();
+}
+
+Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mesma etapa", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const doc = a.w.document;
+    const form = fill(a.w);
+    doc.querySelector("#next-step").click();
+    await settle();
+    digitarHabilidade(a.w, "Figma");
+    doc.querySelector("#next-step").click();
+    await settle();
+    form.querySelector('input[name="areas"][value="dados_ia"]').checked = true;
+
+    const conferirRascunho = () => {
+      assert.equal(doc.querySelector("#signup-dialog").open, true);
+      assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+      assert.equal(form.elements.curso.value, "Computação");
+      assert.equal(form.elements.periodo.value, "3");
+      assert.equal(form.elements.cidade.value, "Recife, PE");
+      assert.equal(form.querySelector('[value="remoto"]').checked, true);
+      assert.deepEqual(habilidadesNaTela(a.w), ["Python", "Figma"]);
+      assert.equal(form.querySelector('input[name="areas"][value="dados_ia"]').checked, true);
+    };
+    fecharComEsc(a.w);
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    await reabrirCadastro(a.w);
+    conferirRascunho();
+    doc.querySelector("#close-dialog").click();
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    await reabrirCadastro(a.w);
+    conferirRascunho();
+
+    doc.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const perfil = called(a.calls, "signup")[1].options.data.cadastro_radar.perfil;
+    assert.equal(perfil.curso, "Computação");
+    assert.deepEqual(Array.from(perfil.habilidades), ["Python", "Figma"]);
+    assert.deepEqual(Array.from(perfil.areas_de_interesse), ["dados_ia"]);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("fechar o cadastro depois de seguir sem habilidades não pede a escolha de novo", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const doc = a.w.document;
+    const form = fill(a.w, false);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#continue-without-skills").click();
+    fecharComEsc(a.w);
+    await reabrirCadastro(a.w);
+
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.deepEqual(
+      Array.from(called(a.calls, "signup")[1].options.data.cadastro_radar.perfil.habilidades),
+      [],
+    );
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("perfil carregado da conta não reaparece no cadastro depois que a sessão acaba", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-form").elements.curso.value, "Computação");
+    a.client.auth.getSession = async () => ({ data: { session: null } });
+    doc.querySelector("#back-to-site").click();
+    await reabrirCadastro(a.w);
+
+    const form = doc.querySelector("#signup-form");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.equal(form.elements.curso.value, "");
+    assert.equal(form.elements.cidade.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
   const a = app();
   let liberarCadastro = () => {};

@@ -132,6 +132,8 @@ const PASSO_PREFERENCIAS = 4;
 const PROGRESSO_AO_CONFIRMAR = 100;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
+let passoDoRascunho = PASSO_MOMENTO;
+let formularioComPerfilDaConta = false;
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
@@ -844,12 +846,13 @@ function resetDialogView() {
   setFormMessage();
   limparErroDoCampo();
   setSubmitting(false);
-  continuarSemHabilidades = false;
   showStep(PASSO_CONTA);
 }
 
 function limparRascunhoDoCadastro() {
   form.reset();
+  passoDoRascunho = PASSO_MOMENTO;
+  formularioComPerfilDaConta = false;
   selectedSkills.clear();
   continuarSemHabilidades = false;
   esquecerPerfilCarregado();
@@ -916,6 +919,9 @@ function openDialog() {
 }
 
 function closeSignup() {
+  if (dialog.open && !form.hidden && authMode === "signup" && !editandoPerfilExistente) {
+    passoDoRascunho = currentStep;
+  }
   fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
@@ -1097,6 +1103,7 @@ function showAccount(profile) {
 }
 
 function preencherFormularioCom(profile) {
+  formularioComPerfilDaConta = true;
   form.elements.curso.value = profile.curso;
   form.elements.periodo.value = String(profile.periodo);
   form.elements.cidade.value = profile.cidade;
@@ -1350,15 +1357,15 @@ function abrirLogin() {
 
 async function openSignup() {
   resetDialogView();
-  if (!usuarioAutenticado && authMode === "signup") showStep(PASSO_MOMENTO);
+  if (!usuarioAutenticado && authMode === "signup") showStep(passoDoRascunho);
   if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
     mostrarChamadaDeConta(Boolean(session));
     if (!session) {
-      limparRascunhoDoCadastro();
+      if (formularioComPerfilDaConta) limparRascunhoDoCadastro();
       setAuthMode("signup");
-      showStep(PASSO_MOMENTO);
+      showStep(passoDoRascunho);
       openDialog();
       return;
     }
