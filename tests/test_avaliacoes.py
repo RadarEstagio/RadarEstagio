@@ -873,13 +873,56 @@ def test_banco_relacional_exigido_e_atendido_por_sql_do_perfil(banco: str):
     assert resultado.requisitos_nao_atendidos == []
 
 
-def test_um_banco_relacional_nao_atende_outro():
-    resultado = pontuar(
-        vaga(), extracao(habilidades_obrigatorias=["MySQL"]), perfil(["PostgreSQL"])
-    )
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida"),
+    [
+        ("PostgreSQL", "MySQL"),
+        ("MySQL", "PostgreSQL"),
+        ("Postgres", "SQL Server"),
+        ("SQLite", "MariaDB"),
+        ("MySQL", "Oracle Database"),
+        ("MySQL", "Oracle"),
+        ("T-SQL", "MySQL"),
+    ],
+)
+def test_sql_e_bancos_relacionais_formam_uma_classe_so(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+def test_banco_especifico_no_perfil_vale_o_mesmo_que_sql_generico():
+    exige_tres_bancos = extracao(habilidades_obrigatorias=["PostgreSQL", "MySQL", "Oracle"])
+
+    com_sql = pontuar(vaga(), exige_tres_bancos, perfil(["SQL"]))
+    com_mysql = pontuar(vaga(), exige_tres_bancos, perfil(["MySQL"]))
+
+    assert com_mysql.requisitos_atendidos == com_sql.requisitos_atendidos
+    assert com_mysql.nota == com_sql.nota
+
+
+def test_nivel_exigido_vale_dentro_da_classe():
+    exigente = extracao(habilidades_obrigatorias=["MySQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["PostgreSQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["PostgreSQL avançado"])).requisitos_atendidos == [
+        "MySQL avançado"
+    ]
+
+
+@pytest.mark.parametrize("do_perfil", ["MySQL", "PostgreSQL"])
+@pytest.mark.parametrize("exigida", DIALETOS_DE_SQL + BANCOS_NAO_RELACIONAIS)
+def test_banco_relacional_nao_atende_dialeto_nem_banco_nao_relacional(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
 
     assert resultado.requisitos_atendidos == []
-    assert resultado.requisitos_nao_atendidos == ["MySQL"]
+
+
+@pytest.mark.parametrize("do_perfil", BANCOS_NAO_RELACIONAIS)
+def test_banco_nao_relacional_nao_atende_banco_relacional(do_perfil: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["MySQL"]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
 
 
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)

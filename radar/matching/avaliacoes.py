@@ -136,10 +136,10 @@ BANCOS_DE_DADOS = (
     "DynamoDB",
     "Firebase",
 )
-BANCOS_RELACIONAIS = (
+SQL_E_BANCOS_RELACIONAIS = (
+    "SQL",
     "MySQL",
     "PostgreSQL",
-    "Postgres",
     "SQL Server",
     "Oracle Database",
     "SQLite",
@@ -266,11 +266,9 @@ FAMILIAS_DE_HABILIDADES = {
     "IA": INTELIGENCIA_ARTIFICIAL,
     "IA generativa": INTELIGENCIA_ARTIFICIAL,
 }
-EQUIVALENCIAS_DE_HABILIDADES = {
-    "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
-    **dict.fromkeys(BANCOS_RELACIONAIS, ("SQL",)),
-    "Oracle": ("SQL", "Oracle Database"),
-}
+EQUIVALENCIAS_DE_HABILIDADES = dict.fromkeys(
+    (*SQL_E_BANCOS_RELACIONAIS, "Oracle"), SQL_E_BANCOS_RELACIONAIS + DIALETOS_DE_SQL
+)
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
     "microsoft365": "office",
