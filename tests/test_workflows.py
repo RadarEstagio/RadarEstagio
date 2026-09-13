@@ -68,3 +68,13 @@ def test_todo_workflow_declara_no_topo_o_github_token_so_de_leitura():
     }
 
     assert fora_da_regra == {}
+
+
+def test_dependabot_propoe_em_pr_as_versoes_novas_das_acoes_depois_de_uma_espera():
+    dependabot = PASTA_DOS_WORKFLOWS.parent / "dependabot.yml"
+
+    assert dependabot.exists()
+    linhas = [linha.strip() for linha in dependabot.read_text().splitlines()]
+    assert '- package-ecosystem: "github-actions"' in linhas
+    assert 'directory: "/"' in linhas
+    assert "cooldown:" in linhas
