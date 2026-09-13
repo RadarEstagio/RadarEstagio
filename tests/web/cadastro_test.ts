@@ -864,6 +864,33 @@ Deno.test("falha ao excluir a conta sem perfil avisa na tela e mantém a sessão
   } finally { a.close(); }
 });
 
+Deno.test("falha ao excluir a conta sem perfil explica o motivo com mensagem da exclusão", async () => {
+  const casos: [Error, RegExp][] = [
+    [Object.assign(new Error("conta com perfil usa excluir_minha_conta"), { code: "55000" }), /já tem um perfil salvo/],
+    [Object.assign(new Error("sem sessão"), { code: "42501" }), /sessão expirou.*excluir/],
+    [new TypeError("Failed to fetch"), /Não foi possível excluir a conta agora/],
+  ];
+  for (const [erro, esperada] of casos) {
+    const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+    try {
+      await settle();
+      const doc = a.w.document;
+      simularConfirmacaoModal(doc);
+      a.client.rpc = async (name: string, args: Payload) => {
+        a.calls.push(["rpc", name, args]);
+        return { error: erro };
+      };
+      doc.querySelector("#delete-account-without-profile").click();
+      doc.querySelector("#account-confirm-yes").click();
+      await settle();
+      const mensagem = doc.querySelector("#form-message");
+      assert.match(mensagem.textContent, esperada);
+      assert.doesNotMatch(mensagem.textContent, /cadastro|salvar o perfil/);
+      assert.equal(visivel(mensagem), true);
+    } finally { a.close(); }
+  }
+});
+
 Deno.test("conta com perfil não oferece a exclusão imediata", async () => {
   const a = app({
     session: { user },

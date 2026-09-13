@@ -1236,8 +1236,17 @@ async function apagarContaSemPerfil() {
       semConta: true,
     });
   } catch (error) {
-    setFormMessage(humanizeError(error));
+    setFormMessage(mensagemDaExclusaoSemPerfil(error));
   }
+}
+
+function mensagemDaExclusaoSemPerfil(error) {
+  const code = String(error?.code ?? "");
+  if (code === "55000") return "Sua conta já tem um perfil salvo. Abra Minha conta para excluí-la.";
+  if (code === "42501" || Number(error?.status) === 401) {
+    return "Sua sessão expirou. Entre de novo para excluir a conta.";
+  }
+  return "Não foi possível excluir a conta agora. Verifique a conexão e tente novamente.";
 }
 
 async function currentSession() {
