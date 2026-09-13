@@ -9,6 +9,7 @@ export interface VinculoRealizado {
 export interface OperacoesDeVinculo {
   vincularChat: (token: string, chatId: string) => Promise<VinculoRealizado>;
   responder: (chatId: string, texto: string) => Promise<void>;
+  reivindicarEntregaImediata: (perfilId: string) => Promise<boolean>;
   dispararEntregaImediata: (perfilId: string) => Promise<void>;
 }
 
@@ -20,5 +21,6 @@ export async function processarVinculo(
   const { resultado, perfilId } = await operacoes.vincularChat(pedido.token, pedido.chatId);
   await operacoes.responder(pedido.chatId, RESPOSTAS_DO_VINCULO[resultado]);
   if (resultado !== "vinculado" || !perfilId || dentroDaJanelaDoDiario(agora)) return;
+  if (!(await operacoes.reivindicarEntregaImediata(perfilId))) return;
   await operacoes.dispararEntregaImediata(perfilId);
 }

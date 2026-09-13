@@ -79,6 +79,17 @@ async function chatJaVinculado(chatId: string): Promise<boolean> {
   return data !== null;
 }
 
+async function reivindicarEntregaImediata(perfilId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("perfis")
+    .update({ entrega_imediata_disparada_em: new Date().toISOString() })
+    .eq("id", perfilId)
+    .is("entrega_imediata_disparada_em", null)
+    .select("id");
+  if (error) throw error;
+  return data.length === 1;
+}
+
 async function tratarAtualizacao(
   atualizacao: AtualizacaoDoTelegram,
 ): Promise<void> {
@@ -94,6 +105,7 @@ async function tratarAtualizacao(
   await processarVinculo(pedido, {
     vincularChat,
     responder: responderNoTelegram,
+    reivindicarEntregaImediata,
     dispararEntregaImediata,
   });
 }
