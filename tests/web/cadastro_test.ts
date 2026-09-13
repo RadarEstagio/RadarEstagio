@@ -1283,6 +1283,7 @@ Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mes
       assert.equal(form.querySelector('[value="remoto"]').checked, true);
       assert.deepEqual(habilidadesNaTela(a.w), ["Python", "Figma"]);
       assert.equal(form.querySelector('input[name="areas"][value="dados_ia"]').checked, true);
+      assert.equal(form.elements.senha.value, "");
     };
     fecharComEsc(a.w);
     assert.equal(doc.querySelector("#signup-dialog").open, false);
@@ -1294,6 +1295,7 @@ Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mes
     conferirRascunho();
 
     doc.querySelector("#next-step").click();
+    form.elements.senha.value = "uma-senha-forte";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
     const perfil = called(a.calls, "signup")[1].options.data.cadastro_radar.perfil;
@@ -1320,6 +1322,8 @@ Deno.test("fechar o cadastro depois de seguir sem habilidades não pede a escolh
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
     doc.querySelector("#next-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.equal(form.elements.senha.value, "");
+    form.elements.senha.value = "uma-senha-forte";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
     assert.deepEqual(
@@ -1352,6 +1356,75 @@ Deno.test("perfil carregado da conta não reaparece no cadastro depois que a ses
     assert.equal(form.elements.curso.value, "");
     assert.equal(form.elements.cidade.value, "");
     assert.deepEqual(habilidadesNaTela(a.w), []);
+  } finally {
+    a.close();
+  }
+});
+
+function fecharCadastro(w: TestWindow, como: string) {
+  if (como === "esc") fecharComEsc(w);
+  else if (como === "x") w.document.querySelector("#close-dialog").click();
+  else w.dispatchEvent(new w.PopStateEvent("popstate", { state: null }));
+}
+
+function conferirSenhaVaziaEEscondida(w: TestWindow, contexto: string) {
+  const campo = w.document.querySelector("#signup-password");
+  const botao = w.document.querySelector('[data-toggle-password="senha"]');
+  assert.equal(campo.value, "", contexto);
+  assert.equal(campo.type, "password", contexto);
+  assert.equal(botao.getAttribute("aria-pressed"), "false", contexto);
+  assert.equal(botao.getAttribute("aria-label"), "Mostrar senha", contexto);
+}
+
+Deno.test("fechar o cadastro apaga a senha e volta a escondê-la, mantendo o resto do rascunho", async () => {
+  for (const como of ["esc", "x", "voltar"]) {
+    const a = app();
+    try {
+      await settle();
+      await reabrirCadastro(a.w);
+      const form = fill(a.w);
+      for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+      await settle();
+      a.w.document.querySelector('[data-toggle-password="senha"]').click();
+      assert.equal(form.elements.senha.type, "text");
+
+      fecharCadastro(a.w, como);
+      await reabrirCadastro(a.w);
+
+      conferirSenhaVaziaEEscondida(a.w, como);
+      assert.equal(form.elements.curso.value, "Computação", como);
+      assert.equal(form.elements.email.value, user.email, como);
+      assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "1", como);
+    } finally {
+      a.close();
+    }
+  }
+});
+
+Deno.test("senha de um login recusado não fica no campo ao fechar e reabrir", async () => {
+  const a = app();
+  try {
+    await settle();
+    Object.assign(a.client.auth, {
+      signInWithPassword: async () => ({
+        data: { session: null },
+        error: { code: "invalid_credentials", message: "Invalid login credentials", status: 400 },
+      }),
+    });
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = "a@x.com";
+    form.elements.senha.value = "senha-da-pessoa-A";
+    a.w.document.querySelector('[data-toggle-password="senha"]').click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.match(a.w.document.querySelector("#form-message").textContent, /E-mail ou senha incorretos/);
+
+    fecharComEsc(a.w);
+    await reabrirCadastro(a.w);
+
+    conferirSenhaVaziaEEscondida(a.w, "login recusado");
   } finally {
     a.close();
   }

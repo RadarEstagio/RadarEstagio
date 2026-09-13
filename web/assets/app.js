@@ -851,6 +851,7 @@ function resetDialogView() {
 
 function limparRascunhoDoCadastro() {
   form.reset();
+  limparSenhas();
   passoDoRascunho = PASSO_MOMENTO;
   formularioComPerfilDaConta = false;
   selectedSkills.clear();
@@ -922,6 +923,7 @@ function closeSignup() {
   if (dialog.open && !form.hidden && authMode === "signup" && !editandoPerfilExistente) {
     passoDoRascunho = currentStep;
   }
+  limparSenhas();
   fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
@@ -1918,16 +1920,29 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
   }
 });
 
+function campoDaSenha(botao) {
+  return botao.dataset.togglePassword === "senha"
+    ? form.elements.senha : document.querySelector("#assistance-password");
+}
+
+function mostrarSenha(botao, visivel) {
+  campoDaSenha(botao).type = visivel ? "text" : "password";
+  const label = visivel ? "Ocultar senha" : "Mostrar senha";
+  botao.setAttribute("aria-label", label);
+  botao.title = label;
+  botao.setAttribute("aria-pressed", String(visivel));
+}
+
+function limparSenhas() {
+  document.querySelectorAll("[data-toggle-password]").forEach((botao) => {
+    campoDaSenha(botao).value = "";
+    mostrarSenha(botao, false);
+  });
+}
+
 document.querySelectorAll("[data-toggle-password]").forEach((button) => {
   button.addEventListener("click", () => {
-    const input = button.dataset.togglePassword === "senha"
-      ? form.elements.senha : document.querySelector("#assistance-password");
-    const showing = input.type === "password";
-    input.type = showing ? "text" : "password";
-    const label = showing ? "Ocultar senha" : "Mostrar senha";
-    button.setAttribute("aria-label", label);
-    button.title = label;
-    button.setAttribute("aria-pressed", String(showing));
+    mostrarSenha(button, campoDaSenha(button).type === "password");
   });
 });
 
