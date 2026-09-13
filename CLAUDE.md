@@ -229,16 +229,20 @@ exigiria copiar no site as regras com que o Python já parte a habilidade compos
 nível da última parte). O corte de 100 é por ponto de código, como em `propriedadesDoEvento`: o
 `slice` partia emoji e o Postgres recusava o JSON. O limite de 50 vale também para a sugerida e para
 Continuar, que antes passavam sem aviso. Fechar o diálogo (Esc, X, clique fora, voltar) não apaga o
-rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas nunca com
-senha e só para a mesma pessoa. Fechar apaga os campos de senha e esconde de novo a senha mostrada. O
-rascunho guarda a dona (`donoDoRascunho`): o id do usuário da sessão, ou visitante. Ao reabrir, na
-volta do link, ao completar o perfil e ao ler a conta, sessão de outra dona limpa tudo; visitante que
-vira conta mantém o rascunho, porque é a mesma pessoa se cadastrando, e quem entra pelo formulário
-vira dona do que digitou. A primeira versão só marcava o perfil aberto em Editar perfil, e o e-mail da
-sessão e o rascunho de quem completava o perfil apareciam para quem abria o cadastro depois que a
-sessão acabava sem logout. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito:
-depois do envio, reabrir o cadastro mostra o que foi enviado. Sabido e igual ao `main`: com erro ao
-renovar a sessão, trocar o login para Criar conta mostra o perfil que estava no formulário.
+rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas sem senha nem
+e-mail e só para a mesma dona. Senha e e-mail saem porque identificam a pessoa, e quem reabre já
+refaz a etapa da conta por causa da senha. O rascunho guarda a dona (`donoDoRascunho`): o id do
+usuário da sessão, ou visitante. Qualquer troca de dona limpa tudo: ao reabrir, na volta do link, ao
+completar o perfil, ao ler a conta e depois de um login. Só o `signUp` feito do rascunho o adota,
+porque é a mesma pessoa se cadastrando; se ele espera a confirmação do e-mail, a sessão que chega com
+esse e-mail também o mantém (`emailDoCadastroEnviado`). Login pelo diálogo e sessão vinda de outra aba
+nunca adotam. Sessão que falha ao renovar limpa o rascunho de conta, porque não se sabe quem é a dona.
+E nada do formulário é gravado numa conta que não é a dona: antes da edição, do `concluir_meu_cadastro`
+e da troca de conta, a sessão atual precisa ser a dona, senão o formulário é limpo e aparece "Sua
+sessão mudou". Em duas abas, a edição de A aberta aqui era gravada na conta de B que entrou na outra;
+o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito: na
+mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
+entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
 
 ## Regras do projeto (obrigatórias)
 

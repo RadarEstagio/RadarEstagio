@@ -104,9 +104,11 @@ apagar uma seleção sem explicação. Remover a proteção do site deixaria a r
 Logout e troca de conta limpam interesses e dados de perfil em memória; respostas pendentes
 do catálogo não podem restaurar outra sessão. Ao editar a mesma conta, seleções existentes
 devem ser preservadas. Fechar o diálogo de cadastro (Esc, X, clique fora ou voltar) não limpa: o
-rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa, sem senha e só para
-a mesma dona, o usuário da sessão ou o visitante. Sessão de outra conta, ou nenhuma sessão depois de
-uma conta, limpa tudo; visitante que cria a conta mantém o rascunho. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
+rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa, sem senha nem e-mail
+e só para a mesma dona, o usuário da sessão ou o visitante. Qualquer troca de dona limpa tudo,
+inclusive login e sessão de outra aba; só o `signUp` feito do rascunho o leva para a conta nova.
+Nenhum envio com o conteúdo do formulário (edição, `concluir_meu_cadastro`) sai se a sessão atual não
+for a dona: o formulário é limpo e o site pede para entrar de novo. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
 resposta não desfaz a pausa; retomar limpa o motivo.
 
 | Operação | Caminho |
