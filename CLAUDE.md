@@ -72,6 +72,22 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
   compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
   segue normal e a primeira busca fica para o diário.
+  **Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
+  workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
+  `0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
+  atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
+  e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
+  `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
+  execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
+  passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
+  sem atendimento, reivindicados num único `update … returning`, e o diário marca como atendidos
+  todos os que atende. Disparo recusado pelo GitHub deixa a pessoa pendente para a próxima
+  execução, imediata ou diária. `rodar --perfil` de perfil já atendido não faz nada: para testar
+  com conta da equipe, zerar `entrega_imediata_atendida_em` antes. O backfill marcou as duas
+  colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
+  `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
+  execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
+  começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -155,6 +171,22 @@ o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.
 
+**Conta no site: volta à aba e botão de pausa (13/09/2026).** Voltar à aba (`focus`) só consulta
+o banco com a tela de ativação à mostra e o link do Telegram visível
+(`aguardandoVinculoDoTelegram`), e a condição é conferida de novo quando a consulta termina, com
+sucesso ou erro. Antes, depois da ativação, toda volta à aba redesenhava a conta: descartava a
+edição em andamento, sumia com a pergunta do motivo da pausa e escondia a confirmação sem
+fechá-la. Um `<dialog>` aberto com `showModal` e escondido continua modal e trava a página, e no
+celular não há Esc; por isso esconder a conta é sempre `esconderConta()`, que passa por
+`fecharConfirmacao`, nunca `hidden = true`. O botão de pausa guarda a ação que mostrou
+(`data-acao`), e o update leva `.eq("ativo", ...)` e devolve a linha (`select(COLUNAS_DO_PERFIL)`),
+que desenha a conta sem leitura extra. Zero linhas significa que a conta mudou em outro lugar
+(outro aparelho, pausa automática, exclusão): nada é invertido, o perfil é relido e a pessoa é
+avisada. Antes, "Pausar entregas" com a conta já pausada retomava as entregas e apagava o
+motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `open`, `hidden` e se
+`close()` foi chamado. O card de preços fala só da Adzuna, e
+`test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
@@ -219,6 +251,22 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
   zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
   O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília.
+- **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
+  da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
+  coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
+  aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
+  uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
+  inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
+  sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
+  não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
+  fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
+  sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
+  e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
+  cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
+  só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
+  nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
+  remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
+  de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
@@ -535,6 +583,11 @@ Três revisores independentes e uma medição em produção depois da expansão.
   esperam e repetem o **mesmo** lote (`AvaliadorIndisponivel`), e o resumo do Telegram e o stdout
   mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
   total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
+  O **500** tem regra própria desde 13/09/2026 (`FalhaInternaDoAvaliador`): o lote repete a
+  chamada uma vez, depois de 10 s, e se o 500 voltar é dividido como erro não temporário. Até
+  então o 500 dividia o lote na hora, como erro comum; tratá-lo igual ao 503, na primeira correção,
+  fazia um 500 persistente parar a extração inteira (0 de 30 contra 29 de 30), e o 500 costuma
+  vir da própria entrada. Três esperas de 61 s custariam 30% do prazo por lote.
 
 As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`) e são montadas
 ao entrar na etapa de habilidades; a lista de computação é a mesma de antes. Curso sem área
@@ -570,7 +623,17 @@ falhava antes da correção:
 - **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
   candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
   uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
-  e volta a ser candidata no dia seguinte.
+  e volta a ser candidata no dia seguinte. **A retenção tem limite por vaga desde 13/09/2026**:
+  uma vaga que nunca é extraída (resposta vazia, JSON inválido) segurava a mensagem todos os dias.
+  A `0022` conta em `vagas.dias_sem_extracao` os dias distintos de Brasília em que a vaga terminou
+  a execução sem extração; a mensagem só sai quando todas as candidatas não avaliadas já faltaram
+  em 3 dias, e uma vaga nova sem extração continua segurando. Extração gravada zera a contagem.
+  A primeira versão contava desde a última recomendação e soltava "nenhuma vaga compatível" já no
+  primeiro dia de falha para quem tinha recebido vagas havia 3 dias, inclusive como primeira
+  mensagem de quem criou o perfil antes de vincular. Registro que falha (banco sem a `0022`)
+  mantém a retenção; o `testar-local` (`RepositorioDoModoLocal`) não segura. Uma queda do Gemini
+  de 3 dias seguidos solta a mensagem no 3º dia; o resumo de operação mostra as vagas sem
+  extração. Coleta incompleta também segura, por outro motivo: ver "Coleta resiliente".
 - **Logout herdava áreas de interesse.** `#logout-account` limpava formulário e habilidades,
   mas não `areasEscolhidas`/`areasSalvas`, e a grade da etapa 4 é remontada a partir delas. O
   mesmo esquecimento vale ao trocar de conta dentro do formulário, onde as salvas eram reserva

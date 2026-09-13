@@ -51,6 +51,7 @@ o token do Turnstile é passado nas operações suportadas e descartado após a 
 | `termos_aceitos_em`, `versao_dos_termos` | Registro protegido do aceite; não atualizar diretamente |
 | `telegram_chat_id`, `token_vinculo` | Vínculo gerenciado pelo webhook/RPC; somente leitura no frontend |
 | `excluida_em` | Gerenciado pelas RPCs de exclusão e cancelamento |
+| `entrega_imediata_disparada_em`, `entrega_imediata_atendida_em` | Controle da entrega imediata, gravado pelo webhook e pelo job; somente leitura no frontend, porque a `0021` concede `update` só às colunas editáveis |
 | `ativado_em` e campos operacionais | Gerenciados pelo sistema |
 
 Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `presencial`,
