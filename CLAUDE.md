@@ -451,9 +451,16 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   PostgreSQL é verdade. PL/SQL e T-SQL atendem "SQL", mas não são atendidos por ele, porque vão
   além da linguagem. NoSQL fica de fora, o nível vale contra o membro presente e "banco de dados"
   não muda. É regra só da nota: o prompt continua separando SQL de MySQL para guardar o nome do
-  anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Custo aceito, o mesmo de "planilhas": fora
-  de computação, habilidade de várias palavras com o nome do banco ("Consultas SQL", "ERP
-  Oracle") deixa de atender por palavras, porque a família decide sozinha o requisito que nomeia.
+  anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`. A regra fica em
+  `EQUIVALENCIAS_DE_HABILIDADES`, não nas famílias, porque família decide sozinha o requisito
+  que nomeia e desliga a comparação por palavras: na primeira versão, fora de computação,
+  "Consultas SQL", "Banco de dados MySQL" e "ERP Oracle" perderam o requisito que atendiam
+  (98 → 64). A equivalência só soma membros, então nenhum atendimento que existia antes some;
+  `tests/test_corpus_de_bancos.py` confere 874 pares contra as notas do `b1ccbf1` (61 sobem,
+  nenhum cai). Risco aberto: "Oracle" também é ERP, então quem lista o ERP atende "SQL" e "SQL"
+  no perfil atende a vaga de finanças que pede Oracle. Limitar a equivalência a computação
+  exigiria levar o contexto a sete funções da comparação, porque nota e explicação usam a mesma
+  regra; fica para quando aparecer caso real.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
