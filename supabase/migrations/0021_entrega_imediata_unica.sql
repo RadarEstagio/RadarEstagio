@@ -1,8 +1,10 @@
 alter table public.perfis
-  add column entrega_imediata_disparada_em timestamptz;
+  add column entrega_imediata_disparada_em timestamptz,
+  add column entrega_imediata_atendida_em timestamptz;
 
 update public.perfis as perfil
-set entrega_imediata_disparada_em = now()
+set entrega_imediata_disparada_em = now(),
+    entrega_imediata_atendida_em = now()
 where perfil.telegram_chat_id is not null
   or perfil.ativado_em is not null
   or exists (

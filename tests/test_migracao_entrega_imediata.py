@@ -3,7 +3,7 @@ from pathlib import Path
 
 MIGRACOES = Path(__file__).parent.parent / "supabase/migrations"
 MIGRACAO = MIGRACOES / "0021_entrega_imediata_unica.sql"
-COLUNA = "entrega_imediata_disparada_em"
+MARCAS = ("entrega_imediata_disparada_em", "entrega_imediata_atendida_em")
 COLUNAS_QUE_O_SITE_EDITA = (
     "curso",
     "periodo",
@@ -22,17 +22,19 @@ GRANT_POR_COLUNA_EM_PERFIS = re.compile(
 )
 
 
-def test_marca_da_entrega_imediata_nasce_nula():
+def test_marcas_da_entrega_imediata_nascem_nulas():
     sql = MIGRACAO.read_text()
 
-    assert f"add column {COLUNA} timestamptz;" in sql
+    for marca in MARCAS:
+        assert f"add column {marca} timestamptz" in sql
 
 
-def test_quem_ja_vinculou_ou_ja_recebeu_nao_dispara_de_novo():
+def test_quem_ja_vinculou_ou_ja_recebeu_nao_dispara_nem_fica_pendente():
     sql = MIGRACAO.read_text()
     backfill = sql.split("update public.perfis")[1].split(";")[0]
 
-    assert f"set {COLUNA} = now()" in backfill
+    for marca in MARCAS:
+        assert f"{marca} = now()" in backfill
     assert "telegram_chat_id is not null" in backfill
     assert "ativado_em is not null" in backfill
     assert "evento.nome = 'telegram_vinculado'" in backfill
@@ -52,7 +54,8 @@ def test_navegador_continua_editando_so_o_que_ja_editava():
     assert papeis.strip() == "authenticated"
 
 
-def test_nenhuma_migration_concede_a_marca_ao_navegador():
+def test_nenhuma_migration_concede_as_marcas_ao_navegador():
     for migracao in sorted(MIGRACOES.glob("*.sql")):
         for colunas, _ in GRANT_POR_COLUNA_EM_PERFIS.findall(migracao.read_text()):
-            assert COLUNA not in colunas, migracao.name
+            for marca in MARCAS:
+                assert marca not in colunas, migracao.name
