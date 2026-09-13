@@ -662,7 +662,7 @@ function renderSkills() {
 
 function addCustomSkill() {
   const input = document.querySelector("#custom-skill");
-  const skill = input.value.trim().slice(0, TAMANHO_MAXIMO_DA_HABILIDADE);
+  const skill = Array.from(input.value.trim()).slice(0, TAMANHO_MAXIMO_DA_HABILIDADE).join("").trim();
   if (!skill) return;
   if (selectedSkills.size >= MAXIMO_DE_HABILIDADES && !selectedSkills.has(skill)) {
     marcarErroNoCampo(input, `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);

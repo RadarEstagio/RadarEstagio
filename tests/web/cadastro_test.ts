@@ -2297,6 +2297,31 @@ async function habilidadesEnviadas(a: ReturnType<typeof app>): Promise<string[]>
   return Array.from(called(a.calls, "signup")[1].options.data.cadastro_radar.perfil.habilidades);
 }
 
+Deno.test("corte de 100 caracteres não parte emoji nem deixa espaço que o envio apagaria", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    digitarHabilidade(a.w, `${"c".repeat(99)}😀`);
+    digitarHabilidade(a.w, `${"a".repeat(99)} ${"b".repeat(20)}`);
+
+    const naTela = habilidadesNaTela(a.w);
+    assert.deepEqual(naTela, [`${"c".repeat(99)}😀`, "a".repeat(99)]);
+    const enviadas = await habilidadesEnviadas(a);
+    assert.deepEqual(enviadas, naTela);
+    for (const habilidade of enviadas) {
+      assert.equal(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(habilidade), false);
+      assert.ok(Array.from(habilidade).length <= 100);
+    }
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("habilidade digitada com vírgula é uma só na tela e no envio", async () => {
   const a = app();
   try {
