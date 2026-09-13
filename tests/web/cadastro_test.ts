@@ -85,6 +85,8 @@ function app(
     key = "",
     temaSalvo = null,
     armazenamentoBloqueado = false,
+    erroDaSessao = null,
+    erroDoPerfil = null,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -92,6 +94,8 @@ function app(
     key?: string;
     temaSalvo?: string | null;
     armazenamentoBloqueado?: boolean;
+    erroDaSessao?: Error | null;
+    erroDoPerfil?: Error | null;
   } = {},
 ) {
   const erros: Error[] = [];
@@ -132,7 +136,8 @@ function app(
   };
   const client = {
     auth: {
-      getSession: async () => ({ data: { session } }),
+      getSession: async (): Promise<{ data: { session: Session | null }; error?: Error | null }> =>
+        erroDaSessao ? { data: { session: null }, error: erroDaSessao } : { data: { session } },
       onAuthStateChange: (callback: AuthCallback) => {
         authCallback = callback;
       },
@@ -174,8 +179,9 @@ function app(
           if (table === "perfis" && savedProfile) Object.assign(savedProfile, args);
           return query;
         },
-        maybeSingle: async () => ({ data: savedProfile }),
-        single: async () => ({ data: savedProfile }),
+        maybeSingle: async (): Promise<{ data: Profile | null; error?: Error | null }> =>
+          table === "perfis" && erroDoPerfil ? { data: null, error: erroDoPerfil } : { data: savedProfile },
+        single: async (): Promise<{ data: Profile | null; error?: Error | null }> => ({ data: savedProfile }),
       };
       return query;
     },
@@ -748,6 +754,88 @@ Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
     assert.equal(mensagem.hidden, false);
     assert.equal(mensagem.textContent.includes("Complete seu perfil"), true);
     assert.equal(mensagem.classList.contains("form-message-aviso"), true);
+  } finally { a.close(); }
+});
+
+const CONTA_INDISPONIVEL = /Não conseguimos carregar sua conta/;
+
+Deno.test("sessão que não renova abre o login com aviso honesto, sem dizer que a conta foi criada", async () => {
+  const a = app({
+    erroDaSessao: Object.assign(new Error("Invalid Refresh Token: Refresh Token Not Found"), {
+      code: "refresh_token_not_found",
+      status: 400,
+    }),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.match(mensagem, CONTA_INDISPONIVEL);
+    assert.doesNotMatch(mensagem, /conta foi criada/);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao ler o perfil na volta do link não diz que o perfil falta", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/#access_token=fake",
+    erroDoPerfil: new TypeError("Failed to fetch"),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.match(mensagem, CONTA_INDISPONIVEL);
+    assert.doesNotMatch(mensagem, /perfil ainda não foi salvo/);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao abrir minha conta leva ao login, não ao começo do cadastro", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    erroDoPerfil: new TypeError("Failed to fetch"),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    doc.querySelector('[data-event-origin="cabecalho"]').click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.match(doc.querySelector("#form-message").textContent, CONTA_INDISPONIVEL);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao salvar a edição do perfil não diz que a conta foi criada", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const from = a.client.from;
+    a.client.from = (table: string) => {
+      const query = from(table);
+      query.single = async () => ({ data: null, error: new TypeError("Failed to fetch") });
+      return query;
+    };
+    doc.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.doesNotMatch(mensagem, /conta foi criada/);
+    assert.match(mensagem, /conexão/);
   } finally { a.close(); }
 });
 

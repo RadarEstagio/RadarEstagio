@@ -81,6 +81,7 @@ let editandoPerfilExistente = false;
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
+const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
@@ -661,7 +662,7 @@ function validationError(message) {
   return error;
 }
 
-function humanizeError(error, { profilePending = false } = {}) {
+function humanizeError(error, { profilePending = false, carregandoConta = false } = {}) {
   const message = String(error?.message ?? "").toLowerCase();
   const code = String(error?.code ?? "").toLowerCase();
   const status = Number(error?.status);
@@ -670,6 +671,7 @@ function humanizeError(error, { profilePending = false } = {}) {
     return error.message;
   }
   if (error?.name === "RadarValidationError") return error.message;
+  if (carregandoConta) return MENSAGEM_CONTA_INDISPONIVEL;
   if (profilePending) {
     return "Sua conta foi criada, mas o perfil ainda não foi salvo. Entre novamente para concluir o perfil.";
   }
@@ -1306,8 +1308,8 @@ async function openSignup() {
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
-    openDialog();
-    setFormMessage(humanizeError(error));
+    abrirLogin();
+    setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
 }
 
@@ -1329,15 +1331,14 @@ async function resumeConfirmedSignup() {
       if (authQuery.has("conta")) abrirLogin();
       return;
     }
-    const profile = await loadProfile(session.user.id);
     if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
+    const profile = await loadProfile(session.user.id);
     clearPendingProfile();
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
-    resetDialogView();
-    openDialog();
-    setFormMessage(humanizeError(error, { profilePending: true }));
+    abrirLogin();
+    setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
 }
 
@@ -1632,7 +1633,7 @@ form.addEventListener("submit", async (event) => {
   }
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
-  let profileSaveStarted = false;
+  let contaSemPerfil = false;
   setFormMessage();
   setSubmitting(true);
   mostrarProgresso(PROGRESSO_AO_CONFIRMAR);
@@ -1666,12 +1667,12 @@ form.addEventListener("submit", async (event) => {
       prepareMissingProfile(session);
       return;
     }
-    profileSaveStarted = true;
+    contaSemPerfil = !existing;
     const savedProfile = await persistProfile(session.user.id, profile);
     mostrarEstadoDoPerfil(savedProfile);
   } catch (error) {
     if (error?.code === "email_not_confirmed") showAssistance("resend", email);
-    setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
+    setFormMessage(humanizeError(error, { profilePending: contaSemPerfil }));
   } finally {
     setSubmitting(false);
     if (!form.hidden) mostrarProgresso(percentualDoPasso());
