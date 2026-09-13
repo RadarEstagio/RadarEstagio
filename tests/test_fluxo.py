@@ -225,32 +225,51 @@ def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_moc
     assert "Nenhuma vaga nova compatível" in mensagem
 
 
-def test_diario_que_termina_registra_que_rodou_e_quanto_gastou(httpx_mock: HTTPXMock):
+HORARIO_DO_DIARIO = datetime(2026, 9, 14, 10, 23, tzinfo=UTC)
+TARDE_DO_DIARIO = datetime(2026, 9, 14, 15, 0, tzinfo=UTC)
+
+
+def parar_o_relogio(monkeypatch: pytest.MonkeyPatch, momento: datetime) -> None:
+    class RelogioParado(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return momento
+
+    monkeypatch.setattr("radar.__main__.datetime", RelogioParado)
+
+
+def test_diario_que_termina_registra_que_rodou_e_quanto_gastou(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
     repositorio = RepositorioEmMemoria([])
     httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
     aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
 
     with httpx.Client() as cliente_http:
         executar_fluxo(settings_de_teste(), cliente_http, repositorio)
 
-    hoje = datetime.now(UTC).date()
+    hoje = HORARIO_DO_DIARIO.date()
     assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, hoje)
     assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == 1
 
 
-def test_diario_que_falha_nao_registra_que_rodou(httpx_mock: HTTPXMock):
+def test_diario_que_falha_nao_registra_que_rodou(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
     repositorio = RepositorioEmMemoria([])
     httpx_mock.add_response(url=url_da_pagina(1), status_code=401, text="não autorizado")
     aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
 
     with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta):
         executar_fluxo(settings_de_teste(), cliente_http, repositorio)
 
-    assert not repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, datetime.now(UTC).date())
+    assert not repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, HORARIO_DO_DIARIO.date())
 
 
 def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_se_registrar_como_diario(
-    httpx_mock: HTTPXMock,
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
 ):
     estudante = estudante_de_direito_no_rio()
     repositorio = RepositorioEmMemoria([estudante])
@@ -258,14 +277,16 @@ def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_se_registrar_c
         url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
     )
     aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
     with httpx.Client() as cliente_http:
         executar_fluxo(settings_de_teste(), cliente_http, repositorio)
-    hoje = datetime.now(UTC).date()
+    hoje = HORARIO_DO_DIARIO.date()
     gasto_do_diario = repositorio.requisicoes_da_fonte_desde("adzuna", hoje)
     reserva = reserva_do_diario([estudante])
     repositorio.registrar_requisicoes_da_fonte(
         "adzuna", hoje, LIMITE_POR_DIA - reserva - gasto_do_diario
     )
+    parar_o_relogio(monkeypatch, TARDE_DO_DIARIO)
 
     with httpx.Client() as cliente_http:
         executar_fluxo(settings_de_teste(), cliente_http, repositorio, apenas_o_perfil=estudante.id)
