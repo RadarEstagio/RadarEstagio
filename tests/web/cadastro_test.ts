@@ -1552,6 +1552,32 @@ Deno.test("voltar no histórico para a conta com a confirmação aberta fecha o 
   } finally { a.close(); }
 });
 
+Deno.test("voltar no histórico para o site com a confirmação aberta fecha a confirmação", async () => {
+  const casos: [string, Profile | null, string][] = [
+    ["excluir", { ...profile, telegram_chat_id: "123" }, "#delete-account"],
+    ["desvincular", { ...profile, telegram_chat_id: "123" }, "#unlink-telegram"],
+    ["apagar-sem-perfil", null, "#delete-account-without-profile"],
+  ];
+  for (const [acao, salvo, origem] of casos) {
+    const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+    try {
+      await settle();
+      const doc = a.w.document;
+      const { confirmacao, estado } = simularConfirmacaoModal(doc);
+      doc.querySelector(origem).click();
+      assert.equal(confirmacao.dataset.acao, acao);
+      assert.equal(confirmacao.open, true);
+      a.w.history.replaceState(null, "", "/");
+      a.w.dispatchEvent(new a.w.PopStateEvent("popstate"));
+      await settle();
+      assert.equal(doc.querySelector("#landing-page").hidden, false, acao);
+      assert.equal(estado.fechou, true, acao);
+      assert.equal(confirmacao.open, false, acao);
+      assert.equal(confirmacao.hidden, true, acao);
+    } finally { a.close(); }
+  }
+});
+
 function bancoQueRespeitaOAtivo(a: ReturnType<typeof app>, salvo: Profile) {
   const from = a.client.from;
   a.client.from = (table: string) => {

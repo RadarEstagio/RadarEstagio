@@ -908,6 +908,7 @@ function openDialog() {
 }
 
 function closeSignup() {
+  fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
