@@ -498,12 +498,19 @@ function getClient() {
   return radarClient;
 }
 
+let sessaoDeEventosEmMemoria = null;
+
 function eventSessionId() {
-  const existing = localStorage.getItem(eventSessionKey);
+  let existing = null;
+  try {
+    existing = localStorage.getItem(eventSessionKey);
+  } catch {}
   if (existing && uuidPattern.test(existing)) return existing;
-  const created = crypto.randomUUID();
-  localStorage.setItem(eventSessionKey, created);
-  return created;
+  sessaoDeEventosEmMemoria ??= crypto.randomUUID();
+  try {
+    localStorage.setItem(eventSessionKey, sessaoDeEventosEmMemoria);
+  } catch {}
+  return sessaoDeEventosEmMemoria;
 }
 
 async function registerEvent(name, properties = {}) {
@@ -937,7 +944,9 @@ function readPendingProfile() {
 }
 
 function clearPendingProfile() {
-  localStorage.removeItem(pendingProfileKey);
+  try {
+    localStorage.removeItem(pendingProfileKey);
+  } catch {}
 }
 
 function showSuccess({ kicker, title, copy, token, linked = false }) {

@@ -50,6 +50,7 @@ interface Signup {
         perfil: Profile;
         aceita_emails: boolean;
         versao_dos_termos: string;
+        sessao_id: string;
       };
     };
   };
@@ -104,11 +105,13 @@ function app(
     beforeParse: (janela: TestWindow) => {
       if (temaSalvo) janela.localStorage.setItem("radar-tema", temaSalvo);
       if (armazenamentoBloqueado) {
-        Object.defineProperty(janela, "localStorage", {
-          get() {
-            throw new janela.DOMException("armazenamento bloqueado", "SecurityError");
-          },
-        });
+        for (const armazenamento of ["localStorage", "sessionStorage"]) {
+          Object.defineProperty(janela, armazenamento, {
+            get() {
+              throw new janela.DOMException("armazenamento bloqueado", "SecurityError");
+            },
+          });
+        }
       }
     },
   });
@@ -309,6 +312,66 @@ Deno.test("tema alterna sem erro quando o navegador bloqueia o armazenamento", (
     a.w.document.querySelector("#theme-toggle").click();
     assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
     assert.deepEqual(a.erros.map((erro) => erro.message), []);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cadastro cria a conta com o armazenamento do navegador bloqueado", async () => {
+  const a = app({ armazenamentoBloqueado: true });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const sessao = called(a.calls, "signup")[1].options.data.cadastro_radar.sessao_id;
+    assert.match(sessao, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    const sessoesDosEventos = a.calls
+      .filter(([nome]) => nome === "insert")
+      .map(([, , payload]) => (payload as Payload).sessao_id);
+    assert.ok(sessoesDosEventos.length > 0);
+    assert.deepEqual([...new Set(sessoesDosEventos)], [sessao]);
+    assert.equal(a.w.document.querySelector("#auth-assistance").hidden, false);
+    assert.deepEqual(a.erros.map((erro) => erro.message), []);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("voltar do link de confirmação com o armazenamento bloqueado mostra a ativação", async () => {
+  const a = app({
+    armazenamentoBloqueado: true,
+    session: { user },
+    savedProfile: { ...profile },
+    url: "https://radarestagio.com/#access_token=fake",
+  });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#success-state").hidden, false);
+    assert.equal(a.w.document.querySelector("#telegram-link").hidden, false);
+    assert.equal(a.w.document.querySelector("#form-message").textContent, "");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sair da conta com o armazenamento bloqueado volta ao site", async () => {
+  const a = app({
+    armazenamentoBloqueado: true,
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    assert.ok(a.calls.some(([nome]) => nome === "logout"));
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
   } finally {
     a.close();
   }
