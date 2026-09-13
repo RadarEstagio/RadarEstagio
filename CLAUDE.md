@@ -94,10 +94,14 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Ações por hash e token só de leitura** (13/09/2026): o job diário recebe os segredos de
   produção, e o dono de uma ação pode mover a tag dela para outro commit. Toda `uses:` aponta para
   o hash de 40 caracteres, e todo workflow declara `permissions: contents: read` no topo; permissão
-  maior só no job que precisar, com o motivo no commit. `tests/test_workflows.py` cobra as duas
-  regras e guarda em `VERSAO_DE_CADA_ACAO` a versão de cada hash, porque o YAML não leva
-  comentário. O Dependabot abre um PR semanal das ações, 7 dias depois de cada versão sair, e o
-  teste falha até alguém registrar no mapa a versão nova, conferida com `git ls-remote`.
+  maior só no job que precisar, com o motivo no commit. O checkout leva `persist-credentials:
+  false`, para o token não ficar no `.git/config` ao alcance do radar e das dependências, e o
+  `setup-uv` instala o uv `0.12.5`, o mesmo usado localmente: sem `version:` ele baixaria o mais
+  novo, que roda no passo dos segredos. `tests/test_workflows.py` cobra essas regras e guarda em
+  `VERSAO_DE_CADA_ACAO` a versão de cada hash, porque o YAML não leva comentário. O Dependabot
+  abre um PR semanal das ações, 7 dias depois de cada versão sair, e o teste falha até alguém
+  registrar no mapa a versão nova, conferida com `git ls-remote`. A versão do uv o Dependabot não
+  toca: sobe à mão, junto com o uv local.
 - **Persistência**: PostgreSQL gerenciado (Supabase), opcional. Com `DATABASE_URL` o job lê os
   usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e sem
   histórico.
