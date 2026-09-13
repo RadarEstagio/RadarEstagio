@@ -1265,6 +1265,7 @@ async function refreshActivationStatus() {
     const profile = await loadProfile(session.user.id);
     if (profile && aguardandoVinculoDoTelegram()) mostrarEstadoDoPerfil(profile);
   } catch {
+    if (!aguardandoVinculoDoTelegram()) return;
     document.querySelector("#success-copy").textContent =
       "O Telegram foi aberto, mas ainda não conseguimos confirmar o vínculo. Tente voltar a esta janela novamente.";
   }

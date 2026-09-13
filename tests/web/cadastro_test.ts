@@ -1021,7 +1021,7 @@ function simularConfirmacaoModal(doc: TestWindow["document"]) {
   return { confirmacao, estado };
 }
 
-function segurarProximaSessao(a: ReturnType<typeof app>) {
+function segurarProximaSessao(a: ReturnType<typeof app>, falha?: Error) {
   const getSession = a.client.auth.getSession;
   let liberar = () => {};
   let primeira = true;
@@ -1029,6 +1029,7 @@ function segurarProximaSessao(a: ReturnType<typeof app>) {
     if (primeira) {
       primeira = false;
       await new Promise<void>((resolve) => { liberar = resolve; });
+      if (falha) throw falha;
     }
     return getSession();
   };
@@ -1345,6 +1346,26 @@ Deno.test("editar perfil que termina de carregar com a confirmação aberta fech
     assert.equal(doc.querySelector("#signup-form").hidden, false);
     assert.equal(confirmacao.open, false);
     assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("consulta do vínculo que falha depois da exclusão não troca o texto da exclusão", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const liberar = segurarProximaSessao(a, new TypeError("Failed to fetch"));
+    a.w.dispatchEvent(new a.w.Event("focus"));
+    await settle();
+    doc.querySelector("#success-account").click();
+    await settle();
+    doc.querySelector("#delete-account").click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.equal(doc.querySelector("#success-title").textContent, "As entregas pararam agora.");
+    liberar();
+    await settle();
+    assert.match(doc.querySelector("#success-copy").textContent, /apagados definitivamente/);
   } finally { a.close(); }
 });
 
