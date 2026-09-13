@@ -60,6 +60,12 @@ const accountState = document.querySelector("#account-state");
 const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
+const saidaSemPerfil = document.querySelector("#missing-profile-deletion");
+const ORIGEM_DA_CONFIRMACAO = {
+  desvincular: "#unlink-telegram",
+  excluir: "#delete-account",
+  "apagar-sem-perfil": "#delete-account-without-profile",
+};
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const accountNavLinks = [...document.querySelectorAll(".account-nav a")];
 const accountNavEntries = accountNavLinks.map((link) => ({
@@ -952,8 +958,9 @@ function clearPendingProfile() {
   } catch {}
 }
 
-function showSuccess({ kicker, title, copy, token, linked = false }) {
+function showSuccess({ kicker, title, copy, token, linked = false, semConta = false }) {
   esconderConta();
+  document.querySelector("#success-account").hidden = semConta;
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   form.hidden = true;
@@ -1058,6 +1065,7 @@ function showAccount(profile) {
   progressWrap.hidden = true;
   successState.hidden = true;
   fecharConfirmacao(false);
+  saidaSemPerfil.hidden = true;
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   accountState.hidden = false;
@@ -1167,13 +1175,13 @@ function fecharConfirmacao(restaurarFoco = true) {
   accountConfirm.hidden = true;
   delete accountConfirm.dataset.acao;
   if (!restaurarFoco || !acao) return;
-  const origem = acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
-  document.querySelector(origem).focus();
+  document.querySelector(ORIGEM_DA_CONFIRMACAO[acao]).focus();
 }
 
 function esconderConta() {
   fecharConfirmacao(false);
   accountState.hidden = true;
+  saidaSemPerfil.hidden = true;
 }
 
 function pedirConfirmacao(acao) {
@@ -1192,6 +1200,13 @@ function pedirConfirmacao(acao) {
       copy: "Até o prazo terminar, você pode entrar novamente e cancelar a exclusão.",
       confirmar: "Excluir conta",
     },
+    "apagar-sem-perfil": {
+      titulo: "Excluir sua conta?",
+      aviso: "Sua conta será apagada agora",
+      detalhe: "Você ainda não salvou um perfil, então não há prazo para cancelar: o e-mail e o acesso são apagados na hora.",
+      copy: "Para voltar a usar o Radar depois, crie uma conta nova.",
+      confirmar: "Excluir conta",
+    },
   };
   const configuracao = configuracoes[acao];
   accountConfirm.dataset.acao = acao;
@@ -1203,6 +1218,26 @@ function pedirConfirmacao(acao) {
   accountConfirm.hidden = false;
   if (typeof accountConfirm.showModal === "function" && !accountConfirm.open) accountConfirm.showModal();
   document.querySelector("#account-confirm-no").focus();
+}
+
+async function apagarContaSemPerfil() {
+  setFormMessage();
+  try {
+    const { error } = await getClient().rpc("apagar_minha_conta_sem_perfil");
+    if (error) throw error;
+    await getClient().auth.signOut({ scope: "local" });
+    clearPendingProfile();
+    mostrarChamadaDeConta(false);
+    limparRascunhoDoCadastro();
+    showSuccess({
+      kicker: "Conta excluída",
+      title: "Sua conta foi apagada.",
+      copy: "O e-mail e o acesso foram removidos agora. Para voltar a usar o Radar, crie uma conta nova.",
+      semConta: true,
+    });
+  } catch (error) {
+    setFormMessage(humanizeError(error));
+  }
 }
 
 async function currentSession() {
@@ -1355,6 +1390,7 @@ function prepareMissingProfile(session) {
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
   atualizarPassosAtivos();
+  saidaSemPerfil.hidden = false;
   setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.", "aviso");
 }
 
@@ -1491,6 +1527,10 @@ document.querySelector("#delete-account").addEventListener("click", () => {
   pedirConfirmacao("excluir");
 });
 
+document.querySelector("#delete-account-without-profile").addEventListener("click", () => {
+  pedirConfirmacao("apagar-sem-perfil");
+});
+
 document.querySelector("#cancel-deletion").addEventListener("click", async () => {
   setAccountMessage();
   try {
@@ -1517,6 +1557,10 @@ accountConfirm.addEventListener("cancel", (event) => {
 document.querySelector("#account-confirm-yes").addEventListener("click", async () => {
   const acao = accountConfirm.dataset.acao;
   fecharConfirmacao();
+  if (acao === "apagar-sem-perfil") {
+    await apagarContaSemPerfil();
+    return;
+  }
   setAccountMessage();
   try {
     if (acao === "desvincular") {

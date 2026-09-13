@@ -635,6 +635,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .account-danger-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 28px; padding: 20px 22px; border: 1px solid var(--danger-line); border-radius: var(--radius-lg); background: var(--surface); }
 .account-danger-row h3 { margin: 0; color: var(--ink); font-size: 16px; line-height: 1.3; letter-spacing: -.015em; }
 .account-danger-row p { max-width: 64ch; margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.missing-profile-deletion { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; margin-top: 28px; padding: 18px 20px; border: 1px solid var(--danger-line); border-radius: var(--radius-lg); background: var(--surface); }
+.missing-profile-deletion[hidden] { display: none; }
+.missing-profile-deletion h3 { margin: 0; color: var(--ink); font-size: 15px; line-height: 1.3; }
+.missing-profile-deletion p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .button-danger, .button-danger-ghost { min-height: 42px; padding-inline: 18px; border-color: var(--danger); color: var(--danger-text); font-size: 12px; }
 .button-danger { color: var(--white); background: var(--danger); }
 .button-danger-ghost { background: var(--surface); }
@@ -677,6 +681,7 @@ p, h1, h2, h3 { margin-top: 0; }
   .account-settings .account-actions { width: 100%; }
   .account-settings .account-actions .button { flex: 1 1 140px; }
   .account-danger-row { grid-template-columns: 1fr; gap: 16px; padding: 20px; }
+  .missing-profile-deletion { grid-template-columns: 1fr; gap: 16px; }
   .account-danger-row .button { width: 100%; }
   #account-content .account-confirm { padding: 22px 20px; border-radius: 16px; }
   .account-confirm-header { grid-template-columns: auto minmax(0, 1fr); }

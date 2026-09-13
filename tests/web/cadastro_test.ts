@@ -770,6 +770,74 @@ Deno.test("erro ao abrir minha conta na tela de ativação aparece na própria t
   } finally { a.close(); }
 });
 
+Deno.test("conta confirmada sem perfil pode ser excluída pelo site", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao, estado } = simularConfirmacaoModal(doc);
+    assert.match(doc.querySelector("#form-notice").textContent, /Complete seu perfil/);
+    const botao = doc.querySelector("#delete-account-without-profile");
+    assert.equal(visivel(botao), true);
+    botao.click();
+    assert.equal(visivel(confirmacao), true);
+    assert.equal(doc.querySelector("#account-confirm-title").textContent, "Excluir sua conta?");
+    doc.querySelector("#account-confirm-no").click();
+    assert.equal(confirmacao.hidden, true);
+    assert.equal(doc.activeElement.id, "delete-account-without-profile");
+    botao.click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["apagar_minha_conta_sem_perfil"],
+    );
+    assert.ok(a.calls.some(([nome]) => nome === "logout"));
+    assert.equal(estado.fechou, true);
+    assert.equal(confirmacao.hidden, true);
+    assert.equal(doc.querySelector("#success-title").textContent, "Sua conta foi apagada.");
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+    assert.equal(doc.querySelector("#success-account").hidden, true);
+    assert.equal(visivel(botao), false);
+    assert.equal(doc.querySelector('[data-event-origin="cabecalho"]').textContent.trim(), "Cadastrar meu perfil");
+  } finally { a.close(); }
+});
+
+Deno.test("falha ao excluir a conta sem perfil avisa na tela e mantém a sessão", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    simularConfirmacaoModal(doc);
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      return { error: new TypeError("Failed to fetch") };
+    };
+    doc.querySelector("#delete-account-without-profile").click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    const mensagem = doc.querySelector("#form-message");
+    assert.match(mensagem.textContent, /conexão/);
+    assert.equal(visivel(mensagem), true);
+    assert.equal(a.calls.some(([nome]) => nome === "logout"), false);
+    assert.equal(visivel(doc.querySelector("#delete-account-without-profile")), true);
+  } finally { a.close(); }
+});
+
+Deno.test("conta com perfil não oferece a exclusão imediata", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta#account-privacy-panel",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(visivel(doc.querySelector("#delete-account")), true);
+    assert.equal(visivel(doc.querySelector("#delete-account-without-profile")), false);
+  } finally { a.close(); }
+});
+
 Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
   const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
   try {
