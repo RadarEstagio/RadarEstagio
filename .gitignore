@@ -52,3 +52,6 @@ HANDOFF.md
 gabaritos/
 gabarito-*.json
 descartes-*.json
+
+# Frontend
+node_modules/

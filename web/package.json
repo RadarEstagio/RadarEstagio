@@ -1,0 +1,26 @@
+{
+  "name": "radar-estagio-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint --max-warnings=0 . && node scripts/check-frontend-comments.mjs scripts tests vite.config.js eslint.config.mjs config.js assets/app.js assets/styles.css",
+    "test:run": "vitest run",
+    "test:artifact": "vite build && node scripts/check-web-artifact.mjs dist"
+  },
+  "devDependencies": {
+    "@babel/parser": "7.29.8",
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "16.5.0",
+    "postcss": "8.5.28",
+    "vite": "6.4.3",
+    "vitest": "3.2.7"
+  }
+}
