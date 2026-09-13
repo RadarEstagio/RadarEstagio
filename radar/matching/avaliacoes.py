@@ -141,7 +141,7 @@ BANCOS_RELACIONAIS = (
     "PostgreSQL",
     "Postgres",
     "SQL Server",
-    "Oracle",
+    "Oracle Database",
     "SQLite",
     "MariaDB",
 )
@@ -269,6 +269,7 @@ FAMILIAS_DE_HABILIDADES = {
 EQUIVALENCIAS_DE_HABILIDADES = {
     "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
     **dict.fromkeys(BANCOS_RELACIONAIS, ("SQL",)),
+    "Oracle": ("SQL", "Oracle Database"),
 }
 ALIASES_DE_HABILIDADES = {
     "office365": "office",

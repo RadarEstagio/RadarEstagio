@@ -823,7 +823,7 @@ BANCOS_RELACIONAIS = [
     "PostgreSQL",
     "Postgres",
     "SQL Server",
-    "Oracle",
+    "Oracle Database",
     "SQLite",
     "MariaDB",
 ]
@@ -929,6 +929,34 @@ def test_equivalencia_de_bancos_nao_desliga_a_comparacao_por_palavras(
 
     assert resultado.requisitos_atendidos == [exigida]
     assert resultado.nota == nota_no_b1ccbf1
+
+
+@pytest.mark.parametrize("exigida", ["SQL", "MySQL", "Oracle Database"])
+def test_oracle_no_perfil_nao_atende_a_classe_porque_tambem_e_nome_de_erp(exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil(["Oracle"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("do_perfil", ["SQL", "Oracle Database"])
+@pytest.mark.parametrize("exigida", ["Oracle", "Oracle Database"])
+def test_requisito_oracle_e_atendido_por_sql_ou_oracle_database(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+def test_oracle_como_erp_no_perfil_de_engenharia_nao_ganha_sql():
+    engenharia = Perfil(
+        curso="Engenharia de Produção",
+        periodo=4,
+        habilidades=["Excel", "Oracle", "SAP"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+    exige_sql = extracao(area_da_vaga="engenharias", habilidades_obrigatorias=["SQL"])
+
+    assert pontuar(vaga(), exige_sql, engenharia).requisitos_atendidos == []
 
 
 def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
