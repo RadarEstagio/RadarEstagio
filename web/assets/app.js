@@ -636,7 +636,6 @@ function validateStep(step) {
 
 function renderSkills() {
   if (selectedSkills.size > 0 && campoComErro?.id === "custom-skill") limparErroDoCampo();
-  form.elements.habilidades.value = [...selectedSkills].join(",");
   document.querySelectorAll("[data-skill]").forEach((button) => {
     const active = selectedSkills.has(button.dataset.skill);
     button.classList.toggle("is-selected", active);
@@ -930,11 +929,7 @@ function profileFromForm() {
   const profile = {
     curso: data.get("curso").trim(),
     periodo: Number(data.get("periodo")),
-    habilidades: data
-      .get("habilidades")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
+    habilidades: [...selectedSkills].map((item) => item.trim()).filter(Boolean),
     cidade: cidadeDoFormulario() ?? "",
     modalidade: data.get("modalidade"),
     areas_de_interesse: areasDeInteresseDoFormulario(data),

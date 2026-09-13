@@ -1242,7 +1242,7 @@ Deno.test("alternar para login e voltar preserva o rascunho do perfil", async ()
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     doc.querySelector("#toggle-auth-mode").click();
     assert.equal(form.elements.curso.value, "Computação");
-    assert.equal(form.elements.habilidades.value, "Python");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
     assert.equal(form.elements.cidade.value, "Recife, PE");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
     await settle();
@@ -1922,7 +1922,7 @@ Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco ace
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const form = fill(a.w, false);
+    fill(a.w, false);
     doc.querySelector("#next-step").click();
     const input = doc.querySelector("#custom-skill");
     const digitar = (valor: string) => {
@@ -1932,13 +1932,73 @@ Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco ace
       );
     };
     digitar("x".repeat(150));
-    assert.equal(form.elements.habilidades.value.length, 100);
+    assert.deepEqual(habilidadesNaTela(a.w), ["x".repeat(100)]);
     for (let indice = 1; indice < 50; indice += 1) digitar(`habilidade-${indice}`);
-    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    assert.equal(habilidadesNaTela(a.w).length, 50);
     digitar("passou-do-limite");
-    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    assert.equal(habilidadesNaTela(a.w).length, 50);
     assert.ok(doc.querySelector("#erro-do-campo").textContent.includes("50 habilidades"));
     await settle();
+  } finally {
+    a.close();
+  }
+});
+
+function digitarHabilidade(w: TestWindow, valor: string) {
+  const campo = w.document.querySelector("#custom-skill");
+  campo.value = valor;
+  campo.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+}
+
+function habilidadesNaTela(w: TestWindow): string[] {
+  return [...w.document.querySelectorAll("#selected-skills button")].map((chip) =>
+    chip.getAttribute("aria-label").replace(/^Remover /, "")
+  );
+}
+
+async function habilidadesEnviadas(a: ReturnType<typeof app>): Promise<string[]> {
+  const doc = a.w.document;
+  doc.querySelector("#next-step").click();
+  doc.querySelector("#next-step").click();
+  doc.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+  await settle();
+  return Array.from(called(a.calls, "signup")[1].options.data.cadastro_radar.perfil.habilidades);
+}
+
+Deno.test("habilidade digitada com vírgula é uma só na tela e no envio", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    digitarHabilidade(a.w, "Pacote Office (Word, Excel)");
+    digitarHabilidade(a.w, "Python, SQL");
+
+    assert.deepEqual(habilidadesNaTela(a.w), ["Pacote Office (Word, Excel)", "Python, SQL"]);
+    assert.deepEqual(await habilidadesEnviadas(a), ["Pacote Office (Word, Excel)", "Python, SQL"]);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cinquenta habilidades com vírgula cabem no envio e a 51ª é recusada na tela", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    for (let indice = 0; indice < 50; indice += 1) digitarHabilidade(a.w, `A${indice}, B${indice}`);
+    digitarHabilidade(a.w, "A50, B50");
+
+    assert.equal(habilidadesNaTela(a.w).length, 50);
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+    a.w.document.querySelector("#custom-skill").value = "";
+    const naTela = habilidadesNaTela(a.w);
+    assert.deepEqual(await habilidadesEnviadas(a), naTela);
   } finally {
     a.close();
   }
@@ -1980,7 +2040,7 @@ Deno.test("atalho permite cadastrar com habilidades vazias e preserva a escolha 
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
     doc.querySelector("#continue-without-skills").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
-    assert.equal(form.elements.habilidades.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
     doc.querySelector("#previous-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
     doc.querySelector("#next-step").click();
@@ -2045,7 +2105,7 @@ Deno.test("erro ao salvar perfil iniciante mantém dados e a opção de habilida
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
     assert.equal(form.elements.cidade.value, "Recife, PE");
-    assert.equal(form.elements.habilidades.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
     doc.querySelector("#previous-step").click();
     doc.querySelector("#next-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
@@ -2253,7 +2313,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const form = fill(a.w, false);
+    fill(a.w, false);
     a.w.fetch = async () => { throw new Error("offline"); };
     doc.querySelector("#next-step").click();
     await settle();
@@ -2262,7 +2322,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     input.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     await a.w.montarHabilidadesDoCurso();
     assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
-    assert.equal(form.elements.habilidades.value, "Python");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
     assert.equal(doc.querySelector("#skills-catalog-notice").hidden, false);
     assert.equal(doc.querySelector("#continue-without-skills").hidden, true);
   } finally {
