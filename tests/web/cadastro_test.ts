@@ -1369,6 +1369,38 @@ Deno.test("consulta do vínculo que falha depois da exclusão não troca o texto
   } finally { a.close(); }
 });
 
+function bancoQueRecusaOUpdate(a: ReturnType<typeof app>) {
+  const from = a.client.from;
+  a.client.from = (table: string) => {
+    const query = from(table);
+    let atualizando = false;
+    query.update = () => {
+      atualizando = true;
+      return query;
+    };
+    const maybeSingle = query.maybeSingle;
+    query.maybeSingle = async () => (atualizando ? { data: null } : maybeSingle());
+    return query;
+  };
+}
+
+Deno.test("pausar numa conta excluída em outro lugar mostra a exclusão sem o aviso das entregas", async () => {
+  const salvo: Profile & { excluida_em?: string | null } = { ...profile, telegram_chat_id: "123" };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    bancoQueRecusaOUpdate(a);
+    salvo.excluida_em = new Date().toISOString();
+    salvo.telegram_chat_id = null;
+    const doc = a.w.document;
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    assert.equal(doc.querySelector("#account-delivery-title").textContent, "Exclusão agendada");
+    assert.equal(doc.querySelector("#account-notice").textContent, "");
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },

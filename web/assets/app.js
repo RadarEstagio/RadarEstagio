@@ -1432,8 +1432,9 @@ toggleDeliveries.addEventListener("click", async () => {
       if (pausar) mostrarPerguntaMotivoPausa();
       return;
     }
-    showAccount(await perfilAtual());
-    setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
+    const profile = await perfilAtual();
+    showAccount(profile);
+    if (!profile.excluida_em) setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
