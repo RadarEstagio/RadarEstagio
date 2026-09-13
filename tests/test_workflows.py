@@ -7,7 +7,7 @@ import pytest
 PASTA_DOS_WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
 
 VERSAO_DE_CADA_ACAO = {
-    "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": "v7",
+    "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": "v7.0.1",
     "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d": "v10.0.1",
     "denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed": "v2.0.5",
 }
@@ -144,6 +144,16 @@ def test_todo_hash_usado_tem_a_versao_registrada_e_nenhum_registro_sobra():
     }
 
     assert fixadas == set(VERSAO_DE_CADA_ACAO)
+
+
+def test_versao_registrada_de_cada_hash_e_a_tag_exata_que_nao_se_move():
+    tags_que_se_movem = [
+        versao
+        for versao in VERSAO_DE_CADA_ACAO.values()
+        if not VERSAO_FIXA.fullmatch(versao.removeprefix("v"))
+    ]
+
+    assert tags_que_se_movem == []
 
 
 def test_todo_workflow_declara_no_topo_o_github_token_so_de_leitura():
