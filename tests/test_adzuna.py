@@ -307,6 +307,33 @@ def test_corpo_invalido_numa_pagina_tardia_mantem_as_vagas_ja_coletadas(
     assert len(capturada.value.vagas) == RESULTADOS_POR_PAGINA
 
 
+def test_vaga_que_nao_converte_e_pulada_sem_perder_a_pagina(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna, caplog: pytest.LogCaptureFixture
+):
+    sem_titulo = item(2)
+    del sem_titulo["title"]
+    httpx_mock.add_response(json={"results": [item(1), sem_titulo, "texto solto", item(3)]})
+
+    vagas = coletor.coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "3"]
+    assert "ignorada" in caplog.text
+
+
+def test_pagina_cheia_com_vaga_quebrada_continua_paginando(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    cheia = pagina_cheia(1)
+    del cheia["results"][0]["redirect_url"]
+    httpx_mock.add_response(url=url_da_pagina(1), json=cheia)
+    httpx_mock.add_response(url=url_da_pagina(2), json={"results": [item(999)]})
+
+    vagas = coletor.coletar()
+
+    assert len(vagas) == RESULTADOS_POR_PAGINA
+    assert len(httpx_mock.get_requests()) == 2
+
+
 def test_coletas_sucessivas_nao_compartilham_estado(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
     httpx_mock.add_response(json=resposta_gravada())
     httpx_mock.add_response(json={"results": []})

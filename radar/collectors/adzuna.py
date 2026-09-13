@@ -101,8 +101,9 @@ class ColetorAdzuna:
             for cidade in (None, *self._cidades):
                 for termos in self._buscas:
                     for item in self._buscar_regiao(cidade, termos):
-                        vaga = converter_em_vaga(item)
-                        vagas_por_id.setdefault(vaga.id_externo, vaga)
+                        vaga = converter_ou_ignorar(item)
+                        if vaga is not None:
+                            vagas_por_id.setdefault(vaga.id_externo, vaga)
         except CotaDaAdzunaEsgotada:
             if not vagas_por_id:
                 raise ErroDeColeta("Cota da Adzuna esgotada antes da primeira busca") from None
@@ -172,6 +173,20 @@ def formatar_localizacao(campo: dict | None) -> str:
     if len(area) > POSICAO_DA_CIDADE:
         return f"{area[POSICAO_DA_CIDADE]}, {area[POSICAO_DO_ESTADO]}"
     return nome_exibido(campo, LOCALIZACAO_PADRAO)
+
+
+def converter_ou_ignorar(item: dict) -> Vaga | None:
+    try:
+        return converter_em_vaga(item)
+    except (KeyError, TypeError, ValueError, AttributeError) as erro:
+        identificador = item.get("id") if isinstance(item, dict) else None
+        logger.warning(
+            "Vaga da Adzuna ignorada por formato inesperado (id %s): %s: %s",
+            identificador,
+            type(erro).__name__,
+            erro,
+        )
+        return None
 
 
 def converter_em_vaga(item: dict) -> Vaga:
