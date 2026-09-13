@@ -9,6 +9,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from radar.domain.areas import subareas_do_curso
+from radar.domain.datas import FUSO_DA_ENTREGA
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
@@ -234,11 +235,12 @@ SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     where id = %(perfil_id)s
 """
 
-SQL_REGISTRAR_VAGA_SEM_EXTRACAO = """
+SQL_REGISTRAR_VAGA_SEM_EXTRACAO = f"""
     update vagas
     set dias_sem_extracao = case
           when ultimo_dia_sem_extracao = %(dia)s then dias_sem_extracao
-          when extraida_em >= ultimo_dia_sem_extracao then 1
+          when (extraida_em at time zone '{FUSO_DA_ENTREGA.key}')::date
+               >= ultimo_dia_sem_extracao then 1
           else dias_sem_extracao + 1
         end,
         ultimo_dia_sem_extracao = %(dia)s

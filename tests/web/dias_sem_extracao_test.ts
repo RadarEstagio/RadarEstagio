@@ -1,13 +1,26 @@
 import assert from "assert";
 import { PGlite } from "pglite";
 
+async function fusoDaEntrega(): Promise<string> {
+  const fonte = await Deno.readTextFile(
+    new URL("../../radar/domain/datas.py", import.meta.url),
+  );
+  const encontrado = fonte.match(/^FUSO_DA_ENTREGA = ZoneInfo\("([^"]+)"\)$/m);
+  assert.ok(encontrado, "FUSO_DA_ENTREGA não encontrado em datas.py");
+  return encontrado[1];
+}
+
 async function consulta(nome: string): Promise<string> {
   const fonte = await Deno.readTextFile(
     new URL("../../radar/storage/postgres.py", import.meta.url),
   );
+  const fuso = await fusoDaEntrega();
   for (const bloco of fonte.matchAll(/^(SQL_\w+) = f?"""\n([\s\S]*?)"""$/gm)) {
     if (bloco[1] === nome) {
-      return bloco[2].replaceAll("%(vaga_id)s", "$1").replaceAll("%(dia)s", "$2::date");
+      return bloco[2]
+        .replaceAll("{FUSO_DA_ENTREGA.key}", fuso)
+        .replaceAll("%(vaga_id)s", "$1")
+        .replaceAll("%(dia)s", "$2::date");
     }
   }
   throw new Error(`constante ${nome} não encontrada em postgres.py`);
@@ -16,6 +29,7 @@ async function consulta(nome: string): Promise<string> {
 async function bancoComUmaVaga(): Promise<PGlite> {
   const db = new PGlite();
   await db.exec(`
+    set timezone = 'UTC';
     create table public.vagas (
       id bigint generated always as identity primary key,
       fonte text not null,
@@ -89,6 +103,23 @@ Deno.test("extração anterior à primeira falta não recomeça a contagem", asy
     `);
     assert.equal(await registrar(db, "2026-09-10"), 1);
     assert.equal(await registrar(db, "2026-09-11"), 2);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("extração às 22:00 de Brasília conta no dia de Brasília, não no da sessão", async () => {
+  const db = await bancoComUmaVaga();
+  try {
+    await db.exec(`
+      update vagas set extracao = '{}', extraida_em = '2026-09-10 22:00:00-03',
+        modelo_extracao = 'versao-antiga';
+    `);
+    const dias = [];
+    for (const dia of ["2026-09-11", "2026-09-12", "2026-09-13"]) {
+      dias.push(await registrar(db, dia));
+    }
+    assert.deepEqual(dias, [1, 2, 3]);
   } finally {
     await db.close();
   }
