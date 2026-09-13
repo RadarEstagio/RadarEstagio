@@ -155,6 +155,32 @@ pelo Pages antes de criar registros manualmente. Aguarde domínio e HTTPS ativos
 **Concluído quando:** início, Termos e Privacidade abrem em HTTPS, inclusive no celular.
 Publicação para conferir não libera o piloto: os bloqueadores da seção 9 continuam valendo.
 
+### Build compatível durante a migração do frontend
+
+A configuração registrada acima continua valendo até a integração da P1 e autorização própria
+para alterar o Pages. A preparação adiciona `bash scripts/build-web.sh`, que produz `web/dist`
+sem mudar a entrada estática ativa.
+
+Sem `web/package.json`, o script copia somente `index.html`, `termos.html`, `privacidade.html`,
+`config.js` e os recursos atuais permitidos de `assets/`: CSS, JavaScript, catálogos e logo da
+Adzuna. Arquivos de testes, dependências, relatórios, fontes não listadas e segredos não entram
+na saída. O destino é validado e somente `web/dist` pode ser limpo.
+
+Quando `web/package.json` existir, o script exige `package-lock.json`, `vite.config.js` e um
+script `build` válido. Ele executa `npm --prefix web ci` e `npm --prefix web run build`; falha de
+manifesto, instalação ou build termina com erro e nunca usa o caminho legado. Antes de retornar
+sucesso, verifica as três páginas públicas, `config.js`, os catálogos, o logo e a ausência de
+links simbólicos ou arquivos proibidos no artefato.
+
+Os testes de P1 exercitam os dois caminhos em projetos temporários e não geram `web/dist` no
+checkout. Até a P1 ser integrada e a alteração remota autorizada, mantenha a configuração atual.
+
+Depois de integrar a preparação e obter autorização para a mudança remota, usar como configuração
+alvo `bash scripts/build-web.sh` no comando de build e `web/dist` como diretório de saída. Registrar
+o SHA e o deployment anterior antes da alteração; validar primeiro um build legado e só então
+ativar previews das branches com Vite. Não alterar domínio, Auth, CAPTCHA ou produção como parte
+da preparação local.
+
 ## 5. Configurar o retorno do Auth
 
 Em **Authentication → URL Configuration**, preencha:
