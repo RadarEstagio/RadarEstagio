@@ -1,6 +1,9 @@
+from datetime import UTC, date, datetime
+
 import psycopg
 import pytest
 
+from radar.domain.models import Vaga
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.factory import (
@@ -42,6 +45,24 @@ def test_repositorio_em_memoria_ignora_database_url_e_nao_tem_historico():
 
     assert isinstance(repositorio, RepositorioEmMemoria)
     assert repositorio.ids_ja_enviadas(usuario) == set()
+
+
+def test_modo_local_nao_tem_historico_de_vagas_sem_extracao():
+    vaga = Vaga(
+        id_externo="1",
+        fonte="adzuna",
+        titulo="Estágio Python",
+        empresa="Empresa",
+        localizacao="Rio de Janeiro",
+        descricao="descrição",
+        url="https://exemplo.com/1",
+        publicada_em=datetime(2026, 9, 12, tzinfo=UTC),
+    )
+
+    with abrir_repositorio_em_memoria(settings_de_teste()) as repositorio:
+        dias = repositorio.registrar_vagas_sem_extracao([vaga], date(2026, 9, 13))
+
+    assert dias is None
 
 
 def test_repositorio_em_memoria_exige_chat_id_mesmo_quando_banco_esta_configurado():

@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
-from radar.domain.models import ResultadoMatch, Usuario, Vaga
+from radar.domain.models import ExtracaoDaVaga, ResultadoMatch, Usuario, Vaga
 from radar.domain.perfil_fixo import perfil_de_exemplo
-from radar.storage.memoria import RepositorioEmMemoria
+from radar.storage.memoria import RepositorioDoModoLocal, RepositorioEmMemoria
 
 
 def usuario_exemplo() -> Usuario:
@@ -53,3 +53,41 @@ def test_entrega_imediata_sem_banco_atende_so_o_perfil_pedido():
     assert repositorio.reivindicar_entregas_imediatas(usuario.id) == {usuario.id}
     assert repositorio.reivindicar_entregas_imediatas(uuid4()) == set()
     assert repositorio.marcar_entregas_imediatas_atendidas([usuario.id]) is None
+
+
+def test_conta_em_quantos_dias_diferentes_cada_vaga_ficou_sem_extracao():
+    repositorio = RepositorioEmMemoria([])
+    primeira = vaga_exemplo()
+    segunda = vaga_exemplo().model_copy(update={"id_externo": "2"})
+
+    assert repositorio.registrar_vagas_sem_extracao([primeira], date(2026, 9, 10)) == {
+        ("adzuna", "1"): 1
+    }
+    assert repositorio.registrar_vagas_sem_extracao([primeira], date(2026, 9, 10)) == {
+        ("adzuna", "1"): 1
+    }
+    assert repositorio.registrar_vagas_sem_extracao([primeira, segunda], date(2026, 9, 11)) == {
+        ("adzuna", "1"): 2,
+        ("adzuna", "2"): 1,
+    }
+
+
+def test_extracao_guardada_recomeca_a_contagem_de_dias_sem_extracao():
+    repositorio = RepositorioEmMemoria([])
+    vaga = vaga_exemplo()
+    repositorio.registrar_vagas_sem_extracao([vaga], date(2026, 9, 10))
+    repositorio.registrar_vagas_sem_extracao([vaga], date(2026, 9, 11))
+
+    repositorio.guardar_extracoes(
+        [(vaga, ExtracaoDaVaga(id_vaga=vaga.identidade(), area_da_vaga="computacao"))], "m"
+    )
+
+    assert repositorio.registrar_vagas_sem_extracao([vaga], date(2026, 9, 12)) == {
+        ("adzuna", "1"): 1
+    }
+
+
+def test_modo_local_nao_tem_historico_de_vagas_sem_extracao():
+    repositorio = RepositorioDoModoLocal([])
+
+    assert repositorio.registrar_vagas_sem_extracao([vaga_exemplo()], date(2026, 9, 10)) is None
