@@ -235,6 +235,22 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
   zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
   O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília.
+- **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
+  da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
+  coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
+  aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
+  uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
+  inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
+  sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
+  não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
+  fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
+  sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
+  e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
+  cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
+  só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
+  nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
+  remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
+  de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
