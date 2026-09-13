@@ -386,6 +386,69 @@ Deno.test("com o armazenamento funcionando, a sessão de eventos é a mesma entr
   }
 });
 
+Deno.test("nenhum evento do site passa de 256 bytes de propriedades, mesmo com URL de 1.000 caracteres", async () => {
+  const limite = 256;
+  const urlLonga = (sufixo: string) => {
+    const base = "https://radarestagio.com/";
+    const caminho = "estágio-remoto-no-rio/".repeat(60).slice(0, 1000 - base.length - sufixo.length);
+    return base + caminho + sufixo;
+  };
+  const bytesComoNoBanco = (propriedades: Record<string, unknown>) =>
+    new TextEncoder().encode(JSON.stringify(propriedades)).length + 2 * Object.keys(propriedades).length;
+  type Evento = { nome: string; propriedades: Record<string, unknown> };
+  const eventos = (a: ReturnType<typeof app>) =>
+    a.calls
+      .filter(([nome, tabela]) => nome === "insert" && tabela === "eventos_produto")
+      .map(([, , payload]) => payload as unknown as Evento);
+  const vistos: Evento[] = [];
+
+  assert.equal(urlLonga("").length, 1000);
+  const visitante = app({ url: urlLonga("") });
+  try {
+    await settle();
+    for (const chamada of visitante.w.document.querySelectorAll(".js-open-signup")) {
+      chamada.click();
+      await settle();
+    }
+    fill(visitante.w);
+    for (let passo = 0; passo < 3; passo++) visitante.w.document.querySelector("#next-step").click();
+    await settle();
+    vistos.push(...eventos(visitante));
+  } finally {
+    visitante.close();
+  }
+
+  assert.equal(urlLonga("?conta").length, 1000);
+  const dono = app({ session: { user }, savedProfile: { ...profile }, url: urlLonga("?conta") });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    const telegram = doc.querySelector("#telegram-link");
+    telegram.addEventListener("click", (evento: Event) => evento.preventDefault());
+    telegram.click();
+    doc.querySelector("#success-account").click();
+    await settle();
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    doc.querySelector("#signup-form").dispatchEvent(new dono.w.Event("submit", { cancelable: true }));
+    await settle();
+    vistos.push(...eventos(dono));
+  } finally {
+    dono.close();
+  }
+
+  const catalogo = new Set([...script.matchAll(/registerEvent\("([a-z_]+)"/g)].map((encontrado) => encontrado[1]));
+  assert.deepEqual(new Set(vistos.map((evento) => evento.nome)), catalogo);
+  for (const evento of vistos) {
+    assert.ok(
+      bytesComoNoBanco(evento.propriedades) <= limite,
+      `${evento.nome}: ${bytesComoNoBanco(evento.propriedades)} bytes`,
+    );
+  }
+  const pagina = vistos.find((evento) => evento.nome === "landing_visualizada")?.propriedades.pagina;
+  assert.match(String(pagina), /^\/est/);
+});
+
 Deno.test("voltar do link de confirmação com o armazenamento bloqueado mostra a ativação", async () => {
   const a = app({
     armazenamentoBloqueado: true,

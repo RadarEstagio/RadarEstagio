@@ -522,6 +522,15 @@ function eventSessionId() {
   return sessaoDeEventosEmMemoria;
 }
 
+const TAMANHO_MAXIMO_DO_TEXTO_DO_EVENTO = 40;
+
+function propriedadesDoEvento(propriedades) {
+  return Object.fromEntries(Object.entries(propriedades).map(([chave, valor]) => [
+    chave,
+    typeof valor === "string" ? Array.from(valor).slice(0, TAMANHO_MAXIMO_DO_TEXTO_DO_EVENTO).join("") : valor,
+  ]));
+}
+
 async function registerEvent(name, properties = {}) {
   try {
     const client = getClient();
@@ -530,7 +539,7 @@ async function registerEvent(name, properties = {}) {
       nome: name,
       sessao_id: eventSessionId(),
       user_id: data.session?.user.id ?? null,
-      propriedades: properties,
+      propriedades: propriedadesDoEvento(properties),
     });
     if (error) throw error;
   } catch (error) {
