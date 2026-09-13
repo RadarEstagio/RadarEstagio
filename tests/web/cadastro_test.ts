@@ -87,6 +87,7 @@ function app(
     armazenamentoBloqueado = false,
     erroDaSessao = null,
     erroDoPerfil = null,
+    armazenado = {},
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -96,6 +97,7 @@ function app(
     armazenamentoBloqueado?: boolean;
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
+    armazenado?: Record<string, string>;
   } = {},
 ) {
   const erros: Error[] = [];
@@ -108,6 +110,7 @@ function app(
     virtualConsole,
     beforeParse: (janela: TestWindow) => {
       if (temaSalvo) janela.localStorage.setItem("radar-tema", temaSalvo);
+      for (const [chave, valor] of Object.entries(armazenado)) janela.localStorage.setItem(chave, valor);
       if (armazenamentoBloqueado) {
         for (const armazenamento of ["localStorage", "sessionStorage"]) {
           Object.defineProperty(janela, armazenamento, {
@@ -343,6 +346,43 @@ Deno.test("cadastro cria a conta com o armazenamento do navegador bloqueado", as
     assert.deepEqual(a.erros.map((erro) => erro.message), []);
   } finally {
     a.close();
+  }
+});
+
+Deno.test("com o armazenamento funcionando, a sessão de eventos é a mesma entre cargas e no cadastro", async () => {
+  const chave = "radar-sessao-eventos";
+  const cadastrar = async (a: ReturnType<typeof app>) => {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    return {
+      cadastro: called(a.calls, "signup")[1].options.data.cadastro_radar.sessao_id,
+      eventos: [
+        ...new Set(a.calls.filter(([nome]) => nome === "insert").map(([, , payload]) => (payload as Payload).sessao_id)),
+      ],
+    };
+  };
+  const primeira = app();
+  let guardada = "";
+  try {
+    const { cadastro, eventos } = await cadastrar(primeira);
+    guardada = String(primeira.w.localStorage.getItem(chave));
+    assert.match(guardada, /^[0-9a-f-]{36}$/);
+    assert.equal(cadastro, guardada);
+    assert.deepEqual(eventos, [guardada]);
+  } finally {
+    primeira.close();
+  }
+  const segunda = app({ armazenado: { [chave]: guardada } });
+  try {
+    const { cadastro, eventos } = await cadastrar(segunda);
+    assert.equal(cadastro, guardada);
+    assert.deepEqual(eventos, [guardada]);
+    assert.equal(segunda.w.localStorage.getItem(chave), guardada);
+  } finally {
+    segunda.close();
   }
 });
 
@@ -928,6 +968,27 @@ Deno.test("falha de rede ao salvar a edição do perfil não diz que a conta foi
     const mensagem = doc.querySelector("#form-message").textContent;
     assert.doesNotMatch(mensagem, /conta foi criada/);
     assert.match(mensagem, /conexão/);
+  } finally { a.close(); }
+});
+
+Deno.test("conta confirmada sem perfil que falha ao salvar o perfil recebe o aviso de perfil pendente", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      return { error: new TypeError("Failed to fetch") };
+    };
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["concluir_meu_cadastro"],
+    );
+    const mensagem = doc.querySelector("#form-message");
+    assert.match(mensagem.textContent, /Sua conta foi criada, mas o perfil ainda não foi salvo/);
+    assert.equal(visivel(mensagem), true);
   } finally { a.close(); }
 });
 
