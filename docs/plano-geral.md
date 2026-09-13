@@ -161,6 +161,12 @@ Base atual: `main` em `5ddf9a0`, após #60/#61/#63. Igor confirmou preservar ess
 incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
 remotas e publicação continuam dependendo de autorização própria e evidência no guia.
 
+P1 entregue pelo Luna xhigh na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
+em rascunho, commit `17810b4`: build compatível, 14 testes novos e roteiro Pages, sem alterar
+arquivos de `web/`. Validação local: 1.053 testes Python passaram, 27 pulados; lint e sintaxe
+do script passaram. Próximo passo: revisar/integrar P1 com autorização e preparar a transição
+remota antes de ativar a nova entrada. P2–P4 e a migração dos fluxos para React ainda pendem.
+
 ## 3. Limitações e decisões que continuam valendo
 
 - **Candidatura:** acontece na fonte; o Radar não se candidata e não captura novas candidaturas.
