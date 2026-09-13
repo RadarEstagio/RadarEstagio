@@ -61,6 +61,7 @@ const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
 const saidaSemPerfil = document.querySelector("#missing-profile-deletion");
+const botaoApagarSemPerfil = document.querySelector("#delete-account-without-profile");
 const ORIGEM_DA_CONFIRMACAO = {
   desvincular: "#unlink-telegram",
   excluir: "#delete-account",
@@ -749,6 +750,7 @@ function marcarOcupado(botao, ocupado) {
 
 function setSubmitting(submitting) {
   marcarOcupado(submitProfile, submitting);
+  botaoApagarSemPerfil.disabled = submitting;
   if (editandoPerfilExistente) {
     submitLabel.textContent = "Salvar alterações";
     return;
@@ -1221,6 +1223,9 @@ function pedirConfirmacao(acao) {
 }
 
 async function apagarContaSemPerfil() {
+  if (botaoApagarSemPerfil.disabled) return;
+  marcarOcupado(botaoApagarSemPerfil, true);
+  submitProfile.disabled = true;
   setFormMessage();
   try {
     const { error } = await getClient().rpc("apagar_minha_conta_sem_perfil");
@@ -1237,6 +1242,9 @@ async function apagarContaSemPerfil() {
     });
   } catch (error) {
     setFormMessage(mensagemDaExclusaoSemPerfil(error));
+  } finally {
+    marcarOcupado(botaoApagarSemPerfil, false);
+    submitProfile.disabled = false;
   }
 }
 

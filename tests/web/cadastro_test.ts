@@ -891,6 +891,61 @@ Deno.test("falha ao excluir a conta sem perfil explica o motivo com mensagem da 
   }
 });
 
+Deno.test("enviar o perfil trava a exclusão da conta sem perfil até a resposta", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao } = simularConfirmacaoModal(doc);
+    let liberar = () => {};
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      await new Promise<void>((resolve) => { liberar = resolve; });
+      return { error: new TypeError("Failed to fetch") };
+    };
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const botao = doc.querySelector("#delete-account-without-profile");
+    assert.equal(botao.disabled, true);
+    botao.click();
+    assert.equal(confirmacao.open, false);
+    liberar();
+    await settle();
+    assert.equal(botao.disabled, false);
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["concluir_meu_cadastro"],
+    );
+  } finally { a.close(); }
+});
+
+Deno.test("excluir a conta sem perfil fica ocupado e trava o envio do perfil", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    simularConfirmacaoModal(doc);
+    const liberar = segurarRpc(a, "apagar_minha_conta_sem_perfil");
+    const botao = doc.querySelector("#delete-account-without-profile");
+    botao.click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.equal(botao.disabled, true);
+    assert.equal(botao.getAttribute("aria-busy"), "true");
+    assert.equal(doc.querySelector("#submit-profile").disabled, true);
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    liberar();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["apagar_minha_conta_sem_perfil"],
+    );
+    assert.equal(doc.querySelector("#success-title").textContent, "Sua conta foi apagada.");
+    assert.equal(botao.getAttribute("aria-busy"), "false");
+  } finally { a.close(); }
+});
+
 Deno.test("conta com perfil não oferece a exclusão imediata", async () => {
   const a = app({
     session: { user },
