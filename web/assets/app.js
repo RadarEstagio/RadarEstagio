@@ -137,6 +137,7 @@ let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 let passoDoRascunho = PASSO_MOMENTO;
 const VISITANTE = "visitante";
 let donoDoRascunho = VISITANTE;
+let emailDoCadastroEnviado = "";
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
@@ -867,6 +868,7 @@ function limparRascunhoDoCadastro() {
   limparSenhas();
   passoDoRascunho = PASSO_MOMENTO;
   donoDoRascunho = VISITANTE;
+  emailDoCadastroEnviado = "";
   selectedSkills.clear();
   continuarSemHabilidades = false;
   esquecerPerfilCarregado();
@@ -890,7 +892,9 @@ function esquecerRascunhoDeConta() {
 
 function reconhecerDonoDoRascunho(session) {
   const dono = session?.user.id ?? VISITANTE;
-  if (donoDoRascunho !== VISITANTE && donoDoRascunho !== dono) limparRascunhoDoCadastro();
+  const cadastroFeitoAqui = donoDoRascunho === VISITANTE && Boolean(emailDoCadastroEnviado)
+    && session?.user.email?.toLowerCase() === emailDoCadastroEnviado;
+  if (donoDoRascunho !== dono && !cadastroFeitoAqui) limparRascunhoDoCadastro();
   donoDoRascunho = dono;
 }
 
@@ -1773,10 +1777,12 @@ form.addEventListener("submit", async (event) => {
     const session = autenticarAgora ? await authenticate(email, password, profile) : existingSession;
     form.elements.senha.value = "";
     if (!session) {
+      if (authMode === "signup") emailDoCadastroEnviado = email.toLowerCase();
       showConfirmation(email);
       return;
     }
-    if (autenticarAgora) donoDoRascunho = session.user.id;
+    if (autenticarAgora && authMode === "signup") donoDoRascunho = session.user.id;
+    else if (autenticarAgora) reconhecerDonoDoRascunho(session);
     const existing = await loadProfile(session.user.id);
     if (existing && !editandoPerfilExistente) {
       mostrarEstadoDoPerfil(existing);

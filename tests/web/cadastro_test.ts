@@ -1491,13 +1491,16 @@ Deno.test("outra conta que entra na mesma página não vê o rascunho da conta a
   }
 });
 
-Deno.test("visitante que confirma a conta continua com o próprio rascunho", async () => {
+Deno.test("visitante que confirma a conta criada daqui continua com o próprio rascunho", async () => {
   const a = app();
   try {
     await settle();
     await reabrirCadastro(a.w);
     const form = fill(a.w);
-    a.w.document.querySelector("#next-step").click();
+    for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(called(a.calls, "signup")[1].email, user.email);
     fecharComEsc(a.w);
     sessaoPassaASer(a, { user });
     await reabrirCadastro(a.w);
@@ -1695,6 +1698,56 @@ Deno.test("sessão que falha ao renovar não deixa o perfil da conta no formulá
     assert.equal(form.elements.curso.value, "", "login seguinte");
     assert.deepEqual(habilidadesNaTela(a.w), [], "login seguinte");
     assert.equal(form.elements.email.value, outraPessoa.email);
+  } finally {
+    a.close();
+  }
+});
+
+async function rascunhoDeVisitanteFechado(a: ReturnType<typeof app>) {
+  await settle();
+  await reabrirCadastro(a.w);
+  fill(a.w);
+  a.w.document.querySelector("#next-step").click();
+  await settle();
+  fecharComEsc(a.w);
+}
+
+function conferirPerfilACompletarVazio(a: ReturnType<typeof app>, contexto: string) {
+  const form = a.w.document.querySelector("#signup-form");
+  assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false, contexto);
+  assert.equal(form.elements.curso.value, "", contexto);
+  assert.equal(form.elements.cidade.value, "", contexto);
+  assert.deepEqual(habilidadesNaTela(a.w), [], contexto);
+  assert.equal(form.elements.email.value, outraPessoa.email, contexto);
+}
+
+Deno.test("login de outra conta pelo diálogo não herda o rascunho do visitante", async () => {
+  const a = app();
+  try {
+    await rascunhoDeVisitanteFechado(a);
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    Object.assign(a.client.auth, { signInWithPassword: async () => ({ data: { session: { user: outraPessoa } } }) });
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = outraPessoa.email;
+    form.elements.senha.value = "senha-da-outra-pessoa";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirPerfilACompletarVazio(a, "login pelo diálogo");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sessão de outra conta que chega de outra aba não herda o rascunho do visitante", async () => {
+  const a = app();
+  try {
+    await rascunhoDeVisitanteFechado(a);
+    sessaoPassaASer(a, { user: outraPessoa });
+    await reabrirCadastro(a.w);
+
+    conferirPerfilACompletarVazio(a, "sessão de outra aba");
   } finally {
     a.close();
   }
