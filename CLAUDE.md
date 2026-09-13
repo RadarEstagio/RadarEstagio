@@ -258,6 +258,12 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
   falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
   o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
+  Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
+  Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
+  valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
+  falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
+  07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
+  regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
 - **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
   da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
   coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
@@ -1023,14 +1029,22 @@ ligação das automações, porque cada uma guardava o dono no nome:
   inserir em `eventos_produto` sem fim, trocando de `sessao_id` a cada requisição e com 4 KB de
   propriedades, e banco cheio no plano gratuito fica só leitura, o que para cadastro, vínculo e
   diário. Evento `web` agora tem propriedades de até 256 bytes, no máximo 60 por sessão e 60 por
-  conta na última hora e um teto de 600 por hora para visitantes e outro para contas
-  (`eventos_do_site_por_hora`); acima disso o insert falha com `PT429` (HTTP 429 no PostgREST) e
-  o site só avisa no console. O teto é o que limita o tamanho, porque limite só por sessão se fura
-  trocando de sessão: no pior caso ~12 MB por dia, e um funil real grava uns 10 eventos. Eventos
-  do banco e do Telegram não passam pelo gatilho. Custo aceito: sob abuso, os eventos anônimos
-  legítimos daquela hora se perdem e o funil conta visitantes falsos até o teto. Deduplicar marcos
-  por sessão ficou de fora, porque o funil já conta pessoas distintas. A `0023` pode ir ao banco
-  antes do merge: o site atual já grava dentro dos limites.
+  conta na última hora e um teto por hora de 2.400 para visitantes e 900 para contas
+  (`teto_de_eventos_do_site_por_hora`, contados em `eventos_do_site_por_hora`); acima disso o
+  insert falha com `PT429` (HTTP 429 no PostgREST) e o site só avisa no console. O teto é o que
+  limita o tamanho, porque limite só por sessão se fura trocando de sessão. Ele comporta um dia de
+  divulgação: 150 cadastros numa hora, cada um com ~10 eventos anônimos (funil com idas e voltas)
+  e 6 de conta, mais 3 curiosos por cadastro com landing e CTA; o primeiro teto, 600, perdia
+  metade dos eventos anônimos de uma turma de 150. Pior caso sob abuso contínuo: 79.200 linhas por
+  dia, de 440 a 490 bytes cada com índices, ~35 MB por dia, o que enche 500 MB em ~2 semanas. Por
+  isso o resumo de operação mostra os eventos do site das últimas 24 h e avisa quando algum teto
+  foi atingido; banco sem a tabela ou leitura que falha só gera aviso no log. Eventos do banco e do
+  Telegram não passam pelo gatilho. Custo aceito: sob abuso, os eventos anônimos legítimos daquela
+  hora se perdem e o funil conta visitantes falsos até o teto. Deduplicar marcos por sessão ficou
+  de fora, porque o funil já conta pessoas distintas. O check de 256 bytes é `not valid`: não
+  confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
+  nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
+  dos limites.
 
 
 ### Correções da revisão de expansão (08/09/2026)
