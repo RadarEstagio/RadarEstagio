@@ -2337,20 +2337,56 @@ Deno.test("cinquenta habilidades com vírgula cabem no envio e a 51ª é recusad
 });
 
 Deno.test("campos do cadastro limitam a digitação aos tetos que o banco aceita", async () => {
-  const migracao = await Deno.readTextFile(
-    new URL("../../supabase/migrations/0025_tamanho_dos_textos_do_perfil.sql", import.meta.url),
+  const lerMigracao = (nome: string) =>
+    Deno.readTextFile(new URL(`../../supabase/migrations/${nome}`, import.meta.url));
+  const tetos = await lerMigracao("0025_tamanho_dos_textos_do_perfil.sql");
+  const listaDeHabilidades = await lerMigracao("0018_habilidades_vazias.sql");
+  const numero = (texto: string, padrao: RegExp) => {
+    const achado = texto.match(padrao);
+    assert.ok(achado, `${padrao} não encontrado`);
+    return Number(achado[1]);
+  };
+  const constanteDoSite = (nome: string) => numero(script, new RegExp(`const ${nome} = (\\d+);`));
+  const maisSubareasDeUmCurso = Math.max(
+    ...areasJson.areas.map((area: { subareas: unknown[] }) => area.subareas.length),
   );
-  const teto = (padrao: RegExp) => Number(migracao.match(padrao)?.[1]);
   const a = app();
   try {
     await settle();
     const form = a.w.document.querySelector("#signup-form");
-    assert.equal(form.elements.curso.maxLength, teto(/char_length\(curso\) <= (\d+)/));
-    assert.equal(form.elements.cidade.maxLength, teto(/char_length\(cidade\) <= (\d+)/));
-    assert.equal(
-      a.w.document.querySelector("#custom-skill").maxLength,
-      teto(/todos_os_textos_cabem\(habilidades, (\d+)\)/),
-    );
+    const noSite: Record<string, number> = {
+      curso: form.elements.curso.maxLength,
+      cidade: form.elements.cidade.maxLength,
+      habilidade: a.w.document.querySelector("#custom-skill").maxLength,
+    };
+    const noBanco: Record<string, number[]> = {
+      curso: [
+        numero(tetos, /char_length\(curso\) <= (\d+)/),
+        numero(tetos, /btrim\(perfil->>'curso'\)\) not between 2 and (\d+)/),
+        numero(tetos, /length\(perfil->>'curso'\) > (\d+)/),
+      ],
+      cidade: [
+        numero(tetos, /char_length\(cidade\) <= (\d+)/),
+        numero(tetos, /btrim\(perfil->>'cidade'\)\) not between 2 and (\d+)/),
+        numero(tetos, /length\(perfil->>'cidade'\) > (\d+)/),
+      ],
+      habilidade: [
+        numero(tetos, /todos_os_textos_cabem\(habilidades, (\d+)\)/),
+        numero(tetos, /btrim\(item #>> '\{\}'\)\) not between 1 and (\d+)/),
+        numero(tetos, /length\(item #>> '\{\}'\) > (\d+)/),
+        constanteDoSite("TAMANHO_MAXIMO_DA_HABILIDADE"),
+      ],
+    };
+    for (const campo of Object.keys(noBanco)) {
+      for (const valor of noBanco[campo]) assert.equal(valor, noSite[campo], campo);
+    }
+    const maximoDeHabilidades = constanteDoSite("MAXIMO_DE_HABILIDADES");
+    const listaNoCadastro = numero(tetos, /jsonb_array_length\(perfil->lista\) > (\d+)/);
+    assert.equal(listaNoCadastro, maximoDeHabilidades);
+    assert.equal(numero(listaDeHabilidades, /cardinality\(valor\) between 0 and (\d+)/), maximoDeHabilidades);
+    const areasNoPerfil = numero(tetos, /cardinality\(areas_de_interesse\) <= (\d+)/);
+    assert.ok(areasNoPerfil >= maisSubareasDeUmCurso, `o perfil aceita ${areasNoPerfil} áreas`);
+    assert.ok(listaNoCadastro >= maisSubareasDeUmCurso, `o cadastro aceita ${listaNoCadastro} áreas`);
   } finally {
     a.close();
   }
