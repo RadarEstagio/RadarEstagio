@@ -201,6 +201,17 @@ pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A vi
 não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
 `#success-message`, porque o formulário fica escondido nessa tela.
 
+**Segunda auditoria da conta (13/09/2026).** Propriedades de evento cabem em 256 bytes: a `0023`
+(branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
+caminho inteiro da URL. `propriedadesDoEvento` corta cada texto em 40 pontos de código, porque o
+pior caractere escapado no JSON tem 6 bytes (40 × 6 mais `{"pagina": ""}` dá 254); o corte é por
+ponto de código para não partir emoji, que o `jsonb` recusaria. Evento novo com dois textos exige
+refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registerEvent`.
+`closeSignup` fecha a confirmação antes de sair da conta, porque voltar no histórico deixava o
+`<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
+exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
+tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser

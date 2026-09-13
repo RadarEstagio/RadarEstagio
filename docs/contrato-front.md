@@ -168,6 +168,8 @@ Somente URL do projeto, chave pública Supabase e site key do Turnstile ficam no
 Nunca expor senha do banco, `DATABASE_URL`, `service_role` ou secrets de Telegram/Resend.
 Eventos do navegador respeitam o catálogo web autorizado; eventos de confirmação, vínculo e
 primeira entrega têm fontes próprias no banco. A sessão de origem não substitui autenticação.
+O site corta cada texto das propriedades em 40 caracteres, para caber nos 256 bytes que o banco
+aceita em evento web (`0023`).
 
 Não alterar schema pelo painel nem ampliar grants para contornar um erro do frontend.
 Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
