@@ -167,6 +167,16 @@ test("controle de senha usa ícone e anuncia mostrar e ocultar", async () => {
   expect(alternar.getAttribute("aria-pressed")).toBe("false");
 });
 
+test("CAPTCHA acompanha o login", async () => {
+  const { calls, controlador } = abrirAplicacao({ chave: "chave-publica" });
+  captchaComToken("token-do-login");
+  const formulario = preencher();
+  executar(() => controlador.definirModo("login"));
+  enviar(formulario);
+  await esperar();
+  expect(chamada(calls, "login")[1].options.captchaToken).toBe("token-do-login");
+});
+
 test("CAPTCHA acompanha o reenvio da confirmação", async () => {
   const { calls, controlador } = abrirAplicacao({ chave: "chave-publica" });
   captchaComToken("token-do-reenvio");
