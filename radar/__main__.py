@@ -32,8 +32,8 @@ from radar.collectors.factory import (
     termos_de_interesse,
 )
 from radar.cota import (
+    ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
-    registrar_uso_da_adzuna,
     reserva_do_diario,
     uso_da_adzuna,
 )
@@ -290,7 +290,7 @@ def executar_fluxo(
     try:
         coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota)
         resumo = executar(
-            coletor,
+            ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
             extrator,
             notificador,
             repositorio,
@@ -310,8 +310,6 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
-    finally:
-        registrar_uso_da_adzuna(repositorio, cota, agora)
     uso = uso_da_adzuna(repositorio, agora)
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "

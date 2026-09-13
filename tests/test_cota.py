@@ -3,14 +3,16 @@ from uuid import UUID
 
 import pytest
 
-from radar.collectors.adzuna import CotaDaAdzunaEsgotada
+from radar.collectors.adzuna import CotaDaAdzuna, CotaDaAdzunaEsgotada
+from radar.collectors.errors import ErroDeColeta
 from radar.cota import (
+    ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
     registrar_uso_da_adzuna,
     reserva_do_diario,
     uso_da_adzuna,
 )
-from radar.domain.models import Modalidade, Perfil, Usuario
+from radar.domain.models import Modalidade, Perfil, Usuario, Vaga
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
 
@@ -53,7 +55,7 @@ def test_uso_da_execucao_e_somado_ao_do_dia():
     for _ in range(5):
         cota.reservar()
 
-    registrar_uso_da_adzuna(repositorio, cota, AGORA)
+    registrar_uso_da_adzuna(repositorio, cota.requisicoes, AGORA)
 
     assert uso_da_adzuna(repositorio, AGORA) == (23, 23)
 
@@ -63,10 +65,59 @@ def test_banco_sem_a_tabela_nao_derruba_a_execucao(caplog):
 
     cota = abrir_cota_da_adzuna(repositorio, AGORA)
     cota.reservar()
-    registrar_uso_da_adzuna(repositorio, cota, AGORA)
+    registrar_uso_da_adzuna(repositorio, cota.requisicoes, AGORA)
 
     assert uso_da_adzuna(repositorio, AGORA) is None
     assert "uso_das_fontes" in caplog.text
+
+
+class ColetorQueGasta:
+    def __init__(
+        self, cota: CotaDaAdzuna, requisicoes: int, erro: ErroDeColeta | None = None
+    ) -> None:
+        self._cota = cota
+        self._requisicoes = requisicoes
+        self._erro = erro
+
+    def coletar(self) -> list[Vaga]:
+        for _ in range(self._requisicoes):
+            self._cota.reservar()
+        if self._erro is not None:
+            raise self._erro
+        return []
+
+
+def test_uso_e_gravado_assim_que_a_coleta_termina():
+    repositorio = RepositorioEmMemoria([])
+    cota = abrir_cota_da_adzuna(repositorio, AGORA)
+
+    ColetorComRegistroDeUso(ColetorQueGasta(cota, 7), repositorio, cota, AGORA).coletar()
+
+    assert uso_da_adzuna(repositorio, AGORA) == (7, 7)
+
+
+def test_uso_e_gravado_mesmo_quando_a_coleta_falha():
+    repositorio = RepositorioEmMemoria([])
+    cota = abrir_cota_da_adzuna(repositorio, AGORA)
+    coletor = ColetorComRegistroDeUso(
+        ColetorQueGasta(cota, 3, ErroDeColeta("HTTP 500")), repositorio, cota, AGORA
+    )
+
+    with pytest.raises(ErroDeColeta):
+        coletor.coletar()
+
+    assert uso_da_adzuna(repositorio, AGORA) == (3, 3)
+
+
+def test_coletas_seguidas_gravam_so_o_que_cada_uma_gastou():
+    repositorio = RepositorioEmMemoria([])
+    cota = abrir_cota_da_adzuna(repositorio, AGORA)
+    coletor = ColetorComRegistroDeUso(ColetorQueGasta(cota, 4), repositorio, cota, AGORA)
+
+    coletor.coletar()
+    coletor.coletar()
+
+    assert uso_da_adzuna(repositorio, AGORA) == (8, 8)
 
 
 def usuario_em(
