@@ -7,8 +7,8 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
-from radar.domain.models import Usuario
-from radar.domain.ports import RepositorioDeAvaliacoes
+from radar.domain.models import Usuario, Vaga
+from radar.domain.ports import ColetorDeVagas, RepositorioDeAvaliacoes
 from radar.storage.errors import ErroDeArmazenamento
 
 FONTE_ADZUNA = "adzuna"
@@ -42,14 +42,35 @@ def reserva_do_diario(usuarios: list[Usuario]) -> int:
 
 
 def registrar_uso_da_adzuna(
-    repositorio: RepositorioDeAvaliacoes, cota: CotaDaAdzuna, agora: datetime
+    repositorio: RepositorioDeAvaliacoes, requisicoes: int, agora: datetime
 ) -> None:
-    if not cota.requisicoes:
+    if not requisicoes:
         return
     try:
-        repositorio.registrar_requisicoes_da_fonte(FONTE_ADZUNA, agora.date(), cota.requisicoes)
+        repositorio.registrar_requisicoes_da_fonte(FONTE_ADZUNA, agora.date(), requisicoes)
     except ErroDeArmazenamento as erro:
-        logger.warning("Uso da Adzuna não foi gravado (%d requisições): %s", cota.requisicoes, erro)
+        logger.warning("Uso da Adzuna não foi gravado (%d requisições): %s", requisicoes, erro)
+
+
+class ColetorComRegistroDeUso:
+    def __init__(
+        self,
+        coletor: ColetorDeVagas,
+        repositorio: RepositorioDeAvaliacoes,
+        cota: CotaDaAdzuna,
+        agora: datetime,
+    ) -> None:
+        self._coletor = coletor
+        self._repositorio = repositorio
+        self._cota = cota
+        self._agora = agora
+
+    def coletar(self) -> list[Vaga]:
+        antes = self._cota.requisicoes
+        try:
+            return self._coletor.coletar()
+        finally:
+            registrar_uso_da_adzuna(self._repositorio, self._cota.requisicoes - antes, self._agora)
 
 
 def uso_da_adzuna(repositorio: RepositorioDeAvaliacoes, agora: datetime) -> tuple[int, int] | None:

@@ -132,6 +132,7 @@ def formatar_resumo_da_execucao(
     adzuna_no_mes: int | None = None,
     adzuna_limite: int | None = None,
     adzuna_esgotada: bool = False,
+    coletas_incompletas: dict[str, str] | None = None,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -157,6 +158,8 @@ def formatar_resumo_da_execucao(
             linhas.append(f"⚠️ Adzuna passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite mensal")
     if adzuna_esgotada:
         linhas.append("⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim")
+    for fonte, motivo in (coletas_incompletas or {}).items():
+        linhas.append(f"⚠️ Coleta da {escape(rotulo_fonte(fonte))} incompleta: {escape(motivo)}")
     return "\n".join(linhas)
 
 

@@ -41,6 +41,10 @@ def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
     return vagas
 
 
+def coleta_completa() -> bool:
+    return False
+
+
 class ParametrosDaExecucao(BaseModel):
     modelo: str
     quantidade: int = Field(ge=1)
@@ -94,10 +98,12 @@ def executar(
     pontuador: Pontuador = pontuar_vagas,
     enriquecer: Enriquecedor = manter_descricoes_como_estao,
     apenas_o_perfil: UUID | None = None,
+    coleta_incompleta: Callable[[], bool] = coleta_completa,
 ) -> ResumoDaExecucao:
     apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
+    incompleta = coleta_incompleta()
     unicas = remover_duplicatas(coletadas)
     candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
     unicas = substituir_enriquecidas(unicas, candidatas)
@@ -122,6 +128,7 @@ def executar(
             agora,
             pontuador,
             revalidacao,
+            incompleta,
         )
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
@@ -254,6 +261,7 @@ def atender_usuario(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     try:
         repositorio.travar_atendimento(usuario)
@@ -271,6 +279,7 @@ def atender_usuario(
             agora,
             pontuador,
             revalidacao,
+            coleta_incompleta,
         )
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
@@ -289,6 +298,7 @@ def atender_usuario_travado(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     recusas = repositorio.recusas_do_usuario(usuario)
@@ -323,6 +333,11 @@ def atender_usuario_travado(
     if not revalidacao.permite(usuario):
         return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
+    if not selecionadas and coleta_incompleta:
+        logger.warning(
+            "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta", usuario.id
+        )
+        return None
     if not selecionadas:
         avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora, revalidacao)
         return None
