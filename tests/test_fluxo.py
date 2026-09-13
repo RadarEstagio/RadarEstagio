@@ -2,6 +2,7 @@ import json
 import re
 from datetime import date
 from pathlib import Path
+from uuid import UUID
 
 import httpx
 import pytest
@@ -10,10 +11,11 @@ from pytest_httpx import HTTPXMock
 from radar.__main__ import executar_fluxo
 from radar.collectors.adzuna import RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
-from radar.domain.models import Vaga
+from radar.domain.models import Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
 from radar.settings import Settings
+from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"
@@ -115,3 +117,31 @@ def test_coleta_que_falha_grava_o_uso_e_avisa_a_operacao(httpx_mock: HTTPXMock):
 
     assert uso_gravado(repositorio) == 1
     assert "falhou" in mensagens_de_operacao(httpx_mock)[-1]
+
+
+class BancoForaDoAr(RepositorioEmMemoria):
+    def listar_ativos(self) -> list[Usuario]:
+        raise ErroDeArmazenamento("Falha ao ler os perfis: connection reset")
+
+
+def test_falha_ao_ler_os_usuarios_avisa_a_operacao(httpx_mock: HTTPXMock):
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeArmazenamento):
+        executar_fluxo(settings_de_teste(), cliente_http, BancoForaDoAr([]))
+
+    [aviso] = mensagens_de_operacao(httpx_mock)
+    assert "falhou" in aviso
+    assert "connection reset" in aviso
+
+
+def test_perfil_sem_entrega_a_fazer_retorna_sem_coletar_nem_avisar(httpx_mock: HTTPXMock):
+    with httpx.Client() as cliente_http:
+        executar_fluxo(
+            settings_de_teste(),
+            cliente_http,
+            RepositorioEmMemoria([]),
+            apenas_o_perfil=UUID(int=7),
+        )
+
+    assert httpx_mock.get_requests() == []

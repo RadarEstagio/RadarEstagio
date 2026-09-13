@@ -280,14 +280,14 @@ def executar_fluxo(
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
-    ativos = repositorio.listar_ativos()
-    usuarios_da_coleta = selecionar_usuarios(ativos, apenas_o_perfil)
-    if apenas_o_perfil is not None and not usuarios_da_coleta:
-        print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
-        return
-    reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
-    cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
     try:
+        ativos = repositorio.listar_ativos()
+        usuarios_da_coleta = selecionar_usuarios(ativos, apenas_o_perfil)
+        if apenas_o_perfil is not None and not usuarios_da_coleta:
+            print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
+            return
+        reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
+        cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
         coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota)
         resumo = executar(
             ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
