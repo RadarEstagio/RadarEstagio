@@ -295,3 +295,42 @@ def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_se_registrar_c
         LIMITE_POR_DIA - reserva + gasto_do_diario
     )
     assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == gasto_do_diario
+
+
+RODAR_MANUAL_NA_NOITE_DE_BRASILIA = datetime(2026, 9, 15, 1, 0, tzinfo=UTC)
+DIARIO_DA_MANHA_SEGUINTE = datetime(2026, 9, 15, 10, 23, tzinfo=UTC)
+
+
+def test_rodar_sem_perfil_na_noite_de_brasilia_deixa_a_reserva_para_o_diario_das_07_23(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    dia = RODAR_MANUAL_NA_NOITE_DE_BRASILIA.date()
+    parar_o_relogio(monkeypatch, RODAR_MANUAL_NA_NOITE_DE_BRASILIA)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+    reserva = reserva_do_diario([estudante])
+    gasto_da_noite = repositorio.requisicoes_da_fonte_desde("adzuna", dia)
+    repositorio.registrar_requisicoes_da_fonte(
+        "adzuna", dia, LIMITE_POR_DIA - reserva - gasto_da_noite
+    )
+
+    for hora in (2, 4, 6):
+        parar_o_relogio(monkeypatch, datetime(2026, 9, 15, hora, 0, tzinfo=UTC))
+        with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta):
+            executar_fluxo(
+                settings_de_teste(), cliente_http, repositorio, apenas_o_perfil=estudante.id
+            )
+    uso_antes_do_diario = repositorio.requisicoes_da_fonte_desde("adzuna", dia)
+    parar_o_relogio(monkeypatch, DIARIO_DA_MANHA_SEGUINTE)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    assert uso_antes_do_diario == LIMITE_POR_DIA - reserva
+    assert repositorio.requisicoes_da_fonte_desde("adzuna", dia) > uso_antes_do_diario
+    assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)

@@ -1,4 +1,6 @@
+import re
 from datetime import UTC, date, datetime
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -7,6 +9,7 @@ from radar.collectors.adzuna import LIMITE_POR_MINUTO, CotaDaAdzuna, CotaDaAdzun
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import (
     FONTE_DO_DIARIO,
+    INICIO_DA_JANELA_DO_DIARIO_UTC,
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
     registrar_diario_da_adzuna,
@@ -267,3 +270,47 @@ def test_falha_ao_registrar_o_diario_so_avisa(caplog: pytest.LogCaptureFixture):
     registrar_diario_da_adzuna(RepositorioSemTabela([]), 140, HORARIO_DO_DIARIO)
 
     assert "uso_das_fontes" in caplog.text
+
+
+RODAR_MANUAL_NA_NOITE_DE_BRASILIA = datetime(2026, 9, 15, 1, 0, tzinfo=UTC)
+MADRUGADA_DE_BRASILIA = datetime(2026, 9, 15, 5, 0, tzinfo=UTC)
+
+
+def test_rodar_sem_perfil_na_noite_de_brasilia_nao_libera_a_reserva_do_diario_da_manha():
+    dia = RODAR_MANUAL_NA_NOITE_DE_BRASILIA.date()
+    repositorio = uso_no_dia(dia, 200)
+    registrar_diario_da_adzuna(repositorio, 80, RODAR_MANUAL_NA_NOITE_DE_BRASILIA)
+
+    cota = abrir_cota_da_adzuna(repositorio, MADRUGADA_DE_BRASILIA, reserva=RESERVA)
+
+    assert not repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)
+    assert requisicoes_permitidas(cota) == 10
+
+
+@pytest.mark.parametrize(
+    ("hora", "minuto", "registra"),
+    [(0, 0, False), (9, 22, False), (9, 23, True), (10, 23, True), (23, 59, True)],
+)
+def test_diario_so_registra_que_rodou_a_partir_da_janela_do_diario(
+    hora: int, minuto: int, registra: bool
+):
+    repositorio = RepositorioEmMemoria([])
+    momento = datetime(2026, 9, 15, hora, minuto, tzinfo=UTC)
+
+    registrar_diario_da_adzuna(repositorio, 80, momento)
+
+    assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, momento.date()) is registra
+
+
+def test_janela_do_diario_e_a_mesma_da_telegram_webhook():
+    webhook = Path(__file__).parent.parent / "supabase/functions/telegram-webhook"
+    fonte = (webhook / "entrega_imediata.ts").read_text()
+    encontrado = re.search(
+        r"INICIO_DA_JANELA_DO_DIARIO_EM_MINUTOS_UTC = (\d+) \* 60 \+ (\d+);", fonte
+    )
+
+    assert encontrado is not None
+    assert (INICIO_DA_JANELA_DO_DIARIO_UTC.hour, INICIO_DA_JANELA_DO_DIARIO_UTC.minute) == (
+        int(encontrado.group(1)),
+        int(encontrado.group(2)),
+    )

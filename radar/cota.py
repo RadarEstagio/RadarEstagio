@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 from radar.collectors.adzuna import LIMITE_DE_PAGINAS_POR_REGIAO, CotaDaAdzuna, saldo_da_adzuna
 from radar.collectors.factory import (
@@ -13,6 +13,7 @@ from radar.storage.errors import ErroDeArmazenamento
 
 FONTE_ADZUNA = "adzuna"
 FONTE_DO_DIARIO = "adzuna:diario"
+INICIO_DA_JANELA_DO_DIARIO_UTC = time(9, 23)
 DIAS_DA_JANELA_SEMANAL = 7
 
 logger = logging.getLogger(__name__)
@@ -69,8 +70,12 @@ def registrar_uso_da_adzuna(
 def registrar_diario_da_adzuna(
     repositorio: RepositorioDeAvaliacoes, requisicoes: int, agora: datetime
 ) -> None:
+    em_utc = agora.astimezone(UTC)
+    if em_utc.time() < INICIO_DA_JANELA_DO_DIARIO_UTC:
+        logger.info("Execução antes da janela do diário; a reserva do diário de hoje continua")
+        return
     try:
-        repositorio.registrar_requisicoes_da_fonte(FONTE_DO_DIARIO, agora.date(), requisicoes)
+        repositorio.registrar_requisicoes_da_fonte(FONTE_DO_DIARIO, em_utc.date(), requisicoes)
     except ErroDeArmazenamento as erro:
         logger.warning("O registro de que o diário rodou não foi gravado: %s", erro)
 
