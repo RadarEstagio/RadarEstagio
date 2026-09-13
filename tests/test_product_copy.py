@@ -71,7 +71,7 @@ def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
     html = (RAIZ / "web/index.html").read_text()
 
     for trecho in (
-        "não cobrem todo o mercado",
+        "não cobre todo o mercado",
         "até sete recomendações",
         "Dias sem vaga podem acontecer",
         "candidatura continua sendo sua",
