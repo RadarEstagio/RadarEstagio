@@ -147,11 +147,12 @@ esse resumo no Python. Sem banco, o chat ID é obrigatório.
 
 ## Frontend local
 
-O site usa HTML, CSS e JavaScript estáticos, com Supabase Auth e acesso ao banco por RLS/RPCs.
-O build com Vite gera `web/dist` sem mudar o que o navegador executa: páginas, `config.js`,
-`assets/app.js` e catálogos saem nos mesmos caminhos; React entra com o primeiro fluxo
-migrado ([plano](docs/plano-migracao-react.md)). O perfil é preenchido antes da conta, e o banco preserva uma cópia
-protegida até a confirmação, inclusive entre aparelhos; não depende de perfil no `localStorage`.
+A landing é HTML e CSS no `index.html`; cadastro, login, recuperação de senha e a página da
+conta são React, com Supabase Auth e acesso ao banco por RLS/RPCs. O build com Vite gera
+`web/dist` com `config.js` e os catálogos nos mesmos caminhos
+([plano](docs/plano-migracao-react.md)). O perfil é preenchido antes da conta, e o banco preserva
+uma cópia protegida até a confirmação, inclusive entre aparelhos; não depende de perfil no
+`localStorage`.
 
 Para desenvolver com seu próprio ambiente, ajuste os campos de [web/config.js](web/config.js):
 
@@ -167,12 +168,15 @@ trocar essas referências em conjunto. Senha do banco, `service_role` e secrets 
 servidor. Siga o [guia](docs/guia-publicacao-e-piloto.md) para migrations, webhook,
 URLs autorizadas do Auth, SMTP e CAPTCHA antes de testar cadastro e vínculo.
 
+Com Node na versão do `.nvmrc`:
+
 ```bash
-uv run python -m http.server 8000 -d web
+npm --prefix web ci
+npm --prefix web run dev
 ```
 
-Com Node na versão do `.nvmrc`, `npm --prefix web ci` instala as ferramentas e
-`npm --prefix web run dev` serve o mesmo site na mesma porta.
+Servir a pasta `web` com um servidor estático não funciona: o `index.html` carrega o código em
+JSX, que só o Vite transforma.
 
 Abra `http://localhost:8000`; autenticação precisa de HTTP, não de abrir o HTML diretamente.
 O [contrato frontend](docs/contrato-front.md) detalha cadastro, permissões, eventos e controles
@@ -191,16 +195,16 @@ uv run ruff format --check .
 Os testes de integração Postgres dependem de `DATABASE_URL_TESTE` e são ignorados quando o
 ambiente não está disponível. Não use o banco de produção como banco de teste.
 
-Com [Deno](https://deno.com/) instalado, execute os testes do frontend e banco isolado:
+Com [Deno](https://deno.com/) instalado, execute os testes do banco isolado:
 
 ```bash
 deno test --config tests/web/deno.json --allow-read --allow-env tests/web/
 ```
 
-Essa suíte usa JSDOM e PGlite; não testa layout nem entrega real de e-mails.
+Essa suíte usa PGlite, lendo o SQL das migrations e do `postgres.py`.
 
-As ferramentas do frontend têm lint, checagem de comentários em JS e CSS, testes e
-conferência do artefato publicado:
+O frontend tem lint, checagem de comentários em JS, JSX e CSS, testes no Vitest com jsdom e
+conferência do artefato publicado. Os testes de interface não verificam layout nem enviam e-mail:
 
 ```bash
 npm --prefix web run lint

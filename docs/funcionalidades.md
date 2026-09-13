@@ -317,7 +317,7 @@ Token em `ir`, redirecionamento 302 sem cache e evento de abertura.
 
 Supabase Auth, RLS, grants e RPCs limitadas ao dono.
 
-**Código de referência:** `supabase/migrations/`, `web/assets/app.js`.
+**Código de referência:** `supabase/migrations/`, `web/src/`.
 
 #### 17. Antiabuso
 

@@ -2,6 +2,12 @@ import re
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
+
+
+def fonte_do_frontend():
+    return "\n".join(p.read_text() for p in sorted((RAIZ / "web/src").rglob("*.js*")))
+
+
 MIGRATION = RAIZ / "supabase/migrations/0005_eventos_produto.sql"
 EVENTOS = {
     "landing_visualizada",
@@ -69,10 +75,10 @@ def test_banco_registra_marcos_autoritativos_por_gatilhos():
 
 
 def test_frontend_instrumenta_a_jornada_que_ja_existe():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert 'const eventSessionKey = "radar-sessao-eventos"' in javascript
-    assert '.from("eventos_produto").insert' in javascript
+    assert 'const CHAVE_DA_SESSAO_DE_EVENTOS = "radar-sessao-eventos"' in fonte
+    assert '.from("eventos_produto").insert' in fonte
     for evento in {
         "landing_visualizada",
         "cta_cadastro_aberto",
@@ -82,21 +88,21 @@ def test_frontend_instrumenta_a_jornada_que_ja_existe():
         "perfil_salvo",
         "telegram_aberto",
     }:
-        assert f'registerEvent("{evento}"' in javascript
+        assert f'registrar("{evento}"' in fonte
 
 
 def test_falha_ao_registrar_evento_nao_passa_despercebida():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert 'console.warn(`Radar: o evento "${name}" não foi registrado.`, error)' in javascript
+    assert 'console.warn(`Radar: o evento "${nome}" não foi registrado.`, erro)' in fonte
 
 
 def test_landing_visualizada_nao_conta_recarregamento():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert 'const landingViewKey = "radar-landing-vista"' in javascript
-    assert "sessionStorage.setItem(landingViewKey" in javascript
-    assert "if (!landingJaContadaNestaSessao()) {" in javascript
+    assert 'const CHAVE_DA_LANDING_VISTA = "radar-landing-vista"' in fonte
+    assert "sessionStorage.setItem(CHAVE_DA_LANDING_VISTA" in fonte
+    assert "if (!eventos.landingJaContadaNestaSessao()) {" in fonte
 
 
 def test_ctas_identificam_a_posicao_sem_coletar_texto_livre():

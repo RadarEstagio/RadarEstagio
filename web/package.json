@@ -10,17 +10,26 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint --max-warnings=0 . && node scripts/check-frontend-comments.mjs scripts tests vite.config.js eslint.config.mjs config.js assets/app.js assets/styles.css",
+    "lint": "eslint --max-warnings=0 . && node scripts/check-frontend-comments.mjs src scripts tests vite.config.js eslint.config.mjs config.js assets/styles.css",
     "test:run": "vitest run",
     "test:artifact": "vite build && node scripts/check-web-artifact.mjs dist"
   },
   "devDependencies": {
     "@babel/parser": "7.29.8",
     "@eslint/js": "9.39.5",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.3",
+    "@vitejs/plugin-react": "4.7.0",
     "eslint": "9.39.5",
     "globals": "16.5.0",
+    "jsdom": "26.1.0",
     "postcss": "8.5.28",
     "vite": "6.4.3",
     "vitest": "3.2.7"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.116.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

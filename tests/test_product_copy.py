@@ -3,6 +3,10 @@ from pathlib import Path
 RAIZ = Path(__file__).parent.parent
 
 
+def fonte_do_frontend():
+    return "\n".join(p.read_text() for p in sorted((RAIZ / "web/src").rglob("*.js*")))
+
+
 def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     html = (RAIZ / "web/index.html").read_text()
     css = (RAIZ / "web/assets/styles.css").read_text()
@@ -53,12 +57,12 @@ def test_demo_do_chat_respeita_preferencia_de_movimento_reduzido():
 def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
     html = (RAIZ / "web/index.html").read_text()
     css = (RAIZ / "web/assets/styles.css").read_text()
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    demonstracao = (RAIZ / "web/src/landing/demonstracao.js").read_text()
 
     assert 'class="hero-demo is-waiting"' in html
     assert ".hero-demo.is-waiting .chat-typing { opacity: 1; }" in css
-    assert "const ROLAGEM_MINIMA_ATE_CHAT = 90;" in javascript
-    assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
+    assert "const ROLAGEM_MINIMA_ATE_CHAT = 90;" in demonstracao
+    assert "janela.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in demonstracao
 
 
 def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
@@ -91,11 +95,12 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
 
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
     html = (RAIZ / "web/index.html").read_text()
+    fonte = fonte_do_frontend()
 
     assert "selecionar e entregar vagas, manter sua conta e medir o uso" in html
     assert "Supabase, Telegram e GitHub Actions" in html
-    assert "Seu perfil serve para selecionar vagas" in html
-    assert "Nada é vendido nem compartilhado" not in html
+    assert "Seu perfil serve para selecionar vagas" in fonte
+    assert "Nada é vendido nem compartilhado" not in html + fonte
 
 
 def test_aviso_de_privacidade_aponta_para_o_painel_que_passou_a_existir():
@@ -103,7 +108,7 @@ def test_aviso_de_privacidade_aponta_para_o_painel_que_passou_a_existir():
 
     assert "fale com a equipe do projeto" not in html
     assert "entre na sua conta pelo botão de cadastro" in html
-    assert 'id="delete-account"' in html
+    assert 'id="delete-account"' in fonte_do_frontend()
 
 
 def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
@@ -120,63 +125,64 @@ def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
 
 
 def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
-    html = (RAIZ / "web/index.html").read_text()
+    fonte = fonte_do_frontend()
 
     for controle in ("edit-profile", "toggle-deliveries", "unlink-telegram", "delete-account"):
-        assert f'id="{controle}"' in html
+        assert f'id="{controle}"' in fonte
 
 
 def test_acao_destrutiva_pede_confirmacao_antes():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "pedirConfirmacao(" in javascript
-    assert "#account-confirm-yes" in javascript
+    assert 'pedirConfirmacao("desvincular")' in fonte
+    assert 'pedirConfirmacao("excluir")' in fonte
+    assert 'id="account-confirm-yes"' in fonte
 
 
 def test_exclusao_diz_a_verdade_sobre_os_60_dias_e_o_arrependimento():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
-    html = (RAIZ / "web/index.html").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "Não dá para desfazer" not in javascript
-    assert "Seus dados foram apagados" not in javascript
-    assert "As entregas param na hora" in javascript
-    assert "entre aqui de novo para cancelar" in javascript
-    assert 'rpc("cancelar_exclusao_da_minha_conta")' in javascript
-    assert 'id="cancel-deletion"' in html
+    assert "Não dá para desfazer" not in fonte
+    assert "Seus dados foram apagados" not in fonte
+    assert "As entregas param na hora" in fonte
+    assert "entre aqui de novo para cancelar" in fonte
+    assert 'rpc("cancelar_exclusao_da_minha_conta")' in fonte
+    assert 'id="cancel-deletion"' in fonte
 
 
 def test_exclusao_e_desvinculo_passam_pelas_funcoes_do_banco():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert 'rpc("desvincular_meu_telegram")' in javascript
-    assert 'rpc("excluir_minha_conta")' in javascript
+    assert 'rpc("desvincular_meu_telegram")' in fonte
+    assert 'rpc("excluir_minha_conta")' in fonte
 
 
 def test_edicao_dispensa_as_credenciais_de_quem_ja_tem_sessao():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "function entrarNoModoEdicao()" in javascript
-    assert "form.elements.senha.required = false" in javascript
+    assert "function entrarNoModoEdicao()" in fonte
+    assert "edicao: true, credenciaisOcultas: true" in fonte
+    assert "required={!credenciaisOcultas}" in fonte
 
 
 def test_perfil_pausado_que_revincula_nao_diz_que_esta_ativo():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "if (profile?.telegram_chat_id) showActivation(profile)" not in javascript
-    assert javascript.count("mostrarEstadoDoPerfil(profile)") >= 2
+    assert "if (perfil?.telegram_chat_id) mostrarAtivacao(perfil)" not in fonte
+    assert fonte.count("mostrarEstadoDoPerfil(") >= 3
 
 
 def test_sessao_perdida_no_meio_avisa_em_vez_de_falhar_calado():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "MENSAGEM_SEM_SESSAO" in javascript
-    assert "MENSAGEM_SEM_PERFIL" in javascript
-    assert "if (editandoPerfilExistente && !existingSession) {" in javascript
+    assert "MENSAGEM_SEM_SESSAO" in fonte
+    assert "MENSAGEM_SEM_PERFIL" in fonte
+    assert "if (estado.edicao && !sessaoExistente) {" in fonte
 
 
 def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
-    trecho = javascript[javascript.index('rpc("excluir_minha_conta")') :][:600]
+    fonte = fonte_do_frontend()
+    trecho = fonte[fonte.index('rpc("excluir_minha_conta")') :][:600]
 
     assert "signOut" not in trecho
 

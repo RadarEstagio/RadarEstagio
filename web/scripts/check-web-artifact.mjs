@@ -2,7 +2,7 @@ import { lstat, readFile, readdir } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
 const paginas = ["index.html", "termos.html", "privacidade.html"];
-const obrigatorios = [...paginas, "config.js", "assets/app.js", "assets/areas.json", "assets/cidades.json", "assets/adzuna-logo.png"];
+const obrigatorios = [...paginas, "config.js", "assets/areas.json", "assets/cidades.json", "assets/adzuna-logo.png"];
 const proibidos = new Set(["package.json", "package-lock.json", "node_modules", "scripts", "tests", "coverage", "reports", ".git"]);
 const referenciaNoHtml = /\s(?:src|href)="([^"]*)"/g;
 const referenciaExterna = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;

@@ -44,7 +44,7 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Rodar os testes do cadastro e do banco isolado
+      - name: Rodar os testes do banco isolado
         run: deno test --config tests/web/deno.json --allow-read --allow-env tests/web/
 
       - name: Rodar os testes da telegram-webhook
