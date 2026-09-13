@@ -80,6 +80,8 @@ const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
+const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
+const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
@@ -807,8 +809,7 @@ function resetDialogView() {
   form.hidden = false;
   rotularDialogo("signup-title");
   successState.hidden = true;
-  accountState.hidden = true;
-  accountConfirm.hidden = true;
+  esconderConta();
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   setAccountMessage();
@@ -940,7 +941,7 @@ function clearPendingProfile() {
 }
 
 function showSuccess({ kicker, title, copy, token, linked = false }) {
-  accountState.hidden = true;
+  esconderConta();
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   form.hidden = true;
@@ -1043,7 +1044,7 @@ function showAccount(profile) {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = true;
-  accountConfirm.hidden = true;
+  fecharConfirmacao(false);
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   accountState.hidden = false;
@@ -1057,6 +1058,7 @@ function showAccount(profile) {
   document.querySelector("#account-status-icon").textContent = visual.simbolo;
   const emExclusao = Boolean(profile.excluida_em);
   toggleDeliveries.textContent = profile.ativo ? "Pausar entregas" : "Retomar entregas";
+  toggleDeliveries.dataset.acao = profile.ativo ? "pausar" : "retomar";
   toggleDeliveries.hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#delete-account").hidden = emExclusao;
@@ -1089,17 +1091,21 @@ async function perfilAtual() {
   return profile;
 }
 
-async function alternarEntregas(profile) {
+async function alternarEntregas(pausar) {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
-  const updates = profile.ativo
+  const updates = pausar
     ? { ativo: false, atualizado_em: new Date().toISOString() }
     : { ativo: true, motivo_pausa: null, atualizado_em: new Date().toISOString() };
-  const { error } = await getClient()
+  const { data, error } = await getClient()
     .from("perfis")
     .update(updates)
-    .eq("user_id", session.user.id);
+    .eq("user_id", session.user.id)
+    .eq("ativo", pausar)
+    .select(COLUNAS_DO_PERFIL)
+    .maybeSingle();
   if (error) throw error;
+  return data;
 }
 
 function mostrarPerguntaMotivoPausa() {
@@ -1152,6 +1158,11 @@ function fecharConfirmacao(restaurarFoco = true) {
   document.querySelector(origem).focus();
 }
 
+function esconderConta() {
+  fecharConfirmacao(false);
+  accountState.hidden = true;
+}
+
 function pedirConfirmacao(acao) {
   const configuracoes = {
     desvincular: {
@@ -1190,7 +1201,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
+    .select(COLUNAS_DO_PERFIL)
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -1242,13 +1253,19 @@ async function authenticate(email, password, profile) {
   }
 }
 
+function aguardandoVinculoDoTelegram() {
+  return (dialog.open || !accountPage.hidden) && !successState.hidden && !telegramLink.hidden;
+}
+
 async function refreshActivationStatus() {
+  if (!aguardandoVinculoDoTelegram()) return;
   try {
     const session = await currentSession();
     if (!session) return;
     const profile = await loadProfile(session.user.id);
-    if (profile) mostrarEstadoDoPerfil(profile);
+    if (profile && aguardandoVinculoDoTelegram()) mostrarEstadoDoPerfil(profile);
   } catch {
+    if (!aguardandoVinculoDoTelegram()) return;
     document.querySelector("#success-copy").textContent =
       "O Telegram foi aberto, mas ainda não conseguimos confirmar o vínculo. Tente voltar a esta janela novamente.";
   }
@@ -1392,7 +1409,7 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
     const profile = await perfilAtual();
     preencherFormularioCom(profile);
-    accountState.hidden = true;
+    esconderConta();
     form.hidden = false;
     progressWrap.hidden = false;
     entrarNoModoEdicao();
@@ -1407,13 +1424,17 @@ toggleDeliveries.addEventListener("click", async () => {
   if (toggleDeliveries.disabled) return;
   toggleDeliveries.disabled = true;
   setAccountMessage();
+  const pausar = toggleDeliveries.dataset.acao === "pausar";
   try {
+    const atualizado = await alternarEntregas(pausar);
+    if (atualizado) {
+      showAccount(atualizado);
+      if (pausar) mostrarPerguntaMotivoPausa();
+      return;
+    }
     const profile = await perfilAtual();
-    const wasActive = profile.ativo;
-    await alternarEntregas(profile);
-    const updatedProfile = { ...profile, ativo: !wasActive, motivo_pausa: null };
-    showAccount(updatedProfile);
-    if (wasActive) mostrarPerguntaMotivoPausa();
+    showAccount(profile);
+    if (!profile.excluida_em) setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {
@@ -1654,8 +1675,7 @@ telegramLink.addEventListener("click", () => {
 });
 
 window.addEventListener("focus", () => {
-  if ((!dialog.open && accountPage.hidden) || telegramLink.hidden) return;
-  refreshActivationStatus();
+  void refreshActivationStatus();
 });
 
 dialog.addEventListener("click", (event) => {
@@ -1731,7 +1751,7 @@ function showAssistance(mode, email = "") {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = true;
-  accountState.hidden = true;
+  esconderConta();
   document.querySelector("#auth-assistance").hidden = false;
   rotularDialogo("assistance-title");
   document.querySelector("#captcha-container").hidden = mode === "new-password";
