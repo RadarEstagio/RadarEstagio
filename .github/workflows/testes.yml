@@ -65,7 +65,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Baixar o repositório
@@ -91,3 +91,19 @@ jobs:
 
       - name: Gerar e conferir o artefato publicado
         run: bash scripts/build-web.sh && node web/scripts/check-web-artifact.mjs web/dist
+
+      - name: Instalar o Chromium do Playwright
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Rodar os testes no navegador
+        working-directory: web
+        run: npm run test:e2e
+
+      - name: Guardar o relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: relatorio-do-playwright
+          path: web/playwright-report
+          retention-days: 7

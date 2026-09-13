@@ -9,6 +9,7 @@ PASTA_DOS_WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
 VERSAO_DE_CADA_ACAO = {
     "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": "v7.0.1",
     "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020": "v7.0.0",
+    "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a": "v7.0.1",
     "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d": "v10.0.1",
     "denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed": "v2.0.5",
 }

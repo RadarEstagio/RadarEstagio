@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["dist/**", "assets/**", "config.js"] },
+  { ignores: ["dist/**", "assets/**", "config.js", "playwright-report/**", "test-results/**"] },
   eslint.configs.recommended,
   {
     files: ["**/*.{js,mjs,jsx}"],
