@@ -6,7 +6,7 @@ import httpx
 import pytest
 from google.genai import errors, types
 
-from radar.domain.models import Vaga
+from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.matching.errors import (
     AvaliadorIndisponivel,
     CotaDeAvaliacaoExcedida,
@@ -15,7 +15,7 @@ from radar.matching.errors import (
 )
 from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.gemini import ExtratorGemini
-from radar.matching.lotes import ExtratorEmLotes
+from radar.matching.lotes import ESPERA_PADRAO_EM_SEGUNDOS, ExtratorEmLotes
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -190,24 +190,81 @@ def test_avaliador_fora_do_ar_e_erro_temporario_e_nao_cota(codigo: int):
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
 
 
-def test_erro_interno_do_gemini_repete_o_mesmo_lote_em_vez_de_dividi_lo():
-    erro = errors.ServerError(500, {"error": {"code": 500, "message": "Internal error"}})
-    extrator, cliente = extrator_com(erro)
-    esperas = []
-    em_lotes = ExtratorEmLotes(
-        extrator,
-        10,
-        esperar=esperas.append,
-        prazo_em_segundos=10_000,
-        timeout_da_chamada_em_segundos=120,
-        relogio=lambda: 0.0,
+def erro_interno() -> errors.ServerError:
+    return errors.ServerError(
+        500, {"error": {"code": 500, "message": "An internal error has occurred."}}
     )
 
-    extraidas = em_lotes.extrair([vaga_exemplo(numero) for numero in range(10)])
+
+class ExtratorComErroInterno:
+    def __init__(self, problematicas: set[str], persistente: bool) -> None:
+        self._problematicas = problematicas
+        self._persistente = persistente
+        self._ja_falhou = False
+        self.segundos = 0.0
+
+    def extrair(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.segundos += 30
+        ids = [item.identidade() for item in lote]
+        if self._problematicas & set(ids) and (self._persistente or not self._ja_falhou):
+            self._ja_falhou = True
+            ExtratorGemini(settings_de_teste(), ClienteFalso(erro_interno())).extrair(lote)
+        return [ExtracaoDaVaga(id_vaga=id_vaga, area_da_vaga="computacao") for id_vaga in ids]
+
+
+def extrair_30_vagas_com_erro_interno(problematicas: set[str], persistente: bool = True):
+    interno = ExtratorComErroInterno(problematicas, persistente)
+    esperas: list[float] = []
+
+    def esperar(segundos: float) -> None:
+        esperas.append(segundos)
+        interno.segundos += segundos
+
+    em_lotes = ExtratorEmLotes(
+        interno,
+        10,
+        esperar=esperar,
+        prazo_em_segundos=600,
+        timeout_da_chamada_em_segundos=120,
+        relogio=lambda: interno.segundos,
+    )
+    extraidas = em_lotes.extrair([vaga_exemplo(numero) for numero in range(1, 31)])
+    return extraidas, em_lotes.requisicoes, esperas, interno.segundos
+
+
+@pytest.mark.parametrize(
+    ("problematica", "requisicoes_esperadas"), [("adzuna:1", 10), ("adzuna:15", 12)]
+)
+def test_erro_interno_persistente_divide_o_lote_e_perde_so_a_vaga_problematica(
+    problematica: str, requisicoes_esperadas: int
+):
+    extraidas, requisicoes, esperas, _ = extrair_30_vagas_com_erro_interno({problematica})
+
+    assert len(extraidas) == 29
+    assert problematica not in {item.id_vaga for item in extraidas}
+    assert requisicoes == requisicoes_esperadas
+    assert len(esperas) == 1
+    assert esperas[0] < ESPERA_PADRAO_EM_SEGUNDOS
+
+
+def test_erro_interno_passageiro_repete_o_mesmo_lote_sem_dividir():
+    extraidas, requisicoes, esperas, _ = extrair_30_vagas_com_erro_interno(
+        {"adzuna:1"}, persistente=False
+    )
+
+    assert len(extraidas) == 30
+    assert requisicoes == 4
+    assert len(esperas) == 1
+    assert esperas[0] < ESPERA_PADRAO_EM_SEGUNDOS
+
+
+def test_erro_interno_em_toda_chamada_nao_passa_do_prazo_da_extracao():
+    todas = {f"adzuna:{numero}" for numero in range(1, 31)}
+
+    extraidas, _, _, segundos = extrair_30_vagas_com_erro_interno(todas)
 
     assert extraidas == []
-    assert len(cliente.models.chamadas) == 4
-    assert len(esperas) == 3
+    assert segundos <= 600
 
 
 def test_cada_chamada_leva_o_timeout_configurado_em_milissegundos():
