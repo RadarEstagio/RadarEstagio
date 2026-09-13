@@ -2,6 +2,8 @@ import re
 from itertools import takewhile
 from pathlib import Path
 
+import pytest
+
 PASTA_DOS_WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
 
 VERSAO_DE_CADA_ACAO = {
@@ -15,10 +17,15 @@ ACAO_FIXADA_POR_HASH = re.compile(r"[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}")
 ACAO_LOCAL = re.compile(r"\./[\w./-]+")
 VERSAO_FIXA = re.compile(r"\d+\.\d+\.\d+")
 NIVEIS_SO_DE_LEITURA = {"read", "none"}
+PERMISSOES_EM_LINHA_SO_DE_LEITURA = {"read-all", "{}"}
 
 
 def workflows():
     return sorted([*PASTA_DOS_WORKFLOWS.glob("*.yml"), *PASTA_DOS_WORKFLOWS.glob("*.yaml")])
+
+
+def sem_aspas(valor):
+    return valor.strip().strip("\"'")
 
 
 def acoes_usadas(workflow):
@@ -31,11 +38,25 @@ def acoes_usadas(workflow):
 
 def permissoes_do_topo(workflow):
     linhas = workflow.read_text().splitlines()
-    if "permissions:" not in linhas:
-        return {}
-    depois_do_bloco = linhas[linhas.index("permissions:") + 1 :]
+    linha_do_topo = next((linha for linha in linhas if linha.startswith("permissions:")), None)
+    if linha_do_topo is None:
+        return None
+    em_linha = sem_aspas(linha_do_topo.removeprefix("permissions:"))
+    if em_linha:
+        return em_linha
+    depois_do_bloco = linhas[linhas.index(linha_do_topo) + 1 :]
     bloco = takewhile(lambda linha: linha.startswith("  "), depois_do_bloco)
-    return dict(linha.strip().split(": ", 1) for linha in bloco)
+    return {
+        nome.strip(): sem_aspas(nivel)
+        for nome, _, nivel in (linha.partition(":") for linha in bloco)
+    }
+
+
+def github_token_so_de_leitura(workflow):
+    permissoes = permissoes_do_topo(workflow)
+    if isinstance(permissoes, str):
+        return permissoes in PERMISSOES_EM_LINHA_SO_DE_LEITURA
+    return bool(permissoes) and set(permissoes.values()) <= NIVEIS_SO_DE_LEITURA
 
 
 def recuo(linha):
@@ -95,14 +116,36 @@ def test_todo_hash_usado_tem_a_versao_registrada_e_nenhum_registro_sobra():
 
 
 def test_todo_workflow_declara_no_topo_o_github_token_so_de_leitura():
-    fora_da_regra = {
-        workflow.name: permissoes
-        for workflow in workflows()
-        if not (permissoes := permissoes_do_topo(workflow))
-        or set(permissoes.values()) - NIVEIS_SO_DE_LEITURA
-    }
+    fora_da_regra = [
+        workflow.name for workflow in workflows() if not github_token_so_de_leitura(workflow)
+    ]
 
-    assert fora_da_regra == {}
+    assert fora_da_regra == []
+
+
+@pytest.mark.parametrize(
+    ("permissoes", "so_de_leitura"),
+    [
+        ("permissions:\n  contents: read\n", True),
+        ('permissions:\n  contents: "read"\n', True),
+        ("permissions:\n  contents: 'read'\n  actions: none\n", True),
+        ("permissions: read-all\n", True),
+        ("permissions: {}\n", True),
+        ("permissions: write-all\n", False),
+        ("permissions:\n  contents: write\n", False),
+        ('permissions:\n  contents: "write"\n', False),
+        ("permissions:\n  contents: read\n  id-token: write\n", False),
+        ("permissions:\n", False),
+        ("", False),
+    ],
+)
+def test_so_leitura_no_topo_aceita_as_formas_de_leitura_e_recusa_escrita(
+    tmp_path, permissoes, so_de_leitura
+):
+    workflow = tmp_path / "exemplo.yml"
+    workflow.write_text(f"on: push\n\n{permissoes}\njobs:\n  a:\n    runs-on: ubuntu-latest\n")
+
+    assert github_token_so_de_leitura(workflow) is so_de_leitura
 
 
 def test_checkout_de_workflow_com_segredos_nao_deixa_o_token_no_git():
