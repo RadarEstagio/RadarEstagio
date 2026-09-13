@@ -1268,6 +1268,86 @@ Deno.test("pausa aplicada mostra a conta pausada e a pergunta mesmo se a leitura
   } finally { a.close(); }
 });
 
+function segurarRpc(a: ReturnType<typeof app>, nome: string) {
+  const rpc = a.client.rpc;
+  let liberar = () => {};
+  a.client.rpc = async (chamada: string, args: Payload) => {
+    if (chamada === nome) await new Promise<void>((resolve) => { liberar = resolve; });
+    return rpc(chamada, args);
+  };
+  return () => liberar();
+}
+
+Deno.test("resposta do desvincular que chega com a exclusão aberta fecha a confirmação", async () => {
+  const salvo: Profile = { ...profile, telegram_chat_id: "123" };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao } = simularConfirmacaoModal(doc);
+    const liberar = segurarRpc(a, "desvincular_meu_telegram");
+    doc.querySelector("#unlink-telegram").click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    salvo.telegram_chat_id = null;
+    doc.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    liberar();
+    await settle();
+    assert.equal(doc.querySelector("#success-state").hidden, false);
+    assert.equal(doc.querySelector("#account-state").hidden, true);
+    assert.equal(confirmacao.open, false);
+    assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("resposta da exclusão que chega com o desvincular aberto fecha a confirmação", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao } = simularConfirmacaoModal(doc);
+    const liberar = segurarRpc(a, "excluir_minha_conta");
+    doc.querySelector("#delete-account").click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    doc.querySelector("#unlink-telegram").click();
+    assert.equal(confirmacao.open, true);
+    liberar();
+    await settle();
+    assert.equal(doc.querySelector("#success-title").textContent, "As entregas pararam agora.");
+    assert.equal(confirmacao.open, false);
+    assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("editar perfil que termina de carregar com a confirmação aberta fecha o diálogo", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao } = simularConfirmacaoModal(doc);
+    const liberar = segurarProximaSessao(a);
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    doc.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    liberar();
+    await settle();
+    assert.equal(doc.querySelector("#signup-form").hidden, false);
+    assert.equal(confirmacao.open, false);
+    assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },

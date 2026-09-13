@@ -809,8 +809,7 @@ function resetDialogView() {
   form.hidden = false;
   rotularDialogo("signup-title");
   successState.hidden = true;
-  accountState.hidden = true;
-  fecharConfirmacao(false);
+  esconderConta();
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   setAccountMessage();
@@ -942,7 +941,7 @@ function clearPendingProfile() {
 }
 
 function showSuccess({ kicker, title, copy, token, linked = false }) {
-  accountState.hidden = true;
+  esconderConta();
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   form.hidden = true;
@@ -1157,6 +1156,11 @@ function fecharConfirmacao(restaurarFoco = true) {
   if (!restaurarFoco || !acao) return;
   const origem = acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
   document.querySelector(origem).focus();
+}
+
+function esconderConta() {
+  fecharConfirmacao(false);
+  accountState.hidden = true;
 }
 
 function pedirConfirmacao(acao) {
@@ -1404,7 +1408,7 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
     const profile = await perfilAtual();
     preencherFormularioCom(profile);
-    accountState.hidden = true;
+    esconderConta();
     form.hidden = false;
     progressWrap.hidden = false;
     entrarNoModoEdicao();
@@ -1745,7 +1749,7 @@ function showAssistance(mode, email = "") {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = true;
-  accountState.hidden = true;
+  esconderConta();
   document.querySelector("#auth-assistance").hidden = false;
   rotularDialogo("assistance-title");
   document.querySelector("#captcha-container").hidden = mode === "new-password";
