@@ -37,6 +37,40 @@ def permissoes_do_topo(workflow):
     return dict(linha.strip().split(": ", 1) for linha in bloco)
 
 
+def recuo(linha):
+    return len(linha) - len(linha.lstrip())
+
+
+def entradas_do_passo(passo, coluna):
+    linha_do_with = " " * coluna + "with:"
+    if linha_do_with not in passo:
+        return {}
+    depois_do_with = passo[passo.index(linha_do_with) + 1 :]
+    bloco = takewhile(lambda seguinte: recuo(seguinte) > coluna, depois_do_with)
+    return {
+        nome: valor.strip().strip("\"'")
+        for nome, _, valor in (entrada.strip().partition(":") for entrada in bloco)
+    }
+
+
+def entradas_de_cada_uso(workflow, acao):
+    linhas = workflow.read_text().splitlines()
+    usos = []
+    for indice, linha in enumerate(linhas):
+        encontrada = LINHA_COM_USES.match(linha)
+        if not (encontrada and encontrada.group(1).startswith(f"{acao}@")):
+            continue
+        coluna = linha.index("uses:")
+        inicio = max(i for i in range(indice + 1) if linhas[i][coluna - 2 : coluna] == "- ")
+        depois_do_uses = range(indice + 1, len(linhas))
+        fim = next(
+            (i for i in depois_do_uses if linhas[i].strip() and recuo(linhas[i]) < coluna),
+            len(linhas),
+        )
+        usos.append(entradas_do_passo(linhas[inicio:fim], coluna))
+    return usos
+
+
 def test_toda_acao_de_terceiros_e_fixada_pelo_hash_do_commit():
     fora_da_regra = [
         f"{workflow.name}: {acao}"
@@ -68,6 +102,22 @@ def test_todo_workflow_declara_no_topo_o_github_token_so_de_leitura():
     }
 
     assert fora_da_regra == {}
+
+
+def test_checkout_de_workflow_com_segredos_nao_deixa_o_token_no_git():
+    persistencia_de_cada_checkout = {
+        f"{workflow.name} #{posicao}": entradas.get("persist-credentials")
+        for workflow in workflows()
+        if "secrets." in workflow.read_text()
+        for posicao, entradas in enumerate(entradas_de_cada_uso(workflow, "actions/checkout"), 1)
+    }
+
+    assert persistencia_de_cada_checkout
+    assert {
+        checkout: persistencia
+        for checkout, persistencia in persistencia_de_cada_checkout.items()
+        if persistencia != "false"
+    } == {}
 
 
 def test_dependabot_propoe_em_pr_as_versoes_novas_das_acoes_depois_de_uma_espera():
