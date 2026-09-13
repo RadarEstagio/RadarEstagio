@@ -452,6 +452,51 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
   exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
   Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
+- **SQL e bancos relacionais são uma classe só na nota** (13/09/2026). "SQL" não era nome de
+  família: quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a
+  nota de quem tem MongoDB). Ian decidiu que, para estágio, SQL e o banco são a mesma coisa:
+  SQL, MySQL, PostgreSQL, SQL Server, SQLite, MariaDB e Oracle Database se atendem nos dois
+  sentidos (`EQUIVALENCIAS_DE_HABILIDADES`). A primeira versão só deixava SQL atender os bancos,
+  e o termo genérico valia mais que o específico: na vaga adzuna:5873229288, que pede
+  PostgreSQL, MySQL e Oracle, "SQL" tirava 70 e "MySQL" 63. Dentro das famílias o membro vale
+  pelos equivalentes, senão "ETL" e "análise de dados", que listam SQL, deixavam MySQL abaixo.
+  Não é peso novo, é equivalência, como as famílias de 09/09. O que acompanha a classe:
+  - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
+    porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
+    SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
+  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível, e o requisito PL/SQL ou T-SQL só é
+    atendido pelo próprio dialeto. Toda grafia vai para a forma com barra antes da partição
+    (`GRAFIAS_DE_DIALETOS_DE_SQL`: "PL-SQL" e "PLSQL" a "PL/SQL"; "T-SQL", "TSQL" e
+    "Transact-SQL" a "T/SQL"), e a partição do `b1ccbf1` dá a parte "SQL", com nível e
+    palavras, também dentro de habilidade composta. Juntar "PL/SQL" num nome só, como a versão
+    anterior fazia, tirava a parte "SQL" de "Oracle PL/SQL" e parecidos (75 → 61) e deixava
+    "Oracle" no perfil atender "Oracle PL/SQL" por palavras, o caso do ERP.
+  - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
+    SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
+    a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
+    Cloud ficam fora. Esses aliases valem só na comparação com o perfil
+    (`ALIASES_DE_COMPARACAO`): a identidade do requisito, que decide a regra de requisito
+    repetido, continua a do `b1ccbf1`. Sem isso "SQL Server avançado" e "Azure SQL Database"
+    viravam um requisito só, o segundo passava a exigir o nível avançado (75 → 61) e o
+    desejável sumia dos diferenciais.
+  - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
+    comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
+    MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
+  - Nível, composição ("MySQL e Python" exige as duas partes) e NoSQL fora da classe seguem
+    valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
+    anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+  Medido contra o `b1ccbf1`: nenhuma nota cai e nenhum requisito atendido some nas 41 vagas
+  reais que citam banco (246 pares com 6 perfis, 114 sobem; 861 com os 21 perfis da auditoria,
+  200 sobem) nem nos 8.836 pares da matriz da auditoria (2.298 sobem), e MySQL ou PostgreSQL
+  deixam de ficar abaixo de SQL na mesma vaga (eram 16 e 21 vagas).
+  `tests/test_corpus_de_bancos.py` pontua um corpus com dialeto dentro de habilidade composta e
+  requisitos que o alias junta, com as regras novas ligadas e todas desligadas juntas
+  (equivalências, aliases de comparação e grafias dos dialetos), e exige que nenhuma nota caia,
+  nenhum requisito suma e alguma nota suba; resiste a mudança de peso e quebra se as grafias
+  voltarem a juntar o dialeto ou se a identidade do requisito voltar a usar o alias. Risco
+  aberto: fora de computação a parte "SQL" do dialeto compara por palavras, então "T-SQL" passa
+  a atender "SQL Server Reporting Services", como "PL/SQL" e "SQL" já atendiam.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
