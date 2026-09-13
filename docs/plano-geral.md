@@ -125,7 +125,9 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Preencher o gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem com
   `relevante` nulo, então o juiz automático ainda não foi validado.
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
-  compartilhado; a recomendação é separar responsabilidades sem trocar de framework.
+  compartilhado; a recomendação dessa revisão foi separar responsabilidades sem trocar de
+  framework. Em 12/09, Igor solicitou um plano para React com JavaScript, ainda sem execução;
+  ver a seção 2.3.
 
 ## 2.2 Auditoria do agendamento diário (10/09/2026)
 
@@ -147,6 +149,37 @@ que saíram de lá:
   na Adzuna, e esse custo cresce com o número de cidades.
 - **G02 — registrar o fim de cada lote com a duração.** Fecha a margem do G01 e mede o efeito do
   raciocínio `low` na latência.
+
+## 2.3 Migração do frontend para React (12/09/2026)
+
+**Estado: execução incremental autorizada.** Após a revisão da
+PR #62, Igor pediu ajustar o plano e executar. O [plano detalhado](plano-migracao-react.md)
+mantém a landing estática nesta fase e migra Auth/cadastro/conta para React com JavaScript,
+sem redesign ou TypeScript, em PRs menores começando pelo build compatível.
+
+Base atual: `main` em `5ddf9a0`, após #60/#61/#63. Igor confirmou preservar essa versão,
+incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
+remotas e publicação continuam dependendo de autorização própria e evidência no guia.
+
+P1 entregue na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
+em rascunho, commit `17810b4`: build compatível, 14 testes novos e roteiro Pages, sem alterar
+arquivos de `web/`. Validação local: 1.053 testes Python passaram, 27 pulados; lint e sintaxe
+do script passaram. Próximo passo: revisar/integrar P1 com autorização e preparar a transição
+remota antes de ativar a nova entrada.
+
+P2 na [PR #66](https://github.com/RadarEstagio/RadarEstagio/pull/66), em rascunho e empilhada
+sobre a #64: Vite com artefato equivalente ao site atual (mesmos caminhos de `config.js`,
+`app.js`, catálogos e logo), checagem de comentários por parser, conferência do artefato, 19
+testes Vitest e job de CI. Não entra na `main` antes de o Pages usar `build-web.sh` com saída
+`web/dist`.
+
+P3 e P4 na [PR #67](https://github.com/RadarEstagio/RadarEstagio/pull/67), em rascunho e
+empilhada sobre a #66: cadastro, autenticação e conta em React, `app.js` removido, landing no
+HTML. Entraram juntas porque o legado movia o mesmo painel entre o modal e a conta. Os 75
+cenários do teste Deno foram portados para Vitest (168 testes no total); pytest, Deno, lint,
+artefato e um teste no Chrome headless passaram. Falta a jornada real com Supabase, Safari e
+Firefox, comparação visual e medição de carregamento (bundle de 148 KB com gzip). Mesma trava da
+#66: não entra antes de o Pages usar `build-web.sh`.
 
 ## 3. Limitações e decisões que continuam valendo
 
