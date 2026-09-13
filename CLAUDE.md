@@ -212,6 +212,23 @@ refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registe
 exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
 tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
 
+**Perfil, habilidades e rascunho (13/09/2026).** Os textos que o navegador grava no perfil têm teto
+no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. São os tetos que
+`validar_cadastro_radar` já cobrava desde a `0014`, agora também no `update` direto e sobre o texto
+cru (espaços nas pontas furavam o `btrim`); mantê-los evita que um cadastro pendente, validado antes,
+falhe na confirmação do e-mail. A folga vem dos catálogos: o maior curso sugerido tem 37 caracteres,
+84 com o maior prefixo e sufixo que a normalização conhece, e a maior cidade do IBGE tem 36. O site
+limita a digitação com o mesmo `maxlength`, e um teste lê os números da migration. Habilidade
+digitada nunca é separada por vírgula: cada item na tela é um item no banco. O envio partia o campo
+oculto por vírgula, então "Pacote Office (Word, Excel)" virava dois pedaços e 50 itens na tela
+viravam mais de 50 no banco, que recusava. Separar ao adicionar exigiria copiar no site as regras com
+que o Python já parte a habilidade composta (parênteses, " e ", nível da última parte). Fechar o
+diálogo (Esc, X, clique fora) não apaga o rascunho: ele fica na memória da página, sem
+armazenamento, e reabre na mesma etapa. Limpam o rascunho o logout, a troca de conta, a exclusão sem
+perfil, o "Entrar" do cabeçalho e o fim da sessão com o perfil de uma conta no formulário
+(`formularioComPerfilDaConta`), para ele não reaparecer como rascunho. Custo aceito: depois do envio,
+reabrir o cadastro mostra o que foi enviado, sem a senha.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
@@ -1084,6 +1101,20 @@ ligação das automações, porque cada uma guardava o dono no nome:
   confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
   nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
   dos limites.
+- **Textos do perfil têm teto no banco** (13/09/2026, migration `0025`). Uma conta comum gravava
+  210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
+  `cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
+  `not valid` como o da `0023`: `perfis` é atualizado todo dia pelo job e pelo webhook, às vezes em
+  lote, e um check `not valid` deixaria uma linha antiga acima do teto derrubar esses updates longe
+  da migration. Validado, um perfil acima do teto faz o `db push` falhar inteiro, sem aplicar nada,
+  e o erro nomeia a constraint: corrigir a linha e repetir. `validar_cadastro_radar` passou a
+  recusar chave desconhecida no cadastro e no perfil; todas as versões do site mandaram só as
+  conhecidas. Grants e policies não mudam; a função nova do check fica com o grant padrão, como a
+  `habilidades_do_perfil_validas` da `0018`, e precisa dele: o check roda com o papel de quem grava,
+  e sem `execute` o update do próprio dono falha. Pode ir ao banco antes do merge: o site atual já limita
+  cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
+  digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
+  `raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
 
 
 ### Correções da revisão de expansão (08/09/2026)
