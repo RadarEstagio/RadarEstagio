@@ -16,7 +16,8 @@ from radar.collectors.adzuna import (
     CotaDaAdzuna,
     saldo_da_adzuna,
 )
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
+from radar.collectors.tentativas import TENTATIVAS_POR_REQUISICAO
 from radar.settings import Settings
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"
@@ -137,7 +138,25 @@ def test_busca_tambem_por_cidade_dos_usuarios_presenciais(httpx_mock: HTTPXMock)
 
     locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
 
-    assert locais == [None, "Rio de Janeiro", "Niterói"]
+    assert locais == ["Rio de Janeiro", "Niterói", None]
+
+
+def test_saldo_curto_busca_a_cidade_do_perfil_antes_da_nacional(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=pagina_cheia(1), is_reusable=True)
+    cota = CotaDaAdzuna(saldo=2, esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http:
+        ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            ["Porto Alegre"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
+    assert locais == ["Porto Alegre", "Porto Alegre"]
 
 
 def test_pagina_cheia_busca_a_proxima_pagina(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
@@ -208,6 +227,129 @@ def test_falha_de_rede_levanta_erro_de_coleta(httpx_mock: HTTPXMock, coletor: Co
 
     with pytest.raises(ErroDeColeta, match="ConnectError"):
         coletor.coletar()
+
+
+def test_falha_numa_pagina_tardia_para_a_coleta_e_entrega_o_que_ja_veio(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia(1))
+    httpx_mock.add_response(
+        url=url_da_pagina(2), status_code=429, json={"exception": "limite"}, is_reusable=True
+    )
+
+    with httpx.Client() as cliente_http:
+        coletor = ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            ["Rio de Janeiro"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+        )
+        with pytest.raises(ColetaIncompleta, match="429") as capturada:
+            coletor.coletar()
+
+    assert len(capturada.value.vagas) == RESULTADOS_POR_PAGINA
+    assert len(httpx_mock.get_requests()) == 1 + TENTATIVAS_POR_REQUISICAO
+    assert "429" in caplog.text
+    assert APP_KEY_DE_TESTE not in str(capturada.value)
+
+
+def test_falha_de_rede_depois_de_uma_regiao_mantem_as_vagas_da_regiao(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json={"results": [item(1), item(2)]})
+    httpx_mock.add_exception(httpx.ReadTimeout("lento"), is_reusable=True)
+
+    with httpx.Client() as cliente_http:
+        coletor = ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            ["Rio de Janeiro", "Niterói"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+        )
+        with pytest.raises(ColetaIncompleta, match="ReadTimeout") as capturada:
+            coletor.coletar()
+
+    assert [vaga.id_externo for vaga in capturada.value.vagas] == ["1", "2"]
+    assert len(httpx_mock.get_requests()) == 1 + TENTATIVAS_POR_REQUISICAO
+
+
+def test_falha_antes_de_qualquer_vaga_continua_erro_de_coleta(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json={"results": []})
+    httpx_mock.add_response(status_code=500, text="erro", is_reusable=True)
+
+    with httpx.Client() as cliente_http:
+        coletor = ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            ["Rio de Janeiro"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+        )
+        with pytest.raises(ErroDeColeta, match="500") as capturado:
+            coletor.coletar()
+
+    assert not isinstance(capturado.value, ColetaIncompleta)
+
+
+@pytest.mark.parametrize(
+    "resposta",
+    [
+        {"text": "<html>Service temporarily unavailable</html>"},
+        {"json": {"exception": "AUTH_FAIL"}},
+        {"json": {"results": {"id": 1}}},
+        {"json": {"results": None}},
+        {"json": [1, 2]},
+    ],
+    ids=["html", "sem_results", "results_dicionario", "results_nulo", "corpo_lista"],
+)
+def test_resposta_200_com_corpo_invalido_vira_erro_de_coleta(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna, resposta: dict
+):
+    httpx_mock.add_response(**resposta)
+
+    with pytest.raises(ErroDeColeta, match="Adzuna") as capturado:
+        coletor.coletar()
+
+    assert APP_KEY_DE_TESTE not in str(capturado.value)
+
+
+def test_corpo_invalido_numa_pagina_tardia_mantem_as_vagas_ja_coletadas(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia(1))
+    httpx_mock.add_response(url=url_da_pagina(2), text="<html>erro</html>")
+
+    with pytest.raises(ColetaIncompleta) as capturada:
+        coletor.coletar()
+
+    assert len(capturada.value.vagas) == RESULTADOS_POR_PAGINA
+
+
+def test_vaga_que_nao_converte_e_pulada_sem_perder_a_pagina(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna, caplog: pytest.LogCaptureFixture
+):
+    sem_titulo = item(2)
+    del sem_titulo["title"]
+    httpx_mock.add_response(json={"results": [item(1), sem_titulo, "texto solto", item(3)]})
+
+    vagas = coletor.coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "3"]
+    assert "ignorada" in caplog.text
+
+
+def test_pagina_cheia_com_vaga_quebrada_continua_paginando(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    cheia = pagina_cheia(1)
+    del cheia["results"][0]["redirect_url"]
+    httpx_mock.add_response(url=url_da_pagina(1), json=cheia)
+    httpx_mock.add_response(url=url_da_pagina(2), json={"results": [item(999)]})
+
+    vagas = coletor.coletar()
+
+    assert len(vagas) == RESULTADOS_POR_PAGINA
+    assert len(httpx_mock.get_requests()) == 2
 
 
 def test_coletas_sucessivas_nao_compartilham_estado(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
@@ -324,3 +466,18 @@ def test_cota_conta_tambem_as_novas_tentativas(httpx_mock: HTTPXMock):
         ).coletar()
 
     assert cota.requisicoes == 2
+
+
+def test_cota_zerada_antes_da_primeira_busca_vira_erro_de_coleta(httpx_mock: HTTPXMock):
+    cota = CotaDaAdzuna(saldo=0, esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta, match="Cota da Adzuna"):
+        ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    assert httpx_mock.get_requests() == []

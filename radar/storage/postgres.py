@@ -9,11 +9,13 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from radar.domain.areas import subareas_do_curso
+from radar.domain.datas import FUSO_DA_ENTREGA
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
     AreaDeInteresse,
     ChaveDaVaga,
     EntregaParaJulgar,
+    EventosDoSite,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Modalidade,
@@ -48,6 +50,21 @@ SQL_USUARIOS_ATIVOS = """
 SQL_PERFIS_SEM_VINCULO = (
     "select count(*) from perfis where ativo and excluida_em is null and telegram_chat_id is null"
 )
+
+SQL_REIVINDICAR_ENTREGAS_IMEDIATAS = """
+    update perfis
+    set entrega_imediata_atendida_em = now()
+    where (id = %(perfil_id)s or entrega_imediata_disparada_em is not null)
+      and entrega_imediata_atendida_em is null
+      and ativo and excluida_em is null and telegram_chat_id is not null
+    returning id
+"""
+
+SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS = """
+    update perfis
+    set entrega_imediata_atendida_em = now()
+    where id = any(%(perfis)s) and entrega_imediata_atendida_em is null
+"""
 
 SQL_EXTRACOES_EXISTENTES = """
     select fonte, id_externo, extracao
@@ -234,6 +251,19 @@ SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     where id = %(perfil_id)s
 """
 
+SQL_REGISTRAR_VAGA_SEM_EXTRACAO = f"""
+    update vagas
+    set dias_sem_extracao = case
+          when ultimo_dia_sem_extracao = %(dia)s then dias_sem_extracao
+          when (extraida_em at time zone '{FUSO_DA_ENTREGA.key}')::date
+               >= ultimo_dia_sem_extracao then 1
+          else dias_sem_extracao + 1
+        end,
+        ultimo_dia_sem_extracao = %(dia)s
+    where id = %(vaga_id)s
+    returning dias_sem_extracao
+"""
+
 SQL_REQUISICOES_DA_FONTE = """
     select coalesce(sum(requisicoes), 0)
     from uso_das_fontes
@@ -245,6 +275,22 @@ SQL_REGISTRAR_REQUISICOES_DA_FONTE = """
     values (%(fonte)s, %(dia)s, %(requisicoes)s)
     on conflict (fonte, dia)
     do update set requisicoes = uso_das_fontes.requisicoes + excluded.requisicoes
+"""
+
+SQL_FONTE_TEM_REGISTRO_NO_DIA = """
+    select exists (
+        select 1 from uso_das_fontes where fonte = %(fonte)s and dia = %(dia)s
+    )
+"""
+
+SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS = """
+    select coalesce(sum(total) filter (where anonimo), 0)::int as visitantes,
+           coalesce(sum(total) filter (where not anonimo), 0)::int as contas,
+           count(*) filter (
+               where total >= public.teto_de_eventos_do_site_por_hora(anonimo)
+           )::int as horas_no_teto
+    from eventos_do_site_por_hora
+    where hora > date_trunc('hour', now(), 'UTC') - interval '24 hours'
 """
 
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
@@ -276,6 +322,26 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao conferir destinatário: {descrever(erro)}"
+            ) from erro
+
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]:
+        try:
+            with self._conexao.cursor() as cursor:
+                linhas = cursor.execute(
+                    SQL_REIVINDICAR_ENTREGAS_IMEDIATAS, {"perfil_id": perfil_id}
+                ).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao reivindicar as entregas imediatas: {descrever(erro)}"
+            ) from erro
+        return {perfil for (perfil,) in linhas}
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        try:
+            self._conexao.execute(SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS, {"perfis": perfis})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao marcar as entregas imediatas atendidas: {descrever(erro)}"
             ) from erro
 
     def extracoes_existentes(
@@ -312,6 +378,26 @@ class RepositorioPostgres:
                     )
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
+
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        if not vagas:
+            return {}
+        dias: dict[ChaveDaVaga, int] = {}
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                for vaga in vagas:
+                    vaga_id = guardar_vaga(cursor, vaga)
+                    linha = cursor.execute(
+                        SQL_REGISTRAR_VAGA_SEM_EXTRACAO, {"vaga_id": vaga_id, "dia": dia}
+                    ).fetchone()
+                    dias[vaga.chave()] = linha[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao registrar as vagas sem extração: {descrever(erro)}"
+            ) from erro
+        return dias
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         try:
@@ -447,6 +533,27 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao ler o uso da fonte {fonte}: {descrever(erro)}"
+            ) from erro
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linha = cursor.execute(SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS).fetchone()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler os eventos do site: {descrever(erro)}"
+            ) from erro
+        return EventosDoSite(**linha)
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_FONTE_TEM_REGISTRO_NO_DIA, {"fonte": fonte, "dia": dia}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler o registro da fonte {fonte}: {descrever(erro)}"
             ) from erro
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:

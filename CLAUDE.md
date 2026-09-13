@@ -72,6 +72,22 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
   compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
   segue normal e a primeira busca fica para o diário.
+  **Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
+  workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
+  `0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
+  atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
+  e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
+  `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
+  execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
+  passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
+  sem atendimento, reivindicados num único `update … returning`, e o diário marca como atendidos
+  todos os que atende. Disparo recusado pelo GitHub deixa a pessoa pendente para a próxima
+  execução, imediata ou diária. `rodar --perfil` de perfil já atendido não faz nada: para testar
+  com conta da equipe, zerar `entrega_imediata_atendida_em` antes. O backfill marcou as duas
+  colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
+  `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
+  execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
+  começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -160,6 +176,47 @@ o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.
 
+**Conta no site: volta à aba e botão de pausa (13/09/2026).** Voltar à aba (`focus`) só consulta
+o banco com a tela de ativação à mostra e o link do Telegram visível
+(`aguardandoVinculoDoTelegram`), e a condição é conferida de novo quando a consulta termina, com
+sucesso ou erro. Antes, depois da ativação, toda volta à aba redesenhava a conta: descartava a
+edição em andamento, sumia com a pergunta do motivo da pausa e escondia a confirmação sem
+fechá-la. Um `<dialog>` aberto com `showModal` e escondido continua modal e trava a página, e no
+celular não há Esc; por isso esconder a conta é sempre `esconderConta()`, que passa por
+`fecharConfirmacao`, nunca `hidden = true`. O botão de pausa guarda a ação que mostrou
+(`data-acao`), e o update leva `.eq("ativo", ...)` e devolve a linha (`select(COLUNAS_DO_PERFIL)`),
+que desenha a conta sem leitura extra. Zero linhas significa que a conta mudou em outro lugar
+(outro aparelho, pausa automática, exclusão): nada é invertido, o perfil é relido e a pessoa é
+avisada. Antes, "Pausar entregas" com a conta já pausada retomava as entregas e apagava o
+motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `open`, `hidden` e se
+`close()` foi chamado. O card de preços fala só da Adzuna, e
+`test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
+
+**Armazenamento bloqueado e conta que não carrega (13/09/2026).** Com o armazenamento bloqueado
+(modo privado, bloqueador), `eventSessionId` e `clearPendingProfile` lançavam exceção e o `signUp`
+nunca era chamado. Toda leitura e escrita de `localStorage`/`sessionStorage` do site fica em `try`,
+e a sessão de eventos vira um UUID em memória na página, o mesmo no cadastro e nos eventos. O
+cliente do Supabase não precisa de armazenamento: o auth-js testa o `localStorage` com `try` e, se
+falha, guarda a sessão em memória (conferido no código do 2.112.4 e do 2.114.0, iguais nesse
+ponto; o 2.116.0 não pôde ser baixado). Custo aceito: a sessão some ao recarregar, o tema não é
+lembrado e `landing_visualizada` conta toda carga. Falha ao ler sessão ou perfil deixou de virar
+"Sua conta foi criada, mas o perfil ainda não foi salvo", que quem tinha perfil via com a sessão
+velha ou sem rede: agora abre o login com "Não conseguimos carregar sua conta", e o aviso de perfil
+pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A visita comum à landing
+não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
+`#success-message`, porque o formulário fica escondido nessa tela.
+
+**Segunda auditoria da conta (13/09/2026).** Propriedades de evento cabem em 256 bytes: a `0023`
+(branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
+caminho inteiro da URL. `propriedadesDoEvento` corta cada texto em 40 pontos de código, porque o
+pior caractere escapado no JSON tem 6 bytes (40 × 6 mais `{"pagina": ""}` dá 254); o corte é por
+ponto de código para não partir emoji, que o `jsonb` recusaria. Evento novo com dois textos exige
+refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registerEvent`.
+`closeSignup` fecha a confirmação antes de sair da conta, porque voltar no histórico deixava o
+`<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
+exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
+tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
@@ -218,7 +275,41 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
   12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
   mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
-  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso.
+  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
+  (`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
+  10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
+  Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
+  zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
+  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
+  roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
+  imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
+  `uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
+  essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
+  amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
+  falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
+  o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
+  Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
+  Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
+  valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
+  falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
+  07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
+  regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
+- **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
+  da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
+  coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
+  aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
+  uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
+  inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
+  sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
+  não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
+  fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
+  sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
+  e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
+  cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
+  só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
+  nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
+  remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
+  de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
@@ -535,6 +626,11 @@ Três revisores independentes e uma medição em produção depois da expansão.
   esperam e repetem o **mesmo** lote (`AvaliadorIndisponivel`), e o resumo do Telegram e o stdout
   mostram "vagas sem extração" e "extrações não gravadas" — antes só o log sabia. Com o recálculo
   total do Igor, cota estourada hoje significa **zero envio**, e o resumo tem que denunciar.
+  O **500** tem regra própria desde 13/09/2026 (`FalhaInternaDoAvaliador`): o lote repete a
+  chamada uma vez, depois de 10 s, e se o 500 voltar é dividido como erro não temporário. Até
+  então o 500 dividia o lote na hora, como erro comum; tratá-lo igual ao 503, na primeira correção,
+  fazia um 500 persistente parar a extração inteira (0 de 30 contra 29 de 30), e o 500 costuma
+  vir da própria entrada. Três esperas de 61 s custariam 30% do prazo por lote.
 
 As habilidades sugeridas no cadastro vêm do catálogo por área (`Area.habilidades`) e são montadas
 ao entrar na etapa de habilidades; a lista de computação é a mesma de antes. Curso sem área
@@ -570,7 +666,17 @@ falhava antes da correção:
 - **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
   candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
   uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
-  e volta a ser candidata no dia seguinte.
+  e volta a ser candidata no dia seguinte. **A retenção tem limite por vaga desde 13/09/2026**:
+  uma vaga que nunca é extraída (resposta vazia, JSON inválido) segurava a mensagem todos os dias.
+  A `0022` conta em `vagas.dias_sem_extracao` os dias distintos de Brasília em que a vaga terminou
+  a execução sem extração; a mensagem só sai quando todas as candidatas não avaliadas já faltaram
+  em 3 dias, e uma vaga nova sem extração continua segurando. Extração gravada zera a contagem.
+  A primeira versão contava desde a última recomendação e soltava "nenhuma vaga compatível" já no
+  primeiro dia de falha para quem tinha recebido vagas havia 3 dias, inclusive como primeira
+  mensagem de quem criou o perfil antes de vincular. Registro que falha (banco sem a `0022`)
+  mantém a retenção; o `testar-local` (`RepositorioDoModoLocal`) não segura. Uma queda do Gemini
+  de 3 dias seguidos solta a mensagem no 3º dia; o resumo de operação mostra as vagas sem
+  extração. Coleta incompleta também segura, por outro motivo: ver "Coleta resiliente".
 - **Logout herdava áreas de interesse.** `#logout-account` limpava formulário e habilidades,
   mas não `areasEscolhidas`/`areasSalvas`, e a grade da etapa 4 é remontada a partir delas. O
   mesmo esquecimento vale ao trocar de conta dentro do formulário, onde as salvas eram reserva
@@ -894,6 +1000,20 @@ ligação das automações, porque cada uma guardava o dono no nome:
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
+- **Conta confirmada sem perfil é apagada na hora** (13/09/2026, `0024`). Quem confirmava o e-mail
+  e não salvava o perfil ficava com e-mail e senha no Auth sem saída: a exclusão marca
+  `perfis.excluida_em` e o job só apaga a partir de `perfis`. `apagar_minha_conta_sem_perfil()` é
+  `security definer`, sem argumento, filtrada por `auth.uid()` e executável só por
+  `authenticated`; recusa conta com perfil, que segue as duas etapas, e trava a linha do Auth antes
+  de conferir, para não correr com um perfil sendo criado. Apaga o que o job apagaria: os eventos
+  anônimos das sessões da conta e o usuário do Auth, que leva o resto por cascata. Sem prazo porque
+  os 60 dias existem para cancelar sem perder perfil e histórico, e sem perfil não há o que
+  preservar; reter o e-mail sem finalidade vai contra a LGPD. Um registro para o job apagar
+  exigiria tabela nova e mudança no `radar/`. O site oferece "Excluir minha conta" sob o formulário
+  de completar o perfil, com a confirmação de sempre (que saiu de dentro de `#account-state` para
+  abrir nesse estado), e encerra a sessão local depois. Publicação: `db push` antes do merge, porque
+  o site novo chama a função e o atual não a conhece. Se a `0024` subir antes da `0023`, o push da
+  `0023` pede `--include-all`.
 - **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
   `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
@@ -949,6 +1069,26 @@ ligação das automações, porque cada uma guardava o dono no nome:
   separa esse marco da ativação de produto.
 - `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
   `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
+- **Eventos do site têm limite no banco** (13/09/2026, migration `0023`). A chave pública deixava
+  inserir em `eventos_produto` sem fim, trocando de `sessao_id` a cada requisição e com 4 KB de
+  propriedades, e banco cheio no plano gratuito fica só leitura, o que para cadastro, vínculo e
+  diário. Evento `web` agora tem propriedades de até 256 bytes, no máximo 60 por sessão e 60 por
+  conta na última hora e um teto por hora de 2.400 para visitantes e 900 para contas
+  (`teto_de_eventos_do_site_por_hora`, contados em `eventos_do_site_por_hora`); acima disso o
+  insert falha com `PT429` (HTTP 429 no PostgREST) e o site só avisa no console. O teto é o que
+  limita o tamanho, porque limite só por sessão se fura trocando de sessão. Ele comporta um dia de
+  divulgação: 150 cadastros numa hora, cada um com ~10 eventos anônimos (funil com idas e voltas)
+  e 6 de conta, mais 3 curiosos por cadastro com landing e CTA; o primeiro teto, 600, perdia
+  metade dos eventos anônimos de uma turma de 150. Pior caso sob abuso contínuo: 79.200 linhas por
+  dia, de 440 a 490 bytes cada com índices, ~35 MB por dia, o que enche 500 MB em ~2 semanas. Por
+  isso o resumo de operação mostra os eventos do site das últimas 24 h e avisa quando algum teto
+  foi atingido; banco sem a tabela ou leitura que falha só gera aviso no log. Eventos do banco e do
+  Telegram não passam pelo gatilho. Custo aceito: sob abuso, os eventos anônimos legítimos daquela
+  hora se perdem e o funil conta visitantes falsos até o teto. Deduplicar marcos por sessão ficou
+  de fora, porque o funil já conta pessoas distintas. O check de 256 bytes é `not valid`: não
+  confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
+  nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
+  dos limites.
 
 
 ### Correções da revisão de expansão (08/09/2026)

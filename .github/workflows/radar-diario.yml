@@ -8,6 +8,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: radar-diario
+  cancel-in-progress: false
+
 jobs:
   enviar-vagas:
     runs-on: ubuntu-latest

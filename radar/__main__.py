@@ -23,6 +23,7 @@ from radar.avaliacao.gabarito import (
 )
 from radar.avaliacao.julgar import julgar_entregas
 from radar.collectors.adzuna import LIMITE_POR_MES, CotaDaAdzuna
+from radar.collectors.composto import ColetorComposto
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import (
     cidades_de_interesse,
@@ -30,10 +31,17 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
-from radar.cota import abrir_cota_da_adzuna, registrar_uso_da_adzuna, uso_da_adzuna
-from radar.domain.models import Perfil, Usuario
+from radar.cota import (
+    ColetorComRegistroDeUso,
+    abrir_cota_da_adzuna,
+    registrar_diario_da_adzuna,
+    reserva_do_diario,
+    uso_da_adzuna,
+)
+from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
-from radar.domain.ports import ColetorDeVagas, Repositorio
+from radar.domain.ports import Repositorio
+from radar.entrega_imediata import RepositorioDosAtendidos, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
@@ -67,6 +75,8 @@ AMOSTRA_DO_JULGAMENTO = 30
 SEMENTE_DO_JULGAMENTO = 1
 AMOSTRA_DO_GABARITO = 20
 AMOSTRA_DOS_DESCARTES = 30
+
+logger = logging.getLogger(__name__)
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -241,7 +251,7 @@ def montar_coletor(
     cliente_http: httpx.Client,
     usuarios: list[Usuario],
     cota: CotaDaAdzuna | None = None,
-) -> ColetorDeVagas:
+) -> ColetorComposto:
     cidades = cidades_de_interesse(usuarios)
     termos = termos_de_interesse(usuarios)
     busca_geral = ha_curso_desconhecido(usuarios)
@@ -274,13 +284,20 @@ def executar_fluxo(
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
-    cota = abrir_cota_da_adzuna(repositorio, agora)
     try:
+        ativos = repositorio.listar_ativos()
+        usuarios_da_coleta = usuarios_a_atender(repositorio, ativos, apenas_o_perfil)
+        if apenas_o_perfil is not None and not usuarios_da_coleta:
+            print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
+            return
+        reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
+        cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
+        coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota)
         resumo = executar(
-            montar_coletor(settings, cliente_http, repositorio.listar_ativos(), cota),
+            ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
             extrator,
             notificador,
-            repositorio,
+            RepositorioDosAtendidos(repositorio, usuarios_da_coleta),
             ParametrosDaExecucao(
                 modelo=identidade_da_extracao(settings),
                 quantidade=settings.quantidade_vagas_enviadas,
@@ -292,13 +309,13 @@ def executar_fluxo(
             ),
             agora,
             enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
-            apenas_o_perfil=apenas_o_perfil,
+            coleta_incompleta=lambda: bool(coletor.incompletas) or cota.esgotada,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
-    finally:
-        registrar_uso_da_adzuna(repositorio, cota, agora)
+    if apenas_o_perfil is None:
+        registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
@@ -327,8 +344,18 @@ def executar_fluxo(
             adzuna_no_mes=uso[1] if uso else None,
             adzuna_limite=LIMITE_POR_MES,
             adzuna_esgotada=cota.esgotada,
+            coletas_incompletas=coletor.incompletas,
+            eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
         ),
     )
+
+
+def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | None:
+    try:
+        return repositorio.eventos_do_site_nas_ultimas_24_horas()
+    except ErroDeArmazenamento as erro:
+        logger.warning("Eventos do site não puderam ser lidos para o resumo: %s", erro)
+        return None
 
 
 def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> None:

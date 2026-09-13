@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260912-tema-login-separados" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260913-excluir-sem-perfil" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260912-tema-direto" defer></script>
+    <script src="assets/app.js?v=20260913-eventos-ate-256-bytes" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -137,7 +137,7 @@
               <h2>Procurar estágio <span class="continuacao">não deveria ser um segundo emprego.</span></h2>
             </div>
             <div class="benefit-grid">
-              <article class="benefit-card"><span class="card-index">01</span><div class="card-icon" aria-hidden="true">⌁</div><h3>Um lugar, várias fontes</h3><p>O Radar reúne novas vagas de diferentes portais e remove anúncios repetidos antes de avaliar.</p></article>
+              <article class="benefit-card"><span class="card-index">01</span><div class="card-icon" aria-hidden="true">⌁</div><h3>Busca diária, sem repetição</h3><p>O Radar busca novas vagas na Adzuna, que reúne anúncios de vários sites, e remove os repetidos antes de avaliar.</p></article>
               <article class="benefit-card"><span class="card-index">02</span><div class="card-icon" aria-hidden="true">✦</div><h3>Compatibilidade explicada</h3><p>O Radar compara curso, período, habilidades, cidade e modalidade — e mostra por que a vaga faz sentido.</p></article>
               <article class="benefit-card"><span class="card-index">03</span><div class="card-icon" aria-hidden="true">↗</div><h3>Vagas mais claras</h3><p>As oportunidades compatíveis chegam direto no Telegram, com nota e contexto para você decidir e se candidatar.</p></article>
             </div>
@@ -172,7 +172,7 @@
           <ul class="filter-principles">
             <li>
               <h3>Anúncio repetido <br />não é novidade.</h3>
-              <p>Fontes diferentes podem publicar a mesma vaga. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
+              <p>A mesma vaga pode ser publicada mais de uma vez, por sites ou empresas diferentes. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
             </li>
             <li>
               <h3>Seu perfil <br />é o critério.</h3>
@@ -200,7 +200,7 @@
               <p class="plan-price">R$ 0</p>
               <p class="plan-note">Enquanto validamos o Radar com os primeiros estudantes.</p>
               <ul>
-                <li><span aria-hidden="true">✓</span> Busca diária em duas fontes de vagas</li>
+                <li><span aria-hidden="true">✓</span> Busca diária de vagas na Adzuna</li>
                 <li><span aria-hidden="true">✓</span> Até sete recomendações por dia no Telegram</li>
                 <li><span aria-hidden="true">✓</span> Nota de 0 a 100 com o motivo de cada vaga</li>
                 <li><span aria-hidden="true">✓</span> Pausar, editar ou apagar sua conta quando quiser</li>
@@ -236,7 +236,7 @@
             </details>
             <details>
               <summary>De onde vêm as vagas?</summary>
-              <p>Hoje, as vagas vêm da Adzuna (<span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>), e o Radar remove anúncios repetidos antes de avaliar. Essas fontes não cobrem todo o mercado; ele recomenda apenas o que consegue coletar e analisar.</p>
+              <p>Hoje, as vagas vêm da Adzuna (<span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>), e o Radar remove anúncios repetidos antes de avaliar. A Adzuna não cobre todo o mercado; ele recomenda apenas o que consegue coletar e analisar.</p>
             </details>
             <details>
               <summary>Quantas mensagens vou receber?</summary>
@@ -453,6 +453,10 @@
               <button class="button button-primary" type="submit" id="submit-profile" aria-busy="false"><span id="submit-label">Criar conta e continuar</span><span class="button-spinner" aria-hidden="true"></span><span class="button-arrow" aria-hidden="true">→</span></button>
             </div>
           </form>
+          <section class="missing-profile-deletion" id="missing-profile-deletion" aria-labelledby="missing-profile-deletion-title" hidden>
+            <div><h3 id="missing-profile-deletion-title">Prefere não continuar?</h3><p>Sua conta ainda não tem perfil. Se quiser, exclua a conta agora: o e-mail e o acesso são apagados na hora.</p></div>
+            <button class="button button-danger-ghost" type="button" id="delete-account-without-profile">Excluir minha conta</button>
+          </section>
           <section id="auth-assistance" hidden aria-labelledby="assistance-title">
             <h2 id="assistance-title">Confirme seu e-mail</h2>
             <p id="assistance-copy"></p>
@@ -467,7 +471,7 @@
           </section>
           <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-labelledby="success-title" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><p class="form-message" id="success-message" role="alert"></p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
             <div class="account-heading">
@@ -542,23 +546,23 @@
                     <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
                   </section>
                 </div>
-                <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
-                  <div class="account-confirm-header">
-                    <span class="account-confirm-icon" aria-hidden="true">!</span>
-                    <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
-                    <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
-                  </div>
-                  <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
-                  <p id="account-confirm-copy"></p>
-                  <div class="account-actions">
-                    <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
-                    <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
-                  </div>
-                </dialog>
                 </section>
               </div>
             </div>
           </section>
+          <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
+            <div class="account-confirm-header">
+              <span class="account-confirm-icon" aria-hidden="true">!</span>
+              <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
+              <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
+            </div>
+            <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
+            <p id="account-confirm-copy"></p>
+            <div class="account-actions">
+              <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+              <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
+            </div>
+          </dialog>
         </div>
       </div>
     </dialog>

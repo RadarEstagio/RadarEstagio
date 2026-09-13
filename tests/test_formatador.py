@@ -1,7 +1,9 @@
 import re
 from datetime import UTC, datetime
 
-from radar.domain.models import Modalidade, Recomendacao, ResultadoMatch, Vaga
+import pytest
+
+from radar.domain.models import EventosDoSite, Modalidade, Recomendacao, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     SEPARADOR_ENTRE_VAGAS,
@@ -588,5 +590,55 @@ def test_resumo_avisa_quando_a_cota_da_adzuna_esgotou():
     assert "⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim" in texto
 
 
+def test_resumo_avisa_coleta_incompleta_de_cada_fonte():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        coletas_incompletas={"adzuna": "Adzuna respondeu HTTP 429 <ao> buscar vagas"},
+    )
+
+    assert (
+        "⚠️ Coleta da Adzuna incompleta: Adzuna respondeu HTTP 429 &lt;ao&gt; buscar vagas"
+    ) in texto
+
+
 def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():
     assert "Adzuna" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
+
+
+def test_resumo_mostra_os_eventos_do_site_das_ultimas_24_horas():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        eventos_do_site=EventosDoSite(visitantes=1234, contas=56, horas_no_teto=0),
+    )
+
+    assert "Eventos do site nas últimas 24 h: 1.234 de visitantes, 56 de contas" in texto
+    assert "⚠️" not in texto
+
+
+@pytest.mark.parametrize(("horas", "texto_das_horas"), [(1, "1 hora"), (3, "3 horas")])
+def test_resumo_avisa_quando_os_eventos_do_site_chegaram_ao_teto(horas: int, texto_das_horas: str):
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        eventos_do_site=EventosDoSite(visitantes=2400, contas=10, horas_no_teto=horas),
+    )
+
+    assert f"⚠️ Eventos do site chegaram ao teto em {texto_das_horas} das últimas 24 h" in texto
+
+
+def test_resumo_sem_eventos_do_site_conhecidos_nao_mostra_a_linha():
+    assert "Eventos do site" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
