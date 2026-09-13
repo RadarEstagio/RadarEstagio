@@ -8,6 +8,7 @@ import pytest
 from radar.domain.models import Vaga
 from radar.matching.agy import ExtratorAgy
 from radar.matching.errors import ErroDeAvaliacao
+from radar.matching.lotes import ExtratorEmLotes
 from radar.settings import Settings
 
 
@@ -122,6 +123,26 @@ def test_saida_invalida_do_agy_vira_erro_de_avaliacao():
 
     with pytest.raises(ErroDeAvaliacao, match="saída inválida"):
         extrator.extrair([vaga_exemplo()])
+
+
+@pytest.mark.parametrize("saida", ["null", "[]", '"texto"', "42"])
+def test_saida_do_agy_que_nao_e_objeto_vira_erro_de_avaliacao(saida: str):
+    extrator = ExtratorAgy(
+        settings_de_teste(),
+        executor=ExecutorFalso(ProcessoFalso(0, saida)),
+    )
+
+    with pytest.raises(ErroDeAvaliacao, match="saída inválida"):
+        extrator.extrair([vaga_exemplo()])
+
+
+def test_saida_do_agy_que_nao_e_objeto_nao_derruba_a_extracao_em_lotes():
+    extrator = ExtratorAgy(
+        settings_de_teste(),
+        executor=ExecutorFalso(ProcessoFalso(0, "null")),
+    )
+
+    assert ExtratorEmLotes(extrator, 10).extrair([vaga_exemplo()]) == []
 
 
 def test_saida_estruturada_fora_do_contrato_vira_erro_de_avaliacao():

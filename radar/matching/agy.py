@@ -93,6 +93,8 @@ def pedir_saida_estruturada[T: BaseModel](
         envelope = json.loads(processo.stdout)
     except json.JSONDecodeError as erro:
         raise ErroDeAvaliacao(f"AGY devolveu saída inválida: {erro}") from None
+    if not isinstance(envelope, dict):
+        raise ErroDeAvaliacao(f"AGY devolveu saída inválida: {type(envelope).__name__}")
     if envelope.get("status") != "SUCCESS":
         detalhe = envelope.get("error") or f"status {envelope.get('status', 'desconhecido')}"
         raise ErroDeAvaliacao(f"AGY falhou: {detalhe}")
