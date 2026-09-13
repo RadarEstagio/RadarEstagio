@@ -1118,3 +1118,72 @@ def test_nenhuma_parte_entregue_nao_grava_envio_algum():
 
     assert resumo.enviadas_por_usuario == {}
     assert repositorio.tokens_gravados == []
+
+
+def coleta_incompleta() -> bool:
+    return True
+
+
+def test_coleta_incompleta_segura_a_mensagem_de_quem_ficou_sem_vagas():
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=30)])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 10}),
+        notificador,
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 10}),
+        coleta_incompleta=coleta_incompleta,
+    )
+
+    assert resumo.vagas_sem_extracao == 0
+    assert notificador.textos == []
+    assert repositorio.avisos_de_silencio == []
+
+
+def test_coleta_incompleta_ainda_entrega_a_quem_tem_recomendacao():
+    notificador = NotificadorFalso()
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        coleta_incompleta=coleta_incompleta,
+    )
+
+    assert resumo.vagas_enviadas() == 1
+    assert len(notificador.textos) == 1
+
+
+class ColetorQueParaNoMeio(ColetorFalso):
+    def __init__(self, vagas: list[Vaga]) -> None:
+        super().__init__(vagas)
+        self.parou_no_meio = False
+
+    def coletar(self) -> list[Vaga]:
+        self.parou_no_meio = True
+        return super().coletar()
+
+
+def test_coleta_incompleta_e_consultada_depois_da_coleta():
+    coletor = ColetorQueParaNoMeio([])
+    notificador = NotificadorFalso()
+
+    executar(
+        coletor,
+        ExtratorFalso({}),
+        notificador,
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        coleta_incompleta=lambda: coletor.parou_no_meio,
+    )
+
+    assert notificador.textos == []
