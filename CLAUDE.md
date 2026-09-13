@@ -441,6 +441,19 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
   exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
   Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
+- **SQL e banco relacional se atendem na nota** (13/09/2026). "SQL" não era nome de família:
+  quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a nota de
+  quem tem MongoDB), e "SQL" no perfil não atendia "MySQL". Agora "SQL" é atendido por MySQL,
+  PostgreSQL, SQL Server, Oracle, SQLite, MariaDB, PL/SQL e T-SQL, e cada um desses bancos é
+  atendido por "SQL": para estágio, quem sabe SQL trabalha com qualquer um. Não é peso novo, é
+  equivalência, como as famílias de 09/09. Um banco relacional não atende outro: a vaga que
+  lista três bancos seria coberta inteira por um só, e "a conferir: MySQL" para quem tem
+  PostgreSQL é verdade. PL/SQL e T-SQL atendem "SQL", mas não são atendidos por ele, porque vão
+  além da linguagem. NoSQL fica de fora, o nível vale contra o membro presente e "banco de dados"
+  não muda. É regra só da nota: o prompt continua separando SQL de MySQL para guardar o nome do
+  anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Custo aceito, o mesmo de "planilhas": fora
+  de computação, habilidade de várias palavras com o nome do banco ("Consultas SQL", "ERP
+  Oracle") deixa de atender por palavras, porque a família decide sozinha o requisito que nomeia.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
