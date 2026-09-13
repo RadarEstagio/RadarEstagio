@@ -72,6 +72,22 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
   compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
   segue normal e a primeira busca fica para o diário.
+  **Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
+  workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
+  `0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
+  atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
+  e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
+  `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
+  execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
+  passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
+  sem atendimento, reivindicados num único `update … returning`, e o diário marca como atendidos
+  todos os que atende. Disparo recusado pelo GitHub deixa a pessoa pendente para a próxima
+  execução, imediata ou diária. `rodar --perfil` de perfil já atendido não faz nada: para testar
+  com conta da equipe, zerar `entrega_imediata_atendida_em` antes. O backfill marcou as duas
+  colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
+  `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
+  execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
+  começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
