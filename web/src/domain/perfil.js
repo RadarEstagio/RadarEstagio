@@ -1,6 +1,7 @@
 export const VERSAO_DOS_TERMOS = "2026-09-05";
 export const MAXIMO_DE_HABILIDADES = 50;
 export const TAMANHO_MAXIMO_DA_HABILIDADE = 100;
+export const TAMANHO_MINIMO_DO_CURSO = 2;
 export const DIAS_ATE_APAGAR = 60;
 export const MODALIDADES_ACEITAS = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 export const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";

@@ -56,7 +56,7 @@ def test_formulario_tem_as_quatro_etapas_e_as_sugestoes_do_cadastro():
 def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
     fonte = fonte_do_frontend()
 
-    assert 'name="habilidades" type="hidden" value={estado.habilidades.join(",")}' in fonte
+    assert "habilidades: estado.habilidades.map((item) => item.trim()).filter(Boolean)" in fonte
     assert "Escolha ou digite pelo menos uma habilidade." in fonte
     assert "PASSO_HABILIDADES = 3" in fonte
 

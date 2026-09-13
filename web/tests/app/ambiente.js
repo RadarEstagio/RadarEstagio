@@ -111,6 +111,10 @@ export function visivel(alvo) {
   return Boolean(inicio);
 }
 
+export function habilidadesNaTela() {
+  return $$("#selected-skills button").map((chip) => chip.getAttribute("aria-label").replace(/^Remover /, ""));
+}
+
 export function dialogoAberto() {
   return $("#signup-dialog").hasAttribute("open");
 }

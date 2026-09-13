@@ -149,6 +149,8 @@ export function Cadastro({ estado, controlador }) {
               list="cursos-sugeridos"
               autoComplete="off"
               required
+              minLength={2}
+              maxLength={200}
               placeholder="Digite ou escolha seu curso"
               value={campos.curso}
               onChange={alterarTexto("curso")}
@@ -182,7 +184,6 @@ export function Cadastro({ estado, controlador }) {
           Você pode começar pelo curso e pelas preferências. Depois, informe suas habilidades para melhorar as
           recomendações.
         </p>
-        <input name="habilidades" type="hidden" value={estado.habilidades.join(",")} />
         <div className="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
           {estado.sugeridas.map((habilidade) => {
             const escolhida = estado.habilidades.includes(habilidade);
@@ -216,7 +217,7 @@ export function Cadastro({ estado, controlador }) {
               onKeyDown={controlador.teclarNaHabilidade}
               {...atributosDeErro(erro, "custom-skill")}
             />
-            <small>Ex.: C#, Figma, AWS ou suporte técnico.</small>
+            <small>Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small>
             <ErroDoCampo erro={erro} campo="custom-skill" />
           </label>
         </div>

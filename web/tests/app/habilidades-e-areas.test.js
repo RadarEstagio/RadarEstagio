@@ -13,6 +13,7 @@ import {
   eventos,
   executar,
   executarAteTerminar,
+  habilidadesNaTela,
   passoAtivo,
   perfil,
   preencher,
@@ -54,18 +55,18 @@ test("Enter adiciona habilidade sem avançar e Continuar ainda avança", async (
 test("habilidade digitada respeita o tamanho e a quantidade que o banco aceita", async () => {
   abrirAplicacao();
   await abrirCadastro();
-  const formulario = preencher(false);
+  preencher(false);
   clicar("#next-step");
   const adicionar = (valor) => {
     digitar("#custom-skill", valor);
     teclar("#custom-skill", "Enter");
   };
   adicionar("x".repeat(150));
-  expect(formulario.elements.habilidades.value).toHaveLength(100);
+  expect(habilidadesNaTela()).toEqual(["x".repeat(100)]);
   for (let indice = 1; indice < 50; indice += 1) adicionar(`habilidade-${indice}`);
-  expect(formulario.elements.habilidades.value.split(",")).toHaveLength(50);
+  expect(habilidadesNaTela()).toHaveLength(50);
   adicionar("passou-do-limite");
-  expect(formulario.elements.habilidades.value.split(",")).toHaveLength(50);
+  expect(habilidadesNaTela()).toHaveLength(50);
   expect($("#erro-do-campo").textContent).toContain("50 habilidades");
   expect($("#custom-skill").getAttribute("aria-invalid")).toBe("true");
   await esperar();
@@ -83,7 +84,7 @@ test("atalho permite cadastrar com habilidades vazias e preserva a escolha ao vo
   expect(passoAtivo()).toBe("3");
   clicar("#continue-without-skills");
   expect(passoAtivo()).toBe("4");
-  expect(formulario.elements.habilidades.value).toBe("");
+  expect(habilidadesNaTela()).toEqual([]);
   clicar("#previous-step");
   expect(passoAtivo()).toBe("3");
   clicar("#next-step");
@@ -260,7 +261,7 @@ test.each([
 test("falha do catálogo limpa sugestões sem apagar habilidade escolhida", async () => {
   const { controlador } = abrirAplicacao();
   await abrirCadastro();
-  const formulario = preencher(false);
+  preencher(false);
   window.fetch = async () => {
     throw new Error("offline");
   };
@@ -270,7 +271,7 @@ test("falha do catálogo limpa sugestões sem apagar habilidade escolhida", asyn
   teclar("#custom-skill", "Enter");
   await executarAteTerminar(() => controlador.montarHabilidadesDoCurso());
   expect($$("#skill-picker [data-skill]")).toEqual([]);
-  expect(formulario.elements.habilidades.value).toBe("Python");
+  expect(habilidadesNaTela()).toEqual(["Python"]);
   expect($("#skills-catalog-notice").hidden).toBe(false);
   expect($("#continue-without-skills").hidden).toBe(true);
 });

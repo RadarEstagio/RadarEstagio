@@ -10,6 +10,7 @@ import {
   esperar,
   eventos,
   executar,
+  habilidadesNaTela,
   marcar,
   alterarCampo,
   passoAtivo,
@@ -100,7 +101,7 @@ test("alternar para login e voltar preserva o rascunho do perfil", async () => {
   expect(passoAtivo()).toBe("1");
   clicar("#toggle-auth-mode");
   expect(formulario.elements.curso.value).toBe("Computação");
-  expect(formulario.elements.habilidades.value).toBe("Python");
+  expect(habilidadesNaTela()).toEqual(["Python"]);
   expect(formulario.elements.cidade.value).toBe("Recife, PE");
   expect($("#progress-label").textContent).toBe("Etapa 4 de 4");
   await esperar();
@@ -282,7 +283,7 @@ test("erro ao salvar perfil iniciante mantém dados e a opção de habilidades v
   await esperar();
   expect(passoAtivo()).toBe("4");
   expect(formulario.elements.cidade.value).toBe("Recife, PE");
-  expect(formulario.elements.habilidades.value).toBe("");
+  expect(habilidadesNaTela()).toEqual([]);
   expect($("#form-message").textContent).toContain("Entre novamente para concluir o perfil");
   clicar("#previous-step");
   clicar("#next-step");

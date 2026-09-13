@@ -15,6 +15,7 @@ import {
   MENSAGEM_SEM_SESSAO,
   MODALIDADES_ACEITAS,
   TAMANHO_MAXIMO_DA_HABILIDADE,
+  TAMANHO_MINIMO_DO_CURSO,
   VERSAO_DOS_TERMOS,
   emailValido,
   erroDeValidacao,
@@ -233,7 +234,7 @@ export function criarControlador({ janela, criarCliente }) {
       return (credenciaisOcultas || campos.senha !== "") && (campos.senha === "" || campos.senha.length >= 8);
     }
     if (nome === "aceitou_termos") return !consentimentoExigido() || campos.aceitou_termos;
-    if (nome === "curso") return campos.curso !== "";
+    if (nome === "curso") return campos.curso.trim().length >= TAMANHO_MINIMO_DO_CURSO;
     if (nome === "periodo") return campos.periodo !== "";
     if (nome === "cidade") return campos.cidade.length >= 2;
     if (nome === "modalidade") return campos.modalidade !== "";
@@ -353,16 +354,20 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   function adicionarHabilidadeDigitada() {
-    const habilidade = estado.campos.habilidade_digitada.trim().slice(0, TAMANHO_MAXIMO_DA_HABILIDADE);
-    if (!habilidade) return;
+    const habilidade = Array.from(estado.campos.habilidade_digitada.trim())
+      .slice(0, TAMANHO_MAXIMO_DA_HABILIDADE)
+      .join("")
+      .trim();
+    if (!habilidade) return true;
     const jaEscolhida = estado.habilidades.includes(habilidade);
     if (estado.habilidades.length >= MAXIMO_DE_HABILIDADES && !jaEscolhida) {
       marcarErroNoCampo("custom-skill", `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
-      return;
+      return false;
     }
     definirHabilidades(jaEscolhida ? estado.habilidades : [...estado.habilidades, habilidade]);
     mudar((atual) => ({ semHabilidades: false, campos: { ...atual.campos, habilidade_digitada: "" } }));
     mostrarMensagem();
+    return true;
   }
 
   function removerHabilidade(habilidade) {
@@ -373,7 +378,10 @@ export function criarControlador({ janela, criarCliente }) {
 
   function alternarHabilidadeSugerida(habilidade) {
     if (estado.habilidades.includes(habilidade)) removerHabilidade(habilidade);
-    else {
+    else if (estado.habilidades.length >= MAXIMO_DE_HABILIDADES) {
+      marcarErroNoCampo("custom-skill", `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+      return;
+    } else {
       definirHabilidades([...estado.habilidades, habilidade]);
       mudar(() => ({ semHabilidades: false }));
     }
@@ -445,6 +453,14 @@ export function criarControlador({ janela, criarCliente }) {
     mudar(() => ({ areasEscolhidas: [] }));
   }
 
+  function mensagemDoCampo(campo) {
+    if (campo === "cidade") return mensagemDaCidade();
+    if (campo === "curso" && estado.campos.curso.trim()) {
+      return `Use pelo menos ${TAMANHO_MINIMO_DO_CURSO} caracteres no nome do curso.`;
+    }
+    return mensagensDeValidacao[campo];
+  }
+
   function validarPasso(passo) {
     limparErroDoCampo();
     if (passo === PASSO_HABILIDADES && estado.habilidades.length === 0 && !estado.semHabilidades) {
@@ -457,12 +473,13 @@ export function criarControlador({ janela, criarCliente }) {
     if (cidade) mudarCampos({ cidade });
     const invalido = CAMPOS_DO_PASSO[passo].find((campo) => {
       if (campo === "cidade") return !cidade;
+      if (campo === "curso") return estado.campos.curso.trim().length < TAMANHO_MINIMO_DO_CURSO;
       if (campo === "modalidade") return !MODALIDADES_ACEITAS.has(estado.campos.modalidade);
       return !campoValido(campo);
     });
     if (invalido) {
       mostrarPasso(passo);
-      const mensagem = invalido === "cidade" ? mensagemDaCidade() : mensagensDeValidacao[invalido];
+      const mensagem = mensagemDoCampo(invalido);
       marcarErroNoCampo(invalido, mensagem ?? "Revise os campos antes de continuar.");
       return false;
     }
@@ -480,7 +497,7 @@ export function criarControlador({ janela, criarCliente }) {
 
   function avancarPasso() {
     const passo = estado.passo;
-    if (passo === PASSO_HABILIDADES) adicionarHabilidadeDigitada();
+    if (passo === PASSO_HABILIDADES && !adicionarHabilidadeDigitada()) return;
     if (!validarPasso(passo)) return;
     if (passo === PASSO_MOMENTO) {
       void montarHabilidadesDoCurso();
@@ -724,7 +741,7 @@ export function criarControlador({ janela, criarCliente }) {
     const perfil = {
       curso: campos.curso.trim(),
       periodo: Number(campos.periodo),
-      habilidades: estado.habilidades.join(",").split(",").map((item) => item.trim()).filter(Boolean),
+      habilidades: estado.habilidades.map((item) => item.trim()).filter(Boolean),
       cidade: cidadeDoFormulario() ?? "",
       modalidade: campos.modalidade,
       areas_de_interesse: areasDeInteresseDoFormulario(),
