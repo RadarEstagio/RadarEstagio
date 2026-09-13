@@ -11,6 +11,15 @@ create table public.eventos_do_site_por_hora (
 alter table public.eventos_do_site_por_hora enable row level security;
 revoke all on public.eventos_do_site_por_hora from public, anon, authenticated;
 
+create function public.teto_de_eventos_do_site_por_hora(anonimo boolean)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when anonimo then 2400 else 900 end
+$$;
+
 create function public.limitar_eventos_do_site()
 returns trigger
 language plpgsql
@@ -43,7 +52,7 @@ begin
   values (hora_atual, new.user_id is null, 1)
   on conflict (hora, anonimo) do update set total = contagem.total + 1
   returning contagem.total into total_na_hora;
-  if total_na_hora > 600 then
+  if total_na_hora > public.teto_de_eventos_do_site_por_hora(new.user_id is null) then
     raise exception 'limite de eventos do site nesta hora atingido' using errcode = 'PT429';
   end if;
   return new;
@@ -54,4 +63,6 @@ create trigger limitar_eventos_do_site
 before insert on public.eventos_produto
 for each row execute function public.limitar_eventos_do_site();
 
+revoke all on function public.teto_de_eventos_do_site_por_hora(boolean)
+  from public, anon, authenticated;
 revoke all on function public.limitar_eventos_do_site() from public, anon, authenticated;

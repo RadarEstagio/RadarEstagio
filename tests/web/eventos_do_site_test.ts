@@ -1,9 +1,12 @@
 import assert from "assert";
 import { PGlite } from "pglite";
 
-const TETO_POR_HORA = 600;
+const TETO_DOS_VISITANTES = 2400;
+const TETO_DAS_CONTAS = 900;
 const LIMITE_POR_SESSAO = 60;
 const LIMITE_POR_CONTA = 60;
+const CADASTROS_NA_DIVULGACAO = 150;
+const CURIOSOS_POR_CADASTRO = 3;
 const LIMITE_EXCEDIDO = "PT429";
 const CHECK_VIOLADO = "23514";
 
@@ -80,6 +83,14 @@ async function eventosDoSite(db: PGlite): Promise<number> {
   )).rows[0].n;
 }
 
+async function eventosDoSitePorQuem(db: PGlite): Promise<{ visitantes: number; contas: number }> {
+  return (await db.query<{ visitantes: number; contas: number }>(
+    `select count(*) filter (where user_id is null)::int visitantes,
+            count(*) filter (where user_id is not null)::int contas
+     from eventos_produto where origem = 'web'`,
+  )).rows[0];
+}
+
 async function criarConta(db: PGlite, userId: string): Promise<void> {
   await db.query(
     "insert into auth.users(id, email, email_confirmed_at) values ($1, $2, now())",
@@ -94,7 +105,7 @@ function contaNumero(numero: number): string {
 async function esgotarOTetoDosVisitantes(db: PGlite): Promise<void> {
   const recusas = await comoVisitante(db, async () => {
     let recusadas = 0;
-    for (let i = 0; i < TETO_POR_HORA; i++) {
+    for (let i = 0; i < TETO_DOS_VISITANTES; i++) {
       if (await registrar(db, "landing_visualizada", crypto.randomUUID())) recusadas++;
     }
     return recusadas;
@@ -167,7 +178,7 @@ Deno.test("visitante que troca de sessão a cada evento para no teto da hora", a
     const antes = await eventosDoSite(db);
     const codigos = await comoVisitante(db, async () => {
       const resultado: (string | null)[] = [];
-      for (let i = 0; i < TETO_POR_HORA + 100; i++) {
+      for (let i = 0; i < TETO_DOS_VISITANTES + 100; i++) {
         resultado.push(
           await registrar(db, "landing_visualizada", crypto.randomUUID(), null, { pagina: "/" }),
         );
@@ -176,12 +187,12 @@ Deno.test("visitante que troca de sessão a cada evento para no teto da hora", a
     });
     const depois = await eventosDoSite(db);
     console.log(
-      `visitante tentou ${TETO_POR_HORA + 100} eventos com sessões novas: antes ${antes}, depois ${depois}`,
+      `visitante tentou ${TETO_DOS_VISITANTES + 100} eventos com sessões novas: antes ${antes}, depois ${depois}`,
     );
     assert.equal(antes, 0);
-    assert.equal(depois, TETO_POR_HORA);
+    assert.equal(depois, TETO_DOS_VISITANTES);
     assert.deepEqual(
-      codigos.slice(TETO_POR_HORA),
+      codigos.slice(TETO_DOS_VISITANTES),
       Array(100).fill(LIMITE_EXCEDIDO),
     );
   } finally {
@@ -198,7 +209,7 @@ Deno.test("inserção em lote conta cada linha no teto da hora", async () => {
           `insert into eventos_produto(nome, sessao_id, propriedades)
            select 'landing_visualizada', gen_random_uuid(), '{}'
            from generate_series(1, $1::int)`,
-          [TETO_POR_HORA + 1],
+          [TETO_DOS_VISITANTES + 1],
         ));
     await assert.rejects(lote, { code: LIMITE_EXCEDIDO });
     assert.equal(await eventosDoSite(db), 0);
@@ -284,7 +295,7 @@ Deno.test("conta autenticada que troca de sessão para no limite da conta", asyn
 Deno.test("contas autenticadas têm teto da hora próprio, separado dos visitantes", async () => {
   const db = await bancoComAsMigracoes();
   try {
-    const contas = TETO_POR_HORA / LIMITE_POR_CONTA;
+    const contas = TETO_DAS_CONTAS / LIMITE_POR_CONTA;
     for (let numero = 1; numero <= contas + 1; numero++) {
       await criarConta(db, contaNumero(numero));
     }
@@ -363,6 +374,67 @@ Deno.test("pessoa da landing ao vínculo tem o funil inteiro gravado", async () 
   }
 });
 
+Deno.test("dia de divulgação com 150 cadastros e 450 curiosos na mesma hora grava tudo", async () => {
+  const db = await bancoComAsMigracoes();
+  try {
+    const funilComIdasEVoltas: [string, Record<string, unknown>][] = [
+      ["landing_visualizada", { pagina: "/" }],
+      ["cta_cadastro_aberto", { origem: "hero" }],
+      ["etapa_perfil_concluida", {}],
+      ["etapa_habilidades_concluida", { quantidade: 5 }],
+      ["etapa_preferencias_concluida", {}],
+      ["cta_cadastro_aberto", { origem: "cta_final" }],
+      ["etapa_perfil_concluida", {}],
+      ["etapa_habilidades_concluida", { quantidade: 6 }],
+      ["etapa_preferencias_concluida", {}],
+      ["etapa_preferencias_concluida", {}],
+    ];
+    const depoisDaConta = [
+      "landing_visualizada",
+      "perfil_salvo",
+      "telegram_aberto",
+      "telegram_aberto",
+      "telegram_aberto",
+      "perfil_salvo",
+    ];
+    const recusas: Record<string, number> = {};
+    const anotar = (codigo: string | null) => {
+      if (codigo) recusas[codigo] = (recusas[codigo] ?? 0) + 1;
+    };
+    for (let pessoa = 1; pessoa <= CADASTROS_NA_DIVULGACAO; pessoa++) {
+      const sessao = crypto.randomUUID();
+      const dono = contaNumero(pessoa);
+      await comoVisitante(db, async () => {
+        for (const [nome, propriedades] of funilComIdasEVoltas) {
+          anotar(await registrar(db, nome, sessao, null, propriedades));
+        }
+        for (let curioso = 0; curioso < CURIOSOS_POR_CADASTRO; curioso++) {
+          const sessaoDoCurioso = crypto.randomUUID();
+          anotar(await registrar(db, "landing_visualizada", sessaoDoCurioso, null, { pagina: "/" }));
+          anotar(
+            await registrar(db, "cta_cadastro_aberto", sessaoDoCurioso, null, { origem: "hero" }),
+          );
+        }
+      });
+      await criarConta(db, dono);
+      await comoConta(db, dono, async () => {
+        for (const nome of depoisDaConta) anotar(await registrar(db, nome, sessao, dono));
+      });
+    }
+    const gravados = await eventosDoSitePorQuem(db);
+    console.log(
+      `divulgação com ${CADASTROS_NA_DIVULGACAO} cadastros: ${JSON.stringify(gravados)}, recusas ${
+        JSON.stringify(recusas)
+      }`,
+    );
+
+    assert.deepEqual(recusas, {});
+    assert.deepEqual(gravados, { visitantes: TETO_DOS_VISITANTES, contas: TETO_DAS_CONTAS });
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("teto dos visitantes esgotado não barra cadastro, conta, vínculo nem Telegram", async () => {
   const db = await bancoComAsMigracoes();
   const dono = contaNumero(1);
@@ -399,7 +471,7 @@ Deno.test("limites valem por uma hora e a contagem antiga é apagada", async () 
     const sessao = crypto.randomUUID();
     const aceitas = await comoVisitante(db, async () => {
       let total = 0;
-      for (let i = 0; i < TETO_POR_HORA; i++) {
+      for (let i = 0; i < TETO_DOS_VISITANTES; i++) {
         const daMesmaSessao = i < LIMITE_POR_SESSAO;
         const codigo = await registrar(
           db,
@@ -410,7 +482,7 @@ Deno.test("limites valem por uma hora e a contagem antiga é apagada", async () 
       }
       return total;
     });
-    assert.equal(aceitas, TETO_POR_HORA);
+    assert.equal(aceitas, TETO_DOS_VISITANTES);
     assert.equal(
       await comoVisitante(db, () => registrar(db, "etapa_perfil_concluida", sessao)),
       LIMITE_EXCEDIDO,
