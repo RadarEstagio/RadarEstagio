@@ -49,7 +49,9 @@ depois de conciliar mudanças recentes; um teste antigo não é licença para re
 
 Stack: React/JSX com JavaScript, Vite/npm, CSS existente, Supabase e Vitest/Testing Library.
 Manter inicialmente o SDK Supabase `2.116.0`; fixar versões compatíveis e Node no ambiente
-local, CI e build. Usar estado local/`useReducer` e Context restrito à sessão, sem store geral.
+local, CI e build. O estado do painel fica num controlador único lido com `useSyncExternalStore`,
+sem store geral da aplicação: o envio duplicado no mesmo tick e a resposta antiga do catálogo
+dependem de ler o estado na hora, o que `useReducer` não dá (decidido na implementação, 13/09).
 
 Estrutura-alvo resumida:
 
@@ -115,8 +117,10 @@ fazer merge automático nem antecipar uma troca de publicação ainda não autor
 |---|---|---|
 | P1 — Build compatível | Script legado/Vite, testes isolados do artefato e roteiro Pages; sem mudar frontend ativo | HTML legado idêntico na saída, script falha corretamente e PR pronta para revisão |
 | P2 — Ferramentas do frontend | Vite, lint com checagem de comentários, Vitest, conferência do artefato e job de CI; o navegador executa os mesmos arquivos | Build pelo `build-web.sh` com os caminhos públicos atuais e referências locais conferidas |
-| P3 — Cadastro e Auth | React e SDK do Supabase por npm, serviços e sessão únicos, landing modular; componentes compartilhados, login, confirmação, recuperação, CAPTCHA e wizard | Jornadas e edição compartilhada equivalentes, sem duplo controller |
-| P4 — Conta e fechamento | Controles da conta, limpeza do legado migrado, cobertura e documentação final | Todos os cenários mapeados e uma implementação ativa por fluxo |
+| P3 + P4 — Cadastro, Auth e conta | React e SDK do Supabase por npm, serviços e sessão únicos, landing modular; login, confirmação, recuperação, CAPTCHA, wizard, controles da conta, remoção do `app.js`, cobertura e documentação | Jornadas e edição compartilhada equivalentes, uma implementação ativa e todos os cenários mapeados |
+
+P3 e P4 viraram uma entrega só: o legado movia o mesmo `.dialog-shell` entre o modal e a conta,
+e a edição usa o wizard, como previsto abaixo.
 
 P3/P4 não devem ser separados artificialmente se a edição compartilhada depender do wizard:
 migrar o componente compartilhado com seu consumidor ou usar uma ponte explícita testada.

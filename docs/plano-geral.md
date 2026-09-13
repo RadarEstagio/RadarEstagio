@@ -171,7 +171,15 @@ P2 na [PR #66](https://github.com/RadarEstagio/RadarEstagio/pull/66), em rascunh
 sobre a #64: Vite com artefato equivalente ao site atual (mesmos caminhos de `config.js`,
 `app.js`, catálogos e logo), checagem de comentários por parser, conferência do artefato, 19
 testes Vitest e job de CI. Não entra na `main` antes de o Pages usar `build-web.sh` com saída
-`web/dist`. P3–P4, com React e os fluxos migrados, ainda pendem.
+`web/dist`.
+
+P3 e P4 na [PR #67](https://github.com/RadarEstagio/RadarEstagio/pull/67), em rascunho e
+empilhada sobre a #66: cadastro, autenticação e conta em React, `app.js` removido, landing no
+HTML. Entraram juntas porque o legado movia o mesmo painel entre o modal e a conta. Os 75
+cenários do teste Deno foram portados para Vitest (168 testes no total); pytest, Deno, lint,
+artefato e um teste no Chrome headless passaram. Falta a jornada real com Supabase, Safari e
+Firefox, comparação visual e medição de carregamento (bundle de 148 KB com gzip). Mesma trava da
+#66: não entra antes de o Pages usar `build-web.sh`.
 
 ## 3. Limitações e decisões que continuam valendo
 
