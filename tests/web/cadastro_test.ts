@@ -1944,6 +1944,26 @@ Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco ace
   }
 });
 
+Deno.test("campos do cadastro limitam a digitação aos tetos que o banco aceita", async () => {
+  const migracao = await Deno.readTextFile(
+    new URL("../../supabase/migrations/0025_tamanho_dos_textos_do_perfil.sql", import.meta.url),
+  );
+  const teto = (padrao: RegExp) => Number(migracao.match(padrao)?.[1]);
+  const a = app();
+  try {
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    assert.equal(form.elements.curso.maxLength, teto(/char_length\(curso\) <= (\d+)/));
+    assert.equal(form.elements.cidade.maxLength, teto(/char_length\(cidade\) <= (\d+)/));
+    assert.equal(
+      a.w.document.querySelector("#custom-skill").maxLength,
+      teto(/todos_os_textos_cabem\(habilidades, (\d+)\)/),
+    );
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("atalho permite cadastrar com habilidades vazias e preserva a escolha ao voltar", async () => {
   const a = app();
   try {
