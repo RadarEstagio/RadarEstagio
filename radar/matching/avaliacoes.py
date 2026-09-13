@@ -238,8 +238,6 @@ FAMILIAS_DE_HABILIDADES = {
     "SGBD": BANCOS_DE_DADOS,
     "banco de dados relacional": BANCOS_DE_DADOS,
     "bancos de dados relacionais": BANCOS_DE_DADOS,
-    "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
-    **dict.fromkeys(BANCOS_RELACIONAIS, ("SQL",)),
     "back-end": BACK_END,
     "desenvolvimento back-end": BACK_END,
     "front-end": FRONT_END,
@@ -267,6 +265,10 @@ FAMILIAS_DE_HABILIDADES = {
     "inteligência artificial": INTELIGENCIA_ARTIFICIAL,
     "IA": INTELIGENCIA_ARTIFICIAL,
     "IA generativa": INTELIGENCIA_ARTIFICIAL,
+}
+EQUIVALENCIAS_DE_HABILIDADES = {
+    "SQL": BANCOS_RELACIONAIS + DIALETOS_DE_SQL,
+    **dict.fromkeys(BANCOS_RELACIONAIS, ("SQL",)),
 }
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
@@ -692,10 +694,11 @@ def _nivel_no_perfil(
     nome: str, palavras: frozenset[str], habilidades_do_perfil: Mapping[str, HabilidadeComparavel]
 ) -> int | None:
     familia = _membros_das_familias().get(nome)
+    equivalentes = _membros_equivalentes().get(nome, frozenset())
     niveis = [habilidades_do_perfil[nome].nivel] if nome in habilidades_do_perfil else []
     niveis += [
         habilidades_do_perfil[membro].nivel
-        for membro in familia or ()
+        for membro in (familia or frozenset()) | equivalentes
         if membro in habilidades_do_perfil
     ]
     if familia is None:
@@ -740,9 +743,18 @@ def _formas_da_palavra(palavra: str) -> frozenset[str]:
 
 @functools.cache
 def _membros_das_familias() -> dict[str, frozenset[str]]:
+    return _membros_normalizados(FAMILIAS_DE_HABILIDADES)
+
+
+@functools.cache
+def _membros_equivalentes() -> dict[str, frozenset[str]]:
+    return _membros_normalizados(EQUIVALENCIAS_DE_HABILIDADES)
+
+
+def _membros_normalizados(grupos: Mapping[str, tuple[str, ...]]) -> dict[str, frozenset[str]]:
     return {
         _normalizar_habilidade(nome): frozenset(_normalizar_habilidade(m) for m in membros)
-        for nome, membros in FAMILIAS_DE_HABILIDADES.items()
+        for nome, membros in grupos.items()
     }
 
 

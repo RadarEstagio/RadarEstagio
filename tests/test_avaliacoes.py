@@ -914,6 +914,23 @@ def test_banco_relacional_em_requisito_composto_nao_dispensa_as_outras_partes():
     ]
 
 
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida", "nota_no_b1ccbf1"),
+    [
+        ("Consultas SQL", "SQL", 98),
+        ("Banco de dados MySQL", "MySQL", 98),
+        ("ERP Oracle", "Oracle", 98),
+    ],
+)
+def test_equivalencia_de_bancos_nao_desliga_a_comparacao_por_palavras(
+    do_perfil: str, exigida: str, nota_no_b1ccbf1: int
+):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+    assert resultado.nota == nota_no_b1ccbf1
+
+
 def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
     resultado = pontuar(
         vaga(),
