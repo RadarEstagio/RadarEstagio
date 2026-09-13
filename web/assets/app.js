@@ -663,16 +663,17 @@ function renderSkills() {
 function addCustomSkill() {
   const input = document.querySelector("#custom-skill");
   const skill = Array.from(input.value.trim()).slice(0, TAMANHO_MAXIMO_DA_HABILIDADE).join("").trim();
-  if (!skill) return;
+  if (!skill) return true;
   if (selectedSkills.size >= MAXIMO_DE_HABILIDADES && !selectedSkills.has(skill)) {
     marcarErroNoCampo(input, `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
-    return;
+    return false;
   }
   selectedSkills.add(skill);
   continuarSemHabilidades = false;
   input.value = "";
   renderSkills();
   setFormMessage();
+  return true;
 }
 
 function validationError(message) {
@@ -1439,7 +1440,7 @@ function validarFluxo() {
 }
 
 function avancarPasso() {
-  if (currentStep === PASSO_HABILIDADES) addCustomSkill();
+  if (currentStep === PASSO_HABILIDADES && !addCustomSkill()) return;
   if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   if (!validateStep(currentStep)) return;
   if (currentStep === PASSO_MOMENTO) void montarHabilidadesDoCurso();
@@ -1635,6 +1636,9 @@ document.querySelector("#skill-picker").addEventListener("click", (event) => {
   if (selectedSkills.has(skill)) {
     selectedSkills.delete(skill);
     if (selectedSkills.size === 0) continuarSemHabilidades = false;
+  } else if (selectedSkills.size >= MAXIMO_DE_HABILIDADES) {
+    marcarErroNoCampo(document.querySelector("#custom-skill"), `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+    return;
   } else {
     selectedSkills.add(skill);
     continuarSemHabilidades = false;

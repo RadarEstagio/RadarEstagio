@@ -2322,6 +2322,48 @@ Deno.test("corte de 100 caracteres não parte emoji nem deixa espaço que o envi
   }
 });
 
+async function etapaDeHabilidadesCom50(a: ReturnType<typeof app>) {
+  await settle();
+  a.w.document.querySelector(".js-open-signup").click();
+  await settle();
+  fill(a.w, false);
+  a.w.document.querySelector("#next-step").click();
+  await settle();
+  for (let indice = 0; indice < 50; indice += 1) digitarHabilidade(a.w, `h${indice}`);
+}
+
+Deno.test("com 50 habilidades, a sugerida não entra e o aviso aparece na etapa", async () => {
+  const a = app();
+  try {
+    await etapaDeHabilidadesCom50(a);
+    const sugerida = a.w.document.querySelector("#skill-picker [data-skill]");
+    sugerida.click();
+
+    assert.equal(habilidadesNaTela(a.w).length, 50);
+    assert.equal(sugerida.getAttribute("aria-pressed"), "false");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("a 51ª digitada seguida de Continuar fica na etapa com o aviso, sem sumir", async () => {
+  const a = app();
+  try {
+    await etapaDeHabilidadesCom50(a);
+    const campo = a.w.document.querySelector("#custom-skill");
+    campo.value = "Figma";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "3");
+    assert.equal(campo.value, "Figma");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("habilidade digitada com vírgula é uma só na tela e no envio", async () => {
   const a = app();
   try {
