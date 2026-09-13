@@ -9,7 +9,7 @@ from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio, RepositorioDeMetricas
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
-from radar.storage.memoria import RepositorioEmMemoria
+from radar.storage.memoria import RepositorioDoModoLocal
 from radar.storage.postgres import RepositorioPostgres
 
 ID_DO_USUARIO_FIXO = UUID("00000000-0000-0000-0000-000000000001")
@@ -51,7 +51,7 @@ def conectar(settings: Settings) -> psycopg.Connection:
 def abrir_repositorio_em_memoria(settings: Settings) -> Iterator[Repositorio]:
     if not settings.telegram_chat_id.strip():
         raise ErroDeArmazenamento("TELEGRAM_CHAT_ID é obrigatório no modo sem banco")
-    yield RepositorioEmMemoria([usuario_fixo(settings)])
+    yield RepositorioDoModoLocal([usuario_fixo(settings)])
 
 
 def usuario_fixo(settings: Settings) -> Usuario:

@@ -16,6 +16,7 @@ class RepositorioEmMemoria:
     def __init__(self, usuarios: list[Usuario]) -> None:
         self._usuarios = usuarios
         self._uso: dict[tuple[str, date], int] = {}
+        self._dias_sem_extracao: dict[ChaveDaVaga, tuple[date, int]] = {}
 
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)
@@ -29,7 +30,8 @@ class RepositorioEmMemoria:
         return {}
 
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
-        return None
+        for vaga, _ in extracoes:
+            self._dias_sem_extracao.pop(vaga.chave(), None)
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set()
@@ -63,6 +65,18 @@ class RepositorioEmMemoria:
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:
         return None
 
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        dias: dict[ChaveDaVaga, int] = {}
+        for vaga in vagas:
+            ultimo_dia, contagem = self._dias_sem_extracao.get(vaga.chave(), (None, 0))
+            if ultimo_dia != dia:
+                contagem += 1
+            self._dias_sem_extracao[vaga.chave()] = (dia, contagem)
+            dias[vaga.chave()] = contagem
+        return dias
+
     def pausar(self, usuario: Usuario) -> None:
         return None
 
@@ -78,3 +92,10 @@ class RepositorioEmMemoria:
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
         self._uso[(fonte, dia)] = self._uso.get((fonte, dia), 0) + requisicoes
+
+
+class RepositorioDoModoLocal(RepositorioEmMemoria):
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        return None

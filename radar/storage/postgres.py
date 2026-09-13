@@ -234,6 +234,18 @@ SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     where id = %(perfil_id)s
 """
 
+SQL_REGISTRAR_VAGA_SEM_EXTRACAO = """
+    update vagas
+    set dias_sem_extracao = case
+          when ultimo_dia_sem_extracao = %(dia)s then dias_sem_extracao
+          when extraida_em >= ultimo_dia_sem_extracao then 1
+          else dias_sem_extracao + 1
+        end,
+        ultimo_dia_sem_extracao = %(dia)s
+    where id = %(vaga_id)s
+    returning dias_sem_extracao
+"""
+
 SQL_REQUISICOES_DA_FONTE = """
     select coalesce(sum(requisicoes), 0)
     from uso_das_fontes
@@ -312,6 +324,26 @@ class RepositorioPostgres:
                     )
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
+
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        if not vagas:
+            return {}
+        dias: dict[ChaveDaVaga, int] = {}
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                for vaga in vagas:
+                    vaga_id = guardar_vaga(cursor, vaga)
+                    linha = cursor.execute(
+                        SQL_REGISTRAR_VAGA_SEM_EXTRACAO, {"vaga_id": vaga_id, "dia": dia}
+                    ).fetchone()
+                    dias[vaga.chave()] = linha[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao registrar as vagas sem extração: {descrever(erro)}"
+            ) from erro
+        return dias
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         try:
