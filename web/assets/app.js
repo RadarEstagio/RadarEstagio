@@ -81,6 +81,7 @@ let editandoPerfilExistente = false;
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
+const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
@@ -1102,10 +1103,10 @@ async function alternarEntregas(pausar) {
     .update(updates)
     .eq("user_id", session.user.id)
     .eq("ativo", pausar)
-    .select("user_id")
+    .select(COLUNAS_DO_PERFIL)
     .maybeSingle();
   if (error) throw error;
-  return Boolean(data);
+  return data;
 }
 
 function mostrarPerguntaMotivoPausa() {
@@ -1196,7 +1197,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
+    .select(COLUNAS_DO_PERFIL)
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -1420,13 +1421,14 @@ toggleDeliveries.addEventListener("click", async () => {
   setAccountMessage();
   const pausar = toggleDeliveries.dataset.acao === "pausar";
   try {
-    const alterou = await alternarEntregas(pausar);
-    showAccount(await perfilAtual());
-    if (!alterou) {
-      setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
+    const atualizado = await alternarEntregas(pausar);
+    if (atualizado) {
+      showAccount(atualizado);
+      if (pausar) mostrarPerguntaMotivoPausa();
       return;
     }
-    if (pausar) mostrarPerguntaMotivoPausa();
+    showAccount(await perfilAtual());
+    setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {

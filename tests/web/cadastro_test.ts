@@ -1231,6 +1231,43 @@ Deno.test("clicar em Retomar com a conta já reativada em outro lugar não pausa
   } finally { a.close(); }
 });
 
+function falharLeiturasDoPerfil(a: ReturnType<typeof app>) {
+  const from = a.client.from;
+  a.client.from = (table: string) => {
+    const query = from(table);
+    const update = query.update;
+    let atualizando = false;
+    query.update = (args: Payload) => {
+      atualizando = true;
+      return update(args);
+    };
+    const maybeSingle = query.maybeSingle;
+    query.maybeSingle = async () => {
+      if (!atualizando) throw new TypeError("Failed to fetch");
+      return maybeSingle();
+    };
+    return query;
+  };
+}
+
+Deno.test("pausa aplicada mostra a conta pausada e a pergunta mesmo se a leitura seguinte falharia", async () => {
+  const salvo: Profile = { ...profile, telegram_chat_id: "123" };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    falharLeiturasDoPerfil(a);
+    const doc = a.w.document;
+    const botao = doc.querySelector("#toggle-deliveries");
+    botao.click();
+    await settle();
+    assert.equal(salvo.ativo, false);
+    assert.equal(doc.querySelector("#account-message").textContent, "");
+    assert.equal(botao.textContent, "Retomar entregas");
+    assert.equal(doc.querySelector("#account-delivery-title").textContent, "Entregas pausadas");
+    assert.equal(doc.querySelector("#pause-reason").hidden, false);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },
