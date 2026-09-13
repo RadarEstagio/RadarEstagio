@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { Assistencia } from "../features/autenticacao/Assistencia.jsx";
 import { Cadastro } from "../features/cadastro/Cadastro.jsx";
+import { ConfirmacaoDaConta } from "../features/conta/ConfirmacaoDaConta.jsx";
 import { Conta } from "../features/conta/Conta.jsx";
 import { Sucesso } from "../features/conta/Sucesso.jsx";
 import { captchaOculto } from "./controlador.js";
@@ -73,6 +74,7 @@ export function Painel({ estado, controlador }) {
         <EspacoDoCaptcha elemento={controlador.elementoDoCaptcha} oculto={captchaOculto(estado)} />
         <Sucesso estado={estado} controlador={controlador} />
         <Conta estado={estado} controlador={controlador} />
+        <ConfirmacaoDaConta acao={estado.conta.confirmacao} controlador={controlador} />
       </div>
     </div>
   );

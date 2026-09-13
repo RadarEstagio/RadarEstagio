@@ -577,14 +577,16 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   function fecharCadastro() {
+    mudarConta({ confirmacao: null });
     sairDaPaginaDaConta();
     paginas.fecharDialogo();
     mudar(() => ({ superficie: "fechada" }));
   }
 
   function mostrarSucesso({ kicker, titulo, copy, token = null, vinculado = false }) {
-    mudar(() => ({
+    mudar((atual) => ({
       tela: "sucesso",
+      conta: { ...atual.conta, confirmacao: null },
       sucesso: { kicker, titulo, copy, token, linkVisivel: Boolean(token) && !vinculado, mensagem: "" },
     }));
     mostrarMensagem();
@@ -843,13 +845,19 @@ export function criarControlador({ janela, criarCliente }) {
     }
   }
 
+  function aguardandoVinculoDoTelegram() {
+    return estado.superficie !== "fechada" && estado.tela === "sucesso" && estado.sucesso.linkVisivel;
+  }
+
   async function atualizarAtivacao() {
+    if (!aguardandoVinculoDoTelegram()) return;
     try {
       const sessao = await sessaoAtual();
       if (!sessao) return;
       const perfil = await carregarPerfil(sessao.user.id);
-      if (perfil) mostrarEstadoDoPerfil(perfil);
+      if (perfil && aguardandoVinculoDoTelegram()) mostrarEstadoDoPerfil(perfil);
     } catch {
+      if (!aguardandoVinculoDoTelegram()) return;
       mudar((atual) => ({
         sucesso: {
           ...atual.sucesso,
@@ -944,6 +952,7 @@ export function criarControlador({ janela, criarCliente }) {
   function mostrarAssistencia(modo, email = "") {
     mudar((atual) => ({
       tela: "assistencia",
+      conta: { ...atual.conta, confirmacao: null },
       assistencia: {
         ...atual.assistencia,
         modo,
@@ -1033,7 +1042,7 @@ export function criarControlador({ janela, criarCliente }) {
     try {
       const perfil = await perfilAtual();
       preencherFormularioCom(perfil);
-      mudar(() => ({ tela: "formulario" }));
+      mudar((atual) => ({ tela: "formulario", conta: { ...atual.conta, confirmacao: null } }));
       entrarNoModoEdicao();
       mudar(() => ({ enviando: false }));
       mostrarPasso(PASSO_MOMENTO);
@@ -1295,7 +1304,6 @@ export function criarControlador({ janela, criarCliente }) {
       if (secao) mostrarSecaoDaConta(secao.hash, false);
     });
     ouvir(janela, "focus", () => {
-      if (estado.superficie === "fechada" || !estado.sucesso.linkVisivel) return;
       void atualizarAtivacao();
     });
     ouvir(paginas.dialogo, "click", (evento) => {
