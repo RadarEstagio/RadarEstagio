@@ -3,6 +3,7 @@ import { Assistencia } from "../features/autenticacao/Assistencia.jsx";
 import { Cadastro } from "../features/cadastro/Cadastro.jsx";
 import { ConfirmacaoDaConta } from "../features/conta/ConfirmacaoDaConta.jsx";
 import { Conta } from "../features/conta/Conta.jsx";
+import { ExclusaoSemPerfil } from "../features/conta/ExclusaoSemPerfil.jsx";
 import { Sucesso } from "../features/conta/Sucesso.jsx";
 import { captchaOculto } from "./controlador.js";
 
@@ -70,6 +71,7 @@ export function Painel({ estado, controlador }) {
       <div className="dialog-form-area">
         <Progresso estado={estado} />
         <Cadastro estado={estado} controlador={controlador} />
+        <ExclusaoSemPerfil estado={estado} controlador={controlador} />
         <Assistencia estado={estado} controlador={controlador} />
         <EspacoDoCaptcha elemento={controlador.elementoDoCaptcha} oculto={captchaOculto(estado)} />
         <Sucesso estado={estado} controlador={controlador} />

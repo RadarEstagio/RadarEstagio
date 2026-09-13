@@ -313,7 +313,7 @@ export function Cadastro({ estado, controlador }) {
           type="submit"
           id="submit-profile"
           hidden={posicao !== passos.length - 1}
-          disabled={estado.enviando}
+          disabled={estado.enviando || estado.semPerfil.ocupado}
           aria-busy={estado.enviando}
         >
           <span id="submit-label">{rotuloDoEnvio(estado)}</span>

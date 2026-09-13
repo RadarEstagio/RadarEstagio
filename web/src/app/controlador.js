@@ -1,5 +1,11 @@
 import { cidadeDaLista, cidadesParecidas, homonimasDe } from "../domain/cidades.js";
-import { CONFIRMACOES, SECOES_DA_CONTA, VALORES_DOS_MOTIVOS_DE_PAUSA, dataDoApagamento } from "../domain/conta.js";
+import {
+  CONFIRMACOES,
+  SECOES_DA_CONTA,
+  VALORES_DOS_MOTIVOS_DE_PAUSA,
+  dataDoApagamento,
+  mensagemDaExclusaoSemPerfil,
+} from "../domain/conta.js";
 import { areaDoCurso } from "../domain/cursos.js";
 import {
   MAXIMO_DE_HABILIDADES,
@@ -81,6 +87,7 @@ function estadoInicial() {
     erro: null,
     mensagem: { texto: "", tom: "erro" },
     enviando: false,
+    semPerfil: { visivel: false, ocupado: false },
     senhasVisiveis: {},
     assistencia: { modo: null, email: "", senha: "", restante: 0, ocupada: false },
     sucesso: {
@@ -90,6 +97,7 @@ function estadoInicial() {
       token: null,
       linkVisivel: false,
       mensagem: "",
+      semConta: false,
     },
     conta: {
       perfil: null,
@@ -523,6 +531,7 @@ export function criarControlador({ janela, criarCliente }) {
       mensagem: { texto: "", tom: "erro" },
       enviando: false,
       semHabilidades: false,
+      semPerfil: { ...atual.semPerfil, visivel: false },
     }));
     sairDoModoEdicao();
     paginas.rotularDialogo("signup-title");
@@ -583,11 +592,12 @@ export function criarControlador({ janela, criarCliente }) {
     mudar(() => ({ superficie: "fechada" }));
   }
 
-  function mostrarSucesso({ kicker, titulo, copy, token = null, vinculado = false }) {
+  function mostrarSucesso({ kicker, titulo, copy, token = null, vinculado = false, semConta = false }) {
     mudar((atual) => ({
       tela: "sucesso",
       conta: { ...atual.conta, confirmacao: null },
-      sucesso: { kicker, titulo, copy, token, linkVisivel: Boolean(token) && !vinculado, mensagem: "" },
+      semPerfil: { ...atual.semPerfil, visivel: false },
+      sucesso: { kicker, titulo, copy, token, linkVisivel: Boolean(token) && !vinculado, mensagem: "", semConta },
     }));
     mostrarMensagem();
     paginas.rotularDialogo("success-title");
@@ -609,6 +619,7 @@ export function criarControlador({ janela, criarCliente }) {
     abrirPaginaDaConta();
     mudar((atual) => ({
       tela: "conta",
+      semPerfil: { ...atual.semPerfil, visivel: false },
       conta: {
         ...atual.conta,
         perfil,
@@ -785,11 +796,12 @@ export function criarControlador({ janela, criarCliente }) {
     mudar((atual) => ({ campos: { ...atual.campos, email: sessao.user.email ?? "" }, credenciaisOcultas: true }));
     atualizarPassos();
     mostrarMensagem("Seu e-mail está confirmado. Complete seu perfil para continuar.", "aviso");
+    mudar((atual) => ({ semPerfil: { ...atual.semPerfil, visivel: true } }));
   }
 
   async function enviarCadastro(evento) {
     evento?.preventDefault();
-    if (estado.enviando) return;
+    if (estado.enviando || estado.semPerfil.ocupado) return;
     if (estado.passos.includes(PASSO_PREFERENCIAS) && !catalogos.cidadesCarregadas()) {
       mudar(() => ({ enviando: true }));
       await carregarCidades();
@@ -953,6 +965,7 @@ export function criarControlador({ janela, criarCliente }) {
     mudar((atual) => ({
       tela: "assistencia",
       conta: { ...atual.conta, confirmacao: null },
+      semPerfil: { ...atual.semPerfil, visivel: false },
       assistencia: {
         ...atual.assistencia,
         modo,
@@ -1042,7 +1055,11 @@ export function criarControlador({ janela, criarCliente }) {
     try {
       const perfil = await perfilAtual();
       preencherFormularioCom(perfil);
-      mudar((atual) => ({ tela: "formulario", conta: { ...atual.conta, confirmacao: null } }));
+      mudar((atual) => ({
+        tela: "formulario",
+        conta: { ...atual.conta, confirmacao: null },
+        semPerfil: { ...atual.semPerfil, visivel: false },
+      }));
       entrarNoModoEdicao();
       mudar(() => ({ enviando: false }));
       mostrarPasso(PASSO_MOMENTO);
@@ -1144,9 +1161,37 @@ export function criarControlador({ janela, criarCliente }) {
     if (restaurarFoco && acao) focar(CONFIRMACOES[acao].origem);
   }
 
+  async function apagarContaSemPerfil() {
+    if (estado.semPerfil.ocupado || estado.enviando) return;
+    mudar((atual) => ({ semPerfil: { ...atual.semPerfil, ocupado: true } }));
+    mostrarMensagem();
+    try {
+      const { error } = await obterCliente().rpc("apagar_minha_conta_sem_perfil");
+      if (error) throw error;
+      await obterCliente().auth.signOut({ scope: "local" });
+      limparPerfilPendente();
+      mostrarChamadaDeConta(false);
+      limparRascunhoDoCadastro();
+      mostrarSucesso({
+        kicker: "Conta excluída",
+        titulo: "Sua conta foi apagada.",
+        copy: "O e-mail e o acesso foram removidos agora. Para voltar a usar o Radar, crie uma conta nova.",
+        semConta: true,
+      });
+    } catch (erro) {
+      mostrarMensagem(mensagemDaExclusaoSemPerfil(erro));
+    } finally {
+      mudar((atual) => ({ semPerfil: { ...atual.semPerfil, ocupado: false } }));
+    }
+  }
+
   async function confirmarAcao() {
     const acao = estado.conta.confirmacao;
     fecharConfirmacao();
+    if (acao === "apagar-sem-perfil") {
+      await apagarContaSemPerfil();
+      return;
+    }
     mostrarMensagemDaConta();
     try {
       if (acao === "desvincular") {

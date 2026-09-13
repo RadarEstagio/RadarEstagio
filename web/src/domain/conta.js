@@ -54,7 +54,24 @@ export const CONFIRMACOES = {
     confirmar: "Excluir conta",
     origem: "#delete-account",
   },
+  "apagar-sem-perfil": {
+    titulo: "Excluir sua conta?",
+    aviso: "Sua conta será apagada agora",
+    detalhe: "Você ainda não salvou um perfil, então não há prazo para cancelar: o e-mail e o acesso são apagados na hora.",
+    copy: "Para voltar a usar o Radar depois, crie uma conta nova.",
+    confirmar: "Excluir conta",
+    origem: "#delete-account-without-profile",
+  },
 };
+
+export function mensagemDaExclusaoSemPerfil(erro) {
+  const codigo = String(erro?.code ?? "");
+  if (codigo === "55000") return "Sua conta já tem um perfil salvo. Abra Minha conta para excluí-la.";
+  if (codigo === "42501" || Number(erro?.status) === 401) {
+    return "Sua sessão expirou. Entre de novo para excluir a conta.";
+  }
+  return "Não foi possível excluir a conta agora. Verifique a conexão e tente novamente.";
+}
 
 const MODALIDADES_POR_EXTENSO = {
   remoto: "remoto",

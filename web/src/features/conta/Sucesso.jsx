@@ -12,7 +12,13 @@ export function Sucesso({ estado, controlador }) {
         {sucesso.mensagem}
       </p>
       <div className="success-actions">
-        <button className="button button-ghost" id="success-account" type="button" onClick={controlador.abrirContaDoSucesso}>
+        <button
+          className="button button-ghost"
+          id="success-account"
+          type="button"
+          hidden={sucesso.semConta}
+          onClick={controlador.abrirContaDoSucesso}
+        >
           Minha conta
         </button>
         <a
