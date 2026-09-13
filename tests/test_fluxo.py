@@ -11,7 +11,8 @@ from pytest_httpx import HTTPXMock
 from radar.__main__ import executar_fluxo
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
-from radar.domain.models import Modalidade, Perfil, Usuario, Vaga
+from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
+from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
 from radar.settings import Settings
@@ -222,3 +223,151 @@ def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_moc
 
     [mensagem] = mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE)
     assert "Nenhuma vaga nova compatível" in mensagem
+
+
+HORARIO_DO_DIARIO = datetime(2026, 9, 14, 10, 23, tzinfo=UTC)
+TARDE_DO_DIARIO = datetime(2026, 9, 14, 15, 0, tzinfo=UTC)
+
+
+def parar_o_relogio(monkeypatch: pytest.MonkeyPatch, momento: datetime) -> None:
+    class RelogioParado(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return momento
+
+    monkeypatch.setattr("radar.__main__.datetime", RelogioParado)
+
+
+def test_diario_que_termina_registra_que_rodou_e_quanto_gastou(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    repositorio = RepositorioEmMemoria([])
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    hoje = HORARIO_DO_DIARIO.date()
+    assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, hoje)
+    assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == 1
+
+
+def test_diario_que_falha_nao_registra_que_rodou(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    repositorio = RepositorioEmMemoria([])
+    httpx_mock.add_response(url=url_da_pagina(1), status_code=401, text="não autorizado")
+    aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
+
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta):
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    assert not repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, HORARIO_DO_DIARIO.date())
+
+
+def test_entrega_imediata_depois_do_diario_usa_o_saldo_do_dia_sem_se_registrar_como_diario(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+    hoje = HORARIO_DO_DIARIO.date()
+    gasto_do_diario = repositorio.requisicoes_da_fonte_desde("adzuna", hoje)
+    reserva = reserva_do_diario([estudante])
+    repositorio.registrar_requisicoes_da_fonte(
+        "adzuna", hoje, LIMITE_POR_DIA - reserva - gasto_do_diario
+    )
+    parar_o_relogio(monkeypatch, TARDE_DO_DIARIO)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio, apenas_o_perfil=estudante.id)
+
+    assert repositorio.requisicoes_da_fonte_desde("adzuna", hoje) == (
+        LIMITE_POR_DIA - reserva + gasto_do_diario
+    )
+    assert repositorio.requisicoes_da_fonte_desde(FONTE_DO_DIARIO, hoje) == gasto_do_diario
+
+
+RODAR_MANUAL_NA_NOITE_DE_BRASILIA = datetime(2026, 9, 15, 1, 0, tzinfo=UTC)
+DIARIO_DA_MANHA_SEGUINTE = datetime(2026, 9, 15, 10, 23, tzinfo=UTC)
+
+
+def test_rodar_sem_perfil_na_noite_de_brasilia_deixa_a_reserva_para_o_diario_das_07_23(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    dia = RODAR_MANUAL_NA_NOITE_DE_BRASILIA.date()
+    parar_o_relogio(monkeypatch, RODAR_MANUAL_NA_NOITE_DE_BRASILIA)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+    reserva = reserva_do_diario([estudante])
+    gasto_da_noite = repositorio.requisicoes_da_fonte_desde("adzuna", dia)
+    repositorio.registrar_requisicoes_da_fonte(
+        "adzuna", dia, LIMITE_POR_DIA - reserva - gasto_da_noite
+    )
+
+    for hora in (2, 4, 6):
+        parar_o_relogio(monkeypatch, datetime(2026, 9, 15, hora, 0, tzinfo=UTC))
+        with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta):
+            executar_fluxo(
+                settings_de_teste(), cliente_http, repositorio, apenas_o_perfil=estudante.id
+            )
+    uso_antes_do_diario = repositorio.requisicoes_da_fonte_desde("adzuna", dia)
+    parar_o_relogio(monkeypatch, DIARIO_DA_MANHA_SEGUINTE)
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, repositorio)
+
+    assert uso_antes_do_diario == LIMITE_POR_DIA - reserva
+    assert repositorio.requisicoes_da_fonte_desde("adzuna", dia) > uso_antes_do_diario
+    assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)
+
+
+class BancoComEventosDoSite(RepositorioEmMemoria):
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        return EventosDoSite(visitantes=2400, contas=12, horas_no_teto=1)
+
+
+class BancoSemATabelaDosEventosDoSite(RepositorioEmMemoria):
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        raise ErroDeArmazenamento("relation eventos_do_site_por_hora does not exist")
+
+
+def test_resumo_de_operacao_mostra_os_eventos_do_site(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoComEventosDoSite([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Eventos do site nas últimas 24 h: 2.400 de visitantes, 12 de contas" in resumo
+    assert "⚠️ Eventos do site chegaram ao teto em 1 hora das últimas 24 h" in resumo
+
+
+def test_falha_ao_ler_os_eventos_do_site_so_avisa_no_log(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoSemATabelaDosEventosDoSite([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Vagas coletadas: 3" in resumo
+    assert "Eventos do site" not in resumo
+    assert "eventos_do_site_por_hora" in caplog.text

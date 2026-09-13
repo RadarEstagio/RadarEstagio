@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 from radar.domain.datas import data_de_publicacao, data_local
 from radar.domain.models import (
     BotaoDeFeedback,
+    EventosDoSite,
     MotivoDeRecusa,
     PerguntaDeFeedback,
     Recomendacao,
@@ -133,6 +134,7 @@ def formatar_resumo_da_execucao(
     adzuna_limite: int | None = None,
     adzuna_esgotada: bool = False,
     coletas_incompletas: dict[str, str] | None = None,
+    eventos_do_site: EventosDoSite | None = None,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -160,7 +162,20 @@ def formatar_resumo_da_execucao(
         linhas.append("⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim")
     for fonte, motivo in (coletas_incompletas or {}).items():
         linhas.append(f"⚠️ Coleta da {escape(rotulo_fonte(fonte))} incompleta: {escape(motivo)}")
+    if eventos_do_site is not None:
+        linhas.extend(linhas_dos_eventos_do_site(eventos_do_site))
     return "\n".join(linhas)
+
+
+def linhas_dos_eventos_do_site(eventos: EventosDoSite) -> list[str]:
+    linhas = [
+        f"Eventos do site nas últimas 24 h: {formatar_milhar(eventos.visitantes)} de visitantes, "
+        f"{formatar_milhar(eventos.contas)} de contas"
+    ]
+    if eventos.horas_no_teto:
+        horas = "1 hora" if eventos.horas_no_teto == 1 else f"{eventos.horas_no_teto} horas"
+        linhas.append(f"⚠️ Eventos do site chegaram ao teto em {horas} das últimas 24 h")
+    return linhas
 
 
 def formatar_falha_da_execucao(momento: datetime, erro: str) -> str:

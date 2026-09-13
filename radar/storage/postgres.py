@@ -15,6 +15,7 @@ from radar.domain.models import (
     AreaDeInteresse,
     ChaveDaVaga,
     EntregaParaJulgar,
+    EventosDoSite,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Modalidade,
@@ -276,6 +277,22 @@ SQL_REGISTRAR_REQUISICOES_DA_FONTE = """
     do update set requisicoes = uso_das_fontes.requisicoes + excluded.requisicoes
 """
 
+SQL_FONTE_TEM_REGISTRO_NO_DIA = """
+    select exists (
+        select 1 from uso_das_fontes where fonte = %(fonte)s and dia = %(dia)s
+    )
+"""
+
+SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS = """
+    select coalesce(sum(total) filter (where anonimo), 0)::int as visitantes,
+           coalesce(sum(total) filter (where not anonimo), 0)::int as contas,
+           count(*) filter (
+               where total >= public.teto_de_eventos_do_site_por_hora(anonimo)
+           )::int as horas_no_teto
+    from eventos_do_site_por_hora
+    where hora > date_trunc('hour', now(), 'UTC') - interval '24 hours'
+"""
+
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
 
@@ -516,6 +533,27 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao ler o uso da fonte {fonte}: {descrever(erro)}"
+            ) from erro
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linha = cursor.execute(SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS).fetchone()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler os eventos do site: {descrever(erro)}"
+            ) from erro
+        return EventosDoSite(**linha)
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_FONTE_TEM_REGISTRO_NO_DIA, {"fonte": fonte, "dia": dia}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler o registro da fonte {fonte}: {descrever(erro)}"
             ) from erro
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:

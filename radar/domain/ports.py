@@ -5,6 +5,7 @@ from uuid import UUID
 from radar.domain.models import (
     ChaveDaVaga,
     EntregaParaJulgar,
+    EventosDoSite,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Julgamento,
@@ -82,6 +83,10 @@ class RepositorioDeAvaliacoes(Protocol):
     def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int: ...
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None: ...
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool: ...
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite | None: ...
 
 
 class RepositorioDeMetricas(Protocol):

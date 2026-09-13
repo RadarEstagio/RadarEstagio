@@ -34,10 +34,11 @@ from radar.collectors.factory import (
 from radar.cota import (
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
+    registrar_diario_da_adzuna,
     reserva_do_diario,
     uso_da_adzuna,
 )
-from radar.domain.models import Perfil, Usuario
+from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
 from radar.entrega_imediata import RepositorioDosAtendidos, usuarios_a_atender
@@ -74,6 +75,8 @@ AMOSTRA_DO_JULGAMENTO = 30
 SEMENTE_DO_JULGAMENTO = 1
 AMOSTRA_DO_GABARITO = 20
 AMOSTRA_DOS_DESCARTES = 30
+
+logger = logging.getLogger(__name__)
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -311,6 +314,8 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
+    if apenas_o_perfil is None:
+        registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
@@ -340,8 +345,17 @@ def executar_fluxo(
             adzuna_limite=LIMITE_POR_MES,
             adzuna_esgotada=cota.esgotada,
             coletas_incompletas=coletor.incompletas,
+            eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
         ),
     )
+
+
+def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | None:
+    try:
+        return repositorio.eventos_do_site_nas_ultimas_24_horas()
+    except ErroDeArmazenamento as erro:
+        logger.warning("Eventos do site não puderam ser lidos para o resumo: %s", erro)
+        return None
 
 
 def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> None:

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 from radar.collectors.adzuna import LIMITE_DE_PAGINAS_POR_REGIAO, CotaDaAdzuna, saldo_da_adzuna
 from radar.collectors.factory import (
@@ -12,6 +12,8 @@ from radar.domain.ports import ColetorDeVagas, RepositorioDeAvaliacoes
 from radar.storage.errors import ErroDeArmazenamento
 
 FONTE_ADZUNA = "adzuna"
+FONTE_DO_DIARIO = "adzuna:diario"
+INICIO_DA_JANELA_DO_DIARIO_UTC = time(9, 23)
 DIAS_DA_JANELA_SEMANAL = 7
 
 logger = logging.getLogger(__name__)
@@ -22,17 +24,30 @@ def abrir_cota_da_adzuna(
 ) -> CotaDaAdzuna:
     hoje = agora.date()
     try:
-        saldo = saldo_da_adzuna(
-            hoje=repositorio.requisicoes_da_fonte_desde(FONTE_ADZUNA, hoje),
-            semana=repositorio.requisicoes_da_fonte_desde(
-                FONTE_ADZUNA, hoje - timedelta(days=DIAS_DA_JANELA_SEMANAL - 1)
-            ),
-            mes=repositorio.requisicoes_da_fonte_desde(FONTE_ADZUNA, hoje.replace(day=1)),
+        usado_hoje = repositorio.requisicoes_da_fonte_desde(FONTE_ADZUNA, hoje)
+        usado_na_semana = repositorio.requisicoes_da_fonte_desde(
+            FONTE_ADZUNA, hoje - timedelta(days=DIAS_DA_JANELA_SEMANAL - 1)
         )
+        usado_no_mes = repositorio.requisicoes_da_fonte_desde(FONTE_ADZUNA, hoje.replace(day=1))
     except ErroDeArmazenamento as erro:
         logger.warning("Uso da Adzuna não pôde ser lido; a coleta segue sem saldo: %s", erro)
         return CotaDaAdzuna()
-    return CotaDaAdzuna(saldo=max(0, saldo - reserva))
+    reserva_do_dia = 0 if not reserva or diario_ja_rodou(repositorio, hoje) else reserva
+    return CotaDaAdzuna(
+        saldo=saldo_da_adzuna(
+            hoje=usado_hoje + reserva_do_dia,
+            semana=usado_na_semana + reserva,
+            mes=usado_no_mes + reserva,
+        )
+    )
+
+
+def diario_ja_rodou(repositorio: RepositorioDeAvaliacoes, dia: date) -> bool:
+    try:
+        return repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)
+    except ErroDeArmazenamento as erro:
+        logger.warning("Registro do diário não pôde ser lido; a reserva do dia continua: %s", erro)
+        return False
 
 
 def reserva_do_diario(usuarios: list[Usuario]) -> int:
@@ -50,6 +65,19 @@ def registrar_uso_da_adzuna(
         repositorio.registrar_requisicoes_da_fonte(FONTE_ADZUNA, agora.date(), requisicoes)
     except ErroDeArmazenamento as erro:
         logger.warning("Uso da Adzuna não foi gravado (%d requisições): %s", requisicoes, erro)
+
+
+def registrar_diario_da_adzuna(
+    repositorio: RepositorioDeAvaliacoes, requisicoes: int, agora: datetime
+) -> None:
+    em_utc = agora.astimezone(UTC)
+    if em_utc.time() < INICIO_DA_JANELA_DO_DIARIO_UTC:
+        logger.info("Execução antes da janela do diário; a reserva do diário de hoje continua")
+        return
+    try:
+        repositorio.registrar_requisicoes_da_fonte(FONTE_DO_DIARIO, em_utc.date(), requisicoes)
+    except ErroDeArmazenamento as erro:
+        logger.warning("O registro de que o diário rodou não foi gravado: %s", erro)
 
 
 class ColetorComRegistroDeUso:

@@ -100,6 +100,12 @@ class RepositorioEmMemoria:
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
         self._uso[(fonte, dia)] = self._uso.get((fonte, dia), 0) + requisicoes
 
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        return (fonte, dia) in self._uso
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> None:
+        return None
+
 
 class RepositorioDoModoLocal(RepositorioEmMemoria):
     def registrar_vagas_sem_extracao(

@@ -87,6 +87,21 @@ def test_extracao_guardada_recomeca_a_contagem_de_dias_sem_extracao():
     }
 
 
+def test_fonte_registrada_com_zero_requisicoes_conta_como_registro_do_dia():
+    repositorio = RepositorioEmMemoria([])
+
+    assert not repositorio.fonte_tem_registro_no_dia("adzuna:diario", date(2026, 9, 13))
+    repositorio.registrar_requisicoes_da_fonte("adzuna:diario", date(2026, 9, 13), 0)
+
+    assert repositorio.fonte_tem_registro_no_dia("adzuna:diario", date(2026, 9, 13))
+    assert not repositorio.fonte_tem_registro_no_dia("adzuna:diario", date(2026, 9, 12))
+    assert not repositorio.fonte_tem_registro_no_dia("adzuna", date(2026, 9, 13))
+
+
+def test_sem_banco_nao_ha_eventos_do_site_para_o_resumo():
+    assert RepositorioEmMemoria([]).eventos_do_site_nas_ultimas_24_horas() is None
+
+
 def test_modo_local_nao_tem_historico_de_vagas_sem_extracao():
     repositorio = RepositorioDoModoLocal([])
 
