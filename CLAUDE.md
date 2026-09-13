@@ -441,26 +441,39 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
   exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
   Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
-- **SQL e banco relacional se atendem na nota** (13/09/2026). "SQL" não era nome de família:
-  quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a nota de
-  quem tem MongoDB), e "SQL" no perfil não atendia "MySQL". Agora "SQL" é atendido por MySQL,
-  PostgreSQL, SQL Server, Oracle, SQLite, MariaDB, PL/SQL e T-SQL, e cada um desses bancos é
-  atendido por "SQL": para estágio, quem sabe SQL trabalha com qualquer um. Não é peso novo, é
-  equivalência, como as famílias de 09/09. Um banco relacional não atende outro: a vaga que
-  lista três bancos seria coberta inteira por um só, e "a conferir: MySQL" para quem tem
-  PostgreSQL é verdade. PL/SQL e T-SQL atendem "SQL", mas não são atendidos por ele, porque vão
-  além da linguagem. NoSQL fica de fora, o nível vale contra o membro presente e "banco de dados"
-  não muda. É regra só da nota: o prompt continua separando SQL de MySQL para guardar o nome do
-  anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`. A regra fica em
-  `EQUIVALENCIAS_DE_HABILIDADES`, não nas famílias, porque família decide sozinha o requisito
-  que nomeia e desliga a comparação por palavras: na primeira versão, fora de computação,
-  "Consultas SQL", "Banco de dados MySQL" e "ERP Oracle" perderam o requisito que atendiam
-  (98 → 64). A equivalência só soma membros, então nenhum atendimento que existia antes some;
-  `tests/test_corpus_de_bancos.py` confere 874 pares contra as notas do `b1ccbf1` (61 sobem,
-  nenhum cai). Risco aberto: "Oracle" também é ERP, então quem lista o ERP atende "SQL" e "SQL"
-  no perfil atende a vaga de finanças que pede Oracle. Limitar a equivalência a computação
-  exigiria levar o contexto a sete funções da comparação, porque nota e explicação usam a mesma
-  regra; fica para quando aparecer caso real.
+- **SQL e bancos relacionais são uma classe só na nota** (13/09/2026). "SQL" não era nome de
+  família: quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a
+  nota de quem tem MongoDB). Ian decidiu que, para estágio, SQL e o banco são a mesma coisa:
+  SQL, MySQL, PostgreSQL, SQL Server, SQLite, MariaDB e Oracle Database se atendem nos dois
+  sentidos (`EQUIVALENCIAS_DE_HABILIDADES`). A primeira versão só deixava SQL atender os bancos,
+  e o termo genérico valia mais que o específico: na vaga adzuna:5873229288, que pede
+  PostgreSQL, MySQL e Oracle, "SQL" tirava 70 e "MySQL" 63. Dentro das famílias o membro vale
+  pelos equivalentes, senão "ETL" e "análise de dados", que listam SQL, deixavam MySQL abaixo.
+  Não é peso novo, é equivalência, como as famílias de 09/09. O que acompanha a classe:
+  - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
+    porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
+    SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
+  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível (`DIALETOS_QUE_IMPLICAM_SQL`); o
+    requisito PL/SQL ou T-SQL só é atendido pelo próprio dialeto. "PL/SQL" é juntado antes da
+    partição pela barra, para "PL-SQL", "PLSQL" e "pl / sql" darem o mesmo resultado.
+  - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
+    SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
+    a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
+    Cloud ficam fora.
+  - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
+    comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
+    MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
+  - Nível, composição ("MySQL e Python" exige as duas partes) e NoSQL fora da classe seguem
+    valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
+    anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+  Medido contra o `b1ccbf1`: nenhuma nota cai nas 41 vagas reais que citam banco (246 pares, 115
+  sobem) nem nos 5.168 pares da auditoria (1.563 sobem), e MySQL ou PostgreSQL deixam de ficar
+  abaixo de SQL na mesma vaga (eram 16 e 21 vagas). `tests/test_corpus_de_bancos.py` desliga a
+  classe e a implicação dos dialetos e exige que nenhuma nota caia e alguma suba: resiste a
+  mudança de peso e quebra se a classe for desfeita. Risco aberto: fora de computação o SQL
+  implícito dos dialetos compara por palavras, então "T-SQL" passa a atender "SQL Server
+  Reporting Services", como "PL/SQL" e "SQL" já atendiam.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
