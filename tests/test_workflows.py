@@ -13,6 +13,7 @@ VERSAO_DE_CADA_ACAO = {
 LINHA_COM_USES = re.compile(r"^\s*(?:-\s+)?uses:\s*(.*?)\s*$")
 ACAO_FIXADA_POR_HASH = re.compile(r"[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}")
 ACAO_LOCAL = re.compile(r"\./[\w./-]+")
+VERSAO_FIXA = re.compile(r"\d+\.\d+\.\d+")
 NIVEIS_SO_DE_LEITURA = {"read", "none"}
 
 
@@ -117,6 +118,21 @@ def test_checkout_de_workflow_com_segredos_nao_deixa_o_token_no_git():
         checkout: persistencia
         for checkout, persistencia in persistencia_de_cada_checkout.items()
         if persistencia != "false"
+    } == {}
+
+
+def test_setup_uv_instala_um_numero_fixo_de_versao_do_uv():
+    versao_de_cada_setup_uv = {
+        f"{workflow.name} #{posicao}": entradas.get("version")
+        for workflow in workflows()
+        for posicao, entradas in enumerate(entradas_de_cada_uso(workflow, "astral-sh/setup-uv"), 1)
+    }
+
+    assert versao_de_cada_setup_uv
+    assert {
+        setup_uv: versao
+        for setup_uv, versao in versao_de_cada_setup_uv.items()
+        if not VERSAO_FIXA.fullmatch(versao or "")
     } == {}
 
 
