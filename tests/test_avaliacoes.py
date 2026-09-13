@@ -1064,6 +1064,51 @@ def test_forma_que_nao_e_banco_relacional_fica_fora_da_classe(forma: str):
     assert forma_no_perfil.requisitos_atendidos == []
 
 
+@pytest.mark.parametrize(
+    ("do_perfil", "exigidas"),
+    [
+        ("Azure SQL Database", ["SQL Server avançado", "Azure SQL Database"]),
+        ("Consultas SQL", ["SQL avançado", "Consultas SQL"]),
+        ("Linguagem SQL", ["SQL básico", "Linguagem SQL"]),
+        ("Microsoft SQL Server", ["SQL Server intermediário", "Microsoft SQL Server"]),
+        ("Postgre", ["PostgreSQL avançado", "Postgre"]),
+        ("Oracle DB", ["Oracle Database avançado", "Oracle DB"]),
+    ],
+)
+def test_requisito_juntado_pelo_alias_nao_herda_o_nivel_do_outro(
+    do_perfil: str, exigidas: list[str]
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=exigidas), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigidas[1]]
+    assert resultado.requisitos_nao_atendidos == [exigidas[0]]
+
+
+def test_desejavel_juntado_pelo_alias_continua_nos_diferenciais():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["SQL Server"], habilidades_desejaveis=["Azure SQL Database"]
+        ),
+        perfil(["MongoDB"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == ["SQL Server"]
+    assert resultado.diferenciais_nao_atendidos == ["Azure SQL Database"]
+
+
+def test_requisitos_juntados_pelo_alias_aparecem_com_os_nomes_do_anuncio():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["SQL SERVER"], habilidades_desejaveis=["Azure SQL Database"]
+        ),
+        perfil(["SQL Server"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL SERVER", "Azure SQL Database"]
+
+
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
 def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))

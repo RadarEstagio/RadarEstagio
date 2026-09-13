@@ -305,6 +305,13 @@ ALIASES_DE_HABILIDADES = {
     "js": "javascript",
     "node": "nodejs",
     "postgres": "postgresql",
+    "python3": "python",
+    "reactjs": "react",
+    "restapi": "rest",
+    "ts": "typescript",
+    "vuejs": "vue",
+}
+ALIASES_DE_COMPARACAO = {
     "postgre": "postgresql",
     "azuresql": "sqlserver",
     "azuresqldatabase": "sqlserver",
@@ -318,12 +325,7 @@ ALIASES_DE_HABILIDADES = {
     "mssql": "sqlserver",
     "mssqlserver": "sqlserver",
     "oracledb": "oracledatabase",
-    "python3": "python",
-    "reactjs": "react",
-    "restapi": "rest",
     "transactsql": "tsql",
-    "ts": "typescript",
-    "vuejs": "vue",
 }
 SEPARADORES_DE_PALAVRAS = re.compile(r"[\s/,;|]+")
 FORA_DE_PARENTESES = r"(?![^(]*\))"
@@ -589,7 +591,7 @@ def _exigencias(requisitos: list[str]) -> dict[str, tuple[HabilidadeComparavel, 
     exigencias: dict[str, tuple[HabilidadeComparavel, ...]] = {}
     for requisito in requisitos:
         if requisito.strip():
-            nome = _normalizar_habilidade(_parte_unica(requisito) or requisito)
+            nome = _identidade_da_habilidade(_parte_unica(requisito) or requisito)
             exigencias[nome] = (*exigencias.get(nome, ()), _exigencia(requisito))
     return exigencias
 
@@ -599,7 +601,8 @@ def _todas_atendidas(
     variantes: tuple[HabilidadeComparavel, ...],
     habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
 ) -> bool:
-    return all(_atende(nome, variante, habilidades_do_perfil) for variante in variantes)
+    comparado = _nome_de_comparacao(nome)
+    return all(_atende(comparado, variante, habilidades_do_perfil) for variante in variantes)
 
 
 @functools.cache
@@ -786,7 +789,7 @@ def _primeira_nao_atendida(
     return next(
         variante.texto
         for variante in variantes
-        if not _atende(nome, variante, habilidades_do_perfil)
+        if not _atende(_nome_de_comparacao(nome), variante, habilidades_do_perfil)
     )
 
 
@@ -851,8 +854,16 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
+    return _nome_de_comparacao(_identidade_da_habilidade(habilidade))
+
+
+def _identidade_da_habilidade(habilidade: str) -> str:
     compacta = _compactar(_sem_qualificadores(habilidade))
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
+
+
+def _nome_de_comparacao(identidade: str) -> str:
+    return ALIASES_DE_COMPARACAO.get(identidade, identidade)
 
 
 def _parte_unica(habilidade: str) -> str | None:
