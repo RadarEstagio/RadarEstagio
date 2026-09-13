@@ -152,7 +152,9 @@ export function preencher(incluirHabilidade = true) {
 function janelaSemArmazenamento() {
   return new Proxy(window, {
     get(alvo, chave) {
-      if (chave === "localStorage") throw new DOMException("armazenamento bloqueado", "SecurityError");
+      if (chave === "localStorage" || chave === "sessionStorage") {
+        throw new DOMException("armazenamento bloqueado", "SecurityError");
+      }
       const valor = Reflect.get(alvo, chave);
       return typeof valor === "function" && !/^[A-Z]/.test(String(chave)) ? valor.bind(alvo) : valor;
     },
@@ -227,6 +229,7 @@ export function abrirAplicacao({
   chave = "",
   temaSalvo = null,
   armazenamentoBloqueado = false,
+  armazenado = {},
 } = {}) {
   fecharAplicacao();
   const pagina = new DOMParser().parseFromString(html, "text/html");
@@ -240,6 +243,7 @@ export function abrirAplicacao({
   window.localStorage.clear();
   window.sessionStorage.clear();
   if (temaSalvo) window.localStorage.setItem("radar-tema", temaSalvo);
+  for (const [chave, valor] of Object.entries(armazenado)) window.localStorage.setItem(chave, valor);
   const armazenamentoDoHead = armazenamentoBloqueado
     ? new Proxy({}, { get() { throw new DOMException("armazenamento bloqueado", "SecurityError"); } })
     : window.localStorage;

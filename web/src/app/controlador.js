@@ -664,7 +664,9 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   function limparPerfilPendente() {
-    janela.localStorage.removeItem(CHAVE_DO_PERFIL_PENDENTE);
+    try {
+      janela.localStorage.removeItem(CHAVE_DO_PERFIL_PENDENTE);
+    } catch {}
   }
 
   async function sessaoAtual() {
