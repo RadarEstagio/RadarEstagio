@@ -95,7 +95,7 @@ Proposta de divisão registrada em 08/09/2026 por Ian, **a confirmar por Igor e 
 
 Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
 (`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
-`VERSAO_DOS_TERMOS` em `web/assets/app.js` para a mesma data, porque o banco guarda a versão
+`VERSAO_DOS_TERMOS` em `web/src/domain/perfil.js` para a mesma data, porque o banco guarda a versão
 aceita por cada conta. Confiram também os controles reais descritos no
 [contrato frontend](contrato-front.md).
 

@@ -130,9 +130,13 @@ Sem framework web: a aplicação é um script disparado por cron, não um servi�
 `psycopg` 3 acessa o PostgreSQL com SQL puro, sem ORM.
 
 O frontend tem build com Vite em `web/package.json`, sem dependência de Node no `radar/`.
-`web/scripts/check-frontend-comments.mjs` aplica a regra de comentários a JS, JSX e CSS pelo
-parser e roda em `npm --prefix web run lint`. React e o SDK do Supabase por npm entram com o
-primeiro fluxo migrado, não antes.
+Cadastro, autenticação e conta são React desde 13/09/2026; a landing segue no `index.html`. O
+estado do painel fica em `web/src/app/controlador.js`, lido com `useSyncExternalStore`, e não em
+`useReducer`: o envio duplicado no mesmo tick e a resposta antiga do catálogo dependem de ler o
+estado na hora, e o estado do React devolveria o valor da última renderização. O `<dialog>` e o
+`#account-page` continuam estáticos no HTML, porque o CSS da conta depende deles; o React monta
+na página da conta e manda o painel ao diálogo por portal. `web/scripts/check-frontend-comments.mjs`
+aplica a regra de comentários a JS, JSX e CSS pelo parser e roda em `npm --prefix web run lint`.
 
 `python-telegram-bot` não entra em fase alguma: o bot só envia mensagens (uma requisição
 HTTP simples). O `/start` do vínculo e os callbacks de feedback chegam por webhook a uma Edge
@@ -155,7 +159,7 @@ o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → 
 grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
 `chat_id` do banco no lugar do `perfil_fixo` e envia uma mensagem por usuário.
 
-O frontend é uma landing estática integrada ao Supabase. O contrato entre o site e o `radar/` é
+O frontend é uma landing estática com o painel de cadastro e conta em React, integrada ao Supabase. O contrato entre o site e o `radar/` é
 o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.

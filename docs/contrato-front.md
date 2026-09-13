@@ -1,8 +1,10 @@
 # Contrato entre o site e o radar
 
-Revisado em 08/09/2026 contra `web/assets/app.js` e migrations até `0019`.
+Revisado em 08/09/2026 contra o antigo `web/assets/app.js` e migrations até `0019`; desde
+13/09/2026 o código está em `web/src/`, com o mesmo contrato.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
-A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
+A referência executável é o [controlador](../web/src/app/controlador.js), coberto pelos
+[testes de interface](../web/tests/app/); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).
 
 ## Cadastro e confirmação

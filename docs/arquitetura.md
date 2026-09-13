@@ -399,7 +399,7 @@ nem certifica produção. A01 foi fechado em `c2d6f96`; a lacuna final de A04 em
 | A02 — erro em item de lote | Acumular extrações válidas e repetir só pendências; falha temporária não descarta sucessos anteriores | `tests/test_lotes.py` |
 | A03 — extração parcial | Candidata sem extração impede concluir que não há vaga compatível; aprovadas disponíveis podem ser entregues | `tests/test_pipeline.py` |
 | A04 — proficiência | Básico ou nível desconhecido não comprova avançado; requisito sem nível aceita habilidade conhecida, preservando aliases e exceção de computação | `tests/test_avaliacoes.py`, `tests/test_formatador.py` |
-| A05 — troca de sessão | Limpar interesses no logout/troca de conta; preservar restauração intencional na edição da mesma conta | `tests/web/cadastro_test.ts` |
+| A05 — troca de sessão | Limpar interesses no logout/troca de conta; preservar restauração intencional na edição da mesma conta | `web/tests/app/habilidades-e-areas.test.js` |
 | A06 — histórico antes da IA | Extrair apenas candidatas ainda úteis a algum perfil; manter trava e releitura antes de enviar. Falha de leitura não autoriza envio | `tests/test_pipeline.py` |
 
 Na revisão do PR #22, a agregação por área foi colocada em `radar/domain/metricas.py`:
