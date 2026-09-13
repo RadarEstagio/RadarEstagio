@@ -145,7 +145,6 @@ SQL_E_BANCOS_RELACIONAIS = (
     "SQLite",
     "MariaDB",
 )
-DIALETOS_QUE_IMPLICAM_SQL = frozenset({"plsql", "tsql"})
 BACK_END = (
     "Java",
     "Spring",
@@ -335,7 +334,10 @@ SEPARADORES_DE_PARTES = re.compile(
 SEPARADORES_DE_ALTERNATIVAS = re.compile(
     r"(?:\s+e\s*/\s*ou\s+|\s+ou\s+)" + FORA_DE_PARENTESES, re.IGNORECASE
 )
-PL_SQL_COM_BARRA = re.compile(r"\bpl\s*/\s*sql\b", re.IGNORECASE)
+GRAFIAS_DE_DIALETOS_DE_SQL = (
+    (re.compile(r"\bpl\s*[-/]?\s*sql\b", re.IGNORECASE), "PL/SQL"),
+    (re.compile(r"\b(?:t|transact)\s*-?\s*sql\b", re.IGNORECASE), "T/SQL"),
+)
 PALAVRAS_SEM_SIGNIFICADO = frozenset(
     {
         "a",
@@ -678,9 +680,12 @@ def _declarar(
     anterior = declaradas.get(nome)
     if anterior is None or declarada.nivel > anterior.nivel:
         declaradas[nome] = declarada
-    if nome in DIALETOS_QUE_IMPLICAM_SQL:
-        palavras = frozenset({"sql"}) if declarada.palavras else frozenset()
-        _declarar(declaradas, "sql", declarada._replace(palavras=palavras))
+
+
+def _dialetos_com_barra(habilidade: str) -> str:
+    for grafia, com_barra in GRAFIAS_DE_DIALETOS_DE_SQL:
+        habilidade = grafia.sub(com_barra, habilidade)
+    return habilidade
 
 
 def _atende(
@@ -875,8 +880,7 @@ def _parte_unica(habilidade: str) -> str | None:
 
 def _alternativas(habilidade: str) -> list[list[str]]:
     alternativas: list[list[str]] = []
-    com_pl_sql_junto = PL_SQL_COM_BARRA.sub("PL-SQL", habilidade)
-    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(com_pl_sql_junto):
+    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(_dialetos_com_barra(habilidade)):
         partes = [
             parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()
         ]

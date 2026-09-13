@@ -1109,6 +1109,51 @@ def test_requisitos_juntados_pelo_alias_aparecem_com_os_nomes_do_anuncio():
     assert resultado.requisitos_atendidos == ["SQL SERVER", "Azure SQL Database"]
 
 
+DIALETO_EM_HABILIDADE_COMPOSTA = [
+    "Oracle PL/SQL",
+    "Linguagem PL/SQL",
+    "Programação PL/SQL",
+    "Procedures PL/SQL",
+    "Banco de dados Oracle PL/SQL",
+    "Oracle PL-SQL",
+    "Procedures em T-SQL",
+]
+
+
+@pytest.mark.parametrize("habilidade", DIALETO_EM_HABILIDADE_COMPOSTA)
+@pytest.mark.parametrize("exigida", ["SQL", "banco de dados", "ETL", "análise de dados"])
+def test_dialeto_dentro_de_habilidade_composta_continua_implicando_sql(
+    habilidade: str, exigida: str
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([habilidade]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+@pytest.mark.parametrize("habilidade", DIALETO_EM_HABILIDADE_COMPOSTA)
+def test_dialeto_em_habilidade_composta_implica_sql_fora_de_computacao(habilidade: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica(["SQL", "Consultas SQL"]), perfil_de_direito([habilidade])
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL", "Consultas SQL"]
+
+
+def test_oracle_no_perfil_nao_atende_oracle_pl_sql_por_palavras():
+    resultado = pontuar(vaga(), extracao_juridica(["Oracle PL/SQL"]), perfil_de_direito(["Oracle"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("grafia", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+def test_dialeto_leva_a_palavra_sql_fora_de_computacao(grafia: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica(["SQL Server Reporting Services"]), perfil_de_direito([grafia])
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL Server Reporting Services"]
+
+
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
 def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))

@@ -85,13 +85,14 @@ def notas(pares: list[tuple[Perfil, ExtracaoDaVaga]]) -> list[int]:
 def limpar_caches_das_equivalencias() -> None:
     avaliacoes._membros_equivalentes.cache_clear()
     avaliacoes._habilidades_declaradas.cache_clear()
+    avaliacoes._exigencia.cache_clear()
 
 
 @pytest.mark.parametrize(
     ("constante", "desligada"),
     [
         ("EQUIVALENCIAS_DE_HABILIDADES", {}),
-        ("DIALETOS_QUE_IMPLICAM_SQL", frozenset()),
+        ("GRAFIAS_DE_DIALETOS_DE_SQL", ()),
     ],
 )
 def test_equivalencia_de_bancos_nunca_derruba_nota_e_sobe_alguma(
