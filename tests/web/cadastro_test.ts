@@ -1284,6 +1284,7 @@ Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mes
       assert.deepEqual(habilidadesNaTela(a.w), ["Python", "Figma"]);
       assert.equal(form.querySelector('input[name="areas"][value="dados_ia"]').checked, true);
       assert.equal(form.elements.senha.value, "");
+      assert.equal(form.elements.email.value, "");
     };
     fecharComEsc(a.w);
     assert.equal(doc.querySelector("#signup-dialog").open, false);
@@ -1295,6 +1296,7 @@ Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mes
     conferirRascunho();
 
     doc.querySelector("#next-step").click();
+    form.elements.email.value = user.email;
     form.elements.senha.value = "uma-senha-forte";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
@@ -1323,6 +1325,8 @@ Deno.test("fechar o cadastro depois de seguir sem habilidades não pede a escolh
     doc.querySelector("#next-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     assert.equal(form.elements.senha.value, "");
+    assert.equal(form.elements.email.value, "");
+    form.elements.email.value = user.email;
     form.elements.senha.value = "uma-senha-forte";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
@@ -1376,7 +1380,7 @@ function conferirSenhaVaziaEEscondida(w: TestWindow, contexto: string) {
   assert.equal(botao.getAttribute("aria-label"), "Mostrar senha", contexto);
 }
 
-Deno.test("fechar o cadastro apaga a senha e volta a escondê-la, mantendo o resto do rascunho", async () => {
+Deno.test("fechar o cadastro apaga senha e e-mail e volta a esconder a senha, mantendo o resto do rascunho", async () => {
   for (const como of ["esc", "x", "voltar"]) {
     const a = app();
     try {
@@ -1393,7 +1397,7 @@ Deno.test("fechar o cadastro apaga a senha e volta a escondê-la, mantendo o res
 
       conferirSenhaVaziaEEscondida(a.w, como);
       assert.equal(form.elements.curso.value, "Computação", como);
-      assert.equal(form.elements.email.value, user.email, como);
+      assert.equal(form.elements.email.value, "", como);
       assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "1", como);
     } finally {
       a.close();

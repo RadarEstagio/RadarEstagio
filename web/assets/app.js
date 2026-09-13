@@ -959,6 +959,7 @@ function closeSignup() {
     passoDoRascunho = currentStep;
   }
   limparSenhas();
+  form.elements.email.value = "";
   fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
