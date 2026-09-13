@@ -90,11 +90,13 @@ const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para con
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
+const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
 const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
 const TAMANHO_MAXIMO_DA_HABILIDADE = 100;
+const TAMANHO_MINIMO_DO_CURSO = 2;
 const MOTIVOS_PAUSA = new Set([
   "conseguiu_estagio",
   "interrompeu_busca",
@@ -132,6 +134,10 @@ const PASSO_PREFERENCIAS = 4;
 const PROGRESSO_AO_CONFIRMAR = 100;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
+let passoDoRascunho = PASSO_MOMENTO;
+const VISITANTE = "visitante";
+let donoDoRascunho = VISITANTE;
+let emailDoCadastroEnviado = "";
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
@@ -602,6 +608,14 @@ function limparErroSeCorrigido(event) {
   if (campoComErro.checkValidity()) limparErroDoCampo();
 }
 
+function mensagemDoCampo(campo) {
+  if (campo.name === "cidade") return mensagemDaCidade();
+  if (campo.name === "curso" && campo.value.trim()) {
+    return `Use pelo menos ${TAMANHO_MINIMO_DO_CURSO} caracteres no nome do curso.`;
+  }
+  return mensagensValidacao[campo.name];
+}
+
 function validateStep(step) {
   limparErroDoCampo();
   if (step === PASSO_HABILIDADES && selectedSkills.size === 0 && !continuarSemHabilidades) {
@@ -617,12 +631,13 @@ function validateStep(step) {
   if (cidade) campoDeCidade.value = cidade;
   const invalid = fields.find((field) => {
     if (field.name === "cidade" && !cidade) return true;
+    if (field.name === "curso" && field.value.trim().length < TAMANHO_MINIMO_DO_CURSO) return true;
     if (field.name === "modalidade" && !modalidadesAceitas.has(form.elements.modalidade.value)) return true;
     return !field.checkValidity();
   });
   if (invalid) {
     showStep(step);
-    const mensagem = invalid.name === "cidade" ? mensagemDaCidade() : mensagensValidacao[invalid.name];
+    const mensagem = mensagemDoCampo(invalid);
     marcarErroNoCampo(invalid, mensagem ?? "Revise os campos antes de continuar.");
     return false;
   }
@@ -636,7 +651,6 @@ function validateStep(step) {
 
 function renderSkills() {
   if (selectedSkills.size > 0 && campoComErro?.id === "custom-skill") limparErroDoCampo();
-  form.elements.habilidades.value = [...selectedSkills].join(",");
   document.querySelectorAll("[data-skill]").forEach((button) => {
     const active = selectedSkills.has(button.dataset.skill);
     button.classList.toggle("is-selected", active);
@@ -660,17 +674,18 @@ function renderSkills() {
 
 function addCustomSkill() {
   const input = document.querySelector("#custom-skill");
-  const skill = input.value.trim().slice(0, TAMANHO_MAXIMO_DA_HABILIDADE);
-  if (!skill) return;
+  const skill = Array.from(input.value.trim()).slice(0, TAMANHO_MAXIMO_DA_HABILIDADE).join("").trim();
+  if (!skill) return true;
   if (selectedSkills.size >= MAXIMO_DE_HABILIDADES && !selectedSkills.has(skill)) {
     marcarErroNoCampo(input, `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
-    return;
+    return false;
   }
   selectedSkills.add(skill);
   continuarSemHabilidades = false;
   input.value = "";
   renderSkills();
   setFormMessage();
+  return true;
 }
 
 function validationError(message) {
@@ -845,12 +860,15 @@ function resetDialogView() {
   setFormMessage();
   limparErroDoCampo();
   setSubmitting(false);
-  continuarSemHabilidades = false;
   showStep(PASSO_CONTA);
 }
 
 function limparRascunhoDoCadastro() {
   form.reset();
+  limparSenhas();
+  passoDoRascunho = PASSO_MOMENTO;
+  donoDoRascunho = VISITANTE;
+  emailDoCadastroEnviado = "";
   selectedSkills.clear();
   continuarSemHabilidades = false;
   esquecerPerfilCarregado();
@@ -858,6 +876,26 @@ function limparRascunhoDoCadastro() {
   campoDeAreas.hidden = true;
   document.querySelector("#skills-catalog-notice").hidden = true;
   renderSkills();
+}
+
+function recusarRascunhoDeOutraSessao(mensagem) {
+  sairDoModoEdicao();
+  limparRascunhoDoCadastro();
+  setAuthMode("login");
+  showStep(PASSO_CONTA);
+  setFormMessage(mensagem);
+}
+
+function esquecerRascunhoDeConta() {
+  if (donoDoRascunho !== VISITANTE) limparRascunhoDoCadastro();
+}
+
+function reconhecerDonoDoRascunho(session) {
+  const dono = session?.user.id ?? VISITANTE;
+  const cadastroFeitoAqui = donoDoRascunho === VISITANTE && Boolean(emailDoCadastroEnviado)
+    && session?.user.email?.toLowerCase() === emailDoCadastroEnviado;
+  if (donoDoRascunho !== dono && !cadastroFeitoAqui) limparRascunhoDoCadastro();
+  donoDoRascunho = dono;
 }
 
 function openAccountPage() {
@@ -917,6 +955,11 @@ function openDialog() {
 }
 
 function closeSignup() {
+  if (dialog.open && !form.hidden && authMode === "signup" && !editandoPerfilExistente) {
+    passoDoRascunho = currentStep;
+  }
+  limparSenhas();
+  form.elements.email.value = "";
   fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
@@ -930,11 +973,7 @@ function profileFromForm() {
   const profile = {
     curso: data.get("curso").trim(),
     periodo: Number(data.get("periodo")),
-    habilidades: data
-      .get("habilidades")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
+    habilidades: [...selectedSkills].map((item) => item.trim()).filter(Boolean),
     cidade: cidadeDoFormulario() ?? "",
     modalidade: data.get("modalidade"),
     areas_de_interesse: areasDeInteresseDoFormulario(data),
@@ -1119,6 +1158,7 @@ function preencherFormularioCom(profile) {
 async function perfilAtual() {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  reconhecerDonoDoRascunho(session);
   const profile = await loadProfile(session.user.id);
   if (!profile) throw validationError(MENSAGEM_SEM_PERFIL);
   return profile;
@@ -1355,15 +1395,15 @@ function abrirLogin() {
 
 async function openSignup() {
   resetDialogView();
-  if (!usuarioAutenticado && authMode === "signup") showStep(PASSO_MOMENTO);
+  if (!usuarioAutenticado && authMode === "signup") showStep(passoDoRascunho);
   if (!usuarioAutenticado) openDialog();
   try {
     const session = await currentSession();
     mostrarChamadaDeConta(Boolean(session));
+    reconhecerDonoDoRascunho(session);
     if (!session) {
-      limparRascunhoDoCadastro();
       setAuthMode("signup");
-      showStep(PASSO_MOMENTO);
+      showStep(passoDoRascunho);
       openDialog();
       return;
     }
@@ -1372,6 +1412,7 @@ async function openSignup() {
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    esquecerRascunhoDeConta();
     abrirLogin();
     setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
@@ -1396,17 +1437,20 @@ async function resumeConfirmedSignup() {
       return;
     }
     if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
+    reconhecerDonoDoRascunho(session);
     const profile = await loadProfile(session.user.id);
     clearPendingProfile();
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
+    esquecerRascunhoDeConta();
     abrirLogin();
     setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
 }
 
 function prepareMissingProfile(session) {
+  reconhecerDonoDoRascunho(session);
   resetDialogView();
   openAccountPage();
   setAuthMode("signup");
@@ -1426,7 +1470,7 @@ function validarFluxo() {
 }
 
 function avancarPasso() {
-  if (currentStep === PASSO_HABILIDADES) addCustomSkill();
+  if (currentStep === PASSO_HABILIDADES && !addCustomSkill()) return;
   if (currentStep === PASSO_PREFERENCIAS) lembrarAreasEscolhidas();
   if (!validateStep(currentStep)) return;
   if (currentStep === PASSO_MOMENTO) void montarHabilidadesDoCurso();
@@ -1622,6 +1666,9 @@ document.querySelector("#skill-picker").addEventListener("click", (event) => {
   if (selectedSkills.has(skill)) {
     selectedSkills.delete(skill);
     if (selectedSkills.size === 0) continuarSemHabilidades = false;
+  } else if (selectedSkills.size >= MAXIMO_DE_HABILIDADES) {
+    marcarErroNoCampo(document.querySelector("#custom-skill"), `Escolha no máximo ${MAXIMO_DE_HABILIDADES} habilidades.`);
+    return;
   } else {
     selectedSkills.add(skill);
     continuarSemHabilidades = false;
@@ -1718,19 +1765,25 @@ form.addEventListener("submit", async (event) => {
       setFormMessage(MENSAGEM_SEM_SESSAO);
       return;
     }
+    if (authMode !== "login" && donoDoRascunho !== VISITANTE && existingSession?.user.id !== donoDoRascunho) {
+      recusarRascunhoDeOutraSessao(existingSession ? MENSAGEM_SESSAO_MUDOU : MENSAGEM_SEM_SESSAO);
+      return;
+    }
     if (!editandoPerfilExistente && existingSession && existingSession.user.email !== email) {
       const { error } = await getClient().auth.signOut();
       if (error) throw error;
       esquecerPerfilCarregado();
     }
-    const session = editandoPerfilExistente || existingSession?.user.email === email
-      ? existingSession
-      : await authenticate(email, password, profile);
+    const autenticarAgora = !editandoPerfilExistente && existingSession?.user.email !== email;
+    const session = autenticarAgora ? await authenticate(email, password, profile) : existingSession;
     form.elements.senha.value = "";
     if (!session) {
+      if (authMode === "signup") emailDoCadastroEnviado = email.toLowerCase();
       showConfirmation(email);
       return;
     }
+    if (autenticarAgora && authMode === "signup") donoDoRascunho = session.user.id;
+    else if (autenticarAgora) reconhecerDonoDoRascunho(session);
     const existing = await loadProfile(session.user.id);
     if (existing && !editandoPerfilExistente) {
       mostrarEstadoDoPerfil(existing);
@@ -1738,6 +1791,10 @@ form.addEventListener("submit", async (event) => {
     }
     if (authMode === "login") {
       prepareMissingProfile(session);
+      return;
+    }
+    if (donoDoRascunho !== session.user.id) {
+      recusarRascunhoDeOutraSessao(MENSAGEM_SESSAO_MUDOU);
       return;
     }
     contaSemPerfil = !existing;
@@ -1916,16 +1973,29 @@ document.querySelector("#assistance-form").addEventListener("submit", async (eve
   }
 });
 
+function campoDaSenha(botao) {
+  return botao.dataset.togglePassword === "senha"
+    ? form.elements.senha : document.querySelector("#assistance-password");
+}
+
+function mostrarSenha(botao, visivel) {
+  campoDaSenha(botao).type = visivel ? "text" : "password";
+  const label = visivel ? "Ocultar senha" : "Mostrar senha";
+  botao.setAttribute("aria-label", label);
+  botao.title = label;
+  botao.setAttribute("aria-pressed", String(visivel));
+}
+
+function limparSenhas() {
+  document.querySelectorAll("[data-toggle-password]").forEach((botao) => {
+    campoDaSenha(botao).value = "";
+    mostrarSenha(botao, false);
+  });
+}
+
 document.querySelectorAll("[data-toggle-password]").forEach((button) => {
   button.addEventListener("click", () => {
-    const input = button.dataset.togglePassword === "senha"
-      ? form.elements.senha : document.querySelector("#assistance-password");
-    const showing = input.type === "password";
-    input.type = showing ? "text" : "password";
-    const label = showing ? "Ocultar senha" : "Mostrar senha";
-    button.setAttribute("aria-label", label);
-    button.title = label;
-    button.setAttribute("aria-pressed", String(showing));
+    mostrarSenha(button, campoDaSenha(button).type === "password");
   });
 });
 

@@ -44,7 +44,7 @@ def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
     javascript = (RAIZ / "web/assets/app.js").read_text()
 
     assert "const selectedSkills = new Set()" in javascript
-    assert 'form.elements.habilidades.value = [...selectedSkills].join(",")' in javascript
+    assert "habilidades: [...selectedSkills]" in javascript
     assert "Escolha ou digite pelo menos uma habilidade." in javascript
     assert "const PASSO_HABILIDADES = 3" in javascript
 

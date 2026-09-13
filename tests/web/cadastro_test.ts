@@ -1242,11 +1242,519 @@ Deno.test("alternar para login e voltar preserva o rascunho do perfil", async ()
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     doc.querySelector("#toggle-auth-mode").click();
     assert.equal(form.elements.curso.value, "Computação");
-    assert.equal(form.elements.habilidades.value, "Python");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
     assert.equal(form.elements.cidade.value, "Recife, PE");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
     await settle();
   } finally { a.close(); }
+});
+
+function fecharComEsc(w: TestWindow) {
+  w.document.querySelector("#cidade").dispatchEvent(
+    new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+  );
+}
+
+async function reabrirCadastro(w: TestWindow) {
+  w.document.querySelector(".js-open-signup").click();
+  await settle();
+}
+
+Deno.test("fechar o cadastro com Esc ou no X e reabrir devolve o rascunho na mesma etapa", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const doc = a.w.document;
+    const form = fill(a.w);
+    doc.querySelector("#next-step").click();
+    await settle();
+    digitarHabilidade(a.w, "Figma");
+    doc.querySelector("#next-step").click();
+    await settle();
+    form.querySelector('input[name="areas"][value="dados_ia"]').checked = true;
+
+    const conferirRascunho = () => {
+      assert.equal(doc.querySelector("#signup-dialog").open, true);
+      assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+      assert.equal(form.elements.curso.value, "Computação");
+      assert.equal(form.elements.periodo.value, "3");
+      assert.equal(form.elements.cidade.value, "Recife, PE");
+      assert.equal(form.querySelector('[value="remoto"]').checked, true);
+      assert.deepEqual(habilidadesNaTela(a.w), ["Python", "Figma"]);
+      assert.equal(form.querySelector('input[name="areas"][value="dados_ia"]').checked, true);
+      assert.equal(form.elements.senha.value, "");
+      assert.equal(form.elements.email.value, "");
+    };
+    fecharComEsc(a.w);
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    await reabrirCadastro(a.w);
+    conferirRascunho();
+    doc.querySelector("#close-dialog").click();
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    await reabrirCadastro(a.w);
+    conferirRascunho();
+
+    doc.querySelector("#next-step").click();
+    form.elements.email.value = user.email;
+    form.elements.senha.value = "uma-senha-forte";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const perfil = called(a.calls, "signup")[1].options.data.cadastro_radar.perfil;
+    assert.equal(perfil.curso, "Computação");
+    assert.deepEqual(Array.from(perfil.habilidades), ["Python", "Figma"]);
+    assert.deepEqual(Array.from(perfil.areas_de_interesse), ["dados_ia"]);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("fechar o cadastro depois de seguir sem habilidades não pede a escolha de novo", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const doc = a.w.document;
+    const form = fill(a.w, false);
+    doc.querySelector("#next-step").click();
+    doc.querySelector("#continue-without-skills").click();
+    fecharComEsc(a.w);
+    await reabrirCadastro(a.w);
+
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.equal(form.elements.senha.value, "");
+    assert.equal(form.elements.email.value, "");
+    form.elements.email.value = user.email;
+    form.elements.senha.value = "uma-senha-forte";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.deepEqual(
+      Array.from(called(a.calls, "signup")[1].options.data.cadastro_radar.perfil.habilidades),
+      [],
+    );
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("perfil carregado da conta não reaparece no cadastro depois que a sessão acaba", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-form").elements.curso.value, "Computação");
+    a.client.auth.getSession = async () => ({ data: { session: null } });
+    doc.querySelector("#back-to-site").click();
+    await reabrirCadastro(a.w);
+
+    const form = doc.querySelector("#signup-form");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.equal(form.elements.curso.value, "");
+    assert.equal(form.elements.cidade.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
+  } finally {
+    a.close();
+  }
+});
+
+function fecharCadastro(w: TestWindow, como: string) {
+  if (como === "esc") fecharComEsc(w);
+  else if (como === "x") w.document.querySelector("#close-dialog").click();
+  else w.dispatchEvent(new w.PopStateEvent("popstate", { state: null }));
+}
+
+function conferirSenhaVaziaEEscondida(w: TestWindow, contexto: string) {
+  const campo = w.document.querySelector("#signup-password");
+  const botao = w.document.querySelector('[data-toggle-password="senha"]');
+  assert.equal(campo.value, "", contexto);
+  assert.equal(campo.type, "password", contexto);
+  assert.equal(botao.getAttribute("aria-pressed"), "false", contexto);
+  assert.equal(botao.getAttribute("aria-label"), "Mostrar senha", contexto);
+}
+
+Deno.test("fechar o cadastro apaga senha e e-mail e volta a esconder a senha, mantendo o resto do rascunho", async () => {
+  for (const como of ["esc", "x", "voltar"]) {
+    const a = app();
+    try {
+      await settle();
+      await reabrirCadastro(a.w);
+      const form = fill(a.w);
+      for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+      await settle();
+      a.w.document.querySelector('[data-toggle-password="senha"]').click();
+      assert.equal(form.elements.senha.type, "text");
+
+      fecharCadastro(a.w, como);
+      await reabrirCadastro(a.w);
+
+      conferirSenhaVaziaEEscondida(a.w, como);
+      assert.equal(form.elements.curso.value, "Computação", como);
+      assert.equal(form.elements.email.value, "", como);
+      assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "1", como);
+    } finally {
+      a.close();
+    }
+  }
+});
+
+Deno.test("senha de um login recusado não fica no campo ao fechar e reabrir", async () => {
+  const a = app();
+  try {
+    await settle();
+    Object.assign(a.client.auth, {
+      signInWithPassword: async () => ({
+        data: { session: null },
+        error: { code: "invalid_credentials", message: "Invalid login credentials", status: 400 },
+      }),
+    });
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = "a@x.com";
+    form.elements.senha.value = "senha-da-pessoa-A";
+    a.w.document.querySelector('[data-toggle-password="senha"]').click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.match(a.w.document.querySelector("#form-message").textContent, /E-mail ou senha incorretos/);
+
+    fecharComEsc(a.w);
+    await reabrirCadastro(a.w);
+
+    conferirSenhaVaziaEEscondida(a.w, "login recusado");
+  } finally {
+    a.close();
+  }
+});
+
+const outraPessoa = { id: "00000000-0000-4000-8000-000000000002", email: "outra@example.com" };
+
+function sessaoPassaASer(a: ReturnType<typeof app>, sessao: Session | null) {
+  Object.assign(a.client.auth, { getSession: async () => ({ data: { session: sessao } }) });
+}
+
+function conferirCadastroVazio(a: ReturnType<typeof app>, contexto: string) {
+  const form = a.w.document.querySelector("#signup-form");
+  assert.equal(form.elements.curso.value, "", contexto);
+  assert.equal(form.elements.email.value, "", contexto);
+  assert.deepEqual(habilidadesNaTela(a.w), [], contexto);
+}
+
+Deno.test("rascunho e e-mail de uma conta não aparecem para quem abre o cadastro depois que a sessão acaba", async () => {
+  const comPerfil = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(comPerfil.w);
+    assert.equal(comPerfil.w.document.querySelector("#account-page").hidden, false);
+    comPerfil.w.document.querySelector("#close-account").click();
+    sessaoPassaASer(comPerfil, null);
+    await reabrirCadastro(comPerfil.w);
+    conferirCadastroVazio(comPerfil, "conta com perfil");
+  } finally {
+    comPerfil.close();
+  }
+
+  const semPerfil = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = semPerfil.w.document.querySelector("#signup-form");
+    assert.equal(form.elements.email.value, user.email);
+    form.elements.curso.value = "Direito";
+    semPerfil.w.document.querySelector("#back-to-site").click();
+    sessaoPassaASer(semPerfil, null);
+    await reabrirCadastro(semPerfil.w);
+    conferirCadastroVazio(semPerfil, "conta sem perfil");
+    assert.equal(semPerfil.w.document.querySelector("#credenciais").hidden, false);
+  } finally {
+    semPerfil.close();
+  }
+});
+
+Deno.test("outra conta que entra na mesma página não vê o rascunho da conta anterior", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.curso.value = "Direito";
+    a.w.document.querySelector("#back-to-site").click();
+    sessaoPassaASer(a, { user: outraPessoa });
+    await reabrirCadastro(a.w);
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "");
+    assert.equal(form.elements.email.value, outraPessoa.email);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("visitante que confirma a conta criada daqui continua com o próprio rascunho", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const form = fill(a.w);
+    for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(called(a.calls, "signup")[1].email, user.email);
+    fecharComEsc(a.w);
+    sessaoPassaASer(a, { user });
+    await reabrirCadastro(a.w);
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "Computação");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
+    assert.equal(form.elements.email.value, user.email);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sair ou excluir a conta deixa o cadastro vazio para a próxima pessoa", async () => {
+  const saindo = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(saindo.w);
+    saindo.w.document.querySelector("#edit-profile").click();
+    await settle();
+    saindo.w.document.querySelector("#back-to-site").click();
+    await reabrirCadastro(saindo.w);
+    saindo.w.document.querySelector("#logout-account").click();
+    await settle();
+    sessaoPassaASer(saindo, null);
+    await reabrirCadastro(saindo.w);
+    conferirCadastroVazio(saindo, "logout depois de editar");
+  } finally {
+    saindo.close();
+  }
+
+  const semPerfil = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    semPerfil.w.document.querySelector("#signup-form").elements.curso.value = "Direito";
+    semPerfil.w.document.querySelector("#delete-account-without-profile").click();
+    semPerfil.w.document.querySelector("#account-confirm-yes").click();
+    await settle();
+    sessaoPassaASer(semPerfil, null);
+    semPerfil.w.document.querySelector("#finish-signup").click();
+    await reabrirCadastro(semPerfil.w);
+    conferirCadastroVazio(semPerfil, "exclusão sem perfil");
+  } finally {
+    semPerfil.close();
+  }
+
+  const comPerfil = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(comPerfil.w);
+    comPerfil.w.document.querySelector("#delete-account").click();
+    comPerfil.w.document.querySelector("#account-confirm-yes").click();
+    await settle();
+    comPerfil.w.document.querySelector("#finish-signup").click();
+    sessaoPassaASer(comPerfil, null);
+    await reabrirCadastro(comPerfil.w);
+    conferirCadastroVazio(comPerfil, "exclusão com perfil e sessão encerrada depois");
+  } finally {
+    comPerfil.close();
+  }
+});
+
+Deno.test("e-mail digitado num login não fica para quem abre o cadastro depois que a sessão acaba", async () => {
+  const a = app({ savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = "a@x.com";
+    form.elements.senha.value = "uma-senha-forte";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    a.w.document.querySelector("#close-account").click();
+    await reabrirCadastro(a.w);
+
+    conferirCadastroVazio(a, "login e sessão encerrada");
+  } finally {
+    a.close();
+  }
+});
+
+function conferirEnvioRecusado(a: ReturnType<typeof app>, contexto: string) {
+  assert.equal(a.calls.some(([nome, tabela]) => nome === "update" && tabela === "perfis"), false, contexto);
+  assert.equal(a.calls.some(([nome, alvo]) => nome === "rpc" && alvo === "concluir_meu_cadastro"), false, contexto);
+  assert.equal(a.calls.some(([nome]) => nome === "logout" || nome === "signup" || nome === "login"), false, contexto);
+  assert.match(a.w.document.querySelector("#form-message").textContent, /Sua sessão mudou/, contexto);
+  conferirCadastroVazio(a, contexto);
+}
+
+Deno.test("edição aberta de uma conta não é gravada em outra que entrou em outra aba", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    sessaoPassaASer(a, { user: outraPessoa });
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "edição de outra conta");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("perfil sendo completado por uma conta não vai para outra que entrou em outra aba", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = fill(a.w);
+    sessaoPassaASer(a, { user: outraPessoa });
+    a.w.document.querySelector("#next-step").click();
+    a.w.document.querySelector("#next-step").click();
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "perfil a completar de outra conta");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("rascunho de visitante não é concluído numa conta que apareceu em outra aba", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const form = fill(a.w);
+    for (let passo = 0; passo < 3; passo += 1) a.w.document.querySelector("#next-step").click();
+    await settle();
+    sessaoPassaASer(a, { user });
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirEnvioRecusado(a, "rascunho de visitante numa sessão de outra aba");
+  } finally {
+    a.close();
+  }
+});
+
+function contaSemPerfilNoBanco(a: ReturnType<typeof app>) {
+  const from = a.client.from;
+  a.client.from = (tabela: string) => {
+    const consulta = from(tabela);
+    consulta.maybeSingle = async () => ({ data: null });
+    return consulta;
+  };
+}
+
+Deno.test("sessão que falha ao renovar não deixa o perfil da conta no formulário nem para o próximo login", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    assert.equal(form.elements.curso.value, "Computação");
+    a.w.document.querySelector("#back-to-site").click();
+    Object.assign(a.client.auth, {
+      getSession: async () => ({
+        data: { session: null },
+        error: new Error("Invalid Refresh Token: Refresh Token Not Found"),
+      }),
+    });
+    await reabrirCadastro(a.w);
+    assert.match(a.w.document.querySelector("#form-message").textContent, /Não conseguimos carregar sua conta/);
+
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    assert.equal(form.elements.curso.value, "", "Criar conta depois do erro");
+    assert.equal(form.elements.cidade.value, "", "Criar conta depois do erro");
+    assert.deepEqual(habilidadesNaTela(a.w), [], "Criar conta depois do erro");
+
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    sessaoPassaASer(a, null);
+    Object.assign(a.client.auth, { signInWithPassword: async () => ({ data: { session: { user: outraPessoa } } }) });
+    contaSemPerfilNoBanco(a);
+    form.elements.email.value = outraPessoa.email;
+    form.elements.senha.value = "senha-da-outra-pessoa";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "", "login seguinte");
+    assert.deepEqual(habilidadesNaTela(a.w), [], "login seguinte");
+    assert.equal(form.elements.email.value, outraPessoa.email);
+  } finally {
+    a.close();
+  }
+});
+
+async function rascunhoDeVisitanteFechado(a: ReturnType<typeof app>) {
+  await settle();
+  await reabrirCadastro(a.w);
+  fill(a.w);
+  a.w.document.querySelector("#next-step").click();
+  await settle();
+  fecharComEsc(a.w);
+}
+
+function conferirPerfilACompletarVazio(a: ReturnType<typeof app>, contexto: string) {
+  const form = a.w.document.querySelector("#signup-form");
+  assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false, contexto);
+  assert.equal(form.elements.curso.value, "", contexto);
+  assert.equal(form.elements.cidade.value, "", contexto);
+  assert.deepEqual(habilidadesNaTela(a.w), [], contexto);
+  assert.equal(form.elements.email.value, outraPessoa.email, contexto);
+}
+
+Deno.test("login de outra conta pelo diálogo não herda o rascunho do visitante", async () => {
+  const a = app();
+  try {
+    await rascunhoDeVisitanteFechado(a);
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    Object.assign(a.client.auth, { signInWithPassword: async () => ({ data: { session: { user: outraPessoa } } }) });
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = outraPessoa.email;
+    form.elements.senha.value = "senha-da-outra-pessoa";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+
+    conferirPerfilACompletarVazio(a, "login pelo diálogo");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sessão de outra conta que chega de outra aba não herda o rascunho do visitante", async () => {
+  const a = app();
+  try {
+    await rascunhoDeVisitanteFechado(a);
+    sessaoPassaASer(a, { user: outraPessoa });
+    await reabrirCadastro(a.w);
+
+    conferirPerfilACompletarVazio(a, "sessão de outra aba");
+  } finally {
+    a.close();
+  }
 });
 
 Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
@@ -1922,7 +2430,7 @@ Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco ace
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const form = fill(a.w, false);
+    fill(a.w, false);
     doc.querySelector("#next-step").click();
     const input = doc.querySelector("#custom-skill");
     const digitar = (valor: string) => {
@@ -1932,13 +2440,224 @@ Deno.test("habilidade digitada respeita o tamanho e a quantidade que o banco ace
       );
     };
     digitar("x".repeat(150));
-    assert.equal(form.elements.habilidades.value.length, 100);
+    assert.deepEqual(habilidadesNaTela(a.w), ["x".repeat(100)]);
     for (let indice = 1; indice < 50; indice += 1) digitar(`habilidade-${indice}`);
-    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    assert.equal(habilidadesNaTela(a.w).length, 50);
     digitar("passou-do-limite");
-    assert.equal(form.elements.habilidades.value.split(",").length, 50);
+    assert.equal(habilidadesNaTela(a.w).length, 50);
     assert.ok(doc.querySelector("#erro-do-campo").textContent.includes("50 habilidades"));
     await settle();
+  } finally {
+    a.close();
+  }
+});
+
+function digitarHabilidade(w: TestWindow, valor: string) {
+  const campo = w.document.querySelector("#custom-skill");
+  campo.value = valor;
+  campo.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+}
+
+function habilidadesNaTela(w: TestWindow): string[] {
+  return [...w.document.querySelectorAll("#selected-skills button")].map((chip) =>
+    chip.getAttribute("aria-label").replace(/^Remover /, "")
+  );
+}
+
+async function habilidadesEnviadas(a: ReturnType<typeof app>): Promise<string[]> {
+  const doc = a.w.document;
+  doc.querySelector("#next-step").click();
+  doc.querySelector("#next-step").click();
+  doc.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+  await settle();
+  return Array.from(called(a.calls, "signup")[1].options.data.cadastro_radar.perfil.habilidades);
+}
+
+Deno.test("corte de 100 caracteres não parte emoji nem deixa espaço que o envio apagaria", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    digitarHabilidade(a.w, `${"c".repeat(99)}😀`);
+    digitarHabilidade(a.w, `${"a".repeat(99)} ${"b".repeat(20)}`);
+
+    const naTela = habilidadesNaTela(a.w);
+    assert.deepEqual(naTela, [`${"c".repeat(99)}😀`, "a".repeat(99)]);
+    const enviadas = await habilidadesEnviadas(a);
+    assert.deepEqual(enviadas, naTela);
+    for (const habilidade of enviadas) {
+      assert.equal(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(habilidade), false);
+      assert.ok(Array.from(habilidade).length <= 100);
+    }
+  } finally {
+    a.close();
+  }
+});
+
+async function etapaDeHabilidadesCom50(a: ReturnType<typeof app>) {
+  await settle();
+  a.w.document.querySelector(".js-open-signup").click();
+  await settle();
+  fill(a.w, false);
+  a.w.document.querySelector("#next-step").click();
+  await settle();
+  for (let indice = 0; indice < 50; indice += 1) digitarHabilidade(a.w, `h${indice}`);
+}
+
+Deno.test("com 50 habilidades, a sugerida não entra e o aviso aparece na etapa", async () => {
+  const a = app();
+  try {
+    await etapaDeHabilidadesCom50(a);
+    const sugerida = a.w.document.querySelector("#skill-picker [data-skill]");
+    sugerida.click();
+
+    assert.equal(habilidadesNaTela(a.w).length, 50);
+    assert.equal(sugerida.getAttribute("aria-pressed"), "false");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("a 51ª digitada seguida de Continuar fica na etapa com o aviso, sem sumir", async () => {
+  const a = app();
+  try {
+    await etapaDeHabilidadesCom50(a);
+    const campo = a.w.document.querySelector("#custom-skill");
+    campo.value = "Figma";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "3");
+    assert.equal(campo.value, "Figma");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("curso com menos de 2 caracteres fica na etapa com aviso e não chega ao banco", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    form.elements.curso.value = " A ";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "2");
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /pelo menos 2 caracteres/);
+
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.calls.some(([nome]) => nome === "signup"), false);
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "2");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("habilidade digitada com vírgula é uma só na tela e no envio", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    digitarHabilidade(a.w, "Pacote Office (Word, Excel)");
+    digitarHabilidade(a.w, "Python, SQL");
+
+    assert.deepEqual(habilidadesNaTela(a.w), ["Pacote Office (Word, Excel)", "Python, SQL"]);
+    assert.deepEqual(await habilidadesEnviadas(a), ["Pacote Office (Word, Excel)", "Python, SQL"]);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cinquenta habilidades com vírgula cabem no envio e a 51ª é recusada na tela", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w, false);
+    a.w.document.querySelector("#next-step").click();
+    for (let indice = 0; indice < 50; indice += 1) digitarHabilidade(a.w, `A${indice}, B${indice}`);
+    digitarHabilidade(a.w, "A50, B50");
+
+    assert.equal(habilidadesNaTela(a.w).length, 50);
+    assert.match(a.w.document.querySelector("#erro-do-campo").textContent, /no máximo 50 habilidades/);
+    a.w.document.querySelector("#custom-skill").value = "";
+    const naTela = habilidadesNaTela(a.w);
+    assert.deepEqual(await habilidadesEnviadas(a), naTela);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("campos do cadastro limitam a digitação aos tetos que o banco aceita", async () => {
+  const lerMigracao = (nome: string) =>
+    Deno.readTextFile(new URL(`../../supabase/migrations/${nome}`, import.meta.url));
+  const tetos = await lerMigracao("0025_tamanho_dos_textos_do_perfil.sql");
+  const listaDeHabilidades = await lerMigracao("0018_habilidades_vazias.sql");
+  const numero = (texto: string, padrao: RegExp) => {
+    const achado = texto.match(padrao);
+    assert.ok(achado, `${padrao} não encontrado`);
+    return Number(achado[1]);
+  };
+  const constanteDoSite = (nome: string) => numero(script, new RegExp(`const ${nome} = (\\d+);`));
+  const maisSubareasDeUmCurso = Math.max(
+    ...areasJson.areas.map((area: { subareas: unknown[] }) => area.subareas.length),
+  );
+  const a = app();
+  try {
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    const noSite: Record<string, number> = {
+      curso: form.elements.curso.maxLength,
+      cidade: form.elements.cidade.maxLength,
+      habilidade: a.w.document.querySelector("#custom-skill").maxLength,
+    };
+    const noBanco: Record<string, number[]> = {
+      curso: [
+        numero(tetos, /char_length\(curso\) <= (\d+)/),
+        numero(tetos, /btrim\(perfil->>'curso'\)\) not between 2 and (\d+)/),
+        numero(tetos, /length\(perfil->>'curso'\) > (\d+)/),
+      ],
+      cidade: [
+        numero(tetos, /char_length\(cidade\) <= (\d+)/),
+        numero(tetos, /btrim\(perfil->>'cidade'\)\) not between 2 and (\d+)/),
+        numero(tetos, /length\(perfil->>'cidade'\) > (\d+)/),
+      ],
+      habilidade: [
+        numero(tetos, /todos_os_textos_cabem\(habilidades, (\d+)\)/),
+        numero(tetos, /btrim\(item #>> '\{\}'\)\) not between 1 and (\d+)/),
+        numero(tetos, /length\(item #>> '\{\}'\) > (\d+)/),
+        constanteDoSite("TAMANHO_MAXIMO_DA_HABILIDADE"),
+      ],
+    };
+    for (const campo of Object.keys(noBanco)) {
+      for (const valor of noBanco[campo]) assert.equal(valor, noSite[campo], campo);
+    }
+    assert.equal(
+      numero(tetos, /btrim\(perfil->>'curso'\)\) not between (\d+) and/),
+      form.elements.curso.minLength,
+      "mínimo do curso",
+    );
+    const maximoDeHabilidades = constanteDoSite("MAXIMO_DE_HABILIDADES");
+    const listaNoCadastro = numero(tetos, /jsonb_array_length\(perfil->lista\) > (\d+)/);
+    assert.equal(listaNoCadastro, maximoDeHabilidades);
+    assert.equal(numero(listaDeHabilidades, /cardinality\(valor\) between 0 and (\d+)/), maximoDeHabilidades);
+    const areasNoPerfil = numero(tetos, /cardinality\(areas_de_interesse\) <= (\d+)/);
+    assert.ok(areasNoPerfil >= maisSubareasDeUmCurso, `o perfil aceita ${areasNoPerfil} áreas`);
+    assert.ok(listaNoCadastro >= maisSubareasDeUmCurso, `o cadastro aceita ${listaNoCadastro} áreas`);
   } finally {
     a.close();
   }
@@ -1960,7 +2679,7 @@ Deno.test("atalho permite cadastrar com habilidades vazias e preserva a escolha 
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
     doc.querySelector("#continue-without-skills").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
-    assert.equal(form.elements.habilidades.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
     doc.querySelector("#previous-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "3");
     doc.querySelector("#next-step").click();
@@ -2025,7 +2744,7 @@ Deno.test("erro ao salvar perfil iniciante mantém dados e a opção de habilida
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
     assert.equal(form.elements.cidade.value, "Recife, PE");
-    assert.equal(form.elements.habilidades.value, "");
+    assert.deepEqual(habilidadesNaTela(a.w), []);
     doc.querySelector("#previous-step").click();
     doc.querySelector("#next-step").click();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "4");
@@ -2233,7 +2952,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
-    const form = fill(a.w, false);
+    fill(a.w, false);
     a.w.fetch = async () => { throw new Error("offline"); };
     doc.querySelector("#next-step").click();
     await settle();
@@ -2242,7 +2961,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     input.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     await a.w.montarHabilidadesDoCurso();
     assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
-    assert.equal(form.elements.habilidades.value, "Python");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
     assert.equal(doc.querySelector("#skills-catalog-notice").hidden, false);
     assert.equal(doc.querySelector("#continue-without-skills").hidden, true);
   } finally {
