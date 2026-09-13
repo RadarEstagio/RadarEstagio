@@ -157,7 +157,8 @@ PR #62, Igor pediu ajustar o plano e executar. O [plano detalhado](plano-migraca
 mantém a landing estática nesta fase e migra Auth/cadastro/conta para React com JavaScript,
 sem redesign ou TypeScript, em PRs menores começando pelo build compatível.
 
-Base atual: `main` em `5ddf9a0`, após #60/#61/#63. Igor confirmou preservar essa versão,
+Base inicial: `main` em `5ddf9a0`, após #60/#61/#63. Em 13/09 a pilha #64/#66/#67 recebeu a
+`main` em `b1ccbf1` (#65 e #68 a #74) por merge, sem reescrever histórico. Igor confirmou preservar essa versão,
 incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
 remotas e publicação continuam dependendo de autorização própria e evidência no guia.
 
@@ -175,9 +176,12 @@ testes Vitest e job de CI. Não entra na `main` antes de o Pages usar `build-web
 
 P3 e P4 na [PR #67](https://github.com/RadarEstagio/RadarEstagio/pull/67), em rascunho e
 empilhada sobre a #66: cadastro, autenticação e conta em React, `app.js` removido, landing no
-HTML. Entraram juntas porque o legado movia o mesmo painel entre o modal e a conta. Os 75
-cenários do teste Deno foram portados para Vitest (168 testes no total); pytest, Deno, lint,
-artefato e um teste no Chrome headless passaram. Falta a jornada real com Supabase, Safari e
+HTML. Entraram juntas porque o legado movia o mesmo painel entre o modal e a conta. Os
+cenários do teste Deno foram portados para Vitest, inclusive os 33 que a `main` acrescentou, e o
+comportamento novo do `app.js` foi refeito no React: eventos até 256 bytes, armazenamento
+bloqueado, falha ao carregar a conta, pausa só a partir do estado exibido, confirmação fechada ao
+trocar de tela e exclusão de conta sem perfil. Pytest (1.159), Deno (35), Vitest (206), lint e
+artefato passaram; o teste no Chrome headless foi feito antes do porte. Falta a jornada real com Supabase, Safari e
 Firefox, comparação visual e medição de carregamento (bundle de 148 KB com gzip). Mesma trava da
 #66: não entra antes de o Pages usar `build-web.sh`.
 
