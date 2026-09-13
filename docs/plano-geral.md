@@ -165,7 +165,13 @@ P1 entregue na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
 em rascunho, commit `17810b4`: build compatível, 14 testes novos e roteiro Pages, sem alterar
 arquivos de `web/`. Validação local: 1.053 testes Python passaram, 27 pulados; lint e sintaxe
 do script passaram. Próximo passo: revisar/integrar P1 com autorização e preparar a transição
-remota antes de ativar a nova entrada. P2–P4 e a migração dos fluxos para React ainda pendem.
+remota antes de ativar a nova entrada.
+
+P2 na [PR #66](https://github.com/RadarEstagio/RadarEstagio/pull/66), em rascunho e empilhada
+sobre a #64: Vite com artefato equivalente ao site atual (mesmos caminhos de `config.js`,
+`app.js`, catálogos e logo), checagem de comentários por parser, conferência do artefato, 19
+testes Vitest e job de CI. Não entra na `main` antes de o Pages usar `build-web.sh` com saída
+`web/dist`. P3–P4, com React e os fluxos migrados, ainda pendem.
 
 ## 3. Limitações e decisões que continuam valendo
 
