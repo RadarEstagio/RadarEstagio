@@ -276,6 +276,12 @@ SQL_REGISTRAR_REQUISICOES_DA_FONTE = """
     do update set requisicoes = uso_das_fontes.requisicoes + excluded.requisicoes
 """
 
+SQL_FONTE_TEM_REGISTRO_NO_DIA = """
+    select exists (
+        select 1 from uso_das_fontes where fonte = %(fonte)s and dia = %(dia)s
+    )
+"""
+
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
 
@@ -516,6 +522,17 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao ler o uso da fonte {fonte}: {descrever(erro)}"
+            ) from erro
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_FONTE_TEM_REGISTRO_NO_DIA, {"fonte": fonte, "dia": dia}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler o registro da fonte {fonte}: {descrever(erro)}"
             ) from erro
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
