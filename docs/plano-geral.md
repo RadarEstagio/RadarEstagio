@@ -155,9 +155,9 @@ que saíram de lá:
 Cloudflare Pages segue servindo `web/` direto e correções do cadastro e da conta vão no
 `app.js`.
 
-A migração chegou a ser feita e testada. A #64 (script `build-web.sh`) entrou na `main`; a #66
-(Vite, lint, Vitest e CI) e a #67 (cadastro, autenticação e conta em React) foram fechadas sem
-merge, com as branches mantidas no repositório. Motivos: na Fase 2 a prioridade é validar com
+A migração chegou a ser feita e testada. O plano (#62) e o script de build compatível (#64)
+entraram na `main` e saíram depois da decisão; a #66 (Vite, lint, Vitest e CI) e a #67
+(cadastro, autenticação e conta em React) foram fechadas sem merge. Motivos: na Fase 2 a prioridade é validar com
 estudantes e o estudante não via diferença (24 de 28 telas idênticas pixel a pixel), enquanto o
 custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node/npm para manter,
 troca do build no Pages e cada correção do `app.js` refeita em dobro até o merge.
