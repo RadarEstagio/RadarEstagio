@@ -75,7 +75,7 @@ def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
     html = (RAIZ / "web/index.html").read_text()
 
     for trecho in (
-        "não cobrem todo o mercado",
+        "não cobre todo o mercado",
         "até sete recomendações",
         "Dias sem vaga podem acontecer",
         "candidatura continua sendo sua",
@@ -216,3 +216,10 @@ def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
     assert ".jobs-by-adzuna { display: inline-flex; align-items: center; gap: 4px;" in css
     assert "min-width: 116px; min-height: 23px;" in css
     assert (RAIZ / "web/assets/adzuna-logo.png").exists()
+
+
+def test_card_de_precos_nao_promete_duas_fontes_de_vagas():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "duas fontes" not in html.lower()
+    assert "Busca diária de vagas na Adzuna" in html

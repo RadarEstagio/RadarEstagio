@@ -5,7 +5,11 @@ from collections.abc import Callable
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.domain.ports import ExtratorDeVagas
-from radar.matching.errors import ErroDeAvaliacao, ErroTemporarioDeAvaliacao
+from radar.matching.errors import (
+    ErroDeAvaliacao,
+    ErroTemporarioDeAvaliacao,
+    FalhaInternaDoAvaliador,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +17,8 @@ ESPERA_PADRAO_EM_SEGUNDOS = 60
 ESPERA_MAXIMA_EM_SEGUNDOS = 120
 MARGEM_DE_ESPERA_EM_SEGUNDOS = 1
 TENTATIVAS_APOS_COTA_EXCEDIDA = 3
+ESPERA_APOS_FALHA_INTERNA_EM_SEGUNDOS = 10
+REPETICOES_DE_FALHA_INTERNA_POR_LOTE = 1
 
 
 class PrazoDaExtracaoEsgotado(Exception):
@@ -38,6 +44,7 @@ class ExtratorEmLotes:
         self._timeout_da_chamada = timeout_da_chamada_em_segundos
         self._relogio = relogio
         self._limite = math.inf
+        self._repeticoes_de_falha_interna = REPETICOES_DE_FALHA_INTERNA_POR_LOTE
         self.requisicoes = 0
 
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
@@ -45,6 +52,7 @@ class ExtratorEmLotes:
         self._limite = self._relogio() + self._prazo_em_segundos
         for inicio in range(0, len(vagas), self._tamanho_do_lote):
             lote = vagas[inicio : inicio + self._tamanho_do_lote]
+            self._repeticoes_de_falha_interna = REPETICOES_DE_FALHA_INTERNA_POR_LOTE
             try:
                 self._extrair_lote(lote, resultados)
             except ErroTemporarioDeAvaliacao as erro:
@@ -123,7 +131,7 @@ class ExtratorEmLotes:
     def _chamar_esperando_a_cota(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
         for tentativa in range(1, TENTATIVAS_APOS_COTA_EXCEDIDA + 1):
             try:
-                return self._chamar(lote)
+                return self._chamar_repetindo_falha_interna(lote)
             except ErroTemporarioDeAvaliacao as erro:
                 espera = erro.aguardar_segundos or ESPERA_PADRAO_EM_SEGUNDOS
                 if espera > ESPERA_MAXIMA_EM_SEGUNDOS:
@@ -138,7 +146,25 @@ class ExtratorEmLotes:
                     TENTATIVAS_APOS_COTA_EXCEDIDA,
                 )
                 self._esperar(espera + MARGEM_DE_ESPERA_EM_SEGUNDOS)
-        return self._chamar(lote)
+        return self._chamar_repetindo_falha_interna(lote)
+
+    def _chamar_repetindo_falha_interna(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
+        try:
+            return self._chamar(lote)
+        except FalhaInternaDoAvaliador as erro:
+            if self._repeticoes_de_falha_interna < 1:
+                raise ErroDeAvaliacao(f"{erro} (persistiu depois de repetir)") from None
+            self._repeticoes_de_falha_interna -= 1
+            self._garantir_que_cabe_no_prazo(
+                ESPERA_APOS_FALHA_INTERNA_EM_SEGUNDOS, f"esperava para repetir ({erro})"
+            )
+            logger.info(
+                "Falha interna do avaliador; aguardando %.0f s para repetir o lote de %d vagas",
+                ESPERA_APOS_FALHA_INTERNA_EM_SEGUNDOS,
+                len(lote),
+            )
+            self._esperar(ESPERA_APOS_FALHA_INTERNA_EM_SEGUNDOS)
+        return self._chamar_repetindo_falha_interna(lote)
 
     def _chamar(self, lote: list[Vaga]) -> list[ExtracaoDaVaga]:
         self._garantir_que_cabe_no_prazo(self._timeout_da_chamada)

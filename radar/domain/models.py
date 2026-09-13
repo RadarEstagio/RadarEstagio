@@ -223,6 +223,12 @@ class FatoUtilidadeSemanal(BaseModel):
     com_utilidade: bool
 
 
+class EventosDoSite(BaseModel):
+    visitantes: int
+    contas: int
+    horas_no_teto: int
+
+
 class PausaAtual(BaseModel):
     motivo: str
     total: int

@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from radar.domain.models import (
     ChaveDaVaga,
@@ -16,6 +17,7 @@ class RepositorioEmMemoria:
     def __init__(self, usuarios: list[Usuario]) -> None:
         self._usuarios = usuarios
         self._uso: dict[tuple[str, date], int] = {}
+        self._dias_sem_extracao: dict[ChaveDaVaga, tuple[date, int]] = {}
 
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)
@@ -23,13 +25,20 @@ class RepositorioEmMemoria:
     def pode_entregar(self, usuario: Usuario) -> bool:
         return any(u.id == usuario.id and u.chat_id == usuario.chat_id for u in self._usuarios)
 
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]:
+        return {usuario.id for usuario in self._usuarios if usuario.id == perfil_id}
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        return None
+
     def extracoes_existentes(
         self, vagas: list[Vaga], modelo: str
     ) -> dict[ChaveDaVaga, ExtracaoDaVaga]:
         return {}
 
     def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
-        return None
+        for vaga, _ in extracoes:
+            self._dias_sem_extracao.pop(vaga.chave(), None)
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set()
@@ -63,6 +72,18 @@ class RepositorioEmMemoria:
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:
         return None
 
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        dias: dict[ChaveDaVaga, int] = {}
+        for vaga in vagas:
+            ultimo_dia, contagem = self._dias_sem_extracao.get(vaga.chave(), (None, 0))
+            if ultimo_dia != dia:
+                contagem += 1
+            self._dias_sem_extracao[vaga.chave()] = (dia, contagem)
+            dias[vaga.chave()] = contagem
+        return dias
+
     def pausar(self, usuario: Usuario) -> None:
         return None
 
@@ -78,3 +99,16 @@ class RepositorioEmMemoria:
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None:
         self._uso[(fonte, dia)] = self._uso.get((fonte, dia), 0) + requisicoes
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
+        return (fonte, dia) in self._uso
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> None:
+        return None
+
+
+class RepositorioDoModoLocal(RepositorioEmMemoria):
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None:
+        return None

@@ -14,3 +14,7 @@ class CotaDeAvaliacaoExcedida(ErroTemporarioDeAvaliacao):
 
 class AvaliadorIndisponivel(ErroTemporarioDeAvaliacao):
     pass
+
+
+class FalhaInternaDoAvaliador(AvaliadorIndisponivel):
+    pass
