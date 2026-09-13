@@ -171,6 +171,22 @@ o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.
 
+**Conta no site: volta à aba e botão de pausa (13/09/2026).** Voltar à aba (`focus`) só consulta
+o banco com a tela de ativação à mostra e o link do Telegram visível
+(`aguardandoVinculoDoTelegram`), e a condição é conferida de novo quando a consulta termina, com
+sucesso ou erro. Antes, depois da ativação, toda volta à aba redesenhava a conta: descartava a
+edição em andamento, sumia com a pergunta do motivo da pausa e escondia a confirmação sem
+fechá-la. Um `<dialog>` aberto com `showModal` e escondido continua modal e trava a página, e no
+celular não há Esc; por isso esconder a conta é sempre `esconderConta()`, que passa por
+`fecharConfirmacao`, nunca `hidden = true`. O botão de pausa guarda a ação que mostrou
+(`data-acao`), e o update leva `.eq("ativo", ...)` e devolve a linha (`select(COLUNAS_DO_PERFIL)`),
+que desenha a conta sem leitura extra. Zero linhas significa que a conta mudou em outro lugar
+(outro aparelho, pausa automática, exclusão): nada é invertido, o perfil é relido e a pessoa é
+avisada. Antes, "Pausar entregas" com a conta já pausada retomava as entregas e apagava o
+motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `open`, `hidden` e se
+`close()` foi chamado. O card de preços fala só da Adzuna, e
+`test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
