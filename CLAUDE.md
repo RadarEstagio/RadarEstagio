@@ -250,7 +250,14 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
   Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
   zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
-  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília.
+  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
+  roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
+  imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
+  `uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
+  essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
+  amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
+  falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
+  o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
 - **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
   da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
   coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
@@ -1012,6 +1019,18 @@ ligação das automações, porque cada uma guardava o dono no nome:
   separa esse marco da ativação de produto.
 - `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
   `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
+- **Eventos do site têm limite no banco** (13/09/2026, migration `0023`). A chave pública deixava
+  inserir em `eventos_produto` sem fim, trocando de `sessao_id` a cada requisição e com 4 KB de
+  propriedades, e banco cheio no plano gratuito fica só leitura, o que para cadastro, vínculo e
+  diário. Evento `web` agora tem propriedades de até 256 bytes, no máximo 60 por sessão e 60 por
+  conta na última hora e um teto de 600 por hora para visitantes e outro para contas
+  (`eventos_do_site_por_hora`); acima disso o insert falha com `PT429` (HTTP 429 no PostgREST) e
+  o site só avisa no console. O teto é o que limita o tamanho, porque limite só por sessão se fura
+  trocando de sessão: no pior caso ~12 MB por dia, e um funil real grava uns 10 eventos. Eventos
+  do banco e do Telegram não passam pelo gatilho. Custo aceito: sob abuso, os eventos anônimos
+  legítimos daquela hora se perdem e o funil conta visitantes falsos até o teto. Deduplicar marcos
+  por sessão ficou de fora, porque o funil já conta pessoas distintas. A `0023` pode ir ao banco
+  antes do merge: o site atual já grava dentro dos limites.
 
 
 ### Correções da revisão de expansão (08/09/2026)
