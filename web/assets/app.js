@@ -808,7 +808,7 @@ function resetDialogView() {
   rotularDialogo("signup-title");
   successState.hidden = true;
   accountState.hidden = true;
-  accountConfirm.hidden = true;
+  fecharConfirmacao(false);
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   setAccountMessage();
@@ -1043,7 +1043,7 @@ function showAccount(profile) {
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = true;
-  accountConfirm.hidden = true;
+  fecharConfirmacao(false);
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   accountState.hidden = false;

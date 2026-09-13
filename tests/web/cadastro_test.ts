@@ -1006,6 +1006,31 @@ Deno.test("retomar limpa o motivo no mesmo update", async () => {
   } finally { a.close(); }
 });
 
+function simularConfirmacaoModal(doc: TestWindow["document"]) {
+  const confirmacao = doc.querySelector("#account-confirm");
+  const estado = { fechou: false };
+  confirmacao.showModal = () => confirmacao.setAttribute("open", "");
+  confirmacao.close = () => {
+    estado.fechou = true;
+    confirmacao.removeAttribute("open");
+  };
+  return { confirmacao, estado };
+}
+
+function segurarProximaSessao(a: ReturnType<typeof app>) {
+  const getSession = a.client.auth.getSession;
+  let liberar = () => {};
+  let primeira = true;
+  a.client.auth.getSession = async () => {
+    if (primeira) {
+      primeira = false;
+      await new Promise<void>((resolve) => { liberar = resolve; });
+    }
+    return getSession();
+  };
+  return () => liberar();
+}
+
 async function contaRecemVinculadaAoVoltarAAba() {
   const salvo: Profile = { ...profile };
   const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
@@ -1045,20 +1070,14 @@ Deno.test("voltar à aba durante a edição do perfil não descarta o que foi di
 Deno.test("voltar à aba com a confirmação aberta não esconde o diálogo modal", async () => {
   const a = await contaRecemVinculadaAoVoltarAAba();
   try {
-    const confirmacao = a.w.document.querySelector("#account-confirm");
-    let fechou = false;
-    confirmacao.showModal = () => confirmacao.setAttribute("open", "");
-    confirmacao.close = () => {
-      fechou = true;
-      confirmacao.removeAttribute("open");
-    };
+    const { confirmacao, estado } = simularConfirmacaoModal(a.w.document);
     a.w.document.querySelector("#delete-account").click();
     assert.equal(confirmacao.open, true);
     a.w.dispatchEvent(new a.w.Event("focus"));
     await settle();
     assert.equal(confirmacao.hidden, false);
     assert.equal(confirmacao.open, true);
-    assert.equal(fechou, false);
+    assert.equal(estado.fechou, false);
     assert.equal(confirmacao.dataset.acao, "excluir");
   } finally { a.close(); }
 });
@@ -1082,16 +1101,7 @@ Deno.test("consulta do vínculo que termina depois de a pessoa sair da ativaçã
   try {
     await settle();
     const doc = a.w.document;
-    const getSession = a.client.auth.getSession;
-    let liberar = () => {};
-    let primeira = true;
-    a.client.auth.getSession = async () => {
-      if (primeira) {
-        primeira = false;
-        await new Promise<void>((resolve) => { liberar = resolve; });
-      }
-      return getSession();
-    };
+    const liberar = segurarProximaSessao(a);
     a.w.dispatchEvent(new a.w.Event("focus"));
     await settle();
     salvo.telegram_chat_id = "123";
@@ -1105,6 +1115,49 @@ Deno.test("consulta do vínculo que termina depois de a pessoa sair da ativaçã
     await settle();
     assert.equal(formulario.hidden, false);
     assert.equal(formulario.elements.curso.value, "Direito");
+  } finally { a.close(); }
+});
+
+Deno.test("resposta da pausa que chega com a confirmação aberta fecha o diálogo em vez de escondê-lo", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao, estado } = simularConfirmacaoModal(doc);
+    const liberar = segurarProximaSessao(a);
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    doc.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    liberar();
+    await settle();
+    assert.equal(estado.fechou, true);
+    assert.equal(confirmacao.open, false);
+    assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
+Deno.test("voltar no histórico para a conta com a confirmação aberta fecha o diálogo em vez de escondê-lo", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao, estado } = simularConfirmacaoModal(doc);
+    doc.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    a.w.dispatchEvent(new a.w.PopStateEvent("popstate"));
+    await settle();
+    assert.equal(estado.fechou, true);
+    assert.equal(confirmacao.open, false);
+    assert.equal(confirmacao.hidden, true);
   } finally { a.close(); }
 });
 
