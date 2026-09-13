@@ -15,6 +15,7 @@ from radar.domain.models import (
     AreaDeInteresse,
     ChaveDaVaga,
     EntregaParaJulgar,
+    EventosDoSite,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Modalidade,
@@ -282,6 +283,16 @@ SQL_FONTE_TEM_REGISTRO_NO_DIA = """
     )
 """
 
+SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS = """
+    select coalesce(sum(total) filter (where anonimo), 0)::int as visitantes,
+           coalesce(sum(total) filter (where not anonimo), 0)::int as contas,
+           count(*) filter (
+               where total >= public.teto_de_eventos_do_site_por_hora(anonimo)
+           )::int as horas_no_teto
+    from eventos_do_site_por_hora
+    where hora > date_trunc('hour', now(), 'UTC') - interval '24 hours'
+"""
+
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
 
@@ -523,6 +534,16 @@ class RepositorioPostgres:
             raise ErroDeArmazenamento(
                 f"Falha ao ler o uso da fonte {fonte}: {descrever(erro)}"
             ) from erro
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linha = cursor.execute(SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS).fetchone()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler os eventos do site: {descrever(erro)}"
+            ) from erro
+        return EventosDoSite(**linha)
 
     def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
         try:
