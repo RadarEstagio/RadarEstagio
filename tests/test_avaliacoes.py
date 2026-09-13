@@ -1019,6 +1019,51 @@ def test_dialeto_exigido_e_atendido_so_pelo_proprio_dialeto(
     assert (resultado.requisitos_atendidos == [exigida]) is atende
 
 
+FORMAS_COMPOSTAS_DA_CLASSE = [
+    "Banco de dados SQL",
+    "Linguagem SQL",
+    "Consultas SQL",
+    "Microsoft SQL Server",
+    "MS SQL Server",
+    "Oracle Database",
+    "Oracle DB",
+    "Azure SQL Database",
+    "Postgre",
+]
+FORMAS_FORA_DA_CLASSE = [
+    "NoSQL",
+    "Banco de dados NoSQL",
+    "MySQL Workbench",
+    "SQL Server Reporting Services",
+    "SSRS",
+    "Oracle ERP",
+    "Oracle Cloud",
+]
+
+
+@pytest.mark.parametrize("forma", FORMAS_COMPOSTAS_DA_CLASSE)
+def test_forma_composta_exigida_e_atendida_por_sql_em_computacao(forma: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[forma]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == [forma]
+
+
+@pytest.mark.parametrize("forma", FORMAS_COMPOSTAS_DA_CLASSE)
+def test_forma_composta_no_perfil_atende_sql_em_computacao(forma: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([forma]))
+
+    assert resultado.requisitos_atendidos == ["SQL"]
+
+
+@pytest.mark.parametrize("forma", FORMAS_FORA_DA_CLASSE)
+def test_forma_que_nao_e_banco_relacional_fica_fora_da_classe(forma: str):
+    exige_forma = pontuar(vaga(), extracao(habilidades_obrigatorias=[forma]), perfil(["SQL"]))
+    forma_no_perfil = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([forma]))
+
+    assert exige_forma.requisitos_atendidos == []
+    assert forma_no_perfil.requisitos_atendidos == []
+
+
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
 def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))
