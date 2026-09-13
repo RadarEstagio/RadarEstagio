@@ -1430,6 +1430,157 @@ Deno.test("senha de um login recusado não fica no campo ao fechar e reabrir", a
   }
 });
 
+const outraPessoa = { id: "00000000-0000-4000-8000-000000000002", email: "outra@example.com" };
+
+function sessaoPassaASer(a: ReturnType<typeof app>, sessao: Session | null) {
+  Object.assign(a.client.auth, { getSession: async () => ({ data: { session: sessao } }) });
+}
+
+function conferirCadastroVazio(a: ReturnType<typeof app>, contexto: string) {
+  const form = a.w.document.querySelector("#signup-form");
+  assert.equal(form.elements.curso.value, "", contexto);
+  assert.equal(form.elements.email.value, "", contexto);
+  assert.deepEqual(habilidadesNaTela(a.w), [], contexto);
+}
+
+Deno.test("rascunho e e-mail de uma conta não aparecem para quem abre o cadastro depois que a sessão acaba", async () => {
+  const comPerfil = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(comPerfil.w);
+    assert.equal(comPerfil.w.document.querySelector("#account-page").hidden, false);
+    comPerfil.w.document.querySelector("#close-account").click();
+    sessaoPassaASer(comPerfil, null);
+    await reabrirCadastro(comPerfil.w);
+    conferirCadastroVazio(comPerfil, "conta com perfil");
+  } finally {
+    comPerfil.close();
+  }
+
+  const semPerfil = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = semPerfil.w.document.querySelector("#signup-form");
+    assert.equal(form.elements.email.value, user.email);
+    form.elements.curso.value = "Direito";
+    semPerfil.w.document.querySelector("#back-to-site").click();
+    sessaoPassaASer(semPerfil, null);
+    await reabrirCadastro(semPerfil.w);
+    conferirCadastroVazio(semPerfil, "conta sem perfil");
+    assert.equal(semPerfil.w.document.querySelector("#credenciais").hidden, false);
+  } finally {
+    semPerfil.close();
+  }
+});
+
+Deno.test("outra conta que entra na mesma página não vê o rascunho da conta anterior", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.curso.value = "Direito";
+    a.w.document.querySelector("#back-to-site").click();
+    sessaoPassaASer(a, { user: outraPessoa });
+    await reabrirCadastro(a.w);
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "");
+    assert.equal(form.elements.email.value, outraPessoa.email);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("visitante que confirma a conta continua com o próprio rascunho", async () => {
+  const a = app();
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    const form = fill(a.w);
+    a.w.document.querySelector("#next-step").click();
+    fecharComEsc(a.w);
+    sessaoPassaASer(a, { user });
+    await reabrirCadastro(a.w);
+
+    assert.equal(a.w.document.querySelector("#missing-profile-deletion").hidden, false);
+    assert.equal(form.elements.curso.value, "Computação");
+    assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
+    assert.equal(form.elements.email.value, user.email);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sair ou excluir a conta deixa o cadastro vazio para a próxima pessoa", async () => {
+  const saindo = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(saindo.w);
+    saindo.w.document.querySelector("#edit-profile").click();
+    await settle();
+    saindo.w.document.querySelector("#back-to-site").click();
+    await reabrirCadastro(saindo.w);
+    saindo.w.document.querySelector("#logout-account").click();
+    await settle();
+    sessaoPassaASer(saindo, null);
+    await reabrirCadastro(saindo.w);
+    conferirCadastroVazio(saindo, "logout depois de editar");
+  } finally {
+    saindo.close();
+  }
+
+  const semPerfil = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    semPerfil.w.document.querySelector("#signup-form").elements.curso.value = "Direito";
+    semPerfil.w.document.querySelector("#delete-account-without-profile").click();
+    semPerfil.w.document.querySelector("#account-confirm-yes").click();
+    await settle();
+    sessaoPassaASer(semPerfil, null);
+    semPerfil.w.document.querySelector("#finish-signup").click();
+    await reabrirCadastro(semPerfil.w);
+    conferirCadastroVazio(semPerfil, "exclusão sem perfil");
+  } finally {
+    semPerfil.close();
+  }
+
+  const comPerfil = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(comPerfil.w);
+    comPerfil.w.document.querySelector("#delete-account").click();
+    comPerfil.w.document.querySelector("#account-confirm-yes").click();
+    await settle();
+    comPerfil.w.document.querySelector("#finish-signup").click();
+    sessaoPassaASer(comPerfil, null);
+    await reabrirCadastro(comPerfil.w);
+    conferirCadastroVazio(comPerfil, "exclusão com perfil e sessão encerrada depois");
+  } finally {
+    comPerfil.close();
+  }
+});
+
+Deno.test("e-mail digitado num login não fica para quem abre o cadastro depois que a sessão acaba", async () => {
+  const a = app({ savedProfile: { ...profile, telegram_chat_id: "123" } });
+  try {
+    await settle();
+    await reabrirCadastro(a.w);
+    a.w.document.querySelector("#toggle-auth-mode").click();
+    const form = a.w.document.querySelector("#signup-form");
+    form.elements.email.value = "a@x.com";
+    form.elements.senha.value = "uma-senha-forte";
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    a.w.document.querySelector("#close-account").click();
+    await reabrirCadastro(a.w);
+
+    conferirCadastroVazio(a, "login e sessão encerrada");
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("envio duplicado durante a autenticação gera uma única tentativa", async () => {
   const a = app();
   let liberarCadastro = () => {};

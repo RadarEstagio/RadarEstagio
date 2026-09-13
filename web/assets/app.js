@@ -133,7 +133,8 @@ const PROGRESSO_AO_CONFIRMAR = 100;
 const PASSOS_DO_PERFIL = [PASSO_MOMENTO, PASSO_HABILIDADES, PASSO_PREFERENCIAS];
 let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 let passoDoRascunho = PASSO_MOMENTO;
-let formularioComPerfilDaConta = false;
+const VISITANTE = "visitante";
+let donoDoRascunho = VISITANTE;
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
@@ -853,7 +854,7 @@ function limparRascunhoDoCadastro() {
   form.reset();
   limparSenhas();
   passoDoRascunho = PASSO_MOMENTO;
-  formularioComPerfilDaConta = false;
+  donoDoRascunho = VISITANTE;
   selectedSkills.clear();
   continuarSemHabilidades = false;
   esquecerPerfilCarregado();
@@ -861,6 +862,12 @@ function limparRascunhoDoCadastro() {
   campoDeAreas.hidden = true;
   document.querySelector("#skills-catalog-notice").hidden = true;
   renderSkills();
+}
+
+function reconhecerDonoDoRascunho(session) {
+  const dono = session?.user.id ?? VISITANTE;
+  if (donoDoRascunho !== VISITANTE && donoDoRascunho !== dono) limparRascunhoDoCadastro();
+  donoDoRascunho = dono;
 }
 
 function openAccountPage() {
@@ -1105,7 +1112,6 @@ function showAccount(profile) {
 }
 
 function preencherFormularioCom(profile) {
-  formularioComPerfilDaConta = true;
   form.elements.curso.value = profile.curso;
   form.elements.periodo.value = String(profile.periodo);
   form.elements.cidade.value = profile.cidade;
@@ -1123,6 +1129,7 @@ function preencherFormularioCom(profile) {
 async function perfilAtual() {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  reconhecerDonoDoRascunho(session);
   const profile = await loadProfile(session.user.id);
   if (!profile) throw validationError(MENSAGEM_SEM_PERFIL);
   return profile;
@@ -1364,8 +1371,8 @@ async function openSignup() {
   try {
     const session = await currentSession();
     mostrarChamadaDeConta(Boolean(session));
+    reconhecerDonoDoRascunho(session);
     if (!session) {
-      if (formularioComPerfilDaConta) limparRascunhoDoCadastro();
       setAuthMode("signup");
       showStep(passoDoRascunho);
       openDialog();
@@ -1400,6 +1407,7 @@ async function resumeConfirmedSignup() {
       return;
     }
     if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
+    reconhecerDonoDoRascunho(session);
     const profile = await loadProfile(session.user.id);
     clearPendingProfile();
     if (profile) mostrarEstadoDoPerfil(profile);
@@ -1411,6 +1419,7 @@ async function resumeConfirmedSignup() {
 }
 
 function prepareMissingProfile(session) {
+  reconhecerDonoDoRascunho(session);
   resetDialogView();
   openAccountPage();
   setAuthMode("signup");
@@ -1735,6 +1744,7 @@ form.addEventListener("submit", async (event) => {
       showConfirmation(email);
       return;
     }
+    donoDoRascunho = session.user.id;
     const existing = await loadProfile(session.user.id);
     if (existing && !editandoPerfilExistente) {
       mostrarEstadoDoPerfil(existing);
