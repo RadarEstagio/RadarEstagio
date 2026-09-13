@@ -68,7 +68,9 @@ def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
     assert "profilePending" in javascript
     assert "Entre novamente para concluir o perfil" in javascript
     assert "setFormMessage(error.message)" not in javascript
-    assert "humanizeError(error, { profilePending: true })" in javascript
+    assert "humanizeError(error, { profilePending: contaSemPerfil })" in javascript
+    assert "humanizeError(error, { profilePending: true })" not in javascript
+    assert "humanizeError(error, { carregandoConta: true })" in javascript
 
 
 def test_validacao_do_cadastro_orienta_como_corrigir_cada_campo_invalido():

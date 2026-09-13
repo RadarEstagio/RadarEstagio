@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260912-tema-login-separados" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260913-excluir-sem-perfil" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260912-tema-direto" defer></script>
+    <script src="assets/app.js?v=20260913-eventos-ate-256-bytes" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -453,6 +453,10 @@
               <button class="button button-primary" type="submit" id="submit-profile" aria-busy="false"><span id="submit-label">Criar conta e continuar</span><span class="button-spinner" aria-hidden="true"></span><span class="button-arrow" aria-hidden="true">→</span></button>
             </div>
           </form>
+          <section class="missing-profile-deletion" id="missing-profile-deletion" aria-labelledby="missing-profile-deletion-title" hidden>
+            <div><h3 id="missing-profile-deletion-title">Prefere não continuar?</h3><p>Sua conta ainda não tem perfil. Se quiser, exclua a conta agora: o e-mail e o acesso são apagados na hora.</p></div>
+            <button class="button button-danger-ghost" type="button" id="delete-account-without-profile">Excluir minha conta</button>
+          </section>
           <section id="auth-assistance" hidden aria-labelledby="assistance-title">
             <h2 id="assistance-title">Confirme seu e-mail</h2>
             <p id="assistance-copy"></p>
@@ -467,7 +471,7 @@
           </section>
           <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-labelledby="success-title" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><p class="form-message" id="success-message" role="alert"></p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
             <div class="account-heading">
@@ -542,23 +546,23 @@
                     <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
                   </section>
                 </div>
-                <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
-                  <div class="account-confirm-header">
-                    <span class="account-confirm-icon" aria-hidden="true">!</span>
-                    <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
-                    <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
-                  </div>
-                  <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
-                  <p id="account-confirm-copy"></p>
-                  <div class="account-actions">
-                    <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
-                    <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
-                  </div>
-                </dialog>
                 </section>
               </div>
             </div>
           </section>
+          <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
+            <div class="account-confirm-header">
+              <span class="account-confirm-icon" aria-hidden="true">!</span>
+              <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
+              <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
+            </div>
+            <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
+            <p id="account-confirm-copy"></p>
+            <div class="account-actions">
+              <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+              <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
+            </div>
+          </dialog>
         </div>
       </div>
     </dialog>

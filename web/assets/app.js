@@ -42,6 +42,7 @@ const dialogShell = document.querySelector(".dialog-shell");
 const landingTitle = document.title;
 const form = document.querySelector("#signup-form");
 const successState = document.querySelector("#success-state");
+const successMessage = document.querySelector("#success-message");
 const progressWrap = document.querySelector(".progress-wrap");
 const progressLabel = document.querySelector("#progress-label");
 const progressPercent = document.querySelector("#progress-percent");
@@ -59,6 +60,13 @@ const accountState = document.querySelector("#account-state");
 const accountMessage = document.querySelector("#account-message");
 const accountNotice = document.querySelector("#account-notice");
 const accountConfirm = document.querySelector("#account-confirm");
+const saidaSemPerfil = document.querySelector("#missing-profile-deletion");
+const botaoApagarSemPerfil = document.querySelector("#delete-account-without-profile");
+const ORIGEM_DA_CONFIRMACAO = {
+  desvincular: "#unlink-telegram",
+  excluir: "#delete-account",
+  "apagar-sem-perfil": "#delete-account-without-profile",
+};
 const toggleDeliveries = document.querySelector("#toggle-deliveries");
 const accountNavLinks = [...document.querySelectorAll(".account-nav a")];
 const accountNavEntries = accountNavLinks.map((link) => ({
@@ -81,6 +89,7 @@ let editandoPerfilExistente = false;
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
+const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
@@ -498,12 +507,28 @@ function getClient() {
   return radarClient;
 }
 
+let sessaoDeEventosEmMemoria = null;
+
 function eventSessionId() {
-  const existing = localStorage.getItem(eventSessionKey);
+  let existing = null;
+  try {
+    existing = localStorage.getItem(eventSessionKey);
+  } catch {}
   if (existing && uuidPattern.test(existing)) return existing;
-  const created = crypto.randomUUID();
-  localStorage.setItem(eventSessionKey, created);
-  return created;
+  sessaoDeEventosEmMemoria ??= crypto.randomUUID();
+  try {
+    localStorage.setItem(eventSessionKey, sessaoDeEventosEmMemoria);
+  } catch {}
+  return sessaoDeEventosEmMemoria;
+}
+
+const TAMANHO_MAXIMO_DO_TEXTO_DO_EVENTO = 40;
+
+function propriedadesDoEvento(propriedades) {
+  return Object.fromEntries(Object.entries(propriedades).map(([chave, valor]) => [
+    chave,
+    typeof valor === "string" ? Array.from(valor).slice(0, TAMANHO_MAXIMO_DO_TEXTO_DO_EVENTO).join("") : valor,
+  ]));
 }
 
 async function registerEvent(name, properties = {}) {
@@ -514,7 +539,7 @@ async function registerEvent(name, properties = {}) {
       nome: name,
       sessao_id: eventSessionId(),
       user_id: data.session?.user.id ?? null,
-      propriedades: properties,
+      propriedades: propriedadesDoEvento(properties),
     });
     if (error) throw error;
   } catch (error) {
@@ -654,7 +679,7 @@ function validationError(message) {
   return error;
 }
 
-function humanizeError(error, { profilePending = false } = {}) {
+function humanizeError(error, { profilePending = false, carregandoConta = false } = {}) {
   const message = String(error?.message ?? "").toLowerCase();
   const code = String(error?.code ?? "").toLowerCase();
   const status = Number(error?.status);
@@ -663,6 +688,7 @@ function humanizeError(error, { profilePending = false } = {}) {
     return error.message;
   }
   if (error?.name === "RadarValidationError") return error.message;
+  if (carregandoConta) return MENSAGEM_CONTA_INDISPONIVEL;
   if (profilePending) {
     return "Sua conta foi criada, mas o perfil ainda não foi salvo. Entre novamente para concluir o perfil.";
   }
@@ -733,6 +759,7 @@ function marcarOcupado(botao, ocupado) {
 
 function setSubmitting(submitting) {
   marcarOcupado(submitProfile, submitting);
+  botaoApagarSemPerfil.disabled = submitting;
   if (editandoPerfilExistente) {
     submitLabel.textContent = "Salvar alterações";
     return;
@@ -890,6 +917,7 @@ function openDialog() {
 }
 
 function closeSignup() {
+  fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
@@ -937,17 +965,21 @@ function readPendingProfile() {
 }
 
 function clearPendingProfile() {
-  localStorage.removeItem(pendingProfileKey);
+  try {
+    localStorage.removeItem(pendingProfileKey);
+  } catch {}
 }
 
-function showSuccess({ kicker, title, copy, token, linked = false }) {
+function showSuccess({ kicker, title, copy, token, linked = false, semConta = false }) {
   esconderConta();
+  document.querySelector("#success-account").hidden = semConta;
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = false;
   setFormMessage();
+  successMessage.textContent = "";
   rotularDialogo("success-title");
   document.querySelector("#success-kicker").textContent = kicker;
   document.querySelector("#success-title").textContent = title;
@@ -1045,6 +1077,7 @@ function showAccount(profile) {
   progressWrap.hidden = true;
   successState.hidden = true;
   fecharConfirmacao(false);
+  saidaSemPerfil.hidden = true;
   pauseReason.hidden = true;
   pauseReasonMessage.textContent = "";
   accountState.hidden = false;
@@ -1154,13 +1187,13 @@ function fecharConfirmacao(restaurarFoco = true) {
   accountConfirm.hidden = true;
   delete accountConfirm.dataset.acao;
   if (!restaurarFoco || !acao) return;
-  const origem = acao === "desvincular" ? "#unlink-telegram" : "#delete-account";
-  document.querySelector(origem).focus();
+  document.querySelector(ORIGEM_DA_CONFIRMACAO[acao]).focus();
 }
 
 function esconderConta() {
   fecharConfirmacao(false);
   accountState.hidden = true;
+  saidaSemPerfil.hidden = true;
 }
 
 function pedirConfirmacao(acao) {
@@ -1179,6 +1212,13 @@ function pedirConfirmacao(acao) {
       copy: "Até o prazo terminar, você pode entrar novamente e cancelar a exclusão.",
       confirmar: "Excluir conta",
     },
+    "apagar-sem-perfil": {
+      titulo: "Excluir sua conta?",
+      aviso: "Sua conta será apagada agora",
+      detalhe: "Você ainda não salvou um perfil, então não há prazo para cancelar: o e-mail e o acesso são apagados na hora.",
+      copy: "Para voltar a usar o Radar depois, crie uma conta nova.",
+      confirmar: "Excluir conta",
+    },
   };
   const configuracao = configuracoes[acao];
   accountConfirm.dataset.acao = acao;
@@ -1190,6 +1230,41 @@ function pedirConfirmacao(acao) {
   accountConfirm.hidden = false;
   if (typeof accountConfirm.showModal === "function" && !accountConfirm.open) accountConfirm.showModal();
   document.querySelector("#account-confirm-no").focus();
+}
+
+async function apagarContaSemPerfil() {
+  if (botaoApagarSemPerfil.disabled) return;
+  marcarOcupado(botaoApagarSemPerfil, true);
+  submitProfile.disabled = true;
+  setFormMessage();
+  try {
+    const { error } = await getClient().rpc("apagar_minha_conta_sem_perfil");
+    if (error) throw error;
+    await getClient().auth.signOut({ scope: "local" });
+    clearPendingProfile();
+    mostrarChamadaDeConta(false);
+    limparRascunhoDoCadastro();
+    showSuccess({
+      kicker: "Conta excluída",
+      title: "Sua conta foi apagada.",
+      copy: "O e-mail e o acesso foram removidos agora. Para voltar a usar o Radar, crie uma conta nova.",
+      semConta: true,
+    });
+  } catch (error) {
+    setFormMessage(mensagemDaExclusaoSemPerfil(error));
+  } finally {
+    marcarOcupado(botaoApagarSemPerfil, false);
+    submitProfile.disabled = false;
+  }
+}
+
+function mensagemDaExclusaoSemPerfil(error) {
+  const code = String(error?.code ?? "");
+  if (code === "55000") return "Sua conta já tem um perfil salvo. Abra Minha conta para excluí-la.";
+  if (code === "42501" || Number(error?.status) === 401) {
+    return "Sua sessão expirou. Entre de novo para excluir a conta.";
+  }
+  return "Não foi possível excluir a conta agora. Verifique a conexão e tente novamente.";
 }
 
 async function currentSession() {
@@ -1297,8 +1372,8 @@ async function openSignup() {
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
-    openDialog();
-    setFormMessage(humanizeError(error));
+    abrirLogin();
+    setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
 }
 
@@ -1320,15 +1395,14 @@ async function resumeConfirmedSignup() {
       if (authQuery.has("conta")) abrirLogin();
       return;
     }
-    const profile = await loadProfile(session.user.id);
     if (!returningFromAuth && !readPendingProfile() && !authQuery.has("conta")) return;
+    const profile = await loadProfile(session.user.id);
     clearPendingProfile();
     if (profile) mostrarEstadoDoPerfil(profile);
     else prepareMissingProfile(session);
   } catch (error) {
-    resetDialogView();
-    openDialog();
-    setFormMessage(humanizeError(error, { profilePending: true }));
+    abrirLogin();
+    setFormMessage(humanizeError(error, { carregandoConta: true }));
   }
 }
 
@@ -1343,6 +1417,7 @@ function prepareMissingProfile(session) {
   form.elements.senha.required = false;
   accountSwitch.hidden = true;
   atualizarPassosAtivos();
+  saidaSemPerfil.hidden = false;
   setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.", "aviso");
 }
 
@@ -1479,6 +1554,10 @@ document.querySelector("#delete-account").addEventListener("click", () => {
   pedirConfirmacao("excluir");
 });
 
+document.querySelector("#delete-account-without-profile").addEventListener("click", () => {
+  pedirConfirmacao("apagar-sem-perfil");
+});
+
 document.querySelector("#cancel-deletion").addEventListener("click", async () => {
   setAccountMessage();
   try {
@@ -1505,6 +1584,10 @@ accountConfirm.addEventListener("cancel", (event) => {
 document.querySelector("#account-confirm-yes").addEventListener("click", async () => {
   const acao = accountConfirm.dataset.acao;
   fecharConfirmacao();
+  if (acao === "apagar-sem-perfil") {
+    await apagarContaSemPerfil();
+    return;
+  }
   setAccountMessage();
   try {
     if (acao === "desvincular") {
@@ -1623,7 +1706,7 @@ form.addEventListener("submit", async (event) => {
   }
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
-  let profileSaveStarted = false;
+  let contaSemPerfil = false;
   setFormMessage();
   setSubmitting(true);
   mostrarProgresso(PROGRESSO_AO_CONFIRMAR);
@@ -1657,12 +1740,12 @@ form.addEventListener("submit", async (event) => {
       prepareMissingProfile(session);
       return;
     }
-    profileSaveStarted = true;
+    contaSemPerfil = !existing;
     const savedProfile = await persistProfile(session.user.id, profile);
     mostrarEstadoDoPerfil(savedProfile);
   } catch (error) {
     if (error?.code === "email_not_confirmed") showAssistance("resend", email);
-    setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
+    setFormMessage(humanizeError(error, { profilePending: contaSemPerfil }));
   } finally {
     setSubmitting(false);
     if (!form.hidden) mostrarProgresso(percentualDoPasso());
@@ -1889,10 +1972,11 @@ document.querySelector("#download-data").addEventListener("click", async (event)
 });
 
 document.querySelector("#success-account").addEventListener("click", async () => {
+  successMessage.textContent = "";
   try {
     showAccount(await perfilAtual());
   } catch (error) {
-    setFormMessage(humanizeError(error));
+    successMessage.textContent = humanizeError(error);
   }
 });
 

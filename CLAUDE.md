@@ -187,6 +187,31 @@ motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `ope
 `close()` foi chamado. O card de preços fala só da Adzuna, e
 `test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
 
+**Armazenamento bloqueado e conta que não carrega (13/09/2026).** Com o armazenamento bloqueado
+(modo privado, bloqueador), `eventSessionId` e `clearPendingProfile` lançavam exceção e o `signUp`
+nunca era chamado. Toda leitura e escrita de `localStorage`/`sessionStorage` do site fica em `try`,
+e a sessão de eventos vira um UUID em memória na página, o mesmo no cadastro e nos eventos. O
+cliente do Supabase não precisa de armazenamento: o auth-js testa o `localStorage` com `try` e, se
+falha, guarda a sessão em memória (conferido no código do 2.112.4 e do 2.114.0, iguais nesse
+ponto; o 2.116.0 não pôde ser baixado). Custo aceito: a sessão some ao recarregar, o tema não é
+lembrado e `landing_visualizada` conta toda carga. Falha ao ler sessão ou perfil deixou de virar
+"Sua conta foi criada, mas o perfil ainda não foi salvo", que quem tinha perfil via com a sessão
+velha ou sem rede: agora abre o login com "Não conseguimos carregar sua conta", e o aviso de perfil
+pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A visita comum à landing
+não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
+`#success-message`, porque o formulário fica escondido nessa tela.
+
+**Segunda auditoria da conta (13/09/2026).** Propriedades de evento cabem em 256 bytes: a `0023`
+(branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
+caminho inteiro da URL. `propriedadesDoEvento` corta cada texto em 40 pontos de código, porque o
+pior caractere escapado no JSON tem 6 bytes (40 × 6 mais `{"pagina": ""}` dá 254); o corte é por
+ponto de código para não partir emoji, que o `jsonb` recusaria. Evento novo com dois textos exige
+refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registerEvent`.
+`closeSignup` fecha a confirmação antes de sair da conta, porque voltar no histórico deixava o
+`<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
+exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
+tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
@@ -970,6 +995,20 @@ ligação das automações, porque cada uma guardava o dono no nome:
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
+- **Conta confirmada sem perfil é apagada na hora** (13/09/2026, `0024`). Quem confirmava o e-mail
+  e não salvava o perfil ficava com e-mail e senha no Auth sem saída: a exclusão marca
+  `perfis.excluida_em` e o job só apaga a partir de `perfis`. `apagar_minha_conta_sem_perfil()` é
+  `security definer`, sem argumento, filtrada por `auth.uid()` e executável só por
+  `authenticated`; recusa conta com perfil, que segue as duas etapas, e trava a linha do Auth antes
+  de conferir, para não correr com um perfil sendo criado. Apaga o que o job apagaria: os eventos
+  anônimos das sessões da conta e o usuário do Auth, que leva o resto por cascata. Sem prazo porque
+  os 60 dias existem para cancelar sem perder perfil e histórico, e sem perfil não há o que
+  preservar; reter o e-mail sem finalidade vai contra a LGPD. Um registro para o job apagar
+  exigiria tabela nova e mudança no `radar/`. O site oferece "Excluir minha conta" sob o formulário
+  de completar o perfil, com a confirmação de sempre (que saiu de dentro de `#account-state` para
+  abrir nesse estado), e encerra a sessão local depois. Publicação: `db push` antes do merge, porque
+  o site novo chama a função e o atual não a conhece. Se a `0024` subir antes da `0023`, o push da
+  `0023` pede `--include-all`.
 - **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
   `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem

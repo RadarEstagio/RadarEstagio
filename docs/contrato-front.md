@@ -15,7 +15,7 @@ O cadastro coleta o perfil antes de `signUp`. Envia em `options.data.cadastro_ra
 | `aceitou_termos` | `true` obrigatório |
 | `aceita_emails` | Booleano independente, desmarcado por padrão |
 | `versao_dos_termos` | Versão aceita em formato de data válida; manter coerente com os documentos |
-| `sessao_id` | UUID da sessão de origem do funil |
+| `sessao_id` | UUID da sessão de origem do funil; fica em memória na página quando o navegador bloqueia o armazenamento |
 
 As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `assets/areas.json`
 (arquivo gerado a partir de `radar/domain/areas.py`), descobre a área do curso digitado e monta
@@ -93,6 +93,7 @@ resposta não desfaz a pausa; retomar limpa o motivo.
 | Editar, pausar, retomar e revogar e-mails | `update` de colunas permitidas em `perfis` |
 | Desvincular | RPC `desvincular_meu_telegram` |
 | Solicitar exclusão | RPC `excluir_minha_conta` |
+| Excluir conta sem perfil | RPC `apagar_minha_conta_sem_perfil` |
 | Cancelar exclusão | RPC `cancelar_exclusao_da_minha_conta` |
 | Exportar JSON | RPC `baixar_meus_dados` |
 
@@ -101,6 +102,12 @@ solta o chat e rotaciona o token; não altera `ativo`. O painel mantém sessão 
 cancelamento, apresenta a data prevista e bloqueia controles incompatíveis com a exclusão.
 A policy também rejeita updates de perfil marcado. Cancelar preserva a pausa anterior e
 exige novo vínculo. O job executa a limpeza após a carência configurada de 60 dias.
+
+Conta confirmada sem perfil não tem o que marcar. `apagar_minha_conta_sem_perfil()` (`0024`) apaga
+na hora o usuário do Auth, com os eventos e o cadastro pendente por cascata, e os eventos anônimos
+das sessões dele. Recusa conta com perfil (`55000`) e chamada sem sessão (`42501`); só
+`authenticated` executa. O site a oferece sob o formulário de completar o perfil e, depois dela,
+encerra a sessão local.
 
 O motivo da pausa é opcional e aceita somente `conseguiu_estagio`, `interrompeu_busca`,
 `sem_vagas_uteis`, `frequencia` ou `outro`. A coluna representa a situação atual, não registra
@@ -161,6 +168,8 @@ Somente URL do projeto, chave pública Supabase e site key do Turnstile ficam no
 Nunca expor senha do banco, `DATABASE_URL`, `service_role` ou secrets de Telegram/Resend.
 Eventos do navegador respeitam o catálogo web autorizado; eventos de confirmação, vínculo e
 primeira entrega têm fontes próprias no banco. A sessão de origem não substitui autenticação.
+O site corta cada texto das propriedades em 40 caracteres, para caber nos 256 bytes que o banco
+aceita em evento web (`0023`).
 
 Não alterar schema pelo painel nem ampliar grants para contornar um erro do frontend.
 Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.

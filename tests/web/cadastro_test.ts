@@ -50,6 +50,7 @@ interface Signup {
         perfil: Profile;
         aceita_emails: boolean;
         versao_dos_termos: string;
+        sessao_id: string;
       };
     };
   };
@@ -84,6 +85,9 @@ function app(
     key = "",
     temaSalvo = null,
     armazenamentoBloqueado = false,
+    erroDaSessao = null,
+    erroDoPerfil = null,
+    armazenado = {},
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -91,6 +95,9 @@ function app(
     key?: string;
     temaSalvo?: string | null;
     armazenamentoBloqueado?: boolean;
+    erroDaSessao?: Error | null;
+    erroDoPerfil?: Error | null;
+    armazenado?: Record<string, string>;
   } = {},
 ) {
   const erros: Error[] = [];
@@ -103,12 +110,15 @@ function app(
     virtualConsole,
     beforeParse: (janela: TestWindow) => {
       if (temaSalvo) janela.localStorage.setItem("radar-tema", temaSalvo);
+      for (const [chave, valor] of Object.entries(armazenado)) janela.localStorage.setItem(chave, valor);
       if (armazenamentoBloqueado) {
-        Object.defineProperty(janela, "localStorage", {
-          get() {
-            throw new janela.DOMException("armazenamento bloqueado", "SecurityError");
-          },
-        });
+        for (const armazenamento of ["localStorage", "sessionStorage"]) {
+          Object.defineProperty(janela, armazenamento, {
+            get() {
+              throw new janela.DOMException("armazenamento bloqueado", "SecurityError");
+            },
+          });
+        }
       }
     },
   });
@@ -129,7 +139,8 @@ function app(
   };
   const client = {
     auth: {
-      getSession: async () => ({ data: { session } }),
+      getSession: async (): Promise<{ data: { session: Session | null }; error?: Error | null }> =>
+        erroDaSessao ? { data: { session: null }, error: erroDaSessao } : { data: { session } },
       onAuthStateChange: (callback: AuthCallback) => {
         authCallback = callback;
       },
@@ -171,8 +182,9 @@ function app(
           if (table === "perfis" && savedProfile) Object.assign(savedProfile, args);
           return query;
         },
-        maybeSingle: async () => ({ data: savedProfile }),
-        single: async () => ({ data: savedProfile }),
+        maybeSingle: async (): Promise<{ data: Profile | null; error?: Error | null }> =>
+          table === "perfis" && erroDoPerfil ? { data: null, error: erroDoPerfil } : { data: savedProfile },
+        single: async (): Promise<{ data: Profile | null; error?: Error | null }> => ({ data: savedProfile }),
       };
       return query;
     },
@@ -309,6 +321,166 @@ Deno.test("tema alterna sem erro quando o navegador bloqueia o armazenamento", (
     a.w.document.querySelector("#theme-toggle").click();
     assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
     assert.deepEqual(a.erros.map((erro) => erro.message), []);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("cadastro cria a conta com o armazenamento do navegador bloqueado", async () => {
+  const a = app({ armazenamentoBloqueado: true });
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const form = fill(a.w);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const sessao = called(a.calls, "signup")[1].options.data.cadastro_radar.sessao_id;
+    assert.match(sessao, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    const sessoesDosEventos = a.calls
+      .filter(([nome]) => nome === "insert")
+      .map(([, , payload]) => (payload as Payload).sessao_id);
+    assert.ok(sessoesDosEventos.length > 0);
+    assert.deepEqual([...new Set(sessoesDosEventos)], [sessao]);
+    assert.equal(a.w.document.querySelector("#auth-assistance").hidden, false);
+    assert.deepEqual(a.erros.map((erro) => erro.message), []);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("com o armazenamento funcionando, a sessão de eventos é a mesma entre cargas e no cadastro", async () => {
+  const chave = "radar-sessao-eventos";
+  const cadastrar = async (a: ReturnType<typeof app>) => {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    return {
+      cadastro: called(a.calls, "signup")[1].options.data.cadastro_radar.sessao_id,
+      eventos: [
+        ...new Set(a.calls.filter(([nome]) => nome === "insert").map(([, , payload]) => (payload as Payload).sessao_id)),
+      ],
+    };
+  };
+  const primeira = app();
+  let guardada = "";
+  try {
+    const { cadastro, eventos } = await cadastrar(primeira);
+    guardada = String(primeira.w.localStorage.getItem(chave));
+    assert.match(guardada, /^[0-9a-f-]{36}$/);
+    assert.equal(cadastro, guardada);
+    assert.deepEqual(eventos, [guardada]);
+  } finally {
+    primeira.close();
+  }
+  const segunda = app({ armazenado: { [chave]: guardada } });
+  try {
+    const { cadastro, eventos } = await cadastrar(segunda);
+    assert.equal(cadastro, guardada);
+    assert.deepEqual(eventos, [guardada]);
+    assert.equal(segunda.w.localStorage.getItem(chave), guardada);
+  } finally {
+    segunda.close();
+  }
+});
+
+Deno.test("nenhum evento do site passa de 256 bytes de propriedades, mesmo com URL de 1.000 caracteres", async () => {
+  const limite = 256;
+  const urlLonga = (sufixo: string) => {
+    const base = "https://radarestagio.com/";
+    const caminho = "estágio-remoto-no-rio/".repeat(60).slice(0, 1000 - base.length - sufixo.length);
+    return base + caminho + sufixo;
+  };
+  const bytesComoNoBanco = (propriedades: Record<string, unknown>) =>
+    new TextEncoder().encode(JSON.stringify(propriedades)).length + 2 * Object.keys(propriedades).length;
+  type Evento = { nome: string; propriedades: Record<string, unknown> };
+  const eventos = (a: ReturnType<typeof app>) =>
+    a.calls
+      .filter(([nome, tabela]) => nome === "insert" && tabela === "eventos_produto")
+      .map(([, , payload]) => payload as unknown as Evento);
+  const vistos: Evento[] = [];
+
+  assert.equal(urlLonga("").length, 1000);
+  const visitante = app({ url: urlLonga("") });
+  try {
+    await settle();
+    for (const chamada of visitante.w.document.querySelectorAll(".js-open-signup")) {
+      chamada.click();
+      await settle();
+    }
+    fill(visitante.w);
+    for (let passo = 0; passo < 3; passo++) visitante.w.document.querySelector("#next-step").click();
+    await settle();
+    vistos.push(...eventos(visitante));
+  } finally {
+    visitante.close();
+  }
+
+  assert.equal(urlLonga("?conta").length, 1000);
+  const dono = app({ session: { user }, savedProfile: { ...profile }, url: urlLonga("?conta") });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    const telegram = doc.querySelector("#telegram-link");
+    telegram.addEventListener("click", (evento: Event) => evento.preventDefault());
+    telegram.click();
+    doc.querySelector("#success-account").click();
+    await settle();
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    doc.querySelector("#signup-form").dispatchEvent(new dono.w.Event("submit", { cancelable: true }));
+    await settle();
+    vistos.push(...eventos(dono));
+  } finally {
+    dono.close();
+  }
+
+  const catalogo = new Set([...script.matchAll(/registerEvent\("([a-z_]+)"/g)].map((encontrado) => encontrado[1]));
+  assert.deepEqual(new Set(vistos.map((evento) => evento.nome)), catalogo);
+  for (const evento of vistos) {
+    assert.ok(
+      bytesComoNoBanco(evento.propriedades) <= limite,
+      `${evento.nome}: ${bytesComoNoBanco(evento.propriedades)} bytes`,
+    );
+  }
+  const pagina = vistos.find((evento) => evento.nome === "landing_visualizada")?.propriedades.pagina;
+  assert.match(String(pagina), /^\/est/);
+});
+
+Deno.test("voltar do link de confirmação com o armazenamento bloqueado mostra a ativação", async () => {
+  const a = app({
+    armazenamentoBloqueado: true,
+    session: { user },
+    savedProfile: { ...profile },
+    url: "https://radarestagio.com/#access_token=fake",
+  });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#success-state").hidden, false);
+    assert.equal(a.w.document.querySelector("#telegram-link").hidden, false);
+    assert.equal(a.w.document.querySelector("#form-message").textContent, "");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sair da conta com o armazenamento bloqueado volta ao site", async () => {
+  const a = app({
+    armazenamentoBloqueado: true,
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    assert.equal(a.w.document.querySelector("#account-page").hidden, false);
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    assert.ok(a.calls.some(([nome]) => nome === "logout"));
+    assert.equal(a.w.document.querySelector("#account-page").hidden, true);
+    assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
   } finally {
     a.close();
   }
@@ -677,6 +849,180 @@ Deno.test("endereço da conta sem sessão exige login", async () => {
   } finally { a.close(); }
 });
 
+function visivel(elemento: ReturnType<TestWindow["document"]["querySelector"]>): boolean {
+  for (let no = elemento; no; no = no.parentElement) {
+    if (no.hidden) return false;
+    if (no.tagName === "DIALOG" && !no.open) return false;
+  }
+  return Boolean(elemento);
+}
+
+Deno.test("erro ao abrir minha conta na tela de ativação aparece na própria tela", async () => {
+  const a = app({ session: { user }, savedProfile: { ...profile }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+    a.client.auth.getSession = async () => ({ data: { session: null } });
+    doc.querySelector("#success-account").click();
+    await settle();
+    const aviso = doc.querySelector("#success-message");
+    assert.match(aviso?.textContent ?? "", /sessão expirou/);
+    assert.equal(visivel(aviso), true);
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+  } finally { a.close(); }
+});
+
+Deno.test("conta confirmada sem perfil pode ser excluída pelo site", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao, estado } = simularConfirmacaoModal(doc);
+    assert.match(doc.querySelector("#form-notice").textContent, /Complete seu perfil/);
+    const botao = doc.querySelector("#delete-account-without-profile");
+    assert.equal(visivel(botao), true);
+    botao.click();
+    assert.equal(visivel(confirmacao), true);
+    assert.equal(doc.querySelector("#account-confirm-title").textContent, "Excluir sua conta?");
+    doc.querySelector("#account-confirm-no").click();
+    assert.equal(confirmacao.hidden, true);
+    assert.equal(doc.activeElement.id, "delete-account-without-profile");
+    botao.click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["apagar_minha_conta_sem_perfil"],
+    );
+    assert.ok(a.calls.some(([nome]) => nome === "logout"));
+    assert.equal(estado.fechou, true);
+    assert.equal(confirmacao.hidden, true);
+    assert.equal(doc.querySelector("#success-title").textContent, "Sua conta foi apagada.");
+    assert.equal(visivel(doc.querySelector("#success-state")), true);
+    assert.equal(doc.querySelector("#success-account").hidden, true);
+    assert.equal(visivel(botao), false);
+    assert.equal(doc.querySelector('[data-event-origin="cabecalho"]').textContent.trim(), "Cadastrar meu perfil");
+  } finally { a.close(); }
+});
+
+Deno.test("falha ao excluir a conta sem perfil avisa na tela e mantém a sessão", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    simularConfirmacaoModal(doc);
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      return { error: new TypeError("Failed to fetch") };
+    };
+    doc.querySelector("#delete-account-without-profile").click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    const mensagem = doc.querySelector("#form-message");
+    assert.match(mensagem.textContent, /conexão/);
+    assert.equal(visivel(mensagem), true);
+    assert.equal(a.calls.some(([nome]) => nome === "logout"), false);
+    assert.equal(visivel(doc.querySelector("#delete-account-without-profile")), true);
+  } finally { a.close(); }
+});
+
+Deno.test("falha ao excluir a conta sem perfil explica o motivo com mensagem da exclusão", async () => {
+  const casos: [Error, RegExp][] = [
+    [Object.assign(new Error("conta com perfil usa excluir_minha_conta"), { code: "55000" }), /já tem um perfil salvo/],
+    [Object.assign(new Error("sem sessão"), { code: "42501" }), /sessão expirou.*excluir/],
+    [new TypeError("Failed to fetch"), /Não foi possível excluir a conta agora/],
+  ];
+  for (const [erro, esperada] of casos) {
+    const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+    try {
+      await settle();
+      const doc = a.w.document;
+      simularConfirmacaoModal(doc);
+      a.client.rpc = async (name: string, args: Payload) => {
+        a.calls.push(["rpc", name, args]);
+        return { error: erro };
+      };
+      doc.querySelector("#delete-account-without-profile").click();
+      doc.querySelector("#account-confirm-yes").click();
+      await settle();
+      const mensagem = doc.querySelector("#form-message");
+      assert.match(mensagem.textContent, esperada);
+      assert.doesNotMatch(mensagem.textContent, /cadastro|salvar o perfil/);
+      assert.equal(visivel(mensagem), true);
+    } finally { a.close(); }
+  }
+});
+
+Deno.test("enviar o perfil trava a exclusão da conta sem perfil até a resposta", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao } = simularConfirmacaoModal(doc);
+    let liberar = () => {};
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      await new Promise<void>((resolve) => { liberar = resolve; });
+      return { error: new TypeError("Failed to fetch") };
+    };
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const botao = doc.querySelector("#delete-account-without-profile");
+    assert.equal(botao.disabled, true);
+    botao.click();
+    assert.equal(confirmacao.open, false);
+    liberar();
+    await settle();
+    assert.equal(botao.disabled, false);
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["concluir_meu_cadastro"],
+    );
+  } finally { a.close(); }
+});
+
+Deno.test("excluir a conta sem perfil fica ocupado e trava o envio do perfil", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    simularConfirmacaoModal(doc);
+    const liberar = segurarRpc(a, "apagar_minha_conta_sem_perfil");
+    const botao = doc.querySelector("#delete-account-without-profile");
+    botao.click();
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.equal(botao.disabled, true);
+    assert.equal(botao.getAttribute("aria-busy"), "true");
+    assert.equal(doc.querySelector("#submit-profile").disabled, true);
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    liberar();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["apagar_minha_conta_sem_perfil"],
+    );
+    assert.equal(doc.querySelector("#success-title").textContent, "Sua conta foi apagada.");
+    assert.equal(botao.getAttribute("aria-busy"), "false");
+  } finally { a.close(); }
+});
+
+Deno.test("conta com perfil não oferece a exclusão imediata", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta#account-privacy-panel",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(visivel(doc.querySelector("#delete-account")), true);
+    assert.equal(visivel(doc.querySelector("#delete-account-without-profile")), false);
+  } finally { a.close(); }
+});
+
 Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
   const a = app({ session: { user }, url: "https://radarestagio.com/#access_token=fake" });
   try {
@@ -685,6 +1031,109 @@ Deno.test("aviso de perfil pendente não usa o visual de erro", async () => {
     assert.equal(mensagem.hidden, false);
     assert.equal(mensagem.textContent.includes("Complete seu perfil"), true);
     assert.equal(mensagem.classList.contains("form-message-aviso"), true);
+  } finally { a.close(); }
+});
+
+const CONTA_INDISPONIVEL = /Não conseguimos carregar sua conta/;
+
+Deno.test("sessão que não renova abre o login com aviso honesto, sem dizer que a conta foi criada", async () => {
+  const a = app({
+    erroDaSessao: Object.assign(new Error("Invalid Refresh Token: Refresh Token Not Found"), {
+      code: "refresh_token_not_found",
+      status: 400,
+    }),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.match(mensagem, CONTA_INDISPONIVEL);
+    assert.doesNotMatch(mensagem, /conta foi criada/);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao ler o perfil na volta do link não diz que o perfil falta", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/#access_token=fake",
+    erroDoPerfil: new TypeError("Failed to fetch"),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.match(mensagem, CONTA_INDISPONIVEL);
+    assert.doesNotMatch(mensagem, /perfil ainda não foi salvo/);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao abrir minha conta leva ao login, não ao começo do cadastro", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    erroDoPerfil: new TypeError("Failed to fetch"),
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#signup-dialog").open, false);
+    doc.querySelector('[data-event-origin="cabecalho"]').click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+    assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
+    assert.match(doc.querySelector("#form-message").textContent, CONTA_INDISPONIVEL);
+  } finally { a.close(); }
+});
+
+Deno.test("falha de rede ao salvar a edição do perfil não diz que a conta foi criada", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const from = a.client.from;
+    a.client.from = (table: string) => {
+      const query = from(table);
+      query.single = async () => ({ data: null, error: new TypeError("Failed to fetch") });
+      return query;
+    };
+    doc.querySelector("#signup-form").dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.doesNotMatch(mensagem, /conta foi criada/);
+    assert.match(mensagem, /conexão/);
+  } finally { a.close(); }
+});
+
+Deno.test("conta confirmada sem perfil que falha ao salvar o perfil recebe o aviso de perfil pendente", async () => {
+  const a = app({ session: { user }, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    a.client.rpc = async (name: string, args: Payload) => {
+      a.calls.push(["rpc", name, args]);
+      return { error: new TypeError("Failed to fetch") };
+    };
+    fill(a.w).dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["concluir_meu_cadastro"],
+    );
+    const mensagem = doc.querySelector("#form-message");
+    assert.match(mensagem.textContent, /Sua conta foi criada, mas o perfil ainda não foi salvo/);
+    assert.equal(visivel(mensagem), true);
   } finally { a.close(); }
 });
 
@@ -1164,6 +1613,32 @@ Deno.test("voltar no histórico para a conta com a confirmação aberta fecha o 
     assert.equal(confirmacao.open, false);
     assert.equal(confirmacao.hidden, true);
   } finally { a.close(); }
+});
+
+Deno.test("voltar no histórico para o site com a confirmação aberta fecha a confirmação", async () => {
+  const casos: [string, Profile | null, string][] = [
+    ["excluir", { ...profile, telegram_chat_id: "123" }, "#delete-account"],
+    ["desvincular", { ...profile, telegram_chat_id: "123" }, "#unlink-telegram"],
+    ["apagar-sem-perfil", null, "#delete-account-without-profile"],
+  ];
+  for (const [acao, salvo, origem] of casos) {
+    const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+    try {
+      await settle();
+      const doc = a.w.document;
+      const { confirmacao, estado } = simularConfirmacaoModal(doc);
+      doc.querySelector(origem).click();
+      assert.equal(confirmacao.dataset.acao, acao);
+      assert.equal(confirmacao.open, true);
+      a.w.history.replaceState(null, "", "/");
+      a.w.dispatchEvent(new a.w.PopStateEvent("popstate"));
+      await settle();
+      assert.equal(doc.querySelector("#landing-page").hidden, false, acao);
+      assert.equal(estado.fechou, true, acao);
+      assert.equal(confirmacao.open, false, acao);
+      assert.equal(confirmacao.hidden, true, acao);
+    } finally { a.close(); }
+  }
 });
 
 function bancoQueRespeitaOAtivo(a: ReturnType<typeof app>, salvo: Profile) {
