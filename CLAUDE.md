@@ -453,13 +453,21 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
     porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
     SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
-  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível (`DIALETOS_QUE_IMPLICAM_SQL`); o
-    requisito PL/SQL ou T-SQL só é atendido pelo próprio dialeto. "PL/SQL" é juntado antes da
-    partição pela barra, para "PL-SQL", "PLSQL" e "pl / sql" darem o mesmo resultado.
+  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível, e o requisito PL/SQL ou T-SQL só é
+    atendido pelo próprio dialeto. Toda grafia vai para a forma com barra antes da partição
+    (`GRAFIAS_DE_DIALETOS_DE_SQL`: "PL-SQL" e "PLSQL" a "PL/SQL"; "T-SQL", "TSQL" e
+    "Transact-SQL" a "T/SQL"), e a partição do `b1ccbf1` dá a parte "SQL", com nível e
+    palavras, também dentro de habilidade composta. Juntar "PL/SQL" num nome só, como a versão
+    anterior fazia, tirava a parte "SQL" de "Oracle PL/SQL" e parecidos (75 → 61) e deixava
+    "Oracle" no perfil atender "Oracle PL/SQL" por palavras, o caso do ERP.
   - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
     SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
     a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
-    Cloud ficam fora.
+    Cloud ficam fora. Esses aliases valem só na comparação com o perfil
+    (`ALIASES_DE_COMPARACAO`): a identidade do requisito, que decide a regra de requisito
+    repetido, continua a do `b1ccbf1`. Sem isso "SQL Server avançado" e "Azure SQL Database"
+    viravam um requisito só, o segundo passava a exigir o nível avançado (75 → 61) e o
+    desejável sumia dos diferenciais.
   - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
     comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
     MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
@@ -467,13 +475,17 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
     valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
     anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 
-  Medido contra o `b1ccbf1`: nenhuma nota cai nas 41 vagas reais que citam banco (246 pares, 115
-  sobem) nem nos 5.168 pares da auditoria (1.563 sobem), e MySQL ou PostgreSQL deixam de ficar
-  abaixo de SQL na mesma vaga (eram 16 e 21 vagas). `tests/test_corpus_de_bancos.py` desliga a
-  classe e a implicação dos dialetos e exige que nenhuma nota caia e alguma suba: resiste a
-  mudança de peso e quebra se a classe for desfeita. Risco aberto: fora de computação o SQL
-  implícito dos dialetos compara por palavras, então "T-SQL" passa a atender "SQL Server
-  Reporting Services", como "PL/SQL" e "SQL" já atendiam.
+  Medido contra o `b1ccbf1`: nenhuma nota cai e nenhum requisito atendido some nas 41 vagas
+  reais que citam banco (246 pares com 6 perfis, 114 sobem; 861 com os 21 perfis da auditoria,
+  200 sobem) nem nos 8.836 pares da matriz da auditoria (2.298 sobem), e MySQL ou PostgreSQL
+  deixam de ficar abaixo de SQL na mesma vaga (eram 16 e 21 vagas).
+  `tests/test_corpus_de_bancos.py` pontua um corpus com dialeto dentro de habilidade composta e
+  requisitos que o alias junta, com as regras novas ligadas e todas desligadas juntas
+  (equivalências, aliases de comparação e grafias dos dialetos), e exige que nenhuma nota caia,
+  nenhum requisito suma e alguma nota suba; resiste a mudança de peso e quebra se as grafias
+  voltarem a juntar o dialeto ou se a identidade do requisito voltar a usar o alias. Risco
+  aberto: fora de computação a parte "SQL" do dialeto compara por palavras, então "T-SQL" passa
+  a atender "SQL Server Reporting Services", como "PL/SQL" e "SQL" já atendiam.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
