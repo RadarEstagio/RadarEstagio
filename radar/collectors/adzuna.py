@@ -98,7 +98,7 @@ class ColetorAdzuna:
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
         try:
-            for cidade in (None, *self._cidades):
+            for cidade in (*self._cidades, None):
                 for termos in self._buscas:
                     for item in self._buscar_regiao(cidade, termos):
                         vaga = converter_ou_ignorar(item)

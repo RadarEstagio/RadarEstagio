@@ -138,7 +138,25 @@ def test_busca_tambem_por_cidade_dos_usuarios_presenciais(httpx_mock: HTTPXMock)
 
     locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
 
-    assert locais == [None, "Rio de Janeiro", "Niterói"]
+    assert locais == ["Rio de Janeiro", "Niterói", None]
+
+
+def test_saldo_curto_busca_a_cidade_do_perfil_antes_da_nacional(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=pagina_cheia(1), is_reusable=True)
+    cota = CotaDaAdzuna(saldo=2, esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http:
+        ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            ["Porto Alegre"],
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
+    assert locais == ["Porto Alegre", "Porto Alegre"]
 
 
 def test_pagina_cheia_busca_a_proxima_pagina(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):

@@ -94,7 +94,7 @@ def test_repassa_cidades_para_todas_as_fontes(httpx_mock: HTTPXMock):
 
     parametros = [requisicao.url.params for requisicao in httpx_mock.get_requests()]
 
-    assert [p.get("where") for p in parametros if "app_id" in p] == [None, "Niterói"]
+    assert [p.get("where") for p in parametros if "app_id" in p] == ["Niterói", None]
     assert [p.get("city") for p in parametros if "jobName" in p] == [None, "Niterói"]
 
 
