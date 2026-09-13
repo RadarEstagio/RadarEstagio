@@ -15,6 +15,7 @@ from radar.matching.errors import (
 )
 from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.gemini import ExtratorGemini
+from radar.matching.lotes import ExtratorEmLotes
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -180,13 +181,33 @@ def test_erro_da_api_levanta_erro_de_avaliacao_com_status():
     assert not isinstance(capturado.value, ErroTemporarioDeAvaliacao)
 
 
-@pytest.mark.parametrize("codigo", [502, 503, 504])
+@pytest.mark.parametrize("codigo", [500, 502, 503, 504])
 def test_avaliador_fora_do_ar_e_erro_temporario_e_nao_cota(codigo: int):
     extrator, _ = extrator_com(erro_da_api(codigo, "sobrecarga"))
 
     with pytest.raises(AvaliadorIndisponivel, match=str(codigo)) as capturado:
         extrator.extrair([vaga_exemplo()])
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
+
+
+def test_erro_interno_do_gemini_repete_o_mesmo_lote_em_vez_de_dividi_lo():
+    erro = errors.ServerError(500, {"error": {"code": 500, "message": "Internal error"}})
+    extrator, cliente = extrator_com(erro)
+    esperas = []
+    em_lotes = ExtratorEmLotes(
+        extrator,
+        10,
+        esperar=esperas.append,
+        prazo_em_segundos=10_000,
+        timeout_da_chamada_em_segundos=120,
+        relogio=lambda: 0.0,
+    )
+
+    extraidas = em_lotes.extrair([vaga_exemplo(numero) for numero in range(10)])
+
+    assert extraidas == []
+    assert len(cliente.models.chamadas) == 4
+    assert len(esperas) == 3
 
 
 def test_cada_chamada_leva_o_timeout_configurado_em_milissegundos():
