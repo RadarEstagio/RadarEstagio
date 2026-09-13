@@ -12,7 +12,7 @@ from radar.__main__ import executar_fluxo
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
-from radar.domain.models import Modalidade, Perfil, Usuario, Vaga
+from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
 from radar.settings import Settings
@@ -334,3 +334,40 @@ def test_rodar_sem_perfil_na_noite_de_brasilia_deixa_a_reserva_para_o_diario_das
     assert uso_antes_do_diario == LIMITE_POR_DIA - reserva
     assert repositorio.requisicoes_da_fonte_desde("adzuna", dia) > uso_antes_do_diario
     assert repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)
+
+
+class BancoComEventosDoSite(RepositorioEmMemoria):
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        return EventosDoSite(visitantes=2400, contas=12, horas_no_teto=1)
+
+
+class BancoSemATabelaDosEventosDoSite(RepositorioEmMemoria):
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
+        raise ErroDeArmazenamento("relation eventos_do_site_por_hora does not exist")
+
+
+def test_resumo_de_operacao_mostra_os_eventos_do_site(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoComEventosDoSite([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Eventos do site nas últimas 24 h: 2.400 de visitantes, 12 de contas" in resumo
+    assert "⚠️ Eventos do site chegaram ao teto em 1 hora das últimas 24 h" in resumo
+
+
+def test_falha_ao_ler_os_eventos_do_site_so_avisa_no_log(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoSemATabelaDosEventosDoSite([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Vagas coletadas: 3" in resumo
+    assert "Eventos do site" not in resumo
+    assert "eventos_do_site_por_hora" in caplog.text
