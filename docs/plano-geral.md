@@ -126,8 +126,7 @@ O que essa rodada deliberadamente não fez, e continua pendente:
   `relevante` nulo, então o juiz automático ainda não foi validado.
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
   compartilhado; a recomendação dessa revisão foi separar responsabilidades sem trocar de
-  framework. Em 12/09, Igor solicitou um plano para React com JavaScript, ainda sem execução;
-  ver a seção 2.3.
+  framework. A migração para React foi descartada em 13/09; ver a seção 2.3.
 
 ## 2.2 Auditoria do agendamento diário (10/09/2026)
 
@@ -152,38 +151,18 @@ que saíram de lá:
 
 ## 2.3 Migração do frontend para React (12/09/2026)
 
-**Estado: execução incremental autorizada.** Após a revisão da
-PR #62, Igor pediu ajustar o plano e executar. O [plano detalhado](plano-migracao-react.md)
-mantém a landing estática nesta fase e migra Auth/cadastro/conta para React com JavaScript,
-sem redesign ou TypeScript, em PRs menores começando pelo build compatível.
+**Estado: descartada em 13/09/2026.** O site continua em JavaScript puro, sem build: o
+Cloudflare Pages segue servindo `web/` direto e correções do cadastro e da conta vão no
+`app.js`.
 
-Base inicial: `main` em `5ddf9a0`, após #60/#61/#63. Em 13/09 a pilha #64/#66/#67 recebeu a
-`main` em `b1ccbf1` (#65 e #68 a #74) por merge, sem reescrever histórico. Igor confirmou preservar essa versão,
-incluindo a faixa sem Gupy, header, atribuição à Adzuna e fixtures sintéticas. Merge, mudanças
-remotas e publicação continuam dependendo de autorização própria e evidência no guia.
+A migração chegou a ser feita e testada. A #64 (script `build-web.sh`) entrou na `main`; a #66
+(Vite, lint, Vitest e CI) e a #67 (cadastro, autenticação e conta em React) foram fechadas sem
+merge, com as branches mantidas no repositório. Motivos: na Fase 2 a prioridade é validar com
+estudantes e o estudante não via diferença (24 de 28 telas idênticas pixel a pixel), enquanto o
+custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node/npm para manter,
+troca do build no Pages e cada correção do `app.js` refeita em dobro até o merge.
 
-P1 entregue na [PR #64](https://github.com/RadarEstagio/RadarEstagio/pull/64),
-em rascunho, commit `17810b4`: build compatível, 14 testes novos e roteiro Pages, sem alterar
-arquivos de `web/`. Validação local: 1.053 testes Python passaram, 27 pulados; lint e sintaxe
-do script passaram. Próximo passo: revisar/integrar P1 com autorização e preparar a transição
-remota antes de ativar a nova entrada.
-
-P2 na [PR #66](https://github.com/RadarEstagio/RadarEstagio/pull/66), em rascunho e empilhada
-sobre a #64: Vite com artefato equivalente ao site atual (mesmos caminhos de `config.js`,
-`app.js`, catálogos e logo), checagem de comentários por parser, conferência do artefato, 19
-testes Vitest e job de CI. Não entra na `main` antes de o Pages usar `build-web.sh` com saída
-`web/dist`.
-
-P3 e P4 na [PR #67](https://github.com/RadarEstagio/RadarEstagio/pull/67), em rascunho e
-empilhada sobre a #66: cadastro, autenticação e conta em React, `app.js` removido, landing no
-HTML. Entraram juntas porque o legado movia o mesmo painel entre o modal e a conta. Os
-cenários do teste Deno foram portados para Vitest, inclusive os 33 que a `main` acrescentou, e o
-comportamento novo do `app.js` foi refeito no React: eventos até 256 bytes, armazenamento
-bloqueado, falha ao carregar a conta, pausa só a partir do estado exibido, confirmação fechada ao
-trocar de tela e exclusão de conta sem perfil. Pytest (1.159), Deno (35), Vitest (206), lint e
-artefato passaram; o teste no Chrome headless foi feito antes do porte. Falta a jornada real com Supabase, Safari e
-Firefox, comparação visual e medição de carregamento (bundle de 148 KB com gzip). Mesma trava da
-#66: não entra antes de o Pages usar `build-web.sh`.
+Retomar só se surgirem telas interativas grandes, como o painel web de métricas.
 
 ## 3. Limitações e decisões que continuam valendo
 
