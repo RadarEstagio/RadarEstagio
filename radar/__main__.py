@@ -39,6 +39,7 @@ from radar.cota import (
 from radar.domain.models import Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import ColetorDeVagas, Repositorio
+from radar.entrega_imediata import RepositorioDosAtendidos, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
@@ -51,7 +52,7 @@ from radar.notification.formatador import (
     formatar_resumo_da_execucao,
 )
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
-from radar.pipeline import ParametrosDaExecucao, executar, selecionar_usuarios
+from radar.pipeline import ParametrosDaExecucao, executar
 from radar.reporting.funil import formatar_funil
 from radar.reporting.julgamento import formatar_julgamento
 from radar.settings import Settings
@@ -280,7 +281,7 @@ def executar_fluxo(
     extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
     ativos = repositorio.listar_ativos()
-    usuarios_da_coleta = selecionar_usuarios(ativos, apenas_o_perfil)
+    usuarios_da_coleta = usuarios_a_atender(repositorio, ativos, apenas_o_perfil)
     if apenas_o_perfil is not None and not usuarios_da_coleta:
         print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
         return
@@ -291,7 +292,7 @@ def executar_fluxo(
             montar_coletor(settings, cliente_http, usuarios_da_coleta, cota),
             extrator,
             notificador,
-            repositorio,
+            RepositorioDosAtendidos(repositorio, usuarios_da_coleta),
             ParametrosDaExecucao(
                 modelo=identidade_da_extracao(settings),
                 quantidade=settings.quantidade_vagas_enviadas,
@@ -303,7 +304,6 @@ def executar_fluxo(
             ),
             agora,
             enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
-            apenas_o_perfil=apenas_o_perfil,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))

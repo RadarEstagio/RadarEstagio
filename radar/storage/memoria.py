@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from radar.domain.models import (
     ChaveDaVaga,
@@ -22,6 +23,12 @@ class RepositorioEmMemoria:
 
     def pode_entregar(self, usuario: Usuario) -> bool:
         return any(u.id == usuario.id and u.chat_id == usuario.chat_id for u in self._usuarios)
+
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]:
+        return {usuario.id for usuario in self._usuarios if usuario.id == perfil_id}
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        return None
 
     def extracoes_existentes(
         self, vagas: list[Vaga], modelo: str

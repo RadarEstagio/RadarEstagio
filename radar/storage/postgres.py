@@ -49,6 +49,21 @@ SQL_PERFIS_SEM_VINCULO = (
     "select count(*) from perfis where ativo and excluida_em is null and telegram_chat_id is null"
 )
 
+SQL_REIVINDICAR_ENTREGAS_IMEDIATAS = """
+    update perfis
+    set entrega_imediata_atendida_em = now()
+    where (id = %(perfil_id)s or entrega_imediata_disparada_em is not null)
+      and entrega_imediata_atendida_em is null
+      and ativo and excluida_em is null and telegram_chat_id is not null
+    returning id
+"""
+
+SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS = """
+    update perfis
+    set entrega_imediata_atendida_em = now()
+    where id = any(%(perfis)s) and entrega_imediata_atendida_em is null
+"""
+
 SQL_EXTRACOES_EXISTENTES = """
     select fonte, id_externo, extracao
     from vagas
@@ -276,6 +291,26 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao conferir destinatário: {descrever(erro)}"
+            ) from erro
+
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]:
+        try:
+            with self._conexao.cursor() as cursor:
+                linhas = cursor.execute(
+                    SQL_REIVINDICAR_ENTREGAS_IMEDIATAS, {"perfil_id": perfil_id}
+                ).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao reivindicar as entregas imediatas: {descrever(erro)}"
+            ) from erro
+        return {perfil for (perfil,) in linhas}
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        try:
+            self._conexao.execute(SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS, {"perfis": perfis})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao marcar as entregas imediatas atendidas: {descrever(erro)}"
             ) from erro
 
     def extracoes_existentes(
