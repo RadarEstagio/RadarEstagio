@@ -216,7 +216,7 @@ endereço publicado hoje), `radarestagio.com` e `localhost` (testes locais). Gua
 
 **A integração está pronta localmente e inerte**, com `turnstileSiteKey` vazio. O site já manda
 o token nas quatro chamadas que o Supabase passa a exigir (cadastro, login, reenvio da
-confirmação e recuperação de senha), com teste de cada uma em `tests/web/cadastro_test.ts`. A
+confirmação e recuperação de senha), com teste de cada uma em `web/tests/app/autenticacao.test.js`. A
 ordem importa: (1) a site key vai para `web/config.js`; (2) o site publicado precisa mostrar o
 widget; (3) só então o CAPTCHA é ligado no Supabase com a secret key. Ligado antes, todo cadastro,
 login, reenvio e recuperação passam a falhar.
