@@ -9,11 +9,7 @@ export function dentroDaJanelaDoDiario(agora: Date): boolean {
     minutos < FIM_DA_JANELA_DO_DIARIO_EM_MINUTOS_UTC;
 }
 
-export async function dispararEntregaImediata(
-  perfilId: string,
-  agora: Date = new Date(),
-): Promise<void> {
-  if (dentroDaJanelaDoDiario(agora)) return;
+export async function dispararEntregaImediata(perfilId: string): Promise<void> {
   const token = Deno.env.get("GITHUB_DISPATCH_TOKEN");
   if (!token) {
     console.warn(
