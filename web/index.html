@@ -16,9 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="assets/styles.css?v=20260912-tema-login-separados" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
-    <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260912-tema-direto" defer></script>
+    <script src="config.js"></script>
+    <script type="module" src="./src/main.jsx"></script>
   </head>
   <body>
     <div id="landing-page">
@@ -276,26 +275,7 @@
 
     </div>
 
-    <div id="account-page" hidden>
-      <div class="account-shell">
-        <aside class="account-sidebar" aria-label="Navegação da conta">
-          <div class="account-sidebar-inner">
-            <a class="brand" href="./" id="account-home" aria-label="Radar de Estágio, início"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
-            <button class="account-back" type="button" id="back-to-site"><span aria-hidden="true">←</span> Voltar ao site</button>
-            <nav class="account-nav" aria-label="Seções da conta">
-              <p>Configurações</p>
-              <a class="is-active" href="#account-overview-panel" aria-current="location">Visão geral</a>
-              <a href="#account-delivery-panel">Entregas</a>
-              <a href="#account-data-panel">Dados e acesso</a>
-              <a href="#account-privacy-panel">Privacidade</a>
-            </nav>
-          </div>
-        </aside>
-        <main class="account-main" id="account-main" aria-label="Minha conta">
-          <div class="account-page-content"><div id="account-content"></div></div>
-        </main>
-      </div>
-    </div>
+    <div id="account-page" hidden></div>
 
     <div class="wave-divider" aria-hidden="true">
       <svg viewBox="0 0 1440 90" preserveAspectRatio="none" focusable="false"><path d="M0 60 C 240 20, 480 90, 720 55 C 960 20, 1200 75, 1440 40 L 1440 90 L 0 90 Z"></path></svg>
@@ -314,247 +294,55 @@
     </footer>
 
     <dialog class="signup-dialog" id="signup-dialog" aria-labelledby="signup-title">
-      <div class="dialog-shell">
-        <button class="dialog-close" id="close-dialog" type="button" aria-label="Fechar cadastro">×</button>
-        <div class="dialog-intro">
-          <span class="radar-mark radar-mark-dialog" aria-hidden="true"><i></i></span>
-          <p class="eyebrow eyebrow-light">Ative seu radar</p>
-          <h2 id="signup-title">Seu perfil deixa cada busca mais certeira.</h2>
-          <p>Preencha uma vez. O sistema usa essas informações para comparar as vagas com o que você procura.</p>
-          <div class="privacy-note"><span aria-hidden="true">●</span> Seu perfil serve para selecionar vagas. O e-mail dá acesso à conta e o Telegram recebe as recomendações. Usamos fornecedores para operar o serviço. Consulte a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade (em revisão, abre em outra aba)</a>.</div>
-        </div>
-        <div class="dialog-form-area">
-          <div class="progress-wrap">
-            <div class="progress-meta"><span id="progress-label">Etapa 1 de 4</span><strong id="progress-percent">0%</strong></div>
-            <div class="progress-track" id="progress-track" role="progressbar" aria-labelledby="progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-bar"></span></div>
-          </div>
-          <form id="signup-form" novalidate>
-            <fieldset class="form-step is-active" data-step="1">
-              <legend id="conta-titulo">Comece pela sua conta</legend>
-              <p class="step-help" id="conta-ajuda">O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.</p>
-              <div class="field-grid" id="credenciais">
-                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" spellcheck="false" required placeholder="voce@email.com" /></label>
-                <div class="field field-full"><label for="signup-password">Senha</label><span class="password-field"><input id="signup-password" name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button class="password-toggle" type="button" data-toggle-password="senha" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.75"></circle><path class="password-eye-slash" d="m4 4 16 16"></path></svg></button></span></div>
-              </div>
-              <div id="signup-consent" class="consent-fields">
-                <label><input type="checkbox" name="aceitou_termos" required /> <span>Aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> (abrem em outra aba).</span></label>
-                <label><input type="checkbox" name="aceita_emails" /> <span>Quero receber e-mails ocasionais do Radar.</span></label>
-              </div>
-              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
-              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
-            </fieldset>
-            <fieldset class="form-step" data-step="2">
-              <legend>Em que momento você está?</legend>
-              <p class="step-help">Isso evita recomendar vagas incompatíveis com seu curso ou período.</p>
-              <div class="field-grid">
-                <label class="field field-full"><span>Seu curso</span><input name="curso" list="cursos-sugeridos" autocomplete="off" required placeholder="Digite ou escolha seu curso" /><small>Use o nome que aparece na sua faculdade.</small></label>
-                <datalist id="cursos-sugeridos">
-                  <option value="Administração"></option>
-                  <option value="Administração Pública"></option>
-                  <option value="Análise e Desenvolvimento de Sistemas"></option>
-                  <option value="Arquitetura e Urbanismo"></option>
-                  <option value="Ciência da Computação"></option>
-                  <option value="Ciência de Dados"></option>
-                  <option value="Ciências Atuariais"></option>
-                  <option value="Ciências Contábeis"></option>
-                  <option value="Ciências Econômicas"></option>
-                  <option value="Comunicação Social"></option>
-                  <option value="Comércio Exterior"></option>
-                  <option value="Design Gráfico"></option>
-                  <option value="Direito"></option>
-                  <option value="Educação Física"></option>
-                  <option value="Enfermagem"></option>
-                  <option value="Engenharia Civil"></option>
-                  <option value="Engenharia de Produção"></option>
-                  <option value="Engenharia de Software"></option>
-                  <option value="Engenharia Elétrica"></option>
-                  <option value="Engenharia Mecânica"></option>
-                  <option value="Eventos"></option>
-                  <option value="Farmácia"></option>
-                  <option value="Fisioterapia"></option>
-                  <option value="Gastronomia"></option>
-                  <option value="Geografia"></option>
-                  <option value="Gestão Comercial"></option>
-                  <option value="Gestão de Logística"></option>
-                  <option value="Gestão de Pessoas"></option>
-                  <option value="Gestão de Recursos Humanos"></option>
-                  <option value="Gestão Financeira"></option>
-                  <option value="História"></option>
-                  <option value="Hotelaria"></option>
-                  <option value="Jornalismo"></option>
-                  <option value="Letras"></option>
-                  <option value="Logística"></option>
-                  <option value="Marketing"></option>
-                  <option value="Nutrição"></option>
-                  <option value="Pedagogia"></option>
-                  <option value="Processos Gerenciais"></option>
-                  <option value="Psicologia"></option>
-                  <option value="Publicidade e Propaganda"></option>
-                  <option value="Relações Internacionais"></option>
-                  <option value="Secretariado Executivo"></option>
-                  <option value="Sistemas de Informação"></option>
-                  <option value="Transportes"></option>
-                  <option value="Turismo"></option>
-                </datalist>
-                <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
-              </div>
-            </fieldset>
-            <fieldset class="form-step" data-step="3">
-              <legend>O que você já sabe usar?</legend>
-              <p class="step-help" id="skills-help">Você pode começar pelo curso e pelas preferências. Depois, informe suas habilidades para melhorar as recomendações.</p>
-              <input name="habilidades" type="hidden" />
-              <div class="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
-                <button type="button" data-skill="Python" aria-pressed="false">Python</button>
-                <button type="button" data-skill="JavaScript" aria-pressed="false">JavaScript</button>
-                <button type="button" data-skill="Java" aria-pressed="false">Java</button>
-                <button type="button" data-skill="React" aria-pressed="false">React</button>
-                <button type="button" data-skill="SQL" aria-pressed="false">SQL</button>
-                <button type="button" data-skill="Git" aria-pressed="false">Git</button>
-                <button type="button" data-skill="Excel" aria-pressed="false">Excel</button>
-                <button type="button" data-skill="Power BI" aria-pressed="false">Power BI</button>
-                <button type="button" data-skill="Linux" aria-pressed="false">Linux</button>
-                <button type="button" data-skill="Redes" aria-pressed="false">Redes</button>
-              </div>
-              <p class="catalog-notice" id="skills-catalog-notice" role="status" hidden>Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.</p>
-              <div class="field-grid">
-                <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" maxlength="100" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
-              </div>
-              <div class="selected-skills" id="selected-skills" role="group" aria-label="Habilidades escolhidas" aria-live="polite"></div>
-              <button class="text-link skill-empty-action" type="button" id="continue-without-skills">Ainda não quero informar habilidades <span aria-hidden="true">→</span></button>
-            </fieldset>
-            <fieldset class="form-step" data-step="4">
-              <legend>Onde as vagas devem chegar?</legend>
-              <p class="step-help">Essas preferências serão usadas nas próximas buscas.</p>
-              <div class="field-grid">
-                <div class="field field-full">
-                  <label for="cidade">Cidade principal</label>
-                  <div class="city-combobox">
-                    <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" autocomplete="off" placeholder="Digite e escolha sua cidade" />
-                    <button type="button" class="city-toggle" id="mostrar-cidades" tabindex="-1" aria-label="Mostrar cidades" aria-controls="lista-de-cidades" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
-                    <ul class="city-options" id="lista-de-cidades" role="listbox" aria-label="Cidades" hidden></ul>
-                  </div>
-                  <p class="catalog-notice" id="cities-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.</p>
-                  <small>Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
-                </div>
-                <div class="field field-full"><span>Modalidade preferida</span><div class="option-grid">
-                  <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>
-                  <label><input type="radio" name="modalidade" value="hibrido" /><span>Híbrido</span></label>
-                  <label><input type="radio" name="modalidade" value="presencial" /><span>Presencial</span></label>
-                  <label><input type="radio" name="modalidade" value="indiferente" /><span>Indiferente</span></label>
-                </div></div>
-                <div class="field field-full" id="campo-areas" hidden><span>Áreas de interesse (opcional)</span><div class="option-grid" id="grade-de-areas"></div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
-                </div>
-            </fieldset>
-            <p class="form-message" id="form-message" role="alert"></p>
-            <p class="form-message form-message-aviso" id="form-notice" role="status"></p>
-            <div class="form-actions" id="form-actions">
-              <button class="button button-ghost" type="button" id="previous-step">← Voltar</button>
-              <button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button>
-              <button class="button button-primary" type="submit" id="submit-profile" aria-busy="false"><span id="submit-label">Criar conta e continuar</span><span class="button-spinner" aria-hidden="true"></span><span class="button-arrow" aria-hidden="true">→</span></button>
-            </div>
-          </form>
-          <section id="auth-assistance" hidden aria-labelledby="assistance-title">
-            <h2 id="assistance-title">Confirme seu e-mail</h2>
-            <p id="assistance-copy"></p>
-            <form id="assistance-form">
-              <label class="field" id="assistance-email-field"><span>E-mail</span><input id="assistance-email" type="email" autocomplete="email" spellcheck="false" required /></label>
-              <div class="field" id="assistance-password-field" hidden><label for="assistance-password">Nova senha</label><span class="password-field"><input id="assistance-password" type="password" autocomplete="new-password" minlength="8" /><button class="password-toggle" type="button" data-toggle-password="assistance-password" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.75"></circle><path class="password-eye-slash" d="m4 4 16 16"></path></svg></button></span></div>
-              <p class="form-message" id="assistance-message" role="alert"></p>
-              <p class="form-message form-message-aviso" id="assistance-notice" role="status"></p>
-              <button class="button button-primary" id="assistance-submit" type="submit">Reenviar confirmação</button>
-            </form>
-            <button class="button button-ghost" id="assistance-back" type="button">Voltar para entrar</button>
-          </section>
-          <div id="captcha-container"></div>
-          <section class="success-state" id="success-state" aria-labelledby="success-title" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
-          </section>
-          <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
-            <div class="account-heading">
-              <p class="eyebrow">Sua conta</p>
-              <h1 id="account-title" tabindex="-1">Conta</h1>
-              <p>Confira seu perfil de busca e controle como o Radar entrega suas recomendações.</p>
-            </div>
-            <div class="account-panel">
-              <p class="form-message" id="account-message" role="alert"></p>
-              <p class="form-message form-message-aviso" id="account-notice" role="status"></p>
-              <div class="account-tab-panel" id="account-overview-panel">
-                <section class="account-profile-card account-row" id="account-overview-section" aria-labelledby="account-profile-title">
-                  <div class="account-row-content">
-                    <div class="account-card-heading">
-                      <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span>
-                      <div><p>Perfil de busca</p><h2 id="account-profile-title">Seu Radar</h2></div>
-                    </div>
-                    <p id="account-summary"></p>
-                    <div class="account-skills" id="account-skills" aria-label="Habilidades do perfil"></div>
-                  </div>
-                  <button class="button button-primary" type="button" id="edit-profile">Editar perfil</button>
-                </section>
-              </div>
-              <div class="account-tab-panel" id="account-delivery-panel" hidden>
-                <section class="account-delivery-card account-row" id="account-delivery-card" aria-labelledby="account-delivery-title">
-                  <span class="account-status-icon" id="account-status-icon" aria-hidden="true">✓</span>
-                  <div class="account-row-content"><p>Telegram</p><h2 id="account-delivery-title">Entregas ativas</h2><p class="account-schedule" id="account-schedule"></p></div>
-                  <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
-                </section>
-                <fieldset class="account-confirm pause-reason" id="pause-reason" hidden>
-                  <legend id="pause-reason-title" tabindex="-1">Por que você pausou as entregas?</legend>
-                  <p>Responder é opcional e ajuda a entender o momento do seu perfil.</p>
-                  <div class="option-grid">
-                    <label><input type="radio" name="motivo-pausa" value="conseguiu_estagio" /><span>Consegui um estágio</span></label>
-                    <label><input type="radio" name="motivo-pausa" value="interrompeu_busca" /><span>Interrompi a busca</span></label>
-                    <label><input type="radio" name="motivo-pausa" value="sem_vagas_uteis" /><span>Não encontrei vagas úteis</span></label>
-                    <label><input type="radio" name="motivo-pausa" value="frequencia" /><span>Minha frequência mudou</span></label>
-                    <label><input type="radio" name="motivo-pausa" value="outro" /><span>Outro</span></label>
-                  </div>
-                  <p class="form-message" id="pause-reason-message" role="alert"></p>
-                  <div class="account-actions">
-                    <button class="button button-primary" type="button" id="save-pause-reason">Salvar motivo</button>
-                    <button class="button button-ghost" type="button" id="skip-pause-reason">Pular</button>
-                  </div>
-                </fieldset>
-                <section class="account-settings account-row" id="account-preferences-section" aria-labelledby="account-preferences-title">
-                  <div class="account-section-heading"><p>Preferências</p><h2 id="account-preferences-title">Comunicações</h2><span>Escolha se o Radar também pode falar com você por e-mail.</span></div>
-                  <label class="consent-fields account-email-setting"><span><input type="checkbox" id="account-emails" /> <span>Receber e-mails ocasionais do Radar</span></span></label>
-                </section>
-              </div>
-              <div class="account-tab-panel" id="account-data-panel" hidden>
-                <section class="account-settings account-row" id="account-data-section" aria-labelledby="account-data-title">
-                  <div class="account-section-heading"><p>Seus dados</p><h2 id="account-data-title">Dados e acesso</h2><span>Baixe uma cópia das suas informações ou encerre esta sessão.</span></div>
-                  <div class="account-actions account-actions-secondary">
-                    <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
-                    <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
-                    <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
-                  </div>
-                </section>
-              </div>
-              <div class="account-tab-panel" id="account-privacy-panel" hidden>
-                <section class="account-danger" id="account-danger-section" aria-labelledby="account-danger-title">
-                <div class="account-section-heading account-danger-heading"><p>Privacidade</p><h2 id="account-danger-title">Ações sensíveis</h2><span>Revise as consequências antes de alterar o vínculo ou excluir sua conta.</span></div>
-                <div class="account-danger-list">
-                  <section class="account-danger-row" aria-labelledby="unlink-telegram-title">
-                    <div><h3 id="unlink-telegram-title">Desvincular o Telegram</h3><p>Interrompe as entregas neste chat. Você poderá vinculá-lo novamente depois.</p></div>
-                    <button class="button button-danger-ghost" type="button" id="unlink-telegram">Desvincular</button>
-                  </section>
-                  <section class="account-danger-row" aria-labelledby="delete-account-title">
-                    <div><h3 id="delete-account-title">Excluir minha conta</h3><p>Interrompe as entregas agora e agenda a remoção definitiva dos seus dados.</p></div>
-                    <button class="button button-danger" type="button" id="delete-account">Excluir conta</button>
-                    <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
-                  </section>
-                </div>
-                <dialog class="account-confirm" id="account-confirm" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-copy" hidden>
-                  <div class="account-confirm-header">
-                    <span class="account-confirm-icon" aria-hidden="true">!</span>
-                    <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
-                    <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
-                  </div>
-                  <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
-                  <p id="account-confirm-copy"></p>
-                  <div class="account-actions">
-                    <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
-                    <button class="button button-danger" type="button" id="account-confirm-yes">Confirmar</button>
-                  </div>
-                </dialog>
+      <datalist id="cursos-sugeridos">
+        <option value="Administração"></option>
+        <option value="Administração Pública"></option>
+        <option value="Análise e Desenvolvimento de Sistemas"></option>
+        <option value="Arquitetura e Urbanismo"></option>
+        <option value="Ciência da Computação"></option>
+        <option value="Ciência de Dados"></option>
+        <option value="Ciências Atuariais"></option>
+        <option value="Ciências Contábeis"></option>
+        <option value="Ciências Econômicas"></option>
+        <option value="Comunicação Social"></option>
+        <option value="Comércio Exterior"></option>
+        <option value="Design Gráfico"></option>
+        <option value="Direito"></option>
+        <option value="Educação Física"></option>
+        <option value="Enfermagem"></option>
+        <option value="Engenharia Civil"></option>
+        <option value="Engenharia de Produção"></option>
+        <option value="Engenharia de Software"></option>
+        <option value="Engenharia Elétrica"></option>
+        <option value="Engenharia Mecânica"></option>
+        <option value="Eventos"></option>
+        <option value="Farmácia"></option>
+        <option value="Fisioterapia"></option>
+        <option value="Gastronomia"></option>
+        <option value="Geografia"></option>
+        <option value="Gestão Comercial"></option>
+        <option value="Gestão de Logística"></option>
+        <option value="Gestão de Pessoas"></option>
+        <option value="Gestão de Recursos Humanos"></option>
+        <option value="Gestão Financeira"></option>
+        <option value="História"></option>
+        <option value="Hotelaria"></option>
+        <option value="Jornalismo"></option>
+        <option value="Letras"></option>
+        <option value="Logística"></option>
+        <option value="Marketing"></option>
+        <option value="Nutrição"></option>
+        <option value="Pedagogia"></option>
+        <option value="Processos Gerenciais"></option>
+        <option value="Psicologia"></option>
+        <option value="Publicidade e Propaganda"></option>
+        <option value="Relações Internacionais"></option>
+        <option value="Secretariado Executivo"></option>
+        <option value="Sistemas de Informação"></option>
+        <option value="Transportes"></option>
+        <option value="Turismo"></option>
+      </datalist>
+    </dialog>
                 </section>
               </div>
             </div>

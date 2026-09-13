@@ -1,13 +1,13 @@
 import { execFile } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 
 const executar = promisify(execFile);
-const script = fileURLToPath(new URL("../scripts/check-frontend-comments.mjs", import.meta.url));
+const script = resolve(dirname(fileURLToPath(import.meta.url)), "../scripts/check-frontend-comments.mjs");
 const diretorios = [];
 
 async function falhaAoVerificar(nome, conteudo) {

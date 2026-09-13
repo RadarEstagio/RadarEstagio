@@ -1,16 +1,25 @@
+import json
 import re
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
 
 
-def test_formulario_carrega_supabase_antes_da_aplicacao():
-    html = (RAIZ / "web/index.html").read_text()
+def fonte_do_frontend():
+    return "\n".join(p.read_text() for p in sorted((RAIZ / "web/src").rglob("*.js*")))
 
-    assert html.index("@supabase/supabase-js@2") < html.index("config.js")
-    assert html.index("config.js") < html.index("assets/app.js")
-    assert 'name="senha"' in html
-    assert 'id="telegram-link"' in html
+
+def test_configuracao_publica_carrega_antes_do_modulo_da_aplicacao():
+    html = (RAIZ / "web/index.html").read_text()
+    entrada = (RAIZ / "web/src/main.jsx").read_text()
+    fonte = fonte_do_frontend()
+
+    assert '<script src="config.js"></script>' in html
+    assert html.index('src="config.js"') < html.index('src="./src/main.jsx"')
+    assert "cdn.jsdelivr.net" not in html
+    assert 'from "@supabase/supabase-js"' in entrada
+    assert 'name="senha"' in fonte
+    assert 'id="telegram-link"' in fonte
 
 
 def test_campo_de_senha_mantem_o_olho_a_direita_do_autofill_do_safari():
@@ -21,64 +30,68 @@ def test_campo_de_senha_mantem_o_olho_a_direita_do_autofill_do_safari():
 
 
 def test_cadastro_persiste_perfil_e_monta_vinculo():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert '.from("perfis")' in javascript
-    assert 'rpc("concluir_meu_cadastro"' in javascript
-    assert "signUp" in javascript
-    assert "signInWithPassword" in javascript
-    assert "?start=${token}" in javascript
-    assert 'localStorage.setItem("radar-perfil"' not in javascript
+    assert '.from("perfis")' in fonte
+    assert 'rpc("concluir_meu_cadastro"' in fonte
+    assert "signUp" in fonte
+    assert "signInWithPassword" in fonte
+    assert "?start=${token}" in fonte
+    assert 'localStorage.setItem("radar-perfil' not in fonte
 
 
 def test_formulario_tem_as_quatro_etapas_e_as_sugestoes_do_cadastro():
     html = (RAIZ / "web/index.html").read_text()
+    cadastro = (RAIZ / "web/src/features/cadastro/Cadastro.jsx").read_text()
+    fonte = fonte_do_frontend()
 
-    assert html.count('class="form-step') == 4
+    for passo in range(1, 5):
+        assert f'data-step="{passo}"' in cadastro
     assert 'id="cursos-sugeridos"' in html
-    assert 'data-skill="Python"' in html
-    assert 'id="continue-without-skills"' in html
+    assert 'list="cursos-sugeridos"' in cadastro
+    assert '"Python"' in fonte
+    assert 'id="continue-without-skills"' in cadastro
 
 
 def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "const selectedSkills = new Set()" in javascript
-    assert 'form.elements.habilidades.value = [...selectedSkills].join(",")' in javascript
-    assert "Escolha ou digite pelo menos uma habilidade." in javascript
-    assert "const PASSO_HABILIDADES = 3" in javascript
+    assert 'name="habilidades" type="hidden" value={estado.habilidades.join(",")}' in fonte
+    assert "Escolha ou digite pelo menos uma habilidade." in fonte
+    assert "PASSO_HABILIDADES = 3" in fonte
 
 
 def test_envio_final_valida_todos_os_passos_ativos():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
-    html = (RAIZ / "web/index.html").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "if (!validarFluxo()) return;" in javascript
-    assert "return passosAtivos.every((passo) => validateStep(passo));" in javascript
-    assert 'name="cidade" required minlength="2" maxlength="120"' in html
-    assert 'name="modalidade" value="remoto" required' in html
-    assert 'name="email" type="email"' in html
-    assert 'name="senha" type="password" autocomplete="new-password" minlength="8"' in html
+    assert "if (!validarFluxo()) return;" in fonte
+    assert "return estado.passos.every((passo) => validarPasso(passo));" in fonte
+    assert 'name="cidade"' in fonte
+    assert "minLength={2}" in fonte
+    assert "maxLength={120}" in fonte
+    assert "required={indice === 0}" in fonte
+    assert 'name="email"\n              type="email"' in fonte
+    assert "minLength={8}" in fonte
 
 
 def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "function humanizeError(error" in javascript
-    assert "profilePending" in javascript
-    assert "Entre novamente para concluir o perfil" in javascript
-    assert "setFormMessage(error.message)" not in javascript
-    assert "humanizeError(error, { profilePending: true })" in javascript
+    assert "function mensagemHumana(erro" in fonte
+    assert "perfilPendente" in fonte
+    assert "Entre novamente para concluir o perfil" in fonte
+    assert "mostrarMensagem(erro.message)" not in fonte
+    assert "mensagemHumana(erro, { perfilPendente: true })" in fonte
 
 
 def test_validacao_do_cadastro_orienta_como_corrigir_cada_campo_invalido():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
-    assert "Informe a cidade onde você procura vaga." in javascript
-    assert "Escolha uma modalidade." in javascript
-    assert "Digite um e-mail como nome@exemplo.com." in javascript
-    assert "Use pelo menos 8 caracteres." in javascript
-    assert "const modalidadesAceitas = new Set" in javascript
+    assert "Informe a cidade onde você procura vaga." in fonte
+    assert "Escolha uma modalidade." in fonte
+    assert "Digite um e-mail como nome@exemplo.com." in fonte
+    assert "Use pelo menos 8 caracteres." in fonte
+    assert "const MODALIDADES_ACEITAS = new Set" in fonte
 
 
 def test_migration_reserva_campos_de_vinculo_ao_webhook():
@@ -155,26 +168,26 @@ def test_perfil_marcado_para_exclusao_nao_aceita_update_do_site():
 
 
 def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
-    js = (RAIZ / "web/assets/app.js").read_text()
-    handler = js.split('querySelector("#cancel-deletion").addEventListener')[1].split("});")[0]
+    fonte = fonte_do_frontend()
+    funcao = fonte.split("async function cancelarExclusao()")[1].split("\n  }\n")[0]
 
-    assert "mostrarEstadoDoPerfil(profile)" in handler
-    assert "showAccount(profile)" not in handler
+    assert "mostrarEstadoDoPerfil(" in funcao
+    assert "mostrarConta(" not in funcao
 
 
 def test_perfil_vinculado_explica_a_espera_sem_prometer_execucao():
-    javascript = (RAIZ / "web/assets/app.js").read_text()
+    fonte = fonte_do_frontend()
 
     assert (
         "Telegram vinculado. As recomendações chegarão por lá quando houver vagas compatíveis."
-        in javascript
+        in fonte
     )
-    assert "A primeira busca pode aguardar a próxima execução diária." in javascript
+    assert "A primeira busca pode aguardar a próxima execução diária." in fonte
     for promessa in ("busca iniciada", "busca concluída", "busca começou", "quatro minutos"):
-        assert promessa not in javascript
+        assert promessa not in fonte
 
 
 def test_cliente_supabase_tem_versao_fixa():
-    html = (RAIZ / "web/index.html").read_text()
+    pacote = json.loads((RAIZ / "web/package.json").read_text())
 
-    assert re.search(r"@supabase/supabase-js@\d+\.\d+\.\d+", html)
+    assert re.fullmatch(r"\d+\.\d+\.\d+", pacote["dependencies"]["@supabase/supabase-js"])

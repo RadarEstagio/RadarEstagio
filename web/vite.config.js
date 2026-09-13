@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const raiz = fileURLToPath(new URL(".", import.meta.url));
 const paginas = ["index.html", "termos.html", "privacidade.html"];
-const recursosSemBundle = ["config.js", "assets/app.js", "assets/areas.json", "assets/cidades.json"];
+const recursosSemBundle = ["config.js", "assets/areas.json", "assets/cidades.json"];
 
 function copiarRecursosSemBundle() {
   return {
@@ -22,7 +23,7 @@ export default defineConfig({
   root: raiz,
   base: "./",
   publicDir: false,
-  plugins: [copiarRecursosSemBundle()],
+  plugins: [react(), copiarRecursosSemBundle()],
   server: { host: "localhost", port: 8000, strictPort: true },
   preview: { host: "localhost", port: 8000, strictPort: true },
   build: {
@@ -33,5 +34,9 @@ export default defineConfig({
       input: Object.fromEntries(paginas.map((pagina) => [pagina.replace(".html", ""), resolve(raiz, pagina)])),
       output: { assetFileNames: "assets/[name][extname]" },
     },
+  },
+  test: {
+    environment: "jsdom",
+    include: ["tests/**/*.test.{js,jsx}"],
   },
 });

@@ -1,13 +1,13 @@
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 
 const executar = promisify(execFile);
-const script = fileURLToPath(new URL("../scripts/check-web-artifact.mjs", import.meta.url));
+const script = resolve(dirname(fileURLToPath(import.meta.url)), "../scripts/check-web-artifact.mjs");
 const diretorios = [];
 
 async function artefatoValido() {
@@ -46,7 +46,7 @@ describe("verificação do artefato publicado", () => {
     expect(await falhaDaVerificacao(await artefatoValido())).toBe("");
   });
 
-  it.each(["config.js", "assets/app.js", "assets/cidades.json", "assets/adzuna-logo.png"])(
+  it.each(["config.js", "assets/areas.json", "assets/cidades.json", "assets/adzuna-logo.png"])(
     "recusa artefato sem %s",
     async (arquivo) => {
       const destino = await artefatoValido();
