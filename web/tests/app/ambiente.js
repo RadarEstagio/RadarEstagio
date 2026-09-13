@@ -221,8 +221,8 @@ function criarClienteFalso({ sessao, perfilGuardado, calls, aoRegistrarAuth, err
           return consulta;
         },
         maybeSingle: async () =>
-          tabela === "perfis" && erroDoPerfil ? { data: null, error: erroDoPerfil } : { data: perfilGuardado },
-        single: async () => ({ data: perfilGuardado }),
+          tabela === "perfis" && erroDoPerfil ? { data: null, error: erroDoPerfil } : { data: structuredClone(perfilGuardado) },
+        single: async () => ({ data: structuredClone(perfilGuardado) }),
       };
       return consulta;
     },
@@ -282,9 +282,10 @@ export function abrirAplicacao({
   let aoMudarAuth = () => {
     throw new Error("callback não registrado");
   };
+  const perfilNoBanco = perfilSalvo ? structuredClone(perfilSalvo) : null;
   const cliente = criarClienteFalso({
     sessao,
-    perfilGuardado: perfilSalvo ? structuredClone(perfilSalvo) : null,
+    perfilGuardado: perfilNoBanco,
     calls,
     erroDaSessao,
     erroDoPerfil,
@@ -299,6 +300,7 @@ export function abrirAplicacao({
   return {
     calls,
     cliente,
+    perfilNoBanco,
     controlador: aplicacaoAberta.controlador,
     temaAntesDoApp,
     eventoDeAuth: (evento) => executar(() => aoMudarAuth(evento)),

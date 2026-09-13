@@ -3,6 +3,7 @@ import { CONFIRMACOES, SECOES_DA_CONTA, VALORES_DOS_MOTIVOS_DE_PAUSA, dataDoApag
 import { areaDoCurso } from "../domain/cursos.js";
 import {
   MAXIMO_DE_HABILIDADES,
+  MENSAGEM_ENTREGAS_JA_MUDARAM,
   MENSAGEM_SEM_CONFIGURACAO,
   MENSAGEM_SEM_PERFIL,
   MENSAGEM_SEM_SESSAO,
@@ -1043,23 +1044,34 @@ export function criarControlador({ janela, criarCliente }) {
 
   async function alternarEntregas() {
     if (estado.conta.alternando) return;
+    const pausar = Boolean(estado.conta.perfil?.ativo);
     mudarConta({ alternando: true });
     mostrarMensagemDaConta();
     try {
-      const perfil = await perfilAtual();
-      const estavaAtivo = perfil.ativo;
       const sessao = await sessaoAtual();
       if (!sessao) throw erroDeValidacao(MENSAGEM_SEM_SESSAO);
-      const atualizacao = estavaAtivo
+      const atualizacao = pausar
         ? { ativo: false, atualizado_em: new Date().toISOString() }
         : { ativo: true, motivo_pausa: null, atualizado_em: new Date().toISOString() };
-      const { error } = await obterCliente().from("perfis").update(atualizacao).eq("user_id", sessao.user.id);
+      const { data, error } = await obterCliente()
+        .from("perfis")
+        .update(atualizacao)
+        .eq("user_id", sessao.user.id)
+        .eq("ativo", pausar)
+        .select(COLUNAS_DO_PERFIL)
+        .maybeSingle();
       if (error) throw error;
-      mostrarConta({ ...perfil, ativo: !estavaAtivo, motivo_pausa: null });
-      if (estavaAtivo) {
-        mudarPausa({ aberta: true, mensagem: "", motivo: null });
-        focar("#pause-reason-title");
+      if (data) {
+        mostrarConta(data);
+        if (pausar) {
+          mudarPausa({ aberta: true, mensagem: "", motivo: null });
+          focar("#pause-reason-title");
+        }
+        return;
       }
+      const perfil = await perfilAtual();
+      mostrarConta(perfil);
+      if (!perfil.excluida_em) mostrarMensagemDaConta(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
     } catch (erro) {
       mostrarMensagemDaConta(mensagemHumana(erro));
     } finally {
