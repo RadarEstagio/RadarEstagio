@@ -1,6 +1,6 @@
 import logging
 
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.domain.models import Vaga
 from radar.domain.ports import ColetorDeVagas
 
@@ -12,13 +12,18 @@ class ColetorComposto:
         if not coletores:
             raise ValueError("é necessário pelo menos um coletor")
         self._coletores = coletores
+        self.incompletas: dict[str, str] = {}
 
     def coletar(self) -> list[Vaga]:
         vagas: list[Vaga] = []
         falhas: list[str] = []
+        self.incompletas = {}
         for fonte, coletor in self._coletores.items():
             try:
                 coletadas = coletor.coletar()
+            except ColetaIncompleta as incompleta:
+                self.incompletas[fonte] = str(incompleta)
+                coletadas = incompleta.vagas
             except ErroDeColeta as erro:
                 logger.warning("Fonte %s ignorada nesta execução: %s", fonte, erro)
                 falhas.append(f"{fonte}: {erro}")

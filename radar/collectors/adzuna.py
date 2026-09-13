@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Iterator
 
 import httpx
 
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Vaga
 from radar.settings import Settings
@@ -109,6 +109,13 @@ class ColetorAdzuna:
             logger.warning(
                 "Cota da Adzuna esgotada; a coleta parou com %d vagas", len(vagas_por_id)
             )
+        except ErroDeColeta as erro:
+            if not vagas_por_id:
+                raise
+            logger.warning(
+                "Coleta da Adzuna interrompida com %d vagas: %s", len(vagas_por_id), erro
+            )
+            raise ColetaIncompleta(str(erro), list(vagas_por_id.values())) from erro
         return list(vagas_por_id.values())
 
     def _buscar_regiao(self, cidade: str | None, termos: str) -> Iterator[dict]:

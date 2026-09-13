@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from radar.collectors.composto import ColetorComposto
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.domain.models import Vaga
 
 
@@ -68,6 +68,33 @@ def test_todas_as_fontes_falhando_levanta_erro_de_coleta():
 
     with pytest.raises(ErroDeColeta, match="Nenhuma fonte respondeu"):
         composto.coletar()
+
+
+class ColetorQueParaNoMeio:
+    def __init__(self, vagas: list[Vaga]) -> None:
+        self._vagas = vagas
+
+    def coletar(self) -> list[Vaga]:
+        raise ColetaIncompleta("Adzuna respondeu HTTP 429 ao buscar vagas", self._vagas)
+
+
+def test_fonte_que_para_no_meio_entrega_o_que_trouxe_e_fica_registrada():
+    composto = ColetorComposto(
+        {"adzuna": ColetorQueParaNoMeio([vaga("adzuna", 1), vaga("adzuna", 2)])}
+    )
+
+    vagas = composto.coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "2"]
+    assert composto.incompletas == {"adzuna": "Adzuna respondeu HTTP 429 ao buscar vagas"}
+
+
+def test_coleta_completa_nao_registra_fonte_incompleta():
+    composto = ColetorComposto({"adzuna": ColetorFalso([vaga("adzuna", 1)])})
+
+    composto.coletar()
+
+    assert composto.incompletas == {}
 
 
 def test_sem_coletores_e_rejeitado():
