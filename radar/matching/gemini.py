@@ -10,6 +10,7 @@ from radar.matching.errors import (
     AvaliadorIndisponivel,
     CotaDeAvaliacaoExcedida,
     ErroDeAvaliacao,
+    FalhaInternaDoAvaliador,
 )
 from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.prompt import montar_prompt
@@ -17,6 +18,7 @@ from radar.settings import Settings
 
 TEMPERATURA_DETERMINISTICA = 0
 HTTP_COTA_EXCEDIDA = 429
+HTTP_FALHA_INTERNA = 500
 HTTP_INDISPONIVEL = frozenset({502, 503, 504})
 MILISSEGUNDOS_POR_SEGUNDO = 1000
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
@@ -83,6 +85,8 @@ def gerar_json[T: BaseModel](
         mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
         if erro.code == HTTP_COTA_EXCEDIDA:
             raise CotaDeAvaliacaoExcedida(mensagem, tempo_de_espera(erro.message)) from None
+        if erro.code == HTTP_FALHA_INTERNA:
+            raise FalhaInternaDoAvaliador(mensagem) from None
         if erro.code in HTTP_INDISPONIVEL:
             raise AvaliadorIndisponivel(mensagem) from None
         raise ErroDeAvaliacao(mensagem) from None

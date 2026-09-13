@@ -1,9 +1,11 @@
 from datetime import date
 from typing import Protocol
+from uuid import UUID
 
 from radar.domain.models import (
     ChaveDaVaga,
     EntregaParaJulgar,
+    EventosDoSite,
     ExtracaoDaVaga,
     FunilDaCoorte,
     Julgamento,
@@ -35,6 +37,10 @@ class RepositorioDeUsuarios(Protocol):
     def listar_ativos(self) -> list[Usuario]: ...
 
     def pode_entregar(self, usuario: Usuario) -> bool: ...
+
+    def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]: ...
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None: ...
 
 
 class RepositorioDeAvaliacoes(Protocol):
@@ -68,11 +74,19 @@ class RepositorioDeAvaliacoes(Protocol):
 
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None: ...
 
+    def registrar_vagas_sem_extracao(
+        self, vagas: list[Vaga], dia: date
+    ) -> dict[ChaveDaVaga, int] | None: ...
+
     def pausar(self, usuario: Usuario) -> None: ...
 
     def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int: ...
 
     def registrar_requisicoes_da_fonte(self, fonte: str, dia: date, requisicoes: int) -> None: ...
+
+    def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool: ...
+
+    def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite | None: ...
 
 
 class RepositorioDeMetricas(Protocol):

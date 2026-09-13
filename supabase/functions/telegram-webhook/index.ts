@@ -7,9 +7,8 @@ import {
   extrairPedidoDeVinculo,
   RESPOSTA_SEM_TOKEN,
   RESPOSTA_SOMENTE_EM_PRIVADO,
-  RESPOSTAS_DO_VINCULO,
-  type ResultadoDoVinculo,
 } from "./vinculo.ts";
+import { processarVinculo, type VinculoRealizado } from "./processar_vinculo.ts";
 import {
   type ConsultaDeFeedback,
   eventoDoFeedback,
@@ -43,11 +42,6 @@ async function responderNoTelegram(
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text: texto }),
   });
-}
-
-interface VinculoRealizado {
-  resultado: ResultadoDoVinculo;
-  perfilId: string | null;
 }
 
 async function vincularChat(
@@ -85,6 +79,17 @@ async function chatJaVinculado(chatId: string): Promise<boolean> {
   return data !== null;
 }
 
+async function reivindicarEntregaImediata(perfilId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("perfis")
+    .update({ entrega_imediata_disparada_em: new Date().toISOString() })
+    .eq("id", perfilId)
+    .is("entrega_imediata_disparada_em", null)
+    .select("id");
+  if (error) throw error;
+  return data.length === 1;
+}
+
 async function tratarAtualizacao(
   atualizacao: AtualizacaoDoTelegram,
 ): Promise<void> {
@@ -97,11 +102,12 @@ async function tratarAtualizacao(
     if (chatId) await responderNoTelegram(chatId, resposta);
     return;
   }
-  const { resultado, perfilId } = await vincularChat(pedido.token, pedido.chatId);
-  await responderNoTelegram(pedido.chatId, RESPOSTAS_DO_VINCULO[resultado]);
-  if (resultado === "vinculado" && perfilId) {
-    await dispararEntregaImediata(perfilId);
-  }
+  await processarVinculo(pedido, {
+    vincularChat,
+    responder: responderNoTelegram,
+    reivindicarEntregaImediata,
+    dispararEntregaImediata,
+  });
 }
 
 async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {

@@ -26,7 +26,7 @@ def criar_coletor(
     termos: Iterable[str] = (),
     busca_geral: bool = False,
     cota: CotaDaAdzuna | None = None,
-) -> ColetorDeVagas:
+) -> ColetorComposto:
     publicadas_desde = agora - timedelta(days=settings.dias_recentes)
     cidades_de_busca = tuple(cidades)
     termos_de_interesse = tuple(termos)

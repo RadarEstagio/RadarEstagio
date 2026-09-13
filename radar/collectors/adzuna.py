@@ -5,6 +5,7 @@ from collections.abc import Callable, Iterable, Iterator
 
 import httpx
 
+from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Vaga
 from radar.settings import Settings
@@ -97,15 +98,25 @@ class ColetorAdzuna:
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
         try:
-            for cidade in (None, *self._cidades):
+            for cidade in (*self._cidades, None):
                 for termos in self._buscas:
                     for item in self._buscar_regiao(cidade, termos):
-                        vaga = converter_em_vaga(item)
-                        vagas_por_id.setdefault(vaga.id_externo, vaga)
+                        vaga = converter_ou_ignorar(item)
+                        if vaga is not None:
+                            vagas_por_id.setdefault(vaga.id_externo, vaga)
         except CotaDaAdzunaEsgotada:
+            if not vagas_por_id:
+                raise ErroDeColeta("Cota da Adzuna esgotada antes da primeira busca") from None
             logger.warning(
                 "Cota da Adzuna esgotada; a coleta parou com %d vagas", len(vagas_por_id)
             )
+        except ErroDeColeta as erro:
+            if not vagas_por_id:
+                raise
+            logger.warning(
+                "Coleta da Adzuna interrompida com %d vagas: %s", len(vagas_por_id), erro
+            )
+            raise ColetaIncompleta(str(erro), list(vagas_por_id.values())) from erro
         return list(vagas_por_id.values())
 
     def _buscar_regiao(self, cidade: str | None, termos: str) -> Iterator[dict]:
@@ -121,7 +132,14 @@ class ColetorAdzuna:
             lambda: self._requisitar(pagina, cidade, termos),
             self._esperar,
         )
-        return resposta.json()["results"]
+        try:
+            corpo = resposta.json()
+        except ValueError:
+            raise ErroDeColeta("Adzuna respondeu com corpo que não é JSON") from None
+        resultados = corpo.get("results") if isinstance(corpo, dict) else None
+        if not isinstance(resultados, list):
+            raise ErroDeColeta("Adzuna respondeu sem a lista de vagas em results")
+        return resultados
 
     def _requisitar(self, pagina: int, cidade: str | None, termos: str) -> httpx.Response:
         self._cota.reservar()
@@ -155,6 +173,20 @@ def formatar_localizacao(campo: dict | None) -> str:
     if len(area) > POSICAO_DA_CIDADE:
         return f"{area[POSICAO_DA_CIDADE]}, {area[POSICAO_DO_ESTADO]}"
     return nome_exibido(campo, LOCALIZACAO_PADRAO)
+
+
+def converter_ou_ignorar(item: dict) -> Vaga | None:
+    try:
+        return converter_em_vaga(item)
+    except (KeyError, TypeError, ValueError, AttributeError) as erro:
+        identificador = item.get("id") if isinstance(item, dict) else None
+        logger.warning(
+            "Vaga da Adzuna ignorada por formato inesperado (id %s): %s: %s",
+            identificador,
+            type(erro).__name__,
+            erro,
+        )
+        return None
 
 
 def converter_em_vaga(item: dict) -> Vaga:

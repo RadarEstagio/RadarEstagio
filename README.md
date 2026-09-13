@@ -109,7 +109,7 @@ Execute a partir da raiz, com `uv run python -m radar` seguido do comando:
 | `avaliar` | Extrai e pontua até três vagas; usa o primeiro perfil ativo disponível ou o exemplo | Consulta fontes, banco quando configurado e IA; não envia mensagens |
 | `testar-telegram` | Envia “Radar OK” ao chat configurado | Envio real ao Telegram |
 | `testar-local` | Executa com perfil sintético, sem banco nem histórico | Fontes, IA e Telegram |
-| `rodar --perfil UUID` | Direciona o atendimento a um perfil ativo vinculado | Banco, fontes, Telegram e IA quando necessária |
+| `rodar --perfil UUID` | Entrega imediata: atende o perfil, se a primeira entrega dele ainda não foi atendida, e todo perfil que ficou pendente | Banco, fontes, Telegram e IA quando necessária |
 | `rodar` ou nenhum comando | Executa para todos os perfis elegíveis; sem banco, usa o exemplo | Banco quando configurado, fontes, Telegram e IA quando necessária |
 | `metricas` | Imprime o relatório de produto dos últimos 30 dias | Leitura do banco; exige `DATABASE_URL` |
 | `julgar --dias 7 --amostra 30 --semente 1` | Pede a um segundo modelo que avalie uma amostra das entregas recentes | Leitura do banco e chamada de IA com perfil e anúncios; não grava nem envia mensagens |
@@ -137,10 +137,11 @@ comando avisa quantos rótulos ficaram fora dessa janela; itens sem rótulo são
 entregas: guarde-o fora do Git e escolha um caminho que não sobrescreva outro gabarito.
 
 Para uma verificação com conta da equipe, use `rodar --perfil UUID` com `DATABASE_URL`
-e substitua `UUID` por `perfis.id`, não por `auth.users.id`.
-Esse argumento limita os destinatários das recomendações, mas não transforma o pipeline em
-simulação: ainda há persistência, resumo operacional e rotina de apagamento de contas cuja
-carência venceu. Use ambiente de teste para validar exclusão.
+e substitua `UUID` por `perfis.id`, não por `auth.users.id`. Perfil cuja primeira entrega já
+foi atendida não recebe nada: zere `entrega_imediata_atendida_em` desse perfil antes do teste.
+A execução também atende quem ficou com a entrega imediata pendente, e não é simulação: ainda
+há persistência, resumo operacional e rotina de apagamento de contas cuja carência venceu. Use
+ambiente de teste para validar exclusão.
 
 Com banco, `TELEGRAM_CHAT_ID` recebe o resumo operacional e pode ficar vazio para omitir
 esse resumo no Python. Sem banco, o chat ID é obrigatório.
@@ -220,7 +221,8 @@ nativo. O workflow configura cinco dias de anúncios, até sete recomendações 
 15 minutos; isso não é promessa de tempo até receber uma mensagem.
 
 Para um teste direcionado pelo GitHub Actions, abra **Radar diário → Run workflow** e
-preencha `perfil` com o `perfis.id` da conta de teste. Deixar esse campo vazio executa o
+preencha `perfil` com o `perfis.id` da conta de teste. Como no `rodar --perfil`, a conta só
+recebe se a primeira entrega dela ainda não foi atendida. Deixar esse campo vazio executa o
 fluxo para toda a base elegível quando há banco. Confira logs e resumo do run para saber
 se houve entrega; término do job não garante existência de vaga compatível.
 
