@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from radar.domain.datas import data_local
 from radar.domain.models import (
     ChaveDaVaga,
     ExtracaoDaVaga,
@@ -35,8 +36,9 @@ logger = logging.getLogger(__name__)
 
 Pontuador = Callable[[list[Vaga], dict[ChaveDaVaga, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
 Enriquecedor = Callable[[list[Vaga]], list[Vaga]]
+DiasSemExtracao = dict[ChaveDaVaga, int] | None
 
-DIAS_SEM_RECOMENDACAO_ATE_SOLTAR_A_MENSAGEM = 3
+DIAS_SEM_EXTRACAO_ATE_SOLTAR_A_MENSAGEM = 3
 
 
 def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
@@ -110,7 +112,9 @@ def executar(
         len(candidatas),
         len(usuarios),
     )
-    extracoes, balanco = obter_extracoes(extrator, repositorio, candidatas, parametros.modelo)
+    extracoes, balanco, dias_sem_extracao = obter_extracoes(
+        extrator, repositorio, candidatas, parametros.modelo, agora
+    )
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
     for usuario in usuarios:
@@ -118,6 +122,7 @@ def executar(
             usuario,
             unicas,
             extracoes,
+            dias_sem_extracao,
             notificador,
             repositorio,
             parametros,
@@ -212,8 +217,12 @@ class BalancoDaExtracao(BaseModel):
 
 
 def obter_extracoes(
-    extrator: ExtratorDeVagas, repositorio: Repositorio, candidatas: list[Vaga], modelo: str
-) -> tuple[dict[ChaveDaVaga, ExtracaoDaVaga], BalancoDaExtracao]:
+    extrator: ExtratorDeVagas,
+    repositorio: Repositorio,
+    candidatas: list[Vaga],
+    modelo: str,
+    agora: datetime,
+) -> tuple[dict[ChaveDaVaga, ExtracaoDaVaga], BalancoDaExtracao, DiasSemExtracao]:
     try:
         extracoes = dict(repositorio.extracoes_existentes(candidatas, modelo))
     except ErroDeArmazenamento as erro:
@@ -236,20 +245,42 @@ def obter_extracoes(
     except ErroDeArmazenamento as erro:
         nao_gravadas = len(guardadas)
         logger.warning("extrações não foram gravadas: %s", erro)
-    sem_extracao = len(pendentes) - len(guardadas)
-    if sem_extracao:
+    ainda_sem_extracao = [vaga for vaga in pendentes if vaga.chave() not in extracoes]
+    if ainda_sem_extracao:
         logger.warning(
-            "%d de %d vagas pendentes ficaram sem extração", sem_extracao, len(pendentes)
+            "%d de %d vagas pendentes ficaram sem extração",
+            len(ainda_sem_extracao),
+            len(pendentes),
         )
-    return extracoes, BalancoDaExtracao(
-        extraidas_agora=len(guardadas), sem_extracao=sem_extracao, nao_gravadas=nao_gravadas
+    dias_sem_extracao = registrar_dias_sem_extracao(repositorio, ainda_sem_extracao, agora)
+    return (
+        extracoes,
+        BalancoDaExtracao(
+            extraidas_agora=len(guardadas),
+            sem_extracao=len(ainda_sem_extracao),
+            nao_gravadas=nao_gravadas,
+        ),
+        dias_sem_extracao,
     )
+
+
+def registrar_dias_sem_extracao(
+    repositorio: Repositorio, vagas: list[Vaga], agora: datetime
+) -> DiasSemExtracao:
+    if not vagas:
+        return {}
+    try:
+        return repositorio.registrar_vagas_sem_extracao(vagas, data_local(agora))
+    except ErroDeArmazenamento as erro:
+        logger.warning("dias sem extração não foram registrados: %s", erro)
+        return {}
 
 
 def atender_usuario(
     usuario: Usuario,
     vagas: list[Vaga],
     extracoes: dict[ChaveDaVaga, ExtracaoDaVaga],
+    dias_sem_extracao: DiasSemExtracao,
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
@@ -267,6 +298,7 @@ def atender_usuario(
             usuario,
             vagas,
             extracoes,
+            dias_sem_extracao,
             notificador,
             repositorio,
             parametros,
@@ -285,6 +317,7 @@ def atender_usuario_travado(
     usuario: Usuario,
     vagas: list[Vaga],
     extracoes: dict[ChaveDaVaga, ExtracaoDaVaga],
+    dias_sem_extracao: DiasSemExtracao,
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
@@ -317,7 +350,9 @@ def atender_usuario_travado(
     if not revalidacao.permite(usuario):
         return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
-    if not selecionadas and sem_extracao and falta_de_extracao_segura_a_mensagem(usuario, agora):
+    if not selecionadas and falta_de_extracao_segura_a_mensagem(
+        candidatas, novas, dias_sem_extracao
+    ):
         logger.warning(
             "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
             usuario.id,
@@ -352,6 +387,19 @@ def atender_usuario_travado(
         return entregues
     gravar_envios(repositorio, usuario, selecionadas)
     return selecionadas
+
+
+def falta_de_extracao_segura_a_mensagem(
+    candidatas: list[Vaga], avaliadas: list[ResultadoMatch], dias_sem_extracao: DiasSemExtracao
+) -> bool:
+    if dias_sem_extracao is None:
+        return False
+    chaves_avaliadas = {resultado.vaga.chave() for resultado in avaliadas}
+    return any(
+        dias_sem_extracao.get(vaga.chave(), 0) < DIAS_SEM_EXTRACAO_ATE_SOLTAR_A_MENSAGEM
+        for vaga in candidatas
+        if vaga.chave() not in chaves_avaliadas
+    )
 
 
 def recomendacoes_entregues(
@@ -422,14 +470,6 @@ def silencio_prolongado(usuario: Usuario, agora: datetime, dias: int) -> bool:
     if usuario.sem_recomendacao_desde > limite:
         return False
     return usuario.silencio_avisado_em is None or usuario.silencio_avisado_em <= limite
-
-
-def falta_de_extracao_segura_a_mensagem(usuario: Usuario, agora: datetime) -> bool:
-    if usuario.sem_recomendacao_desde is None:
-        return True
-    return agora - usuario.sem_recomendacao_desde < timedelta(
-        days=DIAS_SEM_RECOMENDACAO_ATE_SOLTAR_A_MENSAGEM
-    )
 
 
 def pausar_se_o_destinatario_recusou(

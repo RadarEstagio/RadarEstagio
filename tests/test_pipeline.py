@@ -18,7 +18,7 @@ from radar.matching.lotes import ExtratorEmLotes
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, candidatas_de_algum_perfil, executar
 from radar.storage.errors import ErroDeArmazenamento
-from radar.storage.memoria import RepositorioEmMemoria
+from radar.storage.memoria import RepositorioDoModoLocal, RepositorioEmMemoria
 
 AGORA_DE_TESTE = datetime(2026, 8, 26, 10, 23, tzinfo=UTC)
 URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
@@ -1169,42 +1169,163 @@ def test_falta_de_extracao_nao_grava_avaliacao_de_destinatario_que_nao_se_revali
     assert repositorio.avaliacoes_gravadas == []
 
 
-def test_falta_de_extracao_para_de_segurar_a_mensagem_apos_tres_dias_sem_recomendacao():
-    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
-    notificador = NotificadorFalso()
-    mensagens_por_dia = []
-
-    for dia in range(3):
-        rodar_com_vaga_que_nunca_e_extraida(
-            repositorio, notificador, AGORA_DE_TESTE + timedelta(days=dia)
+def rodar_nos_momentos(
+    repositorio: RepositorioEmMemoria,
+    notificador: NotificadorFalso,
+    momentos: list[datetime],
+    vagas_por_momento: list[list[Vaga]] | None = None,
+    envenenadas: frozenset[str] = frozenset({"1"}),
+) -> list[int]:
+    mensagens = []
+    for indice, momento in enumerate(momentos):
+        vagas_do_momento = vagas_por_momento[indice] if vagas_por_momento else [vaga(1), vaga(2)]
+        executar(
+            ColetorFalso(vagas_do_momento),
+            ExtratorEmLotes(ExtratorQueNuncaDevolve(set(envenenadas)), 10),
+            notificador,
+            repositorio,
+            parametros(nota_minima=40),
+            momento,
+            PontuadorFalso({"2": 30}),
         )
-        mensagens_por_dia.append(len(notificador.textos))
-
-    assert mensagens_por_dia == [0, 0, 1]
-    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+        mensagens.append(len(notificador.textos))
+    return mensagens
 
 
-def test_vaga_que_nunca_e_extraida_nao_impede_o_aviso_de_silencio():
-    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=30)])
+def dias_seguidos(quantidade: int) -> list[datetime]:
+    return [AGORA_DE_TESTE + timedelta(days=dia) for dia in range(quantidade)]
+
+
+def test_recomendacao_de_ontem_e_unica_candidata_sem_extracao_seguram_a_mensagem():
     notificador = NotificadorFalso()
 
-    rodar_com_vaga_que_nunca_e_extraida(repositorio, notificador, AGORA_DE_TESTE)
+    rodar_nos_momentos(
+        RepositorioFalso([usuario(dias_sem_recomendacao=1)]),
+        notificador,
+        dias_seguidos(1),
+        [[vaga(1)]],
+    )
 
-    assert "Já são 30 dias sem nenhuma recomendação" in notificador.textos[0]
-    assert repositorio.avisos_de_silencio == [ID_USUARIO]
+    assert notificador.textos == []
 
 
-def test_unica_candidata_que_nunca_e_extraida_para_de_segurar_a_mensagem():
+def test_primeiro_dia_de_falha_de_vaga_nova_segura_mesmo_sem_recomendacao_ha_cinco_dias():
+    notificador = NotificadorFalso()
+
+    rodar_nos_momentos(
+        RepositorioFalso([usuario(dias_sem_recomendacao=5)]),
+        notificador,
+        dias_seguidos(1),
+        [[vaga(1)]],
+    )
+
+    assert notificador.textos == []
+
+
+def test_perfil_novo_com_candidata_sem_extracao_segura_a_mensagem():
+    notificador = NotificadorFalso()
+
+    rodar_nos_momentos(
+        RepositorioFalso([usuario(dias_sem_recomendacao=0)]), notificador, dias_seguidos(1)
+    )
+
+    assert notificador.textos == []
+
+
+def test_perfil_criado_ha_dez_dias_nao_estreia_com_nenhuma_vaga_por_falta_de_extracao():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=10)])
+    notificador = NotificadorFalso()
+
+    rodar_nos_momentos(repositorio, notificador, dias_seguidos(1))
+
+    assert notificador.textos == []
+    assert repositorio.avisos_de_silencio == []
+
+
+def test_queda_total_do_avaliador_segura_a_mensagem_de_todos():
+    usuarios = [
+        usuario(ID_USUARIO, "1", dias_sem_recomendacao=1),
+        usuario(ID_OUTRO_USUARIO, "2", dias_sem_recomendacao=5),
+        usuario(UUID(int=3), "3", dias_sem_recomendacao=10),
+    ]
     notificador = NotificadorFalso()
 
     executar(
-        ColetorFalso([vaga(1)]),
-        ExtratorEmLotes(ExtratorQueNuncaDevolve({"1"}), 10),
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorQueNaoDevolveNada({}),
         notificador,
-        RepositorioFalso([usuario(dias_sem_recomendacao=3)]),
-        parametros(),
+        RepositorioFalso(usuarios),
+        parametros(nota_minima=40),
         AGORA_DE_TESTE,
-        PontuadorFalso({}),
+        PontuadorFalso({"1": 90, "2": 90}),
     )
 
+    assert notificador.textos == []
+
+
+def test_vaga_que_falta_em_tres_dias_diferentes_para_de_segurar_a_mensagem():
+    notificador = NotificadorFalso()
+
+    mensagens = rodar_nos_momentos(RepositorioFalso([usuario()]), notificador, dias_seguidos(3))
+
+    assert mensagens == [0, 0, 1]
     assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+
+
+def test_vaga_nova_sem_extracao_segura_a_mensagem_mesmo_com_a_velha_ja_liberada():
+    mensagens = rodar_nos_momentos(
+        RepositorioFalso([usuario(dias_sem_recomendacao=5)]),
+        NotificadorFalso(),
+        dias_seguidos(3),
+        [[vaga(1)], [vaga(1)], [vaga(1), vaga(3)]],
+        envenenadas=frozenset({"1", "3"}),
+    )
+
+    assert mensagens == [0, 0, 0]
+
+
+def test_execucoes_no_mesmo_dia_de_brasilia_contam_um_dia_so():
+    momentos = [
+        AGORA_DE_TESTE,
+        AGORA_DE_TESTE + timedelta(hours=14),
+        AGORA_DE_TESTE + timedelta(days=1),
+        AGORA_DE_TESTE + timedelta(days=2),
+    ]
+
+    mensagens = rodar_nos_momentos(RepositorioFalso([usuario()]), NotificadorFalso(), momentos)
+
+    assert mensagens == [0, 0, 0, 1]
+
+
+def test_aviso_de_silencio_volta_quando_a_vaga_falta_em_tres_dias():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=30)])
+    notificador = NotificadorFalso()
+
+    mensagens = rodar_nos_momentos(repositorio, notificador, dias_seguidos(3))
+
+    assert mensagens == [0, 0, 1]
+    assert "Já são 32 dias sem nenhuma recomendação" in notificador.textos[0]
+    assert repositorio.avisos_de_silencio == [ID_USUARIO]
+
+
+def test_modo_local_sem_historico_nao_fica_preso_pela_vaga_sem_extracao():
+    notificador = NotificadorFalso()
+
+    rodar_nos_momentos(RepositorioDoModoLocal([usuario()]), notificador, dias_seguidos(1))
+
+    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+
+
+class RepositorioQueNaoRegistraDiasSemExtracao(RepositorioFalso):
+    def registrar_vagas_sem_extracao(self, vagas, dia):
+        raise ErroDeArmazenamento("coluna dias_sem_extracao não existe")
+
+
+def test_sem_registro_dos_dias_sem_extracao_a_falta_segue_segurando_a_mensagem():
+    mensagens = rodar_nos_momentos(
+        RepositorioQueNaoRegistraDiasSemExtracao([usuario(dias_sem_recomendacao=30)]),
+        NotificadorFalso(),
+        dias_seguidos(3),
+    )
+
+    assert mensagens == [0, 0, 0]
