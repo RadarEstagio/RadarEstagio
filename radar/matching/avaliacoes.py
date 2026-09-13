@@ -145,7 +145,7 @@ SQL_E_BANCOS_RELACIONAIS = (
     "SQLite",
     "MariaDB",
 )
-DIALETOS_DE_SQL = ("PL/SQL", "T-SQL")
+DIALETOS_QUE_IMPLICAM_SQL = frozenset({"plsql", "tsql"})
 BACK_END = (
     "Java",
     "Spring",
@@ -267,7 +267,7 @@ FAMILIAS_DE_HABILIDADES = {
     "IA generativa": INTELIGENCIA_ARTIFICIAL,
 }
 EQUIVALENCIAS_DE_HABILIDADES = dict.fromkeys(
-    (*SQL_E_BANCOS_RELACIONAIS, "Oracle"), SQL_E_BANCOS_RELACIONAIS + DIALETOS_DE_SQL
+    (*SQL_E_BANCOS_RELACIONAIS, "Oracle"), SQL_E_BANCOS_RELACIONAIS
 )
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
@@ -308,6 +308,7 @@ ALIASES_DE_HABILIDADES = {
     "python3": "python",
     "reactjs": "react",
     "restapi": "rest",
+    "transactsql": "tsql",
     "ts": "typescript",
     "vuejs": "vue",
 }
@@ -319,6 +320,7 @@ SEPARADORES_DE_PARTES = re.compile(
 SEPARADORES_DE_ALTERNATIVAS = re.compile(
     r"(?:\s+e\s*/\s*ou\s+|\s+ou\s+)" + FORA_DE_PARENTESES, re.IGNORECASE
 )
+PL_SQL_COM_BARRA = re.compile(r"\bpl\s*/\s*sql\b", re.IGNORECASE)
 PALAVRAS_SEM_SIGNIFICADO = frozenset(
     {
         "a",
@@ -660,6 +662,9 @@ def _declarar(
     anterior = declaradas.get(nome)
     if anterior is None or declarada.nivel > anterior.nivel:
         declaradas[nome] = declarada
+    if nome in DIALETOS_QUE_IMPLICAM_SQL:
+        palavras = frozenset({"sql"}) if declarada.palavras else frozenset()
+        _declarar(declaradas, "sql", declarada._replace(palavras=palavras))
 
 
 def _atende(
@@ -846,7 +851,8 @@ def _parte_unica(habilidade: str) -> str | None:
 
 def _alternativas(habilidade: str) -> list[list[str]]:
     alternativas: list[list[str]] = []
-    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade):
+    com_pl_sql_junto = PL_SQL_COM_BARRA.sub("PL-SQL", habilidade)
+    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(com_pl_sql_junto):
         partes = [
             parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()
         ]

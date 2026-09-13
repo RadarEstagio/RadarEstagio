@@ -944,6 +944,81 @@ def test_quem_esta_fora_da_classe_nao_ganha_familia_pelo_sql(do_perfil: str):
     assert resultado.requisitos_atendidos == []
 
 
+GRAFIAS_DE_PL_SQL = ["PL/SQL", "PL-SQL", "PLSQL", "pl / sql"]
+GRAFIAS_DE_T_SQL = ["T-SQL", "TSQL", "Transact-SQL"]
+REQUISITOS_PARA_AS_GRAFIAS = [
+    "SQL",
+    "MySQL",
+    "Oracle",
+    "banco de dados",
+    "ETL",
+    "PL/SQL",
+    "T-SQL",
+    "SQL Server Reporting Services",
+]
+
+
+def extracao_de_computacao(obrigatorias: list[str]) -> ExtracaoDaVaga:
+    return extracao(habilidades_obrigatorias=obrigatorias)
+
+
+@pytest.mark.parametrize("grafias", [GRAFIAS_DE_PL_SQL, GRAFIAS_DE_T_SQL])
+@pytest.mark.parametrize(
+    ("candidato", "vaga_do_contexto"),
+    [(perfil, extracao_de_computacao), (perfil_de_direito, extracao_juridica)],
+)
+def test_todas_as_grafias_do_dialeto_dao_o_mesmo_resultado(grafias, candidato, vaga_do_contexto):
+    def resultados(grafia: str) -> list[tuple[list[str], int]]:
+        return [
+            (resultado.requisitos_atendidos, resultado.nota)
+            for resultado in (
+                pontuar(vaga(), vaga_do_contexto([exigida]), candidato([grafia]))
+                for exigida in REQUISITOS_PARA_AS_GRAFIAS
+            )
+        ]
+
+    primeira, *outras = grafias
+    for grafia in outras:
+        assert resultados(grafia) == resultados(primeira), grafia
+
+
+@pytest.mark.parametrize("grafia", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+@pytest.mark.parametrize("exigida", ["SQL", "MySQL", "banco de dados", "ETL"])
+def test_dialeto_no_perfil_implica_sql_em_qualquer_grafia(grafia: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([grafia]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+@pytest.mark.parametrize("exigida", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+@pytest.mark.parametrize("do_perfil", ["SQL", "MySQL"])
+def test_dialeto_exigido_em_qualquer_grafia_nao_e_atendido_por_sql_nem_banco(
+    do_perfil: str, exigida: str
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida", "atende"),
+    [
+        ("PL-SQL", "PL/SQL", True),
+        ("PL/SQL", "PLSQL", True),
+        ("TSQL", "T-SQL", True),
+        ("Transact-SQL", "T-SQL", True),
+        ("PL/SQL", "T-SQL", False),
+        ("T-SQL", "PL-SQL", False),
+    ],
+)
+def test_dialeto_exigido_e_atendido_so_pelo_proprio_dialeto(
+    do_perfil: str, exigida: str, atende: bool
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert (resultado.requisitos_atendidos == [exigida]) is atende
+
+
 @pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
 def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
     resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))
