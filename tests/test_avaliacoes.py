@@ -818,6 +818,419 @@ def test_variantes_de_banco_de_dados_e_ia_tambem_sao_familias():
     assert resultado.requisitos_nao_atendidos == []
 
 
+BANCOS_RELACIONAIS = [
+    "MySQL",
+    "PostgreSQL",
+    "Postgres",
+    "SQL Server",
+    "Oracle Database",
+    "SQLite",
+    "MariaDB",
+]
+DIALETOS_DE_SQL = ["PL/SQL", "T-SQL"]
+BANCOS_NAO_RELACIONAIS = ["MongoDB", "Redis", "DynamoDB", "Firebase", "NoSQL"]
+
+
+@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS + DIALETOS_DE_SQL)
+def test_requisito_sql_e_atendido_por_banco_relacional_do_perfil(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([banco]))
+
+    assert resultado.requisitos_atendidos == ["SQL"]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+@pytest.mark.parametrize("banco", BANCOS_NAO_RELACIONAIS)
+def test_requisito_sql_nao_e_atendido_por_banco_nao_relacional(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([banco]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_banco_relacional_atendendo_sql_tira_a_vaga_do_teto_sem_atendidos():
+    exige_sql = extracao(habilidades_obrigatorias=["SQL"])
+
+    com_mysql = pontuar(vaga(), exige_sql, perfil(["MySQL"]))
+    com_mongodb = pontuar(vaga(), exige_sql, perfil(["MongoDB"]))
+
+    assert com_mysql.nota > com_mongodb.nota
+
+
+def test_sql_com_nivel_exige_o_nivel_declarado_no_banco_relacional():
+    exigente = extracao(habilidades_obrigatorias=["SQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["MySQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["MySQL básico"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["MySQL avançado"])).requisitos_atendidos == [
+        "SQL avançado"
+    ]
+
+
+@pytest.mark.parametrize("banco", BANCOS_RELACIONAIS)
+def test_banco_relacional_exigido_e_atendido_por_sql_do_perfil(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[banco]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == [banco]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida"),
+    [
+        ("PostgreSQL", "MySQL"),
+        ("MySQL", "PostgreSQL"),
+        ("Postgres", "SQL Server"),
+        ("SQLite", "MariaDB"),
+        ("MySQL", "Oracle Database"),
+        ("MySQL", "Oracle"),
+        ("T-SQL", "MySQL"),
+    ],
+)
+def test_sql_e_bancos_relacionais_formam_uma_classe_so(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+def test_banco_especifico_no_perfil_vale_o_mesmo_que_sql_generico():
+    exige_tres_bancos = extracao(habilidades_obrigatorias=["PostgreSQL", "MySQL", "Oracle"])
+
+    com_sql = pontuar(vaga(), exige_tres_bancos, perfil(["SQL"]))
+    com_mysql = pontuar(vaga(), exige_tres_bancos, perfil(["MySQL"]))
+
+    assert com_mysql.requisitos_atendidos == com_sql.requisitos_atendidos
+    assert com_mysql.nota == com_sql.nota
+
+
+def test_nivel_exigido_vale_dentro_da_classe():
+    exigente = extracao(habilidades_obrigatorias=["MySQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["PostgreSQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["PostgreSQL avançado"])).requisitos_atendidos == [
+        "MySQL avançado"
+    ]
+
+
+@pytest.mark.parametrize("do_perfil", ["MySQL", "PostgreSQL"])
+@pytest.mark.parametrize("exigida", DIALETOS_DE_SQL + BANCOS_NAO_RELACIONAIS)
+def test_banco_relacional_nao_atende_dialeto_nem_banco_nao_relacional(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("do_perfil", BANCOS_NAO_RELACIONAIS)
+def test_banco_nao_relacional_nao_atende_banco_relacional(do_perfil: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["MySQL"]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("exigida", ["ETL", "análise de dados", "dados"])
+@pytest.mark.parametrize("do_perfil", ["MySQL", "PostgreSQL", "SQL Server"])
+def test_membro_da_classe_vale_pelo_sql_dentro_da_familia(do_perfil: str, exigida: str):
+    exige_familia = extracao(habilidades_obrigatorias=[exigida])
+
+    com_banco = pontuar(vaga(), exige_familia, perfil([do_perfil]))
+    com_sql = pontuar(vaga(), exige_familia, perfil(["SQL"]))
+
+    assert com_banco.requisitos_atendidos == com_sql.requisitos_atendidos == [exigida]
+    assert com_banco.nota == com_sql.nota
+
+
+@pytest.mark.parametrize("do_perfil", ["Oracle", "MongoDB"])
+def test_quem_esta_fora_da_classe_nao_ganha_familia_pelo_sql(do_perfil: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["ETL"]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+GRAFIAS_DE_PL_SQL = ["PL/SQL", "PL-SQL", "PLSQL", "pl / sql"]
+GRAFIAS_DE_T_SQL = ["T-SQL", "TSQL", "Transact-SQL"]
+REQUISITOS_PARA_AS_GRAFIAS = [
+    "SQL",
+    "MySQL",
+    "Oracle",
+    "banco de dados",
+    "ETL",
+    "PL/SQL",
+    "T-SQL",
+    "SQL Server Reporting Services",
+]
+
+
+def extracao_de_computacao(obrigatorias: list[str]) -> ExtracaoDaVaga:
+    return extracao(habilidades_obrigatorias=obrigatorias)
+
+
+@pytest.mark.parametrize("grafias", [GRAFIAS_DE_PL_SQL, GRAFIAS_DE_T_SQL])
+@pytest.mark.parametrize(
+    ("candidato", "vaga_do_contexto"),
+    [(perfil, extracao_de_computacao), (perfil_de_direito, extracao_juridica)],
+)
+def test_todas_as_grafias_do_dialeto_dao_o_mesmo_resultado(grafias, candidato, vaga_do_contexto):
+    def resultados(grafia: str) -> list[tuple[list[str], int]]:
+        return [
+            (resultado.requisitos_atendidos, resultado.nota)
+            for resultado in (
+                pontuar(vaga(), vaga_do_contexto([exigida]), candidato([grafia]))
+                for exigida in REQUISITOS_PARA_AS_GRAFIAS
+            )
+        ]
+
+    primeira, *outras = grafias
+    for grafia in outras:
+        assert resultados(grafia) == resultados(primeira), grafia
+
+
+@pytest.mark.parametrize("grafia", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+@pytest.mark.parametrize("exigida", ["SQL", "MySQL", "banco de dados", "ETL"])
+def test_dialeto_no_perfil_implica_sql_em_qualquer_grafia(grafia: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([grafia]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+@pytest.mark.parametrize("exigida", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+@pytest.mark.parametrize("do_perfil", ["SQL", "MySQL"])
+def test_dialeto_exigido_em_qualquer_grafia_nao_e_atendido_por_sql_nem_banco(
+    do_perfil: str, exigida: str
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida", "atende"),
+    [
+        ("PL-SQL", "PL/SQL", True),
+        ("PL/SQL", "PLSQL", True),
+        ("TSQL", "T-SQL", True),
+        ("Transact-SQL", "T-SQL", True),
+        ("PL/SQL", "T-SQL", False),
+        ("T-SQL", "PL-SQL", False),
+    ],
+)
+def test_dialeto_exigido_e_atendido_so_pelo_proprio_dialeto(
+    do_perfil: str, exigida: str, atende: bool
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert (resultado.requisitos_atendidos == [exigida]) is atende
+
+
+FORMAS_COMPOSTAS_DA_CLASSE = [
+    "Banco de dados SQL",
+    "Linguagem SQL",
+    "Consultas SQL",
+    "Microsoft SQL Server",
+    "MS SQL Server",
+    "Oracle Database",
+    "Oracle DB",
+    "Azure SQL Database",
+    "Postgre",
+]
+FORMAS_FORA_DA_CLASSE = [
+    "NoSQL",
+    "Banco de dados NoSQL",
+    "MySQL Workbench",
+    "SQL Server Reporting Services",
+    "SSRS",
+    "Oracle ERP",
+    "Oracle Cloud",
+]
+
+
+@pytest.mark.parametrize("forma", FORMAS_COMPOSTAS_DA_CLASSE)
+def test_forma_composta_exigida_e_atendida_por_sql_em_computacao(forma: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[forma]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == [forma]
+
+
+@pytest.mark.parametrize("forma", FORMAS_COMPOSTAS_DA_CLASSE)
+def test_forma_composta_no_perfil_atende_sql_em_computacao(forma: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([forma]))
+
+    assert resultado.requisitos_atendidos == ["SQL"]
+
+
+@pytest.mark.parametrize("forma", FORMAS_FORA_DA_CLASSE)
+def test_forma_que_nao_e_banco_relacional_fica_fora_da_classe(forma: str):
+    exige_forma = pontuar(vaga(), extracao(habilidades_obrigatorias=[forma]), perfil(["SQL"]))
+    forma_no_perfil = pontuar(vaga(), extracao(habilidades_obrigatorias=["SQL"]), perfil([forma]))
+
+    assert exige_forma.requisitos_atendidos == []
+    assert forma_no_perfil.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigidas"),
+    [
+        ("Azure SQL Database", ["SQL Server avançado", "Azure SQL Database"]),
+        ("Consultas SQL", ["SQL avançado", "Consultas SQL"]),
+        ("Linguagem SQL", ["SQL básico", "Linguagem SQL"]),
+        ("Microsoft SQL Server", ["SQL Server intermediário", "Microsoft SQL Server"]),
+        ("Postgre", ["PostgreSQL avançado", "Postgre"]),
+        ("Oracle DB", ["Oracle Database avançado", "Oracle DB"]),
+    ],
+)
+def test_requisito_juntado_pelo_alias_nao_herda_o_nivel_do_outro(
+    do_perfil: str, exigidas: list[str]
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=exigidas), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigidas[1]]
+    assert resultado.requisitos_nao_atendidos == [exigidas[0]]
+
+
+def test_desejavel_juntado_pelo_alias_continua_nos_diferenciais():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["SQL Server"], habilidades_desejaveis=["Azure SQL Database"]
+        ),
+        perfil(["MongoDB"]),
+    )
+
+    assert resultado.requisitos_nao_atendidos == ["SQL Server"]
+    assert resultado.diferenciais_nao_atendidos == ["Azure SQL Database"]
+
+
+def test_requisitos_juntados_pelo_alias_aparecem_com_os_nomes_do_anuncio():
+    resultado = pontuar(
+        vaga(),
+        extracao(
+            habilidades_obrigatorias=["SQL SERVER"], habilidades_desejaveis=["Azure SQL Database"]
+        ),
+        perfil(["SQL Server"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL SERVER", "Azure SQL Database"]
+
+
+DIALETO_EM_HABILIDADE_COMPOSTA = [
+    "Oracle PL/SQL",
+    "Linguagem PL/SQL",
+    "Programação PL/SQL",
+    "Procedures PL/SQL",
+    "Banco de dados Oracle PL/SQL",
+    "Oracle PL-SQL",
+    "Procedures em T-SQL",
+]
+
+
+@pytest.mark.parametrize("habilidade", DIALETO_EM_HABILIDADE_COMPOSTA)
+@pytest.mark.parametrize("exigida", ["SQL", "banco de dados", "ETL", "análise de dados"])
+def test_dialeto_dentro_de_habilidade_composta_continua_implicando_sql(
+    habilidade: str, exigida: str
+):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([habilidade]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+@pytest.mark.parametrize("habilidade", DIALETO_EM_HABILIDADE_COMPOSTA)
+def test_dialeto_em_habilidade_composta_implica_sql_fora_de_computacao(habilidade: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica(["SQL", "Consultas SQL"]), perfil_de_direito([habilidade])
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL", "Consultas SQL"]
+
+
+def test_oracle_no_perfil_nao_atende_oracle_pl_sql_por_palavras():
+    resultado = pontuar(vaga(), extracao_juridica(["Oracle PL/SQL"]), perfil_de_direito(["Oracle"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("grafia", GRAFIAS_DE_PL_SQL + GRAFIAS_DE_T_SQL)
+def test_dialeto_leva_a_palavra_sql_fora_de_computacao(grafia: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica(["SQL Server Reporting Services"]), perfil_de_direito([grafia])
+    )
+
+    assert resultado.requisitos_atendidos == ["SQL Server Reporting Services"]
+
+
+@pytest.mark.parametrize("dialeto", DIALETOS_DE_SQL)
+def test_dialeto_de_sql_exigido_nao_e_atendido_so_por_sql(dialeto: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[dialeto]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("banco", BANCOS_NAO_RELACIONAIS)
+def test_banco_nao_relacional_exigido_nao_e_atendido_por_sql(banco: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[banco]), perfil(["SQL"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+def test_banco_relacional_com_nivel_exige_o_nivel_declarado_no_sql():
+    exigente = extracao(habilidades_obrigatorias=["MySQL avançado"])
+
+    assert pontuar(vaga(), exigente, perfil(["SQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), exigente, perfil(["SQL avançado"])).requisitos_atendidos == [
+        "MySQL avançado"
+    ]
+
+
+def test_banco_relacional_em_requisito_composto_nao_dispensa_as_outras_partes():
+    composto = extracao(habilidades_obrigatorias=["MySQL e Python"])
+
+    assert pontuar(vaga(), composto, perfil(["SQL"])).requisitos_atendidos == []
+    assert pontuar(vaga(), composto, perfil(["SQL", "Python"])).requisitos_atendidos == [
+        "MySQL e Python"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("do_perfil", "exigida", "nota_no_b1ccbf1"),
+    [
+        ("Consultas SQL", "SQL", 98),
+        ("Banco de dados MySQL", "MySQL", 98),
+        ("ERP Oracle", "Oracle", 98),
+    ],
+)
+def test_equivalencia_de_bancos_nao_desliga_a_comparacao_por_palavras(
+    do_perfil: str, exigida: str, nota_no_b1ccbf1: int
+):
+    resultado = pontuar(vaga(), extracao_juridica([exigida]), perfil_de_direito([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+    assert resultado.nota == nota_no_b1ccbf1
+
+
+@pytest.mark.parametrize("exigida", ["SQL", "MySQL", "Oracle Database"])
+def test_oracle_no_perfil_nao_atende_a_classe_porque_tambem_e_nome_de_erp(exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil(["Oracle"]))
+
+    assert resultado.requisitos_atendidos == []
+
+
+@pytest.mark.parametrize("do_perfil", ["SQL", "Oracle Database"])
+@pytest.mark.parametrize("exigida", ["Oracle", "Oracle Database"])
+def test_requisito_oracle_e_atendido_por_sql_ou_oracle_database(do_perfil: str, exigida: str):
+    resultado = pontuar(vaga(), extracao(habilidades_obrigatorias=[exigida]), perfil([do_perfil]))
+
+    assert resultado.requisitos_atendidos == [exigida]
+
+
+def test_oracle_como_erp_no_perfil_de_engenharia_nao_ganha_sql():
+    engenharia = Perfil(
+        curso="Engenharia de Produção",
+        periodo=4,
+        habilidades=["Excel", "Oracle", "SAP"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+    exige_sql = extracao(area_da_vaga="engenharias", habilidades_obrigatorias=["SQL"])
+
+    assert pontuar(vaga(), exige_sql, engenharia).requisitos_atendidos == []
+
+
 def test_desejaveis_que_faltam_viram_diferenciais_sem_repetir_os_atendidos():
     resultado = pontuar(
         vaga(),
@@ -1049,13 +1462,13 @@ def test_vaga_de_computacao_nao_compara_por_palavras_nem_para_quem_e_de_outro_cu
     estatistica = Perfil(
         curso="Estatística",
         periodo=4,
-        habilidades=["React", "SQL", "Spring"],
+        habilidades=["React", "Angular", "Spring"],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
     )
     de_computacao = extracao(
         cursos_aceitos=["Estatística"],
-        habilidades_obrigatorias=["React Native", "SQL Server", "Spring Boot"],
+        habilidades_obrigatorias=["React Native", "Angular JS", "Spring Boot"],
     )
 
     assert pontuar(vaga(), de_computacao, estatistica).requisitos_atendidos == []
@@ -1091,7 +1504,7 @@ def test_plural_nao_impede_a_correspondencia_por_palavras(do_perfil: str, exigid
     [
         ("Java", "JavaScript"),
         ("Word", "WordPress"),
-        ("SQL", "MySQL"),
+        ("SQL", "NoSQL"),
         ("Análise de dados", "análise de crédito"),
         ("Power BI", "Power Apps"),
         ("Redes", "Red Hat"),
@@ -1227,11 +1640,11 @@ def test_trava_pela_area_da_vaga_vale_tambem_na_nota():
 
     de_computacao = extracao(
         cursos_aceitos=["Estatística"],
-        habilidades_obrigatorias=["React Native", "SQL Server", "Spring Boot"],
+        habilidades_obrigatorias=["React Native", "Angular JS", "Spring Boot"],
     )
 
     assert (
-        pontuar(vaga(), de_computacao, estatistica(["React", "SQL", "Spring"])).nota
+        pontuar(vaga(), de_computacao, estatistica(["React", "Angular", "Spring"])).nota
         == pontuar(vaga(), de_computacao, estatistica(["Cobol"])).nota
     )
 

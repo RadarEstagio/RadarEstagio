@@ -136,6 +136,15 @@ BANCOS_DE_DADOS = (
     "DynamoDB",
     "Firebase",
 )
+SQL_E_BANCOS_RELACIONAIS = (
+    "SQL",
+    "MySQL",
+    "PostgreSQL",
+    "SQL Server",
+    "Oracle Database",
+    "SQLite",
+    "MariaDB",
+)
 BACK_END = (
     "Java",
     "Spring",
@@ -256,6 +265,9 @@ FAMILIAS_DE_HABILIDADES = {
     "IA": INTELIGENCIA_ARTIFICIAL,
     "IA generativa": INTELIGENCIA_ARTIFICIAL,
 }
+EQUIVALENCIAS_DE_HABILIDADES = dict.fromkeys(
+    (*SQL_E_BANCOS_RELACIONAIS, "Oracle"), SQL_E_BANCOS_RELACIONAIS
+)
 ALIASES_DE_HABILIDADES = {
     "office365": "office",
     "microsoft365": "office",
@@ -298,6 +310,22 @@ ALIASES_DE_HABILIDADES = {
     "ts": "typescript",
     "vuejs": "vue",
 }
+ALIASES_DE_COMPARACAO = {
+    "postgre": "postgresql",
+    "azuresql": "sqlserver",
+    "azuresqldatabase": "sqlserver",
+    "bancodadosoracle": "oracledatabase",
+    "bancodadossql": "sql",
+    "bancosdadossql": "sql",
+    "consultasql": "sql",
+    "consultassql": "sql",
+    "linguagemsql": "sql",
+    "microsoftsqlserver": "sqlserver",
+    "mssql": "sqlserver",
+    "mssqlserver": "sqlserver",
+    "oracledb": "oracledatabase",
+    "transactsql": "tsql",
+}
 SEPARADORES_DE_PALAVRAS = re.compile(r"[\s/,;|]+")
 FORA_DE_PARENTESES = r"(?![^(]*\))"
 SEPARADORES_DE_PARTES = re.compile(
@@ -305,6 +333,10 @@ SEPARADORES_DE_PARTES = re.compile(
 )
 SEPARADORES_DE_ALTERNATIVAS = re.compile(
     r"(?:\s+e\s*/\s*ou\s+|\s+ou\s+)" + FORA_DE_PARENTESES, re.IGNORECASE
+)
+GRAFIAS_DE_DIALETOS_DE_SQL = (
+    (re.compile(r"\bpl\s*[-/]?\s*sql\b", re.IGNORECASE), "PL/SQL"),
+    (re.compile(r"\b(?:t|transact)\s*-?\s*sql\b", re.IGNORECASE), "T/SQL"),
 )
 PALAVRAS_SEM_SIGNIFICADO = frozenset(
     {
@@ -561,7 +593,7 @@ def _exigencias(requisitos: list[str]) -> dict[str, tuple[HabilidadeComparavel, 
     exigencias: dict[str, tuple[HabilidadeComparavel, ...]] = {}
     for requisito in requisitos:
         if requisito.strip():
-            nome = _normalizar_habilidade(_parte_unica(requisito) or requisito)
+            nome = _identidade_da_habilidade(_parte_unica(requisito) or requisito)
             exigencias[nome] = (*exigencias.get(nome, ()), _exigencia(requisito))
     return exigencias
 
@@ -571,7 +603,8 @@ def _todas_atendidas(
     variantes: tuple[HabilidadeComparavel, ...],
     habilidades_do_perfil: Mapping[str, HabilidadeComparavel],
 ) -> bool:
-    return all(_atende(nome, variante, habilidades_do_perfil) for variante in variantes)
+    comparado = _nome_de_comparacao(nome)
+    return all(_atende(comparado, variante, habilidades_do_perfil) for variante in variantes)
 
 
 @functools.cache
@@ -649,6 +682,12 @@ def _declarar(
         declaradas[nome] = declarada
 
 
+def _dialetos_com_barra(habilidade: str) -> str:
+    for grafia, com_barra in GRAFIAS_DE_DIALETOS_DE_SQL:
+        habilidade = grafia.sub(com_barra, habilidade)
+    return habilidade
+
+
 def _atende(
     nome: str,
     exigencia: HabilidadeComparavel,
@@ -680,11 +719,15 @@ def _nivel_no_perfil(
     nome: str, palavras: frozenset[str], habilidades_do_perfil: Mapping[str, HabilidadeComparavel]
 ) -> int | None:
     familia = _membros_das_familias().get(nome)
+    membros = (familia or frozenset()) | _membros_equivalentes().get(nome, frozenset())
+    membros |= {
+        equivalente
+        for membro in membros
+        for equivalente in _membros_equivalentes().get(membro, frozenset())
+    }
     niveis = [habilidades_do_perfil[nome].nivel] if nome in habilidades_do_perfil else []
     niveis += [
-        habilidades_do_perfil[membro].nivel
-        for membro in familia or ()
-        if membro in habilidades_do_perfil
+        habilidades_do_perfil[membro].nivel for membro in membros if membro in habilidades_do_perfil
     ]
     if familia is None:
         niveis += [
@@ -728,9 +771,18 @@ def _formas_da_palavra(palavra: str) -> frozenset[str]:
 
 @functools.cache
 def _membros_das_familias() -> dict[str, frozenset[str]]:
+    return _membros_normalizados(FAMILIAS_DE_HABILIDADES)
+
+
+@functools.cache
+def _membros_equivalentes() -> dict[str, frozenset[str]]:
+    return _membros_normalizados(EQUIVALENCIAS_DE_HABILIDADES)
+
+
+def _membros_normalizados(grupos: Mapping[str, tuple[str, ...]]) -> dict[str, frozenset[str]]:
     return {
         _normalizar_habilidade(nome): frozenset(_normalizar_habilidade(m) for m in membros)
-        for nome, membros in FAMILIAS_DE_HABILIDADES.items()
+        for nome, membros in grupos.items()
     }
 
 
@@ -742,7 +794,7 @@ def _primeira_nao_atendida(
     return next(
         variante.texto
         for variante in variantes
-        if not _atende(nome, variante, habilidades_do_perfil)
+        if not _atende(_nome_de_comparacao(nome), variante, habilidades_do_perfil)
     )
 
 
@@ -807,8 +859,16 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
+    return _nome_de_comparacao(_identidade_da_habilidade(habilidade))
+
+
+def _identidade_da_habilidade(habilidade: str) -> str:
     compacta = _compactar(_sem_qualificadores(habilidade))
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
+
+
+def _nome_de_comparacao(identidade: str) -> str:
+    return ALIASES_DE_COMPARACAO.get(identidade, identidade)
 
 
 def _parte_unica(habilidade: str) -> str | None:
@@ -820,7 +880,7 @@ def _parte_unica(habilidade: str) -> str | None:
 
 def _alternativas(habilidade: str) -> list[list[str]]:
     alternativas: list[list[str]] = []
-    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(habilidade):
+    for alternativa in SEPARADORES_DE_ALTERNATIVAS.split(_dialetos_com_barra(habilidade)):
         partes = [
             parte.strip() for parte in SEPARADORES_DE_PARTES.split(alternativa) if parte.strip()
         ]

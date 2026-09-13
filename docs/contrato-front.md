@@ -61,18 +61,33 @@ Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `pres
 Editar perfil e preferências usa `update` na própria linha, limitado por grants e RLS.
 Não usar `upsert` como substituto do fluxo de criação.
 
+Tetos de texto (`0025`), iguais aos que `validar_cadastro_radar` cobra desde a `0014` e medidos no
+texto cru. O site limita a digitação com o mesmo `maxlength`, e um teste lê os números da migration.
+
+| Campo | Teto | Por que esse número |
+|---|---|---|
+| `curso` | 200 caracteres | Maior curso do catálogo: 37; com o maior prefixo e sufixo que a normalização conhece, 84. A folga cobre o curso digitado livre |
+| `cidade` | 120 caracteres | Maior município de `cidades.json`: 36 |
+| cada habilidade | 100 caracteres | Maior sugerida: 23; a folga é da habilidade digitada |
+| `habilidades` | 50 itens | Limite da `0018` |
+| `areas_de_interesse` | 50 itens, só do catálogo | O catálogo tem 45 subáreas; o limite barra repetição sem fim |
+| JSON do cadastro | só as chaves listadas em "Cadastro e confirmação" | O cadastro pendente guardava qualquer chave extra |
+
+Perfil antigo acima de um teto faz a `0025` falhar no `db push`, sem aplicar nada.
+
 `cidade` é um município do IBGE no formato `Nome, UF` (`Rio de Janeiro, RJ`), escolhido na lista
 de `web/assets/cidades.json`, que sugere as cidades conforme a pessoa digita, sem exigir acento.
 O site recusa texto fora da lista e grava a forma da lista quando a pessoa digita sem acento ou
 sem o estado e o nome é de uma cidade só; nome repetido em mais de um estado pede a escolha na
-lista. O banco continua aceitando qualquer texto de 2 a 120 caracteres: a lista é regra do
-cadastro, não do schema, e o pipeline lê o nome e o estado para achar a região imediata. Se a lista não carregar, o
+lista. O banco aceita qualquer texto de até 120 caracteres (e de pelo menos 2 no cadastro): a lista é
+regra do cadastro, não do schema, e o pipeline lê o nome e o estado para achar a região imediata. Se a lista não carregar, o
 cadastro aceita o texto digitado e avisa, para uma falha de rede não custar a conta. A lista vem
 de `uv run python scripts/gerar_cidades.py`, que lê os municípios e a população do Censo 2022
 nas APIs do IBGE; a população só ordena as sugestões. Regerar quando o IBGE criar município.
 
 `habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
-após retirar espaços nas pontas. Lista vazia significa que o estudante ainda não informou
+cada, contando os espaços nas pontas desde a `0025`. Cada item é o que a pessoa adicionou na tela,
+sem separar por vírgula; habilidade composta ("Python, SQL") é partida pelo Python na comparação. Lista vazia significa que o estudante ainda não informou
 habilidades; não é convertida em texto sentinela nem implica incapacidade. O caminho de publicação
 compatível é: disponibilizar o Python que lê lista vazia (C02), aplicar a migration `0018`
 preservando perfis e permissões, e só então liberar o frontend que oferece esse caminho (C03).
@@ -80,14 +95,22 @@ preservando perfis e permissões, e só então liberar o frontend que oferece es
 ## Controles da conta
 
 Decisões de interface preservadas da revisão de 08/09: o campo de habilidade limita a
-digitação a 100 caracteres (`maxlength` e recorte em `addCustomSkill`), sem aviso de corte.
-A 51ª habilidade é recusada com erro no campo; o envio também valida o limite para listas
+digitação a 100 caracteres (`maxlength` e recorte em `addCustomSkill`), sem aviso de corte; a dica
+do campo diz "Uma por vez, com até 100 caracteres".
+A 51ª habilidade é recusada com erro no campo, digitada ou sugerida, e Continuar não sai da etapa
+com a 51ª pendente; o corte de 100 é por ponto de código. O curso exige 2 caracteres na tela, como
+no banco. O envio também valida o limite para listas
 legadas. Foi escolhido o limite nativo para texto e erro explícito para quantidade, evitando
 apagar uma seleção sem explicação. Remover a proteção do site deixaria a recusa só no banco.
 
 Logout e troca de conta limpam interesses e dados de perfil em memória; respostas pendentes
 do catálogo não podem restaurar outra sessão. Ao editar a mesma conta, seleções existentes
-devem ser preservadas. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
+devem ser preservadas. Fechar o diálogo de cadastro (Esc, X, clique fora ou voltar) não limpa: o
+rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa, sem senha nem e-mail
+e só para a mesma dona, o usuário da sessão ou o visitante. Qualquer troca de dona limpa tudo,
+inclusive login e sessão de outra aba; só o `signUp` feito do rascunho o leva para a conta nova.
+Nenhum envio com o conteúdo do formulário (edição, `concluir_meu_cadastro`) sai se a sessão atual não
+for a dona: o formulário é limpo e o site pede para entrar de novo. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
 resposta não desfaz a pausa; retomar limpa o motivo.
 
 | Operação | Caminho |

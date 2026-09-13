@@ -91,6 +91,17 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
+- **Ações por hash e token só de leitura** (13/09/2026): o job diário recebe os segredos de
+  produção, e o dono de uma ação pode mover a tag dela para outro commit. Toda `uses:` aponta para
+  o hash de 40 caracteres, e todo workflow declara `permissions: contents: read` no topo; permissão
+  maior só no job que precisar, com o motivo no commit. O checkout leva `persist-credentials:
+  false`, para o token não ficar no `.git/config` ao alcance do radar e das dependências, e o
+  `setup-uv` instala o uv `0.12.5`, o mesmo usado localmente: sem `version:` ele baixaria o mais
+  novo, que roda no passo dos segredos. `tests/test_workflows.py` cobra essas regras e guarda em
+  `VERSAO_DE_CADA_ACAO` a versão de cada hash, porque o YAML não leva comentário. O Dependabot
+  abre um PR semanal das ações, 7 dias depois de cada versão sair, e o teste falha até alguém
+  registrar no mapa a versão nova, conferida com `git ls-remote`. A versão do uv o Dependabot não
+  toca: sobe à mão, junto com o uv local.
 - **Persistência**: PostgreSQL gerenciado (Supabase), opcional. Com `DATABASE_URL` o job lê os
   usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e sem
   histórico.
@@ -220,6 +231,38 @@ refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registe
 `<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
 exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
 tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
+
+**Perfil, habilidades e rascunho (13/09/2026).** Os textos que o navegador grava no perfil têm teto
+no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. São os tetos que
+`validar_cadastro_radar` já cobrava desde a `0014`, agora também no `update` direto e sobre o texto
+cru (espaços nas pontas furavam o `btrim`); mantê-los evita que um cadastro pendente, validado antes,
+falhe na confirmação do e-mail. A folga vem dos catálogos: o maior curso sugerido tem 37 caracteres,
+84 com o maior prefixo e sufixo que a normalização conhece, e a maior cidade do IBGE tem 36. O site
+limita a digitação com o mesmo `maxlength` e cobra na etapa o mínimo de 2 no curso, porque o
+navegador só marca texto curto que a pessoa digitou. O teste de coerência compara com o site os
+checks, os dois números de cada texto em `validar_cadastro_radar` e o limite das listas da `0018`, e
+exige que perfil e cadastro aceitem todas as subáreas de um curso; lendo só os checks, mudar a
+validação do cadastro passava. Habilidade digitada nunca é separada por vírgula: cada item na tela é
+um item no banco. O envio partia o campo oculto por vírgula, então "Pacote Office (Word, Excel)"
+virava dois pedaços e 50 itens na tela viravam mais de 50 no banco, que recusava. Separar ao adicionar
+exigiria copiar no site as regras com que o Python já parte a habilidade composta (parênteses, " e ",
+nível da última parte). O corte de 100 é por ponto de código, como em `propriedadesDoEvento`: o
+`slice` partia emoji e o Postgres recusava o JSON. O limite de 50 vale também para a sugerida e para
+Continuar, que antes passavam sem aviso. Fechar o diálogo (Esc, X, clique fora, voltar) não apaga o
+rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas sem senha nem
+e-mail e só para a mesma dona. Senha e e-mail saem porque identificam a pessoa, e quem reabre já
+refaz a etapa da conta por causa da senha. O rascunho guarda a dona (`donoDoRascunho`): o id do
+usuário da sessão, ou visitante. Qualquer troca de dona limpa tudo: ao reabrir, na volta do link, ao
+completar o perfil, ao ler a conta e depois de um login. Só o `signUp` feito do rascunho o adota,
+porque é a mesma pessoa se cadastrando; se ele espera a confirmação do e-mail, a sessão que chega com
+esse e-mail também o mantém (`emailDoCadastroEnviado`). Login pelo diálogo e sessão vinda de outra aba
+nunca adotam. Sessão que falha ao renovar limpa o rascunho de conta, porque não se sabe quem é a dona.
+E nada do formulário é gravado numa conta que não é a dona: antes da edição, do `concluir_meu_cadastro`
+e da troca de conta, a sessão atual precisa ser a dona, senão o formulário é limpo e aparece "Sua
+sessão mudou". Em duas abas, a edição de A aberta aqui era gravada na conta de B que entrou na outra;
+o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito: na
+mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
+entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
 
 ## Regras do projeto (obrigatórias)
 
@@ -450,6 +493,51 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
   exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
   Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
+- **SQL e bancos relacionais são uma classe só na nota** (13/09/2026). "SQL" não era nome de
+  família: quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a
+  nota de quem tem MongoDB). Ian decidiu que, para estágio, SQL e o banco são a mesma coisa:
+  SQL, MySQL, PostgreSQL, SQL Server, SQLite, MariaDB e Oracle Database se atendem nos dois
+  sentidos (`EQUIVALENCIAS_DE_HABILIDADES`). A primeira versão só deixava SQL atender os bancos,
+  e o termo genérico valia mais que o específico: na vaga adzuna:5873229288, que pede
+  PostgreSQL, MySQL e Oracle, "SQL" tirava 70 e "MySQL" 63. Dentro das famílias o membro vale
+  pelos equivalentes, senão "ETL" e "análise de dados", que listam SQL, deixavam MySQL abaixo.
+  Não é peso novo, é equivalência, como as famílias de 09/09. O que acompanha a classe:
+  - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
+    porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
+    SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
+  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível, e o requisito PL/SQL ou T-SQL só é
+    atendido pelo próprio dialeto. Toda grafia vai para a forma com barra antes da partição
+    (`GRAFIAS_DE_DIALETOS_DE_SQL`: "PL-SQL" e "PLSQL" a "PL/SQL"; "T-SQL", "TSQL" e
+    "Transact-SQL" a "T/SQL"), e a partição do `b1ccbf1` dá a parte "SQL", com nível e
+    palavras, também dentro de habilidade composta. Juntar "PL/SQL" num nome só, como a versão
+    anterior fazia, tirava a parte "SQL" de "Oracle PL/SQL" e parecidos (75 → 61) e deixava
+    "Oracle" no perfil atender "Oracle PL/SQL" por palavras, o caso do ERP.
+  - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
+    SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
+    a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
+    Cloud ficam fora. Esses aliases valem só na comparação com o perfil
+    (`ALIASES_DE_COMPARACAO`): a identidade do requisito, que decide a regra de requisito
+    repetido, continua a do `b1ccbf1`. Sem isso "SQL Server avançado" e "Azure SQL Database"
+    viravam um requisito só, o segundo passava a exigir o nível avançado (75 → 61) e o
+    desejável sumia dos diferenciais.
+  - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
+    comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
+    MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
+  - Nível, composição ("MySQL e Python" exige as duas partes) e NoSQL fora da classe seguem
+    valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
+    anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+  Medido contra o `b1ccbf1`: nenhuma nota cai e nenhum requisito atendido some nas 41 vagas
+  reais que citam banco (246 pares com 6 perfis, 114 sobem; 861 com os 21 perfis da auditoria,
+  200 sobem) nem nos 8.836 pares da matriz da auditoria (2.298 sobem), e MySQL ou PostgreSQL
+  deixam de ficar abaixo de SQL na mesma vaga (eram 16 e 21 vagas).
+  `tests/test_corpus_de_bancos.py` pontua um corpus com dialeto dentro de habilidade composta e
+  requisitos que o alias junta, com as regras novas ligadas e todas desligadas juntas
+  (equivalências, aliases de comparação e grafias dos dialetos), e exige que nenhuma nota caia,
+  nenhum requisito suma e alguma nota suba; resiste a mudança de peso e quebra se as grafias
+  voltarem a juntar o dialeto ou se a identidade do requisito voltar a usar o alias. Risco
+  aberto: fora de computação a parte "SQL" do dialeto compara por palavras, então "T-SQL" passa
+  a atender "SQL Server Reporting Services", como "PL/SQL" e "SQL" já atendiam.
 - **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
   anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
   computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
@@ -1093,6 +1181,20 @@ ligação das automações, porque cada uma guardava o dono no nome:
   confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
   nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
   dos limites.
+- **Textos do perfil têm teto no banco** (13/09/2026, migration `0025`). Uma conta comum gravava
+  210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
+  `cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
+  `not valid` como o da `0023`: `perfis` é atualizado todo dia pelo job e pelo webhook, às vezes em
+  lote, e um check `not valid` deixaria uma linha antiga acima do teto derrubar esses updates longe
+  da migration. Validado, um perfil acima do teto faz o `db push` falhar inteiro, sem aplicar nada,
+  e o erro nomeia a constraint: corrigir a linha e repetir. `validar_cadastro_radar` passou a
+  recusar chave desconhecida no cadastro e no perfil; todas as versões do site mandaram só as
+  conhecidas. Grants e policies não mudam; a função nova do check fica com o grant padrão, como a
+  `habilidades_do_perfil_validas` da `0018`, e precisa dele: o check roda com o papel de quem grava,
+  e sem `execute` o update do próprio dono falha. Pode ir ao banco antes do merge: o site atual já limita
+  cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
+  digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
+  `raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
 
 
 ### Correções da revisão de expansão (08/09/2026)
