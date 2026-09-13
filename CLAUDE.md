@@ -213,7 +213,12 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
   12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
   mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
-  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso.
+  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
+  (`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
+  10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
+  Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
+  zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
+  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília.
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".

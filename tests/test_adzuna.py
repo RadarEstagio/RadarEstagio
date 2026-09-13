@@ -324,3 +324,18 @@ def test_cota_conta_tambem_as_novas_tentativas(httpx_mock: HTTPXMock):
         ).coletar()
 
     assert cota.requisicoes == 2
+
+
+def test_cota_zerada_antes_da_primeira_busca_vira_erro_de_coleta(httpx_mock: HTTPXMock):
+    cota = CotaDaAdzuna(saldo=0, esperar=lambda _: None)
+
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta, match="Cota da Adzuna"):
+        ColetorAdzuna(
+            settings_de_teste(),
+            cliente_http,
+            esperar=lambda _: None,
+            termos=TERMOS_DE_BUSCA,
+            cota=cota,
+        ).coletar()
+
+    assert httpx_mock.get_requests() == []

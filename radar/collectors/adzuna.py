@@ -5,6 +5,7 @@ from collections.abc import Callable, Iterable, Iterator
 
 import httpx
 
+from radar.collectors.errors import ErroDeColeta
 from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Vaga
 from radar.settings import Settings
@@ -103,6 +104,8 @@ class ColetorAdzuna:
                         vaga = converter_em_vaga(item)
                         vagas_por_id.setdefault(vaga.id_externo, vaga)
         except CotaDaAdzunaEsgotada:
+            if not vagas_por_id:
+                raise ErroDeColeta("Cota da Adzuna esgotada antes da primeira busca") from None
             logger.warning(
                 "Cota da Adzuna esgotada; a coleta parou com %d vagas", len(vagas_por_id)
             )

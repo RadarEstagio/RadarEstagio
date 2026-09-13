@@ -184,12 +184,16 @@ teste em outro aparelho deve ser repetido após qualquer troca de endereço.
 
 ## 6. Preparar Turnstile — ativar a exigência só depois do código
 
-No Cloudflare Turnstile, crie um widget gerenciado para `radarestagio.com`. Adicione outros
-hostnames apenas se usados nos testes. Guarde a **site key** pública para o frontend e a
+No Cloudflare Turnstile, crie um widget gerenciado com os hostnames `radarestagio.pages.dev` (o
+endereço publicado hoje), `radarestagio.com` e `localhost` (testes locais). Guarde a **site key** pública para o frontend e a
 **secret key** para **Authentication → Bot and Abuse Protection → CAPTCHA**, no Supabase.
 
-**A integração está pronta localmente e inerte**, com `turnstileSiteKey` vazio. Preencha essa
-chave pública e disponibilize o frontend atualizado antes de exigir CAPTCHA no Supabase.
+**A integração está pronta localmente e inerte**, com `turnstileSiteKey` vazio. O site já manda
+o token nas quatro chamadas que o Supabase passa a exigir (cadastro, login, reenvio da
+confirmação e recuperação de senha), com teste de cada uma em `tests/web/cadastro_test.ts`. A
+ordem importa: (1) a site key vai para `web/config.js`; (2) o site publicado precisa mostrar o
+widget; (3) só então o CAPTCHA é ligado no Supabase com a secret key. Ligado antes, todo cadastro,
+login, reenvio e recuperação passam a falhar.
 Depois escolha Turnstile no Supabase, habilite e teste cadastro,
 login, reenvio e recuperação, incluindo expiração do desafio.
 [CAPTCHA no Supabase](https://supabase.com/docs/guides/auth/auth-captcha).

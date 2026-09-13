@@ -1,7 +1,13 @@
 import logging
 from datetime import datetime, timedelta
 
-from radar.collectors.adzuna import CotaDaAdzuna, saldo_da_adzuna
+from radar.collectors.adzuna import LIMITE_DE_PAGINAS_POR_REGIAO, CotaDaAdzuna, saldo_da_adzuna
+from radar.collectors.factory import (
+    cidades_de_interesse,
+    ha_curso_desconhecido,
+    termos_de_interesse,
+)
+from radar.domain.models import Usuario
 from radar.domain.ports import RepositorioDeAvaliacoes
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -11,7 +17,9 @@ DIAS_DA_JANELA_SEMANAL = 7
 logger = logging.getLogger(__name__)
 
 
-def abrir_cota_da_adzuna(repositorio: RepositorioDeAvaliacoes, agora: datetime) -> CotaDaAdzuna:
+def abrir_cota_da_adzuna(
+    repositorio: RepositorioDeAvaliacoes, agora: datetime, reserva: int = 0
+) -> CotaDaAdzuna:
     hoje = agora.date()
     try:
         saldo = saldo_da_adzuna(
@@ -24,7 +32,13 @@ def abrir_cota_da_adzuna(repositorio: RepositorioDeAvaliacoes, agora: datetime) 
     except ErroDeArmazenamento as erro:
         logger.warning("Uso da Adzuna não pôde ser lido; a coleta segue sem saldo: %s", erro)
         return CotaDaAdzuna()
-    return CotaDaAdzuna(saldo=saldo)
+    return CotaDaAdzuna(saldo=max(0, saldo - reserva))
+
+
+def reserva_do_diario(usuarios: list[Usuario]) -> int:
+    regioes = 1 + len(cidades_de_interesse(usuarios))
+    buscas = 2 if termos_de_interesse(usuarios) and ha_curso_desconhecido(usuarios) else 1
+    return LIMITE_DE_PAGINAS_POR_REGIAO * regioes * buscas
 
 
 def registrar_uso_da_adzuna(

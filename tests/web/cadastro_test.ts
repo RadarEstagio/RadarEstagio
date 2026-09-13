@@ -57,7 +57,7 @@ interface Signup {
 type Call =
   | ["signup", Signup]
   | ["login", { email: string; password: string }]
-  | ["resend", { email: string }]
+  | ["resend", { email: string; options?: { captchaToken?: string } }]
   | ["password", { password: string }]
   | ["reset", string, Payload]
   | ["logout"]
@@ -141,7 +141,7 @@ function app(
         calls.push(["login", args]);
         return { data: { session: { user } } };
       },
-      resend: async (args: { email: string }) => {
+      resend: async (args: { email: string; options?: { captchaToken?: string } }) => {
         calls.push(["resend", args]);
         return {};
       },
@@ -1853,6 +1853,52 @@ Deno.test("perfil antigo sem estado na cidade é corrigido ao salvar a edição"
     await settle();
     const update = called(a.calls, "update");
     assert.equal(update[2].cidade, "Rio de Janeiro, RJ");
+  } finally {
+    a.close();
+  }
+});
+
+function captchaComToken(a: ReturnType<typeof app>, token: string) {
+  let widget: { callback: (valor: string) => void } | undefined;
+  a.w.turnstile = {
+    render: (_: string, options: { callback: (valor: string) => void }) => {
+      widget = options;
+      return 1;
+    },
+    reset: () => {},
+  };
+  a.w.radarCaptchaReady();
+  assert.ok(widget);
+  widget.callback(token);
+}
+
+function enviarAssistencia(a: ReturnType<typeof app>) {
+  a.w.document.querySelector("#assistance-form").dispatchEvent(
+    new a.w.Event("submit", { cancelable: true }),
+  );
+}
+
+Deno.test("CAPTCHA acompanha o reenvio da confirmação", async () => {
+  const a = app({ key: "chave-publica" });
+  try {
+    captchaComToken(a, "token-do-reenvio");
+    a.w.showAssistance("resend", user.email);
+    enviarAssistencia(a);
+    await settle();
+    assert.equal(called(a.calls, "resend")[1].options?.captchaToken, "token-do-reenvio");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("CAPTCHA acompanha o pedido de recuperação de senha", async () => {
+  const a = app({ key: "chave-publica" });
+  try {
+    captchaComToken(a, "token-da-recuperacao");
+    a.w.showAssistance("reset", user.email);
+    enviarAssistencia(a);
+    await settle();
+    assert.equal(called(a.calls, "reset")[2].captchaToken, "token-da-recuperacao");
   } finally {
     a.close();
   }

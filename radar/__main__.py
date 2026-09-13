@@ -30,7 +30,12 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
-from radar.cota import abrir_cota_da_adzuna, registrar_uso_da_adzuna, uso_da_adzuna
+from radar.cota import (
+    abrir_cota_da_adzuna,
+    registrar_uso_da_adzuna,
+    reserva_do_diario,
+    uso_da_adzuna,
+)
 from radar.domain.models import Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import ColetorDeVagas, Repositorio
@@ -46,7 +51,7 @@ from radar.notification.formatador import (
     formatar_resumo_da_execucao,
 )
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
-from radar.pipeline import ParametrosDaExecucao, executar
+from radar.pipeline import ParametrosDaExecucao, executar, selecionar_usuarios
 from radar.reporting.funil import formatar_funil
 from radar.reporting.julgamento import formatar_julgamento
 from radar.settings import Settings
@@ -274,10 +279,16 @@ def executar_fluxo(
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
-    cota = abrir_cota_da_adzuna(repositorio, agora)
+    ativos = repositorio.listar_ativos()
+    usuarios_da_coleta = selecionar_usuarios(ativos, apenas_o_perfil)
+    if apenas_o_perfil is not None and not usuarios_da_coleta:
+        print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
+        return
+    reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
+    cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
     try:
         resumo = executar(
-            montar_coletor(settings, cliente_http, repositorio.listar_ativos(), cota),
+            montar_coletor(settings, cliente_http, usuarios_da_coleta, cota),
             extrator,
             notificador,
             repositorio,
