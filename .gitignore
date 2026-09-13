@@ -55,3 +55,5 @@ descartes-*.json
 
 # Frontend
 node_modules/
+playwright-report/
+test-results/

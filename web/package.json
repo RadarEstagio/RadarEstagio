@@ -12,11 +12,13 @@
     "preview": "vite preview",
     "lint": "eslint --max-warnings=0 . && node scripts/check-frontend-comments.mjs src scripts tests vite.config.js eslint.config.mjs config.js assets/styles.css",
     "test:run": "vitest run",
-    "test:artifact": "vite build && node scripts/check-web-artifact.mjs dist"
+    "test:artifact": "vite build && node scripts/check-web-artifact.mjs dist",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@babel/parser": "7.29.8",
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.63.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/react": "16.3.3",
     "@vitejs/plugin-react": "4.7.0",
