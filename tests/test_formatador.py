@@ -588,5 +588,21 @@ def test_resumo_avisa_quando_a_cota_da_adzuna_esgotou():
     assert "⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim" in texto
 
 
+def test_resumo_avisa_coleta_incompleta_de_cada_fonte():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        coletas_incompletas={"adzuna": "Adzuna respondeu HTTP 429 <ao> buscar vagas"},
+    )
+
+    assert (
+        "⚠️ Coleta da Adzuna incompleta: Adzuna respondeu HTTP 429 &lt;ao&gt; buscar vagas"
+    ) in texto
+
+
 def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():
     assert "Adzuna" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
