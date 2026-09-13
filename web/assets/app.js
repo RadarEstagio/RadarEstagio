@@ -80,6 +80,7 @@ const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
+const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
@@ -1057,6 +1058,7 @@ function showAccount(profile) {
   document.querySelector("#account-status-icon").textContent = visual.simbolo;
   const emExclusao = Boolean(profile.excluida_em);
   toggleDeliveries.textContent = profile.ativo ? "Pausar entregas" : "Retomar entregas";
+  toggleDeliveries.dataset.acao = profile.ativo ? "pausar" : "retomar";
   toggleDeliveries.hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
   document.querySelector("#delete-account").hidden = emExclusao;
@@ -1089,17 +1091,21 @@ async function perfilAtual() {
   return profile;
 }
 
-async function alternarEntregas(profile) {
+async function alternarEntregas(pausar) {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
-  const updates = profile.ativo
+  const updates = pausar
     ? { ativo: false, atualizado_em: new Date().toISOString() }
     : { ativo: true, motivo_pausa: null, atualizado_em: new Date().toISOString() };
-  const { error } = await getClient()
+  const { data, error } = await getClient()
     .from("perfis")
     .update(updates)
-    .eq("user_id", session.user.id);
+    .eq("user_id", session.user.id)
+    .eq("ativo", pausar)
+    .select("user_id")
+    .maybeSingle();
   if (error) throw error;
+  return Boolean(data);
 }
 
 function mostrarPerguntaMotivoPausa() {
@@ -1412,13 +1418,15 @@ toggleDeliveries.addEventListener("click", async () => {
   if (toggleDeliveries.disabled) return;
   toggleDeliveries.disabled = true;
   setAccountMessage();
+  const pausar = toggleDeliveries.dataset.acao === "pausar";
   try {
-    const profile = await perfilAtual();
-    const wasActive = profile.ativo;
-    await alternarEntregas(profile);
-    const updatedProfile = { ...profile, ativo: !wasActive, motivo_pausa: null };
-    showAccount(updatedProfile);
-    if (wasActive) mostrarPerguntaMotivoPausa();
+    const alterou = await alternarEntregas(pausar);
+    showAccount(await perfilAtual());
+    if (!alterou) {
+      setAccountMessage(MENSAGEM_ENTREGAS_JA_MUDARAM, "aviso");
+      return;
+    }
+    if (pausar) mostrarPerguntaMotivoPausa();
   } catch (error) {
     setAccountMessage(humanizeError(error));
   } finally {

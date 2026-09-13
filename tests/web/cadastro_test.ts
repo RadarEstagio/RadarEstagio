@@ -907,6 +907,7 @@ Deno.test("pausar mantém a conta pausada e oferece motivo opcional", async () =
   const a = app({
     session: { user },
     savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
   });
   try {
     await settle();
@@ -928,6 +929,7 @@ Deno.test("resposta de motivo é separada e não altera ativo", async () => {
   const a = app({
     session: { user },
     savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
   });
   try {
     await settle();
@@ -954,6 +956,7 @@ Deno.test("erro ou corrida ao salvar motivo mantém pausa e permite pular", asyn
   const a = app({
     session: { user },
     savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
   });
   try {
     await settle();
@@ -993,6 +996,7 @@ Deno.test("retomar limpa o motivo no mesmo update", async () => {
       motivo_pausa: "outro",
       telegram_chat_id: "123",
     },
+    url: "https://radarestagio.com/?conta",
   });
   try {
     await settle();
@@ -1158,6 +1162,72 @@ Deno.test("voltar no histórico para a conta com a confirmação aberta fecha o 
     assert.equal(estado.fechou, true);
     assert.equal(confirmacao.open, false);
     assert.equal(confirmacao.hidden, true);
+  } finally { a.close(); }
+});
+
+function bancoQueRespeitaOAtivo(a: ReturnType<typeof app>, salvo: Profile) {
+  const from = a.client.from;
+  a.client.from = (table: string) => {
+    const antes = { ...salvo };
+    const query = from(table);
+    let ativoExigido: unknown;
+    query.eq = (coluna?: string, valor?: unknown) => {
+      if (coluna === "ativo") ativoExigido = valor;
+      return query;
+    };
+    const maybeSingle = query.maybeSingle;
+    query.maybeSingle = async () => {
+      if (ativoExigido === undefined || antes.ativo === ativoExigido) return maybeSingle();
+      Object.assign(salvo, antes);
+      return { data: null };
+    };
+    return query;
+  };
+}
+
+Deno.test("clicar em Pausar com a conta já pausada em outro lugar não retoma as entregas", async () => {
+  const salvo: Profile = { ...profile, telegram_chat_id: "123" };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    bancoQueRespeitaOAtivo(a, salvo);
+    const doc = a.w.document;
+    const botao = doc.querySelector("#toggle-deliveries");
+    assert.equal(botao.textContent, "Pausar entregas");
+    salvo.ativo = false;
+    salvo.motivo_pausa = "outro";
+    botao.click();
+    await settle();
+    assert.equal(a.calls.some((call) => call[0] === "update" && call[2].ativo === true), false);
+    assert.equal(salvo.ativo, false);
+    assert.equal(salvo.motivo_pausa, "outro");
+    assert.equal(botao.textContent, "Retomar entregas");
+    assert.equal(doc.querySelector("#account-delivery-title").textContent, "Entregas pausadas");
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+    assert.match(doc.querySelector("#account-notice").textContent, /já tinham mudado/);
+    assert.match(doc.querySelector("#account-notice").textContent, /Nada foi alterado/);
+  } finally { a.close(); }
+});
+
+Deno.test("clicar em Retomar com a conta já reativada em outro lugar não pausa as entregas", async () => {
+  const salvo: Profile = { ...profile, telegram_chat_id: "123", ativo: false, motivo_pausa: "outro" };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    bancoQueRespeitaOAtivo(a, salvo);
+    const doc = a.w.document;
+    const botao = doc.querySelector("#toggle-deliveries");
+    assert.equal(botao.textContent, "Retomar entregas");
+    salvo.ativo = true;
+    salvo.motivo_pausa = null;
+    botao.click();
+    await settle();
+    assert.equal(a.calls.some((call) => call[0] === "update" && call[2].ativo === false), false);
+    assert.equal(salvo.ativo, true);
+    assert.equal(botao.textContent, "Pausar entregas");
+    assert.equal(doc.querySelector("#account-delivery-title").textContent, "Entregas ativas");
+    assert.equal(doc.querySelector("#pause-reason").hidden, true);
+    assert.match(doc.querySelector("#account-notice").textContent, /já tinham mudado/);
   } finally { a.close(); }
 });
 
