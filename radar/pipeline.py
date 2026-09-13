@@ -305,14 +305,6 @@ def atender_usuario_travado(
     )
     sem_extracao = len(candidatas) - len(novas)
     selecionadas = selecionar(novas, parametros.quantidade, parametros.nota_minima)
-    if not selecionadas and sem_extracao:
-        logger.warning(
-            "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
-            usuario.id,
-            sem_extracao,
-            len(candidatas),
-        )
-        return None
     logger.info(
         "usuário %s: %d candidatas, %d avaliadas agora, %d enviadas",
         usuario.id,
@@ -323,6 +315,14 @@ def atender_usuario_travado(
     if not revalidacao.permite(usuario):
         return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
+    if not selecionadas and sem_extracao:
+        logger.warning(
+            "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
+            usuario.id,
+            sem_extracao,
+            len(candidatas),
+        )
+        return None
     if not selecionadas:
         avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora, revalidacao)
         return None

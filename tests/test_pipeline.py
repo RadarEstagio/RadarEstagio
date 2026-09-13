@@ -13,6 +13,8 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
+from radar.matching.errors import ErroDeAvaliacao
+from radar.matching.lotes import ExtratorEmLotes
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, candidatas_de_algum_perfil, executar
 from radar.storage.errors import ErroDeArmazenamento
@@ -1118,3 +1120,50 @@ def test_nenhuma_parte_entregue_nao_grava_envio_algum():
 
     assert resumo.enviadas_por_usuario == {}
     assert repositorio.tokens_gravados == []
+
+
+class ExtratorQueNuncaDevolve(ExtratorFalso):
+    def __init__(self, envenenadas: set[str]) -> None:
+        super().__init__({})
+        self._envenenadas = envenenadas
+
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        if any(item.id_externo in self._envenenadas for item in vagas):
+            raise ErroDeAvaliacao("Gemini devolveu resposta vazia")
+        return super().extrair(vagas)
+
+
+def rodar_com_vaga_que_nunca_e_extraida(
+    repositorio: RepositorioFalso, notificador: NotificadorFalso, agora: datetime
+):
+    return executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorEmLotes(ExtratorQueNuncaDevolve({"1"}), 10),
+        notificador,
+        repositorio,
+        parametros(nota_minima=40),
+        agora,
+        PontuadorFalso({"2": 30}),
+    )
+
+
+def test_avaliacoes_sao_gravadas_mesmo_quando_a_falta_de_extracao_segura_a_mensagem():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
+    notificador = NotificadorFalso()
+
+    rodar_com_vaga_que_nunca_e_extraida(repositorio, notificador, AGORA_DE_TESTE)
+
+    assert notificador.textos == []
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
+
+
+def test_falta_de_extracao_nao_grava_avaliacao_de_destinatario_que_nao_se_revalida():
+    class RepositorioIndisponivel(RepositorioFalso):
+        def pode_entregar(self, usuario):
+            raise ErroDeArmazenamento("banco indisponível")
+
+    repositorio = RepositorioIndisponivel([usuario(dias_sem_recomendacao=1)])
+
+    rodar_com_vaga_que_nunca_e_extraida(repositorio, NotificadorFalso(), AGORA_DE_TESTE)
+
+    assert repositorio.avaliacoes_gravadas == []
