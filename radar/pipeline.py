@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 Pontuador = Callable[[list[Vaga], dict[ChaveDaVaga, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
 Enriquecedor = Callable[[list[Vaga]], list[Vaga]]
 
+DIAS_SEM_RECOMENDACAO_ATE_SOLTAR_A_MENSAGEM = 3
+
 
 def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
     return vagas
@@ -315,7 +317,7 @@ def atender_usuario_travado(
     if not revalidacao.permite(usuario):
         return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
-    if not selecionadas and sem_extracao:
+    if not selecionadas and sem_extracao and falta_de_extracao_segura_a_mensagem(usuario, agora):
         logger.warning(
             "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
             usuario.id,
@@ -420,6 +422,14 @@ def silencio_prolongado(usuario: Usuario, agora: datetime, dias: int) -> bool:
     if usuario.sem_recomendacao_desde > limite:
         return False
     return usuario.silencio_avisado_em is None or usuario.silencio_avisado_em <= limite
+
+
+def falta_de_extracao_segura_a_mensagem(usuario: Usuario, agora: datetime) -> bool:
+    if usuario.sem_recomendacao_desde is None:
+        return True
+    return agora - usuario.sem_recomendacao_desde < timedelta(
+        days=DIAS_SEM_RECOMENDACAO_ATE_SOLTAR_A_MENSAGEM
+    )
 
 
 def pausar_se_o_destinatario_recusou(
