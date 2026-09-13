@@ -5,6 +5,7 @@ export const DIAS_ATE_APAGAR = 60;
 export const MODALIDADES_ACEITAS = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 export const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 export const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
+export const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 export const MENSAGEM_SEM_CONFIGURACAO =
   "O cadastro ainda não foi configurado. Informe a chave pública do Supabase em web/config.js.";
 
@@ -31,13 +32,14 @@ export function erroDeValidacao(mensagem) {
   return erro;
 }
 
-export function mensagemHumana(erro, { perfilPendente = false } = {}) {
+export function mensagemHumana(erro, { perfilPendente = false, carregandoConta = false } = {}) {
   const mensagem = String(erro?.message ?? "").toLowerCase();
   const codigo = String(erro?.code ?? "").toLowerCase();
   const status = Number(erro?.status);
 
   if (mensagem.startsWith("o cadastro ainda não foi configurado")) return erro.message;
   if (erro?.name === "RadarValidationError") return erro.message;
+  if (carregandoConta) return MENSAGEM_CONTA_INDISPONIVEL;
   if (perfilPendente) {
     return "Sua conta foi criada, mas o perfil ainda não foi salvo. Entre novamente para concluir o perfil.";
   }

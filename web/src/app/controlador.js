@@ -88,6 +88,7 @@ function estadoInicial() {
       copy: "Vincule seu Telegram para receber as vagas selecionadas pelo Radar.",
       token: null,
       linkVisivel: false,
+      mensagem: "",
     },
     conta: {
       perfil: null,
@@ -583,7 +584,7 @@ export function criarControlador({ janela, criarCliente }) {
   function mostrarSucesso({ kicker, titulo, copy, token = null, vinculado = false }) {
     mudar(() => ({
       tela: "sucesso",
-      sucesso: { kicker, titulo, copy, token, linkVisivel: Boolean(token) && !vinculado },
+      sucesso: { kicker, titulo, copy, token, linkVisivel: Boolean(token) && !vinculado, mensagem: "" },
     }));
     mostrarMensagem();
     paginas.rotularDialogo("success-title");
@@ -797,7 +798,7 @@ export function criarControlador({ janela, criarCliente }) {
     }
     const email = estado.campos.email.trim();
     const senha = estado.campos.senha;
-    let salvamentoIniciado = false;
+    let contaSemPerfil = false;
     mostrarMensagem();
     mudar(() => ({ enviando: true, progresso: PROGRESSO_AO_CONFIRMAR }));
     try {
@@ -830,12 +831,12 @@ export function criarControlador({ janela, criarCliente }) {
         prepararPerfilAusente(sessao);
         return;
       }
-      salvamentoIniciado = true;
+      contaSemPerfil = !existente;
       const perfilSalvo = await persistirPerfil(sessao.user.id, perfil);
       mostrarEstadoDoPerfil(perfilSalvo);
     } catch (erro) {
       if (erro?.code === "email_not_confirmed") mostrarAssistencia("resend", email);
-      mostrarMensagem(mensagemHumana(erro, { perfilPendente: salvamentoIniciado }));
+      mostrarMensagem(mensagemHumana(erro, { perfilPendente: contaSemPerfil }));
     } finally {
       mudar((atual) => ({ enviando: false, progresso: atual.tela === "formulario" ? null : atual.progresso }));
     }
@@ -888,8 +889,8 @@ export function criarControlador({ janela, criarCliente }) {
       if (perfil) mostrarEstadoDoPerfil(perfil);
       else prepararPerfilAusente(sessao);
     } catch (erro) {
-      abrirDialogo();
-      mostrarMensagem(mensagemHumana(erro));
+      abrirLogin();
+      mostrarMensagem(mensagemHumana(erro, { carregandoConta: true }));
     }
   }
 
@@ -911,15 +912,14 @@ export function criarControlador({ janela, criarCliente }) {
         if (retorno.consulta.has("conta")) abrirLogin();
         return;
       }
-      const perfil = await carregarPerfil(sessao.user.id);
       if (!retorno.voltandoDoAuth && !lerPerfilPendente() && !retorno.consulta.has("conta")) return;
+      const perfil = await carregarPerfil(sessao.user.id);
       limparPerfilPendente();
       if (perfil) mostrarEstadoDoPerfil(perfil);
       else prepararPerfilAusente(sessao);
     } catch (erro) {
-      reiniciarPainel();
-      abrirDialogo();
-      mostrarMensagem(mensagemHumana(erro, { perfilPendente: true }));
+      abrirLogin();
+      mostrarMensagem(mensagemHumana(erro, { carregandoConta: true }));
     }
   }
 
@@ -1201,10 +1201,11 @@ export function criarControlador({ janela, criarCliente }) {
   }
 
   async function abrirContaDoSucesso() {
+    mudar((atual) => ({ sucesso: { ...atual.sucesso, mensagem: "" } }));
     try {
       mostrarConta(await perfilAtual());
     } catch (erro) {
-      mostrarMensagem(mensagemHumana(erro));
+      mudar((atual) => ({ sucesso: { ...atual.sucesso, mensagem: mensagemHumana(erro) } }));
     }
   }
 

@@ -8,6 +8,9 @@ export function Sucesso({ estado, controlador }) {
       </p>
       <h2 id="success-title" tabIndex={-1}>{sucesso.titulo}</h2>
       <p id="success-copy">{sucesso.copy}</p>
+      <p className="form-message" id="success-message" role="alert">
+        {sucesso.mensagem}
+      </p>
       <div className="success-actions">
         <button className="button button-ghost" id="success-account" type="button" onClick={controlador.abrirContaDoSucesso}>
           Minha conta

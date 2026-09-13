@@ -102,6 +102,15 @@ export function passoAtivo() {
   return $(".form-step.is-active").dataset.step;
 }
 
+export function visivel(alvo) {
+  const inicio = elemento(alvo);
+  for (let no = inicio; no; no = no.parentElement) {
+    if (no.hidden) return false;
+    if (no.tagName === "DIALOG" && !no.hasAttribute("open")) return false;
+  }
+  return Boolean(inicio);
+}
+
 export function dialogoAberto() {
   return $("#signup-dialog").hasAttribute("open");
 }
@@ -164,10 +173,11 @@ function janelaSemArmazenamento() {
   });
 }
 
-function criarClienteFalso({ sessao, perfilGuardado, calls, aoRegistrarAuth }) {
+function criarClienteFalso({ sessao, perfilGuardado, calls, aoRegistrarAuth, erroDaSessao, erroDoPerfil }) {
   return {
     auth: {
-      getSession: async () => ({ data: { session: sessao } }),
+      getSession: async () =>
+        erroDaSessao ? { data: { session: null }, error: erroDaSessao } : { data: { session: sessao } },
       onAuthStateChange: (callback) => {
         aoRegistrarAuth(callback);
         return { data: { subscription: { unsubscribe() {} } } };
@@ -210,7 +220,8 @@ function criarClienteFalso({ sessao, perfilGuardado, calls, aoRegistrarAuth }) {
           if (tabela === "perfis" && perfilGuardado) Object.assign(perfilGuardado, args);
           return consulta;
         },
-        maybeSingle: async () => ({ data: perfilGuardado }),
+        maybeSingle: async () =>
+          tabela === "perfis" && erroDoPerfil ? { data: null, error: erroDoPerfil } : { data: perfilGuardado },
         single: async () => ({ data: perfilGuardado }),
       };
       return consulta;
@@ -230,6 +241,8 @@ export function abrirAplicacao({
   temaSalvo = null,
   armazenamentoBloqueado = false,
   armazenado = {},
+  erroDaSessao = null,
+  erroDoPerfil = null,
 } = {}) {
   fecharAplicacao();
   const pagina = new DOMParser().parseFromString(html, "text/html");
@@ -273,6 +286,8 @@ export function abrirAplicacao({
     sessao,
     perfilGuardado: perfilSalvo ? structuredClone(perfilSalvo) : null,
     calls,
+    erroDaSessao,
+    erroDoPerfil,
     aoRegistrarAuth: (callback) => {
       aoMudarAuth = callback;
     },

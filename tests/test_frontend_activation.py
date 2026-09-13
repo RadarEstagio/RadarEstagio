@@ -81,7 +81,9 @@ def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
     assert "perfilPendente" in fonte
     assert "Entre novamente para concluir o perfil" in fonte
     assert "mostrarMensagem(erro.message)" not in fonte
-    assert "mensagemHumana(erro, { perfilPendente: true })" in fonte
+    assert "mensagemHumana(erro, { perfilPendente: contaSemPerfil })" in fonte
+    assert "mensagemHumana(erro, { perfilPendente: true })" not in fonte
+    assert "mensagemHumana(erro, { carregandoConta: true })" in fonte
 
 
 def test_validacao_do_cadastro_orienta_como_corrigir_cada_campo_invalido():
