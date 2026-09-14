@@ -605,8 +605,19 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   em computação, onde Ciência da Computação, Engenharia de Software e ADS disputam as mesmas
   vagas. Sem essa trava, Engenharia Civil valia por Engenharia Química e Contábeis por Economia
   (08/09/2026).
+- **Período mínimo** (14/09/2026): perfil abaixo do `periodo_minimo` extraído limita a 35 com o
+  aviso "Exige a partir do Nº período", como curso incompatível. Antes só zerava os 15 pontos de
+  período/experiência, e um perfil de Administração no 1º período recebeu em 1º lugar, com 80, a
+  vaga do CIEE que pede "4º ou 5º período". O aviso substitui o ponto contra genérico. Experiência
+  exigida segue só no fator, e faixa ("4º ao 6º") segue sem teto superior, porque o prompt não
+  extrai o limite. Das 131 extrações da versão `7efdbc95` com `periodo_minimo`, 130 batem com o
+  anúncio; a que não bate leu "é desejável que esteja cursando entre o 4 ao 7 semestre" como
+  mínimo 4. Cursos com faixas diferentes viram o menor mínimo, o que nunca exclui a mais. Nos 4
+  perfis ativos, 54 de 663 pares caem abaixo de 40 e 8 dos 188 envios de 7 dias não teriam saído.
+  Risco aberto: `perfis.periodo` é o que a pessoa digitou no cadastro e não avança sozinho, então
+  perfil desatualizado passa a perder vaga que já pode fazer.
 - **Pontos a favor e contra são gerados da comparação** (03/09/2026), não escritos pela IA.
-  Sobraram "Curso compatível", "Período mínimo incompatível" e "Exige experiência prévia", porque
+  Sobraram "Curso compatível" e "Exige experiência prévia" (o período virou aviso em 14/09), porque
   as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
   vindo do modelo.
 - **Viés conhecido, registrado em 03/09/2026**: anúncio que declara
