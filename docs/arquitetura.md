@@ -145,9 +145,11 @@ no plano pago cada extração é requisição cobrada.
   nada depende de candidato. O `id_vaga` é `fonte:id_externo`, porque duas fontes podem usar
   o mesmo número e o banco distingue as duas vagas.
 - **A comparação é determinística** (`matching/compatibilidade.py`): `cursos_aceitos` vira
-  compatível/parcial/incompatível contra o catálogo de cursos de `domain/areas.py`;
-  `periodo_minimo` e `experiencia_minima_anos` viram o nível de período; os pontos a favor e
-  contra são montados da comparação, não escritos pela IA. Mesmos dados, mesma nota, sempre.
+  compatível/parcial/incompatível contra o catálogo de cursos de `domain/areas.py`, e vaga só
+  para curso técnico é incompatível para quem faz graduação (técnico ao lado de um curso
+  superior sai da comparação); `periodo_minimo` e `experiencia_minima_anos` viram o nível de
+  período; os pontos a favor e contra são montados da comparação, não escritos pela IA.
+  Mesmos dados, mesma nota, sempre.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
   área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
   habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos:

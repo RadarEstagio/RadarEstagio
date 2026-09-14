@@ -677,6 +677,22 @@ contexto no passo 1.
   subárea do mesmo campo do curso vale metade e sem aviso, e vaga de outro campo zera e avisa.
   Punir igual quem marcou "Mercado financeiro" e recebeu uma vaga de Contabilidade era mentir no
   aviso e cobrar duas vezes, já que estar em outra área já pesa em `PESO_AREA`.
+- **Vaga só para curso técnico** (14/09/2026). A Jovem Valor anunciou estágio "para estudantes de
+  ensino técnico em administração" e o perfil de Administração, de graduação, o recebeu com
+  "Curso compatível", porque `normalizar_curso` tira "técnico em" como prefixo. Para perfil que
+  não é de curso técnico, vaga cujos `cursos_aceitos` são todos de nível técnico
+  (`curso_de_nivel_tecnico`, com ou sem ensino médio ao lado) tem curso incompatível, teto 35 e
+  o aviso "Vaga para estudantes de curso técnico"; título dirigido a estudantes de ensino, curso
+  ou nível técnico sai no pré-filtro, salvo se também disser superior, graduação, faculdade,
+  universitário ou tecnólogo. Técnico como acréscimo continua normal: se a vaga nomeia um curso
+  superior, só os superiores entram na comparação, e "técnico ou superior" não é exclusivo.
+  Tecnólogo, CST e ADS são superiores; quem cursa técnico não muda. "Estágio Técnico" e "Suporte
+  Técnico" são ambíguos e ficam só com a compatibilidade. `normalizar_curso` e o prompt não
+  mudaram. Nas 456 extrações da versão atual, 22 citam técnico e 9 são só técnico, todas
+  exclusivas na descrição; com os 4 perfis ativos mudam 23 de 1.824 pares, e no run de 14/09 só
+  a Jovem Valor sai do top 7 de Administração. O título pega 2 dos 893 guardados. Limite: quando
+  a IA tira o "Técnico em" dos itens seguintes ("Técnico em Automação", "Eletrotécnica"), a vaga
+  parece mista e segue como antes (3 extrações).
 
 ### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 
