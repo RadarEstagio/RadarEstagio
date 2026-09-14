@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from radar.domain.areas import (
     AREAS_POR_NOME,
+    PADRAO_NIVEL_SUPERIOR,
     area_do_curso,
     curso_de_nivel_tecnico,
     formacao_de_nivel_superior,
@@ -17,6 +18,13 @@ PONTO_PERIODO_INCOMPATIVEL = "Período mínimo incompatível"
 PONTO_EXPERIENCIA_EXIGIDA = "Exige experiência prévia"
 ABERTURAS_A_QUALQUER_CURSO = frozenset(
     {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
+)
+PADRAO_TECNICO_NO_ITEM = re.compile(r"\btecnic[oa]s?\b")
+PADRAO_ALTERNATIVAS_DO_ITEM = re.compile(r"\s+(?:e/)?ou\s+|\s*/\s*")
+PADRAO_NIVEL_NO_INICIO = re.compile(
+    r"^(?:(?:cursando|estudantes?|ensino|curso|nivel)\s+)*"
+    r"(?:tecnic[oa]s?|superior|graduacao|graduand[oa]s?|bacharel(?:ado)?|licenciatura"
+    r"|tecnolog[oa]s?|cst)(?:\s+(?:em|de|do|da|no|na))?(?:\s+|$)"
 )
 
 
@@ -52,7 +60,12 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
         return NivelCompatibilidade.COMPATIVEL
     if vaga_so_para_curso_tecnico(extracao, perfil):
         return NivelCompatibilidade.INCOMPATIVEL
-    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
+    aceitos = [
+        curso
+        for item in extracao.cursos_aceitos
+        for curso in cursos_do_item(item)
+        if normalizar_curso(curso)
+    ]
     if not aceitos:
         return NivelCompatibilidade.PARCIAL
     if any(mesma_area(curso, perfil.curso) for curso in aceitos):
@@ -60,6 +73,19 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
     if any(mesmo_curso(curso, perfil.curso) for curso in aceitos):
         return NivelCompatibilidade.COMPATIVEL
     return NivelCompatibilidade.INCOMPATIVEL
+
+
+def cursos_do_item(curso: str) -> list[str]:
+    texto = normalizar(curso)
+    if PADRAO_TECNICO_NO_ITEM.search(texto) is None:
+        return [curso]
+    if PADRAO_NIVEL_SUPERIOR.search(texto) is None:
+        return [curso]
+    cursos = {
+        normalizar_curso(PADRAO_NIVEL_NO_INICIO.sub("", parte))
+        for parte in PADRAO_ALTERNATIVAS_DO_ITEM.split(texto)
+    }
+    return sorted(cursos - {""}) or [curso]
 
 
 def aceita_qualquer_curso(extracao: ExtracaoDaVaga) -> bool:

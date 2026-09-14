@@ -314,10 +314,45 @@ def test_curso_tecnico_como_acrescimo_fica_como_antes(aceitos):
     assert not niveis.so_para_curso_tecnico
 
 
-def test_tecnico_ou_superior_no_mesmo_item_nao_e_vaga_so_para_curso_tecnico():
-    assert not niveis_da_vaga_de_administracao(
-        ["Técnico ou Superior em Administração"]
-    ).so_para_curso_tecnico
+@pytest.mark.parametrize(
+    "item",
+    [
+        "Técnico ou superior em Administração",
+        "Técnico/Superior em Administração",
+        "Ensino técnico ou superior em Administração",
+        "Técnico em Administração ou graduando em Administração",
+        "Técnico em Administração ou superior",
+        "Técnico ou Tecnólogo em Administração",
+    ],
+)
+def test_item_que_aceita_tecnico_ou_superior_vale_como_o_curso_superior(item: str):
+    niveis = niveis_da_vaga_de_administracao([item])
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_ou_cst_vale_como_o_curso_superior():
+    anuncio = extracao(area_da_vaga="logistica", cursos_aceitos=["Técnico ou CST em Logística"])
+    niveis = derivar_niveis(anuncio, perfil(curso="Logística"))
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_ou_superior_de_outro_curso_continua_de_outra_area():
+    niveis = niveis_da_vaga_de_administracao(["Técnico ou superior em Contabilidade"])
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_quem_faz_curso_tecnico_recebe_o_item_tecnico_ou_superior():
+    niveis = niveis_da_vaga_de_administracao(
+        ["Técnico ou superior em Administração"], perfil(curso="Técnico em Administração")
+    )
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
 
 
 @pytest.mark.parametrize(

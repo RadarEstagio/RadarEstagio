@@ -485,6 +485,7 @@ LISTAS_COM_CURSO_SUPERIOR_E_TECNICO = [
     ("Engenharia Mecânica", ["Eng. Mecânica", "Técnico em Mecânica"]),
     ("Enfermagem", ["Técnico em Enfermagem", "Enfermagem Bacharelado"]),
     ("Logística", ["Técnico em Logística", "Administração"]),
+    ("Logística", ["Técnico em Administração/Logística", "Economia"]),
 ]
 
 
@@ -522,6 +523,23 @@ def test_lista_com_curso_superior_e_tecnico_pontua_como_no_main(curso: str, acei
     assert resumo_da_nota(resultado_da(anuncio, candidato)) == resumo_da_nota(
         resultado_da(lido_pelo_main, candidato)
     )
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "Técnico ou superior em Administração",
+        "Técnico/Superior em Administração",
+        "Ensino técnico ou superior em Administração",
+        "Técnico em Administração ou graduando em Administração",
+    ],
+)
+def test_item_tecnico_ou_superior_pontua_como_o_curso_superior(item: str):
+    so_graduacao = resultado_da(vaga_de_administracao(["Administração"]), de_administracao())
+    tecnico_ou_superior = resultado_da(vaga_de_administracao([item]), de_administracao())
+
+    assert resumo_da_nota(tecnico_ou_superior) == resumo_da_nota(so_graduacao)
+    assert "Curso compatível" in tecnico_ou_superior.pontos_a_favor
 
 
 def test_curso_parcial_limita_a_nota_a_75():

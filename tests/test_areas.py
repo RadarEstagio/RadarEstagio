@@ -332,6 +332,8 @@ def test_reconhece_curso_de_nivel_tecnico(curso: str):
         "Eletrotécnica",
         "Engenharia Eletrotécnica",
         "Administração",
+        "Técnico ou CST em Logística",
+        "Técnico em Logística ou ADS",
     ],
 )
 def test_tecnologo_e_curso_superior_nao_sao_de_nivel_tecnico(curso: str):
