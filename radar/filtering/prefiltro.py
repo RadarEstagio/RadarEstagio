@@ -1,7 +1,9 @@
 import re
 
 from radar.domain.areas import (
+    PADRAO_NIVEL_SUPERIOR_POR_EXTENSO,
     area_do_curso,
+    curso_de_nivel_tecnico,
     descricao_e_da_area,
     nomes_do_curso,
     normalizar,
@@ -18,7 +20,16 @@ PADRAO_ENSINO_MEDIO = re.compile(
     r"\b(?:jovem|menor) aprendiz\b|\b(?:estudantes?|alunos?|para) (?:d[eo] )?ensino medio\b"
     r"|^\W*estagio\W+(?:de |em )?ensino medio\b|\bnivel medio\b"
 )
-PADRAO_TAMBEM_SUPERIOR = re.compile(r"\b(?:superior|graduacao|universitari[oa]s?|faculdade)\b")
+PADRAO_ENSINO_TECNICO = re.compile(
+    r"\b(?:vaga|estagio|estagiari[oa]s?|oportunidade)(?: de estagio)?\s+para\s+(?:(?:os|as)\s+)?"
+    r"(?:estudantes?|alun[oa]s?)\s+(?:d[eoa]s?\s+)?"
+    r"(?:(?:ensino|curso|nivel)\s+tecnico|tecnicos?)\b"
+    r"|^\W*estagi\w*\W+(?:(?:de|para)\s+)?(?:curso|nivel) tecnico\b"
+    r"|(?:^|\s[-|:]\s*)nivel tecnico\s*(?:$|[-|:(])"
+)
+PADRAO_TITULO_TAMBEM_SUPERIOR = re.compile(
+    rf"{PADRAO_NIVEL_SUPERIOR_POR_EXTENSO.pattern}|\b(?:ou|e|em) (?:cst|ads)\b"
+)
 PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
 )
@@ -55,9 +66,18 @@ def exige_pos_graduacao(vaga: Vaga) -> bool:
 
 def exige_ensino_medio(vaga: Vaga) -> bool:
     titulo = normalizar(vaga.titulo)
-    if PADRAO_TAMBEM_SUPERIOR.search(titulo):
+    if PADRAO_TITULO_TAMBEM_SUPERIOR.search(titulo):
         return False
     return PADRAO_ENSINO_MEDIO.search(titulo) is not None
+
+
+def exige_ensino_tecnico(vaga: Vaga, perfil: Perfil) -> bool:
+    if curso_de_nivel_tecnico(perfil.curso):
+        return False
+    titulo = normalizar(vaga.titulo)
+    if PADRAO_TITULO_TAMBEM_SUPERIOR.search(titulo):
+        return False
+    return PADRAO_ENSINO_TECNICO.search(titulo) is not None
 
 
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
@@ -139,6 +159,7 @@ MOTIVOS_DE_DESCARTE = (
     ("exige_senioridade", lambda vaga, perfil: exige_senioridade(vaga)),
     ("exige_pos_graduacao", lambda vaga, perfil: exige_pos_graduacao(vaga)),
     ("exige_ensino_medio", lambda vaga, perfil: exige_ensino_medio(vaga)),
+    ("exige_ensino_tecnico", exige_ensino_tecnico),
     ("fora_da_area_do_curso", fora_da_area_do_curso),
     ("exige_anos_de_experiencia", lambda vaga, perfil: exige_anos_de_experiencia(vaga)),
     ("localizacao_incompativel", localizacao_incompativel),

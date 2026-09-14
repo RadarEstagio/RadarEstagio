@@ -8,6 +8,7 @@ from radar.filtering.prefiltro import (
     deve_descartar,
     exige_anos_de_experiencia,
     exige_ensino_medio,
+    exige_ensino_tecnico,
     exige_pos_graduacao,
     exige_senioridade,
     filtrar,
@@ -15,6 +16,7 @@ from radar.filtering.prefiltro import (
     localizacao_incompativel,
     menciona_o_curso,
     modalidade_incompativel,
+    motivo_do_descarte,
     nao_e_estagio,
     normalizar,
 )
@@ -720,6 +722,7 @@ def test_titulo_administrativo_com_sinal_da_propria_area_continua(titulo: str, c
         "ESTÁGIO - Ensino Médio - Recrutamento Aberto",
         "Estagiário Administrativo Financeiro - Estudantes Ensino Médio",
         "Jovem Aprendiz e Estagiário em Supermercado",
+        "Estágio em Marketing para estudantes de ensino médio - Meta Ads",
     ],
 )
 def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: str):
@@ -734,10 +737,84 @@ def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: s
         "Estágio Nível Médio e Superior :: Agência Itaúba",
         "Estagiário Pedagogia - Ensino Fundamental I",
         "Estágio em Pedagogia - Ensino Médio e Superior",
+        "Estágio para estudantes de ensino médio ou tecnólogo",
+        "Estágio para estudantes de ensino médio ou graduandos",
     ],
 )
 def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
     assert not exige_ensino_medio(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO EM ADMINISTRAÇÃO*",
+        "Estágio para alunos do curso técnico em Administração",
+        "Estágio para estudantes de técnico em administração",
+        "Estágio Curso Técnico em Administração",
+        "Estágio Nível Técnico - Administração",
+        "Estagiário Administrativo - Nível Técnico",
+        "Vaga de estágio para estudantes de ensino técnico",
+        "Estágio para estudantes de ensino técnico - Google Ads",
+        "Estágio de Nível Técnico em Administração",
+        "Vaga de estágio para alunos técnicos em Administração",
+    ],
+)
+def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: str):
+    for curso in ("Administração", "Pedagogia"):
+        assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso=curso)) == (
+            "exige_ensino_tecnico"
+        )
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO OU SUPERIOR EM ADMINISTRAÇÃO/BARRA",
+        "Estágio em Técnico ou Superior em Administração, Logistica ou Edificações",
+        "Estágio para Ensino Técnico ou Tecnólogo em Administração",
+        "Estágio Curso Técnico ou Graduação em Administração",
+        "Estágio para estudantes de ensino técnico ou universitários",
+        "Estágio Técnico em Administração - Crea Rj",
+        "Estágio Técnico",
+        "Estagiário Técnico",
+        "Estágio Técnico em Segurança do Trabalho",
+        "Estagiário de Suporte Técnico",
+        "Técnico(a) de Laboratório - Estágio",
+        "Estagiário(a) Técnico(a) (Centro de Inovação e",
+        "Estágio em Técnico de Informática - Barra da",
+        "Estágio para estudantes de curso técnico ou graduandos em Administração",
+        "Estágio para estudantes de curso técnico ou bacharelado em Administração",
+        "Estágio para alunos de ensino técnico ou licenciatura",
+        "Estágio para Ensino Técnico ou CST em Logística",
+        "Estágio para estudantes de ensino técnico ou CST em Logística",
+        "Vaga de estágio para estudantes de técnico em TI ou ADS",
+        "Estágio em Tecnologia - estudantes de técnico em TI ou ADS",
+        "Estágio de apoio a alunos do ensino técnico",
+        "Estágio de docência para alunos do curso técnico",
+        "Secretaria Escolar - atendimento a alunos do ensino técnico",
+        "Estágio em TI - Inglês nível técnico",
+        "Estágio para estudantes de Técnicas de Enfermagem",
+        "Estágio para estudantes de técnica vocal",
+        "Estágio para estudantes de técnicas de vendas",
+    ],
+)
+def test_titulo_tecnico_ambiguo_ou_que_tambem_aceita_superior_continua(titulo: str):
+    anuncio = vaga(titulo=titulo)
+    de_administracao = perfil(curso="Administração")
+
+    assert not exige_ensino_tecnico(anuncio, de_administracao)
+    assert motivo_do_descarte(anuncio, de_administracao) != "exige_ensino_tecnico"
+
+
+def test_quem_faz_curso_tecnico_recebe_vaga_de_ensino_tecnico():
+    anuncio = vaga(
+        titulo="VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO EM ADMINISTRAÇÃO*",
+        descricao="Atendimento ao cliente e vendas.",
+    )
+    tecnico = perfil(curso="Técnico em Administração", modalidade=Modalidade.PRESENCIAL)
+
+    assert not deve_descartar(anuncio, tecnico)
 
 
 @pytest.mark.parametrize(

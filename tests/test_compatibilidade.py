@@ -261,3 +261,153 @@ def test_anuncio_que_aceita_tecnologia_da_informacao_e_compativel_com_computacao
     assert (
         nivel_do_curso(extracao, perfil("Ciência da Computação")) is NivelCompatibilidade.COMPATIVEL
     )
+
+
+def de_administracao() -> Perfil:
+    return perfil(curso="Administração", periodo=1)
+
+
+def niveis_da_vaga_de_administracao(aceitos: list[str], candidato: Perfil | None = None):
+    anuncio = extracao(area_da_vaga="administracao", cursos_aceitos=aceitos)
+    return derivar_niveis(anuncio, candidato or de_administracao())
+
+
+@pytest.mark.parametrize(
+    "aceitos",
+    [
+        ["Técnico em Administração"],
+        ["TÉCNICO EM ADMINISTRAÇÃO"],
+        ["Curso Técnico em Administração"],
+        ["Técnico de Administração"],
+        ["Ensino Técnico"],
+        ["Ensino médio", "Técnico em Administração"],
+        ["Técnico em Administração", "Áreas afins"],
+        ["Técnico em Administração ou Técnico em Logística"],
+        ["Ensino médio ou Técnico em Administração"],
+        ["Alunos do curso técnico em Administração"],
+    ],
+)
+def test_vaga_so_para_curso_tecnico_e_incompativel_para_quem_faz_graduacao(aceitos):
+    niveis = niveis_da_vaga_de_administracao(aceitos)
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert niveis.so_para_curso_tecnico
+
+
+def test_tecnico_em_informatica_nao_vale_para_quem_faz_engenharia_de_software():
+    niveis = derivar_niveis(extracao(cursos_aceitos=["Técnico em Informática"]), perfil())
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert niveis.so_para_curso_tecnico
+
+
+@pytest.mark.parametrize(
+    "aceitos",
+    [
+        ["Administração", "Técnico em Administração"],
+        ["Técnico em Administração", "Administração"],
+        ["técnico em administração", "administração de empresas", "ciências contábeis"],
+        ["Técnico em Administração", "Ensino Superior"],
+    ],
+)
+def test_curso_tecnico_como_acrescimo_fica_como_antes(aceitos):
+    niveis = niveis_da_vaga_de_administracao(aceitos)
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "Técnico ou superior em Administração",
+        "Técnico/Superior em Administração",
+        "Ensino técnico ou superior em Administração",
+        "Técnico em Administração ou graduando em Administração",
+        "Técnico em Administração ou superior",
+        "Técnico ou Tecnólogo em Administração",
+    ],
+)
+def test_item_que_aceita_tecnico_ou_superior_vale_como_o_curso_superior(item: str):
+    niveis = niveis_da_vaga_de_administracao([item])
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_ou_cst_vale_como_o_curso_superior():
+    anuncio = extracao(area_da_vaga="logistica", cursos_aceitos=["Técnico ou CST em Logística"])
+    niveis = derivar_niveis(anuncio, perfil(curso="Logística"))
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_ou_superior_de_outro_curso_continua_de_outra_area():
+    niveis = niveis_da_vaga_de_administracao(["Técnico ou superior em Contabilidade"])
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_sem_separador_e_comparado_como_no_main():
+    niveis = niveis_da_vaga_de_administracao(["Técnica em Administração de Empresas", "Letras"])
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_tecnico_ou_superior_sem_curso_fica_parcial_como_ensino_superior():
+    niveis = niveis_da_vaga_de_administracao(["Técnico ou superior"])
+
+    assert niveis.curso is NivelCompatibilidade.PARCIAL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_quem_faz_curso_tecnico_recebe_o_item_tecnico_ou_superior():
+    niveis = niveis_da_vaga_de_administracao(
+        ["Técnico ou superior em Administração"], perfil(curso="Técnico em Administração")
+    )
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+
+
+@pytest.mark.parametrize(
+    "aceitos",
+    [
+        ["Tecnólogo em Análise e Desenvolvimento de Sistemas"],
+        ["Análise e Desenvolvimento de Sistemas"],
+        ["Gestão da Tecnologia da Informação"],
+        ["Tecnologia da Informação"],
+        ["Tecnólogo em Computação"],
+    ],
+)
+def test_tecnologo_e_graduacao_para_quem_faz_computacao(aceitos):
+    niveis = derivar_niveis(extracao(cursos_aceitos=aceitos), perfil())
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+@pytest.mark.parametrize(
+    "aceitos",
+    [
+        ["Técnico em Administração"],
+        ["Administração", "Técnico em Administração"],
+        ["Administração"],
+        ["Letras", "Pedagogia", "Técnico em Administração"],
+    ],
+)
+def test_quem_faz_curso_tecnico_recebe_a_vaga_tecnica_como_antes(aceitos):
+    niveis = niveis_da_vaga_de_administracao(aceitos, perfil(curso="Técnico em Administração"))
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_vaga_aberta_a_qualquer_curso_nao_e_so_para_curso_tecnico():
+    anuncio = extracao(cursos_aceitos=["Técnico em Administração"], aceita_qualquer_curso=True)
+    niveis = derivar_niveis(anuncio, de_administracao())
+
+    assert niveis.curso is NivelCompatibilidade.COMPATIVEL
+    assert not niveis.so_para_curso_tecnico

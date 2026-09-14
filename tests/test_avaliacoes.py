@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from radar.domain.areas import curso_de_nivel_tecnico, normalizar_curso
 from radar.domain.models import AreaDeInteresse, ExtracaoDaVaga, Modalidade, Perfil, Vaga
 from radar.matching.avaliacoes import pontuar
 
@@ -429,6 +430,208 @@ def test_curso_incompativel_limita_a_nota_a_35_com_aviso():
 
     assert resultado.nota == 35
     assert "Exige formação de outra área" in resultado.avisos_objetivos
+
+
+def de_administracao() -> Perfil:
+    return Perfil(
+        curso="Administração",
+        periodo=1,
+        habilidades=["Excel"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+
+
+def vaga_de_administracao(cursos_aceitos: list[str]) -> ExtracaoDaVaga:
+    return extracao(
+        area_da_vaga="administracao",
+        cursos_aceitos=cursos_aceitos,
+        habilidades_obrigatorias=["Excel"],
+    )
+
+
+def test_vaga_so_para_curso_tecnico_limita_a_35_com_aviso_proprio():
+    resultado = resultado_da(
+        vaga_de_administracao(["Técnico em Administração"]), de_administracao()
+    )
+
+    assert resultado.nota == 35
+    assert resultado.avisos_objetivos == ["Vaga para estudantes de curso técnico"]
+    assert "Curso compatível" not in resultado.pontos_a_favor
+
+
+def test_curso_tecnico_como_acrescimo_nao_muda_a_nota():
+    so_graduacao = resultado_da(vaga_de_administracao(["Administração"]), de_administracao())
+    com_tecnico = resultado_da(
+        vaga_de_administracao(["Administração", "Técnico em Administração"]), de_administracao()
+    )
+
+    assert com_tecnico.nota == so_graduacao.nota > 35
+    assert com_tecnico.avisos_objetivos == so_graduacao.avisos_objetivos == []
+    assert "Curso compatível" in com_tecnico.pontos_a_favor
+
+
+LISTAS_COM_CURSO_SUPERIOR_E_TECNICO = [
+    ("Administração", ["ADM", "Técnico em Administração"]),
+    ("Administração", ["Administação", "Técnico em Administração"]),
+    ("Administração", ["Admininstração de Empresas", "Técnico em Administração"]),
+    ("Administração", ["Administração Bacharelado", "Técnico em Administração"]),
+    ("Administração", ["Gestão", "Técnico em Administração"]),
+    ("Administração", ["Graduandos", "Técnico em Administração"]),
+    ("Administração", ["Tecnólogo", "Técnico em Administração"]),
+    ("Administração", ["Administração", "Técnico em Administração"]),
+    ("Administração", ["Letras", "Pedagogia", "Matemática", "Técnico em Administração"]),
+    ("Engenharia de Software", ["Ciência de Computação", "Técnico em Informática"]),
+    ("Engenharia Mecânica", ["Eng. Mecânica", "Técnico em Mecânica"]),
+    ("Enfermagem", ["Técnico em Enfermagem", "Enfermagem Bacharelado"]),
+    ("Logística", ["Técnico em Logística", "Administração"]),
+    ("Administração", ["Técnica em Administração de Empresas", "Letras"]),
+]
+
+
+def graduando_em(curso: str) -> Perfil:
+    return Perfil(
+        curso=curso,
+        periodo=4,
+        habilidades=["Excel"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+
+
+def como_o_main_lia(cursos: list[str]) -> list[str]:
+    return [normalizar_curso(curso) if curso_de_nivel_tecnico(curso) else curso for curso in cursos]
+
+
+def resumo_da_nota(resultado) -> tuple:
+    return (
+        resultado.nota,
+        resultado.avisos_objetivos,
+        resultado.pontos_a_favor,
+        resultado.pontos_contra,
+    )
+
+
+@pytest.mark.parametrize(("curso", "aceitos"), LISTAS_COM_CURSO_SUPERIOR_E_TECNICO)
+def test_lista_com_curso_superior_e_tecnico_pontua_como_no_main(curso: str, aceitos: list[str]):
+    candidato = graduando_em(curso)
+    anuncio = extracao(cursos_aceitos=aceitos, habilidades_obrigatorias=["Excel"])
+    lido_pelo_main = extracao(
+        cursos_aceitos=como_o_main_lia(aceitos), habilidades_obrigatorias=["Excel"]
+    )
+
+    assert resumo_da_nota(resultado_da(anuncio, candidato)) == resumo_da_nota(
+        resultado_da(lido_pelo_main, candidato)
+    )
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "Técnico ou superior em Administração",
+        "Técnico/Superior em Administração",
+        "Ensino técnico ou superior em Administração",
+        "Técnico em Administração ou graduando em Administração",
+    ],
+)
+def test_item_tecnico_ou_superior_pontua_como_o_curso_superior(item: str):
+    so_graduacao = resultado_da(vaga_de_administracao(["Administração"]), de_administracao())
+    tecnico_ou_superior = resultado_da(vaga_de_administracao([item]), de_administracao())
+
+    assert resumo_da_nota(tecnico_ou_superior) == resumo_da_nota(so_graduacao)
+    assert "Curso compatível" in tecnico_ou_superior.pontos_a_favor
+
+
+ITENS_COM_ALTERNATIVAS = [
+    ("Administração", "Técnico em Administração ou Administração", "Administração"),
+    (
+        "Ciência da Computação",
+        "Técnico em Informática ou Ciência da Computação",
+        "Ciência da Computação",
+    ),
+    ("Enfermagem", "Técnico em Enfermagem ou Enfermagem", "Enfermagem"),
+    ("Administração", "Administração ou Técnico em Administração", "Administração"),
+    ("Administração", "ADM ou Técnico em ADM", "ADM"),
+    ("Administração", "Técnico e/ou superior em Administração", "Administração"),
+    ("Administração", "Técnico ou superior", "Ensino Superior"),
+    (
+        "Administração",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Administração",
+    ),
+    (
+        "Ciências Contábeis",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Contabilidade",
+    ),
+    (
+        "Economia",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Economia",
+    ),
+]
+
+
+@pytest.mark.parametrize(("curso", "item", "curso_aceito"), ITENS_COM_ALTERNATIVAS)
+def test_item_com_alternativas_pontua_como_o_curso_que_ele_aceita(
+    curso: str, item: str, curso_aceito: str
+):
+    candidato = graduando_em(curso)
+    com_alternativas = extracao(cursos_aceitos=[item], habilidades_obrigatorias=["Excel"])
+    so_o_curso = extracao(cursos_aceitos=[curso_aceito], habilidades_obrigatorias=["Excel"])
+
+    assert resumo_da_nota(resultado_da(com_alternativas, candidato)) == resumo_da_nota(
+        resultado_da(so_o_curso, candidato)
+    )
+
+
+NOTAS_DO_MAIN_PARA_ITENS_SEM_TECNICO = [
+    ("Administração", "Administração/Economia", 88, [], ["Curso compatível"]),
+    ("Economia", "Administração/Economia", 35, ["Exige formação de outra área"], []),
+    ("Engenharia Civil", "Engenharia Civil ou Mecânica", 35, ["Exige formação de outra área"], []),
+    (
+        "Engenharia Mecânica",
+        "Engenharia Civil ou Mecânica",
+        35,
+        ["Exige formação de outra área"],
+        [],
+    ),
+    ("Direito", "Direito e/ou Relações Internacionais", 35, ["Exige formação de outra área"], []),
+    (
+        "Relações Internacionais",
+        "Direito e/ou Relações Internacionais",
+        35,
+        ["Exige formação de outra área"],
+        [],
+    ),
+    ("Letras", "Letras - Português/Inglês", 88, [], ["Curso compatível"]),
+    (
+        "Ciência da Computação",
+        "Ciência da Computação/Sistemas de Informação",
+        64,
+        [],
+        ["Curso compatível"],
+    ),
+    (
+        "Sistemas de Informação",
+        "Ciência da Computação/Sistemas de Informação",
+        64,
+        [],
+        ["Curso compatível"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("curso", "item", "nota", "avisos", "a_favor"), NOTAS_DO_MAIN_PARA_ITENS_SEM_TECNICO
+)
+def test_item_sem_tecnico_com_barra_ou_alternativa_pontua_como_no_main(
+    curso: str, item: str, nota: int, avisos: list[str], a_favor: list[str]
+):
+    anuncio = extracao(cursos_aceitos=[item], habilidades_obrigatorias=["Excel"])
+    resultado = resultado_da(anuncio, graduando_em(curso))
+
+    assert resumo_da_nota(resultado) == (nota, avisos, a_favor, [])
 
 
 def test_curso_parcial_limita_a_nota_a_75():

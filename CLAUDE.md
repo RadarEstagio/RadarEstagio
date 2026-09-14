@@ -706,6 +706,46 @@ contexto no passo 1.
   subárea do mesmo campo do curso vale metade e sem aviso, e vaga de outro campo zera e avisa.
   Punir igual quem marcou "Mercado financeiro" e recebeu uma vaga de Contabilidade era mentir no
   aviso e cobrar duas vezes, já que estar em outra área já pesa em `PESO_AREA`.
+- **Vaga só para curso técnico** (14/09/2026). A Jovem Valor anunciou estágio "para estudantes de
+  ensino técnico em administração" e o perfil de Administração, de graduação, o recebeu com
+  "Curso compatível", porque `normalizar_curso` tira "técnico em" como prefixo. Para perfil que
+  não é de curso técnico, vaga cujos `cursos_aceitos` são todos de nível técnico
+  (`curso_de_nivel_tecnico`; ensino médio e "áreas afins" ao lado não contam como superior) tem
+  curso incompatível, teto 35 e o aviso "Vaga para estudantes de curso técnico". **Técnico como
+  acréscimo fica exatamente como no `main`**, pedido do dono: com algum item de nível superior, a
+  lista inteira é comparada como antes, técnico incluído. A primeira versão tirava o técnico da
+  comparação e "ADM" + "Técnico em Administração" caía de 98 para 35;
+  `test_lista_com_curso_superior_e_tecnico_pontua_como_no_main` impede a volta, e
+  `test_item_sem_tecnico_com_barra_ou_alternativa_pontua_como_no_main` fixa as notas do `main`
+  para item sem técnico com "/", "ou" e "e/ou". Item que cita técnico e tem "ou", "e/ou", "/" ou
+  vírgula vale como a lista das suas alternativas (`cursos_do_item`, na compatibilidade, não em
+  `normalizar_curso`, que tem paridade com o site): "Técnico em Administração ou Administração" e
+  "Técnico ou superior em X" valem por X, a vírgula distribui o nível ("Técnico ou Superior em
+  Administração, Contabilidade ou Economia") e "Técnico ou superior", sem curso, fica parcial
+  como "Ensino Superior". "Aluno(a)(s) do curso técnico em X" conta como item técnico, como
+  "estudantes". Perfil técnico nunca recebe a trava de só técnico e compara com todas as
+  alternativas, então "Técnico ou superior em X" também sobe para ele (35 no `main`, compatível
+  agora). CST e ADS contam como nível superior nos itens de curso (`PADRAO_NIVEL_SUPERIOR`); no
+  título a sigla solta é outra coisa ("Meta Ads", "Google Ads") e só conta depois de "ou", "e" ou
+  "em". No pré-filtro sai o título que dirige a vaga a estudantes ou alunos de ensino, curso ou
+  nível técnico ("vaga de estágio para estudantes de ensino técnico"), o que começa por "Estágio
+  (de|para) nível ou curso técnico" e o que tem "nível técnico" num trecho só seu depois de hífen,
+  salvo se também citar nível superior (`PADRAO_TITULO_TAMBEM_SUPERIOR`). Ficam o público atendido
+  ("apoio a alunos do ensino técnico"), "Inglês nível técnico", o substantivo "técnica(s)"
+  ("estudantes de técnicas de vendas"), "Estágio Técnico" e "Suporte Técnico". A exceção é a
+  mesma do ensino médio, que passou a manter "ensino médio ou tecnólogo" e "ou graduandos". O
+  prompt não mudou. Medido em 14/09 contra o `main`, nas 456 extrações da versão atual com os 4
+  perfis ativos (1.824 pares): 10 extrações são só técnico e nenhuma tem item que cite técnico
+  com separador; 22 pares mudam no caminho do pipeline (descarte do pré-filtro e, entre os que
+  passam, nota, avisos ou pontos): 11 perdem nota, 3 só trocam o aviso, 2 saem no pré-filtro e 6
+  só trocam o motivo do descarte. No run de 14/09 só a Jovem Valor sai do top 7 de Administração.
+  O título pega 2 dos 893 títulos de `vagas`, que só guarda o que passou no pré-filtro de algum
+  perfil. Limites: quando a IA tira o "Técnico em" dos itens seguintes ("Técnico em Automação",
+  "Eletrotécnica"), a vaga parece mista e segue como no `main` (3 extrações); "Técnico em X ou Y"
+  em que o técnico vale para os dois ("Técnico em Informática ou Telecomunicações") deixa de ser
+  só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35) e parênteses dão
+  parcial ("Técnico ou Superior (Administração)"); "ADM ou Técnico em ADM" fica igual a ["ADM"],
+  35, porque "ADM" não é curso do catálogo e o alias exigiria mudar `normalizar_curso`.
 
 ### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 

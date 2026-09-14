@@ -3,8 +3,10 @@ import pytest
 from radar.domain.areas import (
     COMPUTACAO,
     area_do_curso,
+    curso_de_nivel_tecnico,
     curso_e_generico,
     descricao_e_da_area,
+    formacao_de_nivel_superior,
     normalizar_curso,
     termos_de_busca,
     titulo_e_da_area,
@@ -291,3 +293,69 @@ def test_ensino_medio_no_titulo_nao_e_sinal_de_educacao():
     assert not titulo_e_da_area("vaga de estagio para estudantes de ensino medio", "educacao")
     assert titulo_e_da_area("estagiario pedagogia - ensino fundamental i", "educacao")
     assert titulo_e_da_area("estagio em ensino a distancia", "educacao")
+
+
+@pytest.mark.parametrize(
+    "curso",
+    [
+        "Técnico em Administração",
+        "TÉCNICO EM ADMINISTRAÇÃO",
+        "técnico em administração",
+        "Técnica em Administração de Empresas",
+        "Técnico de Informática",
+        "Técnico(a) em Administração",
+        "Curso Técnico em Enfermagem",
+        "Cursando Técnico em Logística",
+        "Ensino Técnico",
+        "Ensino Médio Técnico em Logística",
+        "Nível técnico",
+        "Técnico em Tecnologia da Informação",
+        "Alunos do curso técnico em Administração",
+        "Aluna de curso técnico em Enfermagem",
+        "Aluno do ensino técnico",
+    ],
+)
+def test_reconhece_curso_de_nivel_tecnico(curso: str):
+    assert curso_de_nivel_tecnico(curso)
+
+
+@pytest.mark.parametrize(
+    "curso",
+    [
+        "Tecnólogo em Análise e Desenvolvimento de Sistemas",
+        "Análise e Desenvolvimento de Sistemas",
+        "Tecnologia em Banco de Dados",
+        "Tecnologia da Informação",
+        "Gestão da Tecnologia da Informação",
+        "Curso Superior de Tecnologia em Redes de Computadores",
+        "CST em Gestão da TI",
+        "Técnico ou Superior em Administração",
+        "Técnico/Tecnólogo em Logística",
+        "Curso técnico ou graduação em Enfermagem",
+        "Eletrotécnica",
+        "Engenharia Eletrotécnica",
+        "Administração",
+        "Técnico ou CST em Logística",
+        "Técnico em Logística ou ADS",
+    ],
+)
+def test_tecnologo_e_curso_superior_nao_sao_de_nivel_tecnico(curso: str):
+    assert not curso_de_nivel_tecnico(curso)
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperado"),
+    [
+        ("Administração", True),
+        ("Tecnólogo em Computação", True),
+        ("Ensino Superior", True),
+        ("Nível superior completo", True),
+        ("Graduação", True),
+        ("Técnico em Administração", False),
+        ("Ensino Técnico", False),
+        ("Ensino médio", False),
+        ("Áreas afins", False),
+    ],
+)
+def test_formacao_de_nivel_superior(curso: str, esperado: bool):
+    assert formacao_de_nivel_superior(curso) is esperado
