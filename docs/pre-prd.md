@@ -5,6 +5,10 @@
 > Não é o catálogo de funcionalidades nem o backlog: para isso, ver
 > [funcionalidades](funcionalidades.md) e [plano geral](plano-geral.md).
 > A versão de 02/09/2026 está no Git.
+>
+> **Retrato datado.** Números de testes, migrations, banco e timeout são de 08/09, com decisões
+> pontuais de 10/09. O documento não é mais atualizado: o estado atual está no
+> [plano geral](plano-geral.md) e no [guia de publicação](guia-publicacao-e-piloto.md).
 
 **Status:** base técnica viável e publicada; produto ampliado para qualquer curso; validação com
 estudantes ainda não começou

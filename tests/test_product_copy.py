@@ -198,7 +198,6 @@ def test_site_nao_cita_a_gupy_e_a_faixa_de_fontes_volta_sem_ela():
     assert "Fontes e tecnologias do Radar" in faixa
     assert "<span>ADZUNA</span><span>GEMINI</span><span>TELEGRAM</span>" in faixa
     assert "Gupy" not in (RAIZ / "web/privacidade.html").read_text()
-    assert "Gupy" not in (RAIZ / "docs/politica-de-privacidade.md").read_text()
 
 
 def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():

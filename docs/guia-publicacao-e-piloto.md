@@ -1,11 +1,10 @@
 # Guia de publicação e piloto
 
-**Consolidado em 09/09/2026, sem nova consulta remota.** Há evidências datadas de deploy
-parcial: migrations `0014`–`0016` aplicadas e reconciliadas em 06/09 (seção 9), `ir` e
-`telegram-webhook` publicadas. O endereço `https://radarestagio.pages.dev` foi registrado
-em 08/09; a versão efetivamente servida e o domínio final precisam de conferência.
-Os textos legais continuam em revisão, sem vigência. A seção 12 concentra a publicação da
-expansão; os registros anteriores abaixo não comprovam o estado atual dos serviços.
+**Revisado em 13/09/2026.** Nessa data, `supabase migration list --linked` mostrou as 25
+migrations (`0001`–`0025`) aplicadas, e `supabase functions list` mostrou `ir` republicada em
+10/09 e `telegram-webhook` em 13/09. O endereço `https://radarestagio.pages.dev` foi registrado
+em 08/09; o domínio final segue pendente. Os textos legais continuam em revisão, sem vigência.
+As demais seções guardam evidências datadas e não foram reconsultadas nesta revisão.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -79,8 +78,8 @@ Miguel também está identificado como responsável pelos dados. Registrem:
 
 - Concordância com a descrição do serviço, dados, fornecedores e retenção de 60 dias.
 - Bases legais por finalidade e condições de processamento internacional, logs e backups:
-  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política (Markdown e HTML
-  iguais). Falta só a aprovação dos três.
+  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política. Falta só a
+  aprovação dos três.
 - Quem atenderá solicitações de dados e pedidos de eliminação sem aguardar arrependimento.
 - Quem acompanha falhas do job e a rotina de apagamento.
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
@@ -94,7 +93,7 @@ Proposta de divisão registrada em 08/09/2026 por Ian, **a confirmar por Igor e 
 | Domínio `radarestagio.com`, DNS, e-mail e renovação | Igor | O domínio está na conta pessoal dele; ao fim da disciplina, transferir para quem continuar ou deixar expirar com aviso no site |
 
 Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
-(`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
+(`legal-updated` e o `aside.legal-notice`, que sai) e trocar
 `VERSAO_DOS_TERMOS` em `web/assets/app.js` para a mesma data, porque o banco guarda a versão
 aceita por cada conta. Confiram também os controles reais descritos no
 [contrato frontend](contrato-front.md).
@@ -202,8 +201,9 @@ login, reenvio e recuperação, incluindo expiração do desafio.
 
 ## 6.1 Republicar as funções depois das correções de 10/09/2026
 
-As duas Edge Functions mudaram e **precisam de deploy**; sem ele as correções não valem em
-produção:
+**Feito.** Pelo `supabase functions list` de 13/09, `ir` foi republicada em 10/09 e
+`telegram-webhook` em 13/09, depois dos commits de 10/09. O código no ar não foi comparado com o
+repositório nessa conferência. O procedimento fica como referência:
 
 ```bash
 supabase functions deploy ir
@@ -315,7 +315,18 @@ Use dados sintéticos e seus próprios endereços e Telegram:
 **Concluído quando:** resultados registrados e falhas corrigidas. Identifique as contas e
 sessões de teste para separá-las das métricas do piloto.
 
+## 11. Divulgar e ouvir colegas
+
+O plano formal de piloto foi retirado por decisão do Igor em 07/09. Depois de conferir os
+fluxos, pedir a alguns colegas que usem e relatem onde travaram e quais vagas serviram.
+Não há obrigação de entrevistas, coorte, prazo de duas semanas ou metas de retenção.
+A checklist vigente está no [plano geral](plano-geral.md#2-o-que-falta-antes-de-divulgar).
+
 ## 12. Registro de preparação da expansão — 08/09/2026
+
+**Atualização de 13/09:** as `0018` e `0019`, pendentes neste registro, e as seguintes até a
+`0025` constam como aplicadas; o job tem 30 minutos desde o #57. A tabela abaixo continua sendo
+o retrato de 08/09.
 
 ### Evidência local consolidada em 09/09
 
@@ -409,10 +420,3 @@ inválido sem corrigir dados pessoais por suposição nem apenas adiar a valida�
 - A definir: conta/Telegram de teste, acompanhamento de `contato@radarestagio.com` e confirmação
   do cron-job.org.
 - A definir: domínio público final e autorização para qualquer relato de uso.
-
-## 11. Divulgar e ouvir colegas
-
-O plano formal de piloto foi retirado por decisão do Igor em 07/09. Depois de conferir os
-fluxos, pedir a alguns colegas que usem e relatem onde travaram e quais vagas serviram.
-Não há obrigação de entrevistas, coorte, prazo de duas semanas ou metas de retenção.
-A checklist vigente está no [plano geral](plano-geral.md#2-o-que-falta-antes-de-divulgar).

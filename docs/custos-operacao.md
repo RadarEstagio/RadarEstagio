@@ -18,11 +18,11 @@ atual sem reconferência.
 |---|---|---|---|---|---|---|---|---|
 | Supabase Database/Auth/Edge Functions | fixo/variável | não medido | não medido | projeto `xrhvjwemmylwbqgluebc` registrado no guia | não calculada | não medido | conta do projeto, a consultar | a definir |
 | Cloudflare Pages/Email/Turnstile | fixo/variável | não medido | não medido | Pages e Email Service descritos no guia | não calculada | não medido | conta Cloudflare, a consultar | a definir |
-| GitHub Actions | variável/franquia | não medido | não medido | workflow tem timeout de 15 min; execução não foi consultada | não calculada | não medido | billing Actions, a consultar | a definir |
+| GitHub Actions | variável/franquia | não medido | não medido | job com timeout de 30 min; execuções medidas de 7,6 a 13,7 min entre 30/08 e 11/09 (auditoria do agendamento) | não calculada | não medido | billing Actions, a consultar | a definir |
 | cron-job.org | fixo/variável | não medido | não medido | cron externo às 07:23 BRT descrito no guia | não calculada | não medido | conta cron, a consultar | a definir |
 | Adzuna | variável | não medido | não medido | fonte padrão configurada; chamadas não foram executadas nesta sessão | não calculada | não medido | conta/API, a consultar | a definir |
-| Gupy | variável | não medido | não medido | fonte pública padrão configurada | não medido | não medido | observação oficial na janela, a consultar | a definir |
-| Gemini | variável | não medido | não medido | extração compartilhada; o pré-PRD registra alerta de cota, sem fatura | não calculada | não medido | billing/API, a consultar | a definir |
+| Gupy | — | — | — | desligada desde 12/09/2026 pelos termos de uso | — | — | CLAUDE.md, termos das fontes | — |
+| Gemini | variável | não medido | não medido | plano pago desde 10/09/2026; raciocínio `low` a R$ 0,066 por lote de 10 vagas (medição de 11/09), sem fatura | não calculada | não medido | billing/API, a consultar | a definir |
 | Telegram | variável | não medido | não medido | envio pelo bot; tarifa não inferida | não calculada | não medido | conta/termos, a consultar | a definir |
 | Resend/SMTP | variável | não medido | não medido | configuração descrita, confirmação real pendente | não calculada | não medido | conta Resend/Supabase, a consultar | a definir |
 | Suporte e atendimento | variável | não medido | não medido | horas não registradas | não calculada | não medido | registro da equipe, a criar | a definir |
