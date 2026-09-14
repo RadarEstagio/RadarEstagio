@@ -132,6 +132,12 @@ class ResultadoMatch(BaseModel):
     pontos_contra: list[str] = Field(default_factory=list)
     avisos_objetivos: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None
+    nota_antes_dos_limites_objetivos: int | None = Field(default=None, ge=0, le=100)
+
+    def criterio_de_ranking(self) -> tuple[int, int]:
+        if self.nota_antes_dos_limites_objetivos is None:
+            return self.nota, self.nota
+        return self.nota, self.nota_antes_dos_limites_objetivos
 
 
 class ProblemaJulgado(StrEnum):

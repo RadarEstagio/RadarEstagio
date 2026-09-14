@@ -41,6 +41,7 @@ def aplicar_regras_ao_resultado(resultado: ResultadoMatch, perfil: Perfil) -> Re
     return resultado.model_copy(
         update={
             "nota": nota,
+            "nota_antes_dos_limites_objetivos": resultado.nota,
             "pontos_contra": pontos_contra,
             "avisos_objetivos": avisos,
         }

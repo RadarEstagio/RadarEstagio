@@ -99,6 +99,22 @@ def test_limita_nota_e_avisa_quando_descricao_continua_incompleta():
     ]
 
 
+def test_guarda_a_nota_de_antes_dos_limites_sem_mudar_a_nota_limitada():
+    incompleta = ResultadoMatch(
+        vaga=vaga(Modalidade.REMOTO).model_copy(update={"descricao_completa": False}),
+        nota=81,
+    )
+    presencial = ResultadoMatch(vaga=vaga(Modalidade.PRESENCIAL), nota=90)
+    sem_limite = ResultadoMatch(vaga=vaga(Modalidade.REMOTO), nota=70)
+
+    corrigidos = aplicar_regras_objetivas([incompleta, presencial, sem_limite], perfil())
+
+    assert [
+        (corrigido.nota, corrigido.nota_antes_dos_limites_objetivos) for corrigido in corrigidos
+    ] == [(60, 81), (30, 90), (70, 70)]
+    assert incompleta.nota_antes_dos_limites_objetivos is None
+
+
 def vaga_em(localizacao: str, modalidade: Modalidade | None) -> Vaga:
     return vaga(modalidade).model_copy(update={"localizacao": localizacao})
 

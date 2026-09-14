@@ -60,7 +60,11 @@ def escapar_limitado(texto: str, limite: int) -> str:
 
 
 def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
-    return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
+    return sorted(
+        recomendacoes,
+        key=lambda recomendacao: recomendacao.resultado.criterio_de_ranking(),
+        reverse=True,
+    )
 
 
 def formatar_mensagem(
