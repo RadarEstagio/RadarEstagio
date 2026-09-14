@@ -681,18 +681,28 @@ contexto no passo 1.
   ensino técnico em administração" e o perfil de Administração, de graduação, o recebeu com
   "Curso compatível", porque `normalizar_curso` tira "técnico em" como prefixo. Para perfil que
   não é de curso técnico, vaga cujos `cursos_aceitos` são todos de nível técnico
-  (`curso_de_nivel_tecnico`, com ou sem ensino médio ao lado) tem curso incompatível, teto 35 e
-  o aviso "Vaga para estudantes de curso técnico"; título dirigido a estudantes de ensino, curso
-  ou nível técnico sai no pré-filtro, salvo se também disser superior, graduação, faculdade,
-  universitário ou tecnólogo. Técnico como acréscimo continua normal: se a vaga nomeia um curso
-  superior, só os superiores entram na comparação, e "técnico ou superior" não é exclusivo.
-  Tecnólogo, CST e ADS são superiores; quem cursa técnico não muda. "Estágio Técnico" e "Suporte
-  Técnico" são ambíguos e ficam só com a compatibilidade. `normalizar_curso` e o prompt não
-  mudaram. Nas 456 extrações da versão atual, 22 citam técnico e 9 são só técnico, todas
-  exclusivas na descrição; com os 4 perfis ativos mudam 23 de 1.824 pares, e no run de 14/09 só
-  a Jovem Valor sai do top 7 de Administração. O título pega 2 dos 893 guardados. Limite: quando
-  a IA tira o "Técnico em" dos itens seguintes ("Técnico em Automação", "Eletrotécnica"), a vaga
-  parece mista e segue como antes (3 extrações).
+  (`curso_de_nivel_tecnico`; ensino médio e "áreas afins" ao lado não contam como superior) tem
+  curso incompatível, teto 35 e o aviso "Vaga para estudantes de curso técnico". **Técnico como
+  acréscimo fica exatamente como no `main`**, pedido do dono: com algum item de nível superior, a
+  lista inteira é comparada como antes, técnico incluído. A primeira versão tirava o técnico da
+  comparação e "ADM" + "Técnico em Administração" caía de 98 para 35;
+  `test_lista_com_curso_superior_e_tecnico_pontua_como_no_main` impede a volta. Item que cita
+  técnico e superior ("Técnico ou superior em X", "Técnico/Superior em X") vale pelo curso X
+  (`cursos_do_item`, na compatibilidade, não em `normalizar_curso`, que tem paridade com o site).
+  Tecnólogo, CST e ADS contam como nível superior (`PADRAO_NIVEL_SUPERIOR`) na compatibilidade e
+  na exceção do título. No pré-filtro sai o título que dirige a vaga a estudantes de ensino,
+  curso ou nível técnico ("vaga de estágio para estudantes de ensino técnico"), salvo se também
+  citar nível superior; título sobre o público atendido ("apoio a alunos do ensino técnico"),
+  "Estágio Técnico" e "Suporte Técnico" ficam. A exceção é a mesma do ensino médio, que passou a
+  manter "ensino médio ou tecnólogo" e "ou graduandos". Quem cursa técnico não muda, e o prompt
+  não mudou. Medido em 14/09 contra o `main`, nas 456 extrações da versão atual com os 4 perfis
+  ativos (1.824 pares): 10 extrações são só técnico e nenhuma tem técnico e superior no mesmo
+  item; 22 pares mudam no caminho do pipeline (descarte do pré-filtro e, entre os que passam,
+  nota, avisos ou pontos): 11 perdem nota, 3 só trocam o aviso, 2 saem no pré-filtro e 6 só
+  trocam o motivo do descarte. No run de 14/09 só a Jovem Valor sai do top 7 de Administração. O
+  título pega 2 dos 893 títulos de `vagas`, que só guarda o que passou no pré-filtro de algum
+  perfil. Limite: quando a IA tira o "Técnico em" dos itens seguintes ("Técnico em Automação",
+  "Eletrotécnica"), a vaga parece mista e segue como no `main` (3 extrações).
 
 ### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 
