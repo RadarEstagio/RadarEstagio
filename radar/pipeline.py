@@ -521,4 +521,4 @@ def selecionar(
 
 
 def ranquear(resultados: list[ResultadoMatch]) -> list[ResultadoMatch]:
-    return sorted(resultados, key=lambda resultado: resultado.nota, reverse=True)
+    return sorted(resultados, key=ResultadoMatch.criterio_de_ranking, reverse=True)

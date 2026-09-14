@@ -356,6 +356,16 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
   12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
   sai e a extração passa a ler só os 500 caracteres da API.
+  **Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
+  `/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
+  28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
+  (19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
+  quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
+  nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
+  a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
+  presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
+  atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
+  mérito, porque 81 antes da trava vence 60.
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
   envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
