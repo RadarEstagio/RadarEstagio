@@ -1,4 +1,5 @@
 import logging
+import re
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 FONTE_ADZUNA = "adzuna"
 CAMINHO_DO_ANUNCIO_LAND_AD = "/land/ad/"
+BARRAS_REPETIDAS = re.compile(r"/{2,}")
 CLASSE_DA_DESCRICAO = "adp-body"
 TAGS_DE_QUEBRA = frozenset({"br", "div", "li", "p"})
 TAGS_SEM_FECHAMENTO = frozenset(
@@ -65,7 +67,8 @@ def descricao_parece_truncada(vaga: Vaga) -> bool:
 
 
 def aponta_para_anuncio_land_ad(url: str) -> bool:
-    return urlsplit(url).path.startswith(CAMINHO_DO_ANUNCIO_LAND_AD)
+    caminho = BARRAS_REPETIDAS.sub("/", urlsplit(url).path).casefold()
+    return caminho.startswith(CAMINHO_DO_ANUNCIO_LAND_AD)
 
 
 def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:

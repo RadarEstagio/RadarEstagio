@@ -118,6 +118,22 @@ def test_pula_so_o_anuncio_land_ad_e_informa_quantos_ficaram_de_fora(httpx_mock:
     ]
 
 
+def test_reconhece_land_ad_sem_diferenciar_caixa_nem_barra_dupla(httpx_mock: HTTPXMock):
+    variantes = [
+        anuncio_da_adzuna(numero, url)
+        for numero, url in [
+            ("5880177309", "https://www.adzuna.com.br/LAND/AD/5880177309?se=x"),
+            ("5880176423", "https://www.adzuna.com.br//land/ad/5880176423?se=x"),
+            ("5880188747", "https://www.adzuna.com.br/Land//Ad/5880188747"),
+        ]
+    ]
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(variantes)
+
+    assert httpx_mock.get_requests() == []
+    assert enriquecidas == variantes
+
+
 def test_mantem_descricao_marcada_como_incompleta_quando_pagina_falha(
     httpx_mock: HTTPXMock,
 ):
