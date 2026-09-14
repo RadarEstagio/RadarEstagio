@@ -8,6 +8,7 @@ from radar.filtering.prefiltro import (
     deve_descartar,
     exige_anos_de_experiencia,
     exige_ensino_medio,
+    exige_ensino_tecnico,
     exige_pos_graduacao,
     exige_senioridade,
     filtrar,
@@ -735,6 +736,8 @@ def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: s
         "Estágio Nível Médio e Superior :: Agência Itaúba",
         "Estagiário Pedagogia - Ensino Fundamental I",
         "Estágio em Pedagogia - Ensino Médio e Superior",
+        "Estágio para estudantes de ensino médio ou tecnólogo",
+        "Estágio para estudantes de ensino médio ou graduandos",
     ],
 )
 def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
@@ -749,6 +752,8 @@ def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
         "Estágio para estudantes de técnico em administração",
         "Estágio Curso Técnico em Administração",
         "Estágio Nível Técnico - Administração",
+        "Estagiário Administrativo - Nível Técnico",
+        "Vaga de estágio para estudantes de ensino técnico",
     ],
 )
 def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: str):
@@ -774,12 +779,22 @@ def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: s
         "Técnico(a) de Laboratório - Estágio",
         "Estagiário(a) Técnico(a) (Centro de Inovação e",
         "Estágio em Técnico de Informática - Barra da",
+        "Estágio para estudantes de curso técnico ou graduandos em Administração",
+        "Estágio para estudantes de curso técnico ou bacharelado em Administração",
+        "Estágio para alunos de ensino técnico ou licenciatura",
+        "Estágio para Ensino Técnico ou CST em Logística",
+        "Estágio em Tecnologia - estudantes de técnico em TI ou ADS",
+        "Estágio de apoio a alunos do ensino técnico",
+        "Estágio de docência para alunos do curso técnico",
+        "Secretaria Escolar - atendimento a alunos do ensino técnico",
     ],
 )
 def test_titulo_tecnico_ambiguo_ou_que_tambem_aceita_superior_continua(titulo: str):
-    assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso="Administração")) != (
-        "exige_ensino_tecnico"
-    )
+    anuncio = vaga(titulo=titulo)
+    de_administracao = perfil(curso="Administração")
+
+    assert not exige_ensino_tecnico(anuncio, de_administracao)
+    assert motivo_do_descarte(anuncio, de_administracao) != "exige_ensino_tecnico"
 
 
 def test_quem_faz_curso_tecnico_recebe_vaga_de_ensino_tecnico():
