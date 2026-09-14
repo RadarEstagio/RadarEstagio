@@ -1,6 +1,6 @@
 # Funcionalidades do Radar de Estágio
 
-Catálogo revisado em 07/09/2026 com base no código da `main`. Destina-se aos integrantes,
+Catálogo atualizado em 13/09/2026 com base no código da `main`. Destina-se aos integrantes,
 estudantes e desenvolvedores. “Implementado” significa que existe código; a disponibilidade
 pública depende da configuração e publicação descritas no [guia](guia-publicacao-e-piloto.md).
 O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de todos os portais.
@@ -45,7 +45,9 @@ digitado livremente quando não está nela. Quem já tem conta escolhe "Entrar" 
 da conta; quem edita o perfil depois do login não passa por ele.
 
 **Condições e limites:** Confirmação de e-mail mantida; a conta só é criada no envio do último
-passo, nunca ao avançar entre etapas; interface pública depende da hospedagem.
+passo, nunca ao avançar entre etapas; interface pública depende da hospedagem. Fechar o cadastro
+guarda o rascunho na memória da página, sem senha nem e-mail, e ele só reabre para a mesma
+pessoa; trocar de conta ou de sessão limpa tudo.
 
 #### 02. Preferências
 
@@ -213,6 +215,14 @@ Desfazer a solicitação dentro da carência.
 Saber que a busca ocorreu sem recomendação adequada.
 
 **Condições e limites:** Após silêncio prolongado, sugere ampliar preferências na própria mensagem.
+
+#### 24. Excluir conta sem perfil
+
+Apagar na hora uma conta confirmada que ainda não completou o perfil.
+
+**Condições e limites:** Oferecido sob o formulário de completar o perfil; apaga a conta, o
+cadastro pendente e os eventos das sessões dela, sem carência, e encerra a sessão. Conta com
+perfil usa a exclusão com arrependimento.
 
 ---
 
@@ -440,8 +450,8 @@ Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma aber
 
 ## Estado de disponibilização
 
-O guia registra migrations e funções publicadas e verificadas em 05–06/09, primeira entrega
-real e teste de concorrência. A revisão deste catálogo foi local e não repetiu essas provas.
-A equipe ainda precisa confirmar a hospedagem final, configuração de Auth/Turnstile, revisão
-dos textos e teste completo de cadastro antes do piloto. Não confundir testes automatizados
+Em 13/09, as 25 migrations constavam como aplicadas e as funções `ir` e `telegram-webhook`
+tinham sido republicadas em 10/09 e 13/09. O guia registra a primeira entrega real e o teste de
+concorrência de 05–06/09. A equipe ainda precisa confirmar o domínio final, o Turnstile, a
+revisão dos textos e o teste completo de cadastro com conta da equipe antes do piloto. Não confundir testes automatizados
 com validação de utilidade por estudantes.
