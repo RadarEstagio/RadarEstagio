@@ -218,8 +218,8 @@ usa links diretos para a fonte.
 
 O [workflow](.github/workflows/radar-diario.yml) recebe disparos do cron-job.org às 07:23 de
 Brasília, conforme a configuração operacional registrada. O código não usa `schedule`
-nativo. O workflow configura cinco dias de anúncios, até sete recomendações e timeout de
-15 minutos; isso não é promessa de tempo até receber uma mensagem.
+nativo. O workflow configura cinco dias de anúncios, até sete recomendações, 30 minutos para
+o job e 28 para o passo do radar; isso não é promessa de tempo até receber uma mensagem.
 
 Para um teste direcionado pelo GitHub Actions, abra **Radar diário → Run workflow** e
 preencha `perfil` com o `perfis.id` da conta de teste. Como no `rodar --perfil`, a conta só
