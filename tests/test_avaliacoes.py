@@ -543,6 +543,7 @@ def test_curso_e_periodo_incompativeis_juntos_dao_um_teto_so_e_os_dois_avisos():
 def test_experiencia_exigida_vira_ponto_contra_e_o_periodo_vira_aviso():
     resultado = resultado_da(extracao(periodo_minimo=8, experiencia_minima_anos=2))
 
+    assert resultado.nota == 35
     assert resultado.pontos_contra == ["Exige experiência prévia"]
     assert resultado.avisos_objetivos == ["Exige a partir do 8º período"]
 
