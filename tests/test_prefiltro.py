@@ -15,6 +15,7 @@ from radar.filtering.prefiltro import (
     localizacao_incompativel,
     menciona_o_curso,
     modalidade_incompativel,
+    motivo_do_descarte,
     nao_e_estagio,
     normalizar,
 )
@@ -738,6 +739,57 @@ def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: s
 )
 def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
     assert not exige_ensino_medio(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO EM ADMINISTRAÇÃO*",
+        "Estágio para alunos do curso técnico em Administração",
+        "Estágio para estudantes de técnico em administração",
+        "Estágio Curso Técnico em Administração",
+        "Estágio Nível Técnico - Administração",
+    ],
+)
+def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: str):
+    for curso in ("Administração", "Pedagogia"):
+        assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso=curso)) == (
+            "exige_ensino_tecnico"
+        )
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO OU SUPERIOR EM ADMINISTRAÇÃO/BARRA",
+        "Estágio em Técnico ou Superior em Administração, Logistica ou Edificações",
+        "Estágio para Ensino Técnico ou Tecnólogo em Administração",
+        "Estágio Curso Técnico ou Graduação em Administração",
+        "Estágio para estudantes de ensino técnico ou universitários",
+        "Estágio Técnico em Administração - Crea Rj",
+        "Estágio Técnico",
+        "Estagiário Técnico",
+        "Estágio Técnico em Segurança do Trabalho",
+        "Estagiário de Suporte Técnico",
+        "Técnico(a) de Laboratório - Estágio",
+        "Estagiário(a) Técnico(a) (Centro de Inovação e",
+        "Estágio em Técnico de Informática - Barra da",
+    ],
+)
+def test_titulo_tecnico_ambiguo_ou_que_tambem_aceita_superior_continua(titulo: str):
+    assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso="Administração")) != (
+        "exige_ensino_tecnico"
+    )
+
+
+def test_quem_faz_curso_tecnico_recebe_vaga_de_ensino_tecnico():
+    anuncio = vaga(
+        titulo="VAGA DE ESTÁGIO PARA ESTUDANTES DE ENSINO TÉCNICO EM ADMINISTRAÇÃO*",
+        descricao="Atendimento ao cliente e vendas.",
+    )
+    tecnico = perfil(curso="Técnico em Administração", modalidade=Modalidade.PRESENCIAL)
+
+    assert not deve_descartar(anuncio, tecnico)
 
 
 @pytest.mark.parametrize(
