@@ -1,7 +1,7 @@
 # Documentação do Radar de Estágio
 
-Consolidada em 09/09/2026. Implementação, publicação e validação com usuários são estados
-diferentes. Esta revisão reorganizou registros locais; não consultou serviços externos.
+Revisada em 13/09/2026 contra o código da `main` e o Supabase. Implementação, publicação e
+validação com usuários são estados diferentes.
 
 ## Por onde começar
 
@@ -32,9 +32,25 @@ documentos acima. Continuam no histórico do Git. A01–A06 estão resumidos na 
 
 ## Como manter
 
+Cada assunto tem um documento dono. Os demais citam o dono por link em vez de repetir o fato,
+porque cópia de estado diverge: foi o que tornou esta revisão necessária.
+
+| Assunto | Documento dono |
+|---|---|
+| Pendências e decisões da equipe | [Plano geral](plano-geral.md) |
+| O que o produto faz e seus limites | [Funcionalidades](funcionalidades.md) |
+| Contrato entre site e banco | [Contrato frontend](contrato-front.md) |
+| Configuração, publicação e evidências datadas | [Guia de publicação](guia-publicacao-e-piloto.md) |
+| Camadas e decisões técnicas | [Arquitetura](arquitetura.md) |
+| Por que cada regra do motor existe | [Decisões do motor](decisoes-do-motor.md) |
+| Definição e cálculo das métricas | [Métricas](metricas.md) |
+| Vocabulário do produto | [CONTEXT.md](../CONTEXT.md) |
+| Regras de contribuição e fatos operacionais | [CLAUDE.md](../CLAUDE.md) |
+| Achados de revisão | [Auditorias](auditorias/), datadas e não atualizadas depois |
+| Registro para a disciplina | [Pré-PRD](pre-prd.md), retrato de 08/09 |
+
 Ao mudar uma função, atualizar o catálogo e o contrato afetado. Ao publicar ou validar,
-registrar data, versão e resultado no guia e ajustar o estado no plano geral. Decisões de
-cálculo ficam em métricas; justificativas técnicas na arquitetura. Não duplicar o backlog.
+registrar data e resultado no guia e ajustar o estado no plano geral.
 
 O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7
 não são condições para divulgar. A conferência operacional e a revisão dos textos estão no
