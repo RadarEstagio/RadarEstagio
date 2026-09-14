@@ -12,8 +12,23 @@ na fonte da vaga.
 | Assinatura | estudante ou instituição | recomendações dentro do limite vigente e controles da conta | recorrente, a decidir | receita previsível, compromisso contínuo | pode exceder uma busca específica | não medido; depende de E02/E04 |
 | Acesso por período de busca | estudante | uso durante uma janela definida, sem prometer contratação | uma janela, a definir | combina com procura temporária | mais próximo do momento real de busca | não medido; depende de E02/E04 |
 
-Estudante é a hipótese inicial de pagador; instituição patrocinadora é outra hipótese e não
+Estudante era a hipótese inicial de pagador; instituição patrocinadora é outra hipótese e não
 deve ser assumida como novo público. Nenhuma opção foi escolhida pela equipe.
+
+## Restrição legal e pagadores alternativos
+
+- **Cobrar do estudante esbarra na Lei do Estágio.** A Lei 11.788/2008, art. 5º, §1º, lista
+  entre os serviços dos agentes de integração "identificar oportunidades de estágio" e
+  "cadastrar os estudantes", e o §2º veda "a cobrança de qualquer valor dos estudantes" por
+  eles. O Radar não é agente de integração formal, mas executa esses dois serviços. Nenhuma
+  oferta ao estudante antes de consulta jurídica (auditoria de 10/09/2026, RCD-02).
+- **Compatibilidade de curso vira responsabilidade.** O §3º do mesmo artigo responsabiliza
+  civilmente quem indica estágio incompatível com o curso. Num modelo pago por instituição ou
+  empresa, a regra de curso do motor passa a ser argumento de venda e também risco.
+- **Pagadores ainda não consultados:** instituições de ensino (coordenação ou núcleo de
+  estágios), empresas que recrutam estagiários e o programa de parceiros da Adzuna, que oferece
+  "a sponsored feed of ads for your site", registrado em 12/09 como caminho de receita sem
+  cobrar do estudante. O mercado segue a lei: agentes como CIEE e Nube são pagos pelas empresas.
 
 ## Decisões pendentes
 
