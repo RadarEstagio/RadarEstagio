@@ -485,7 +485,7 @@ LISTAS_COM_CURSO_SUPERIOR_E_TECNICO = [
     ("Engenharia Mecânica", ["Eng. Mecânica", "Técnico em Mecânica"]),
     ("Enfermagem", ["Técnico em Enfermagem", "Enfermagem Bacharelado"]),
     ("Logística", ["Técnico em Logística", "Administração"]),
-    ("Logística", ["Técnico em Administração/Logística", "Economia"]),
+    ("Administração", ["Técnica em Administração de Empresas", "Letras"]),
 ]
 
 
@@ -540,6 +540,49 @@ def test_item_tecnico_ou_superior_pontua_como_o_curso_superior(item: str):
 
     assert resumo_da_nota(tecnico_ou_superior) == resumo_da_nota(so_graduacao)
     assert "Curso compatível" in tecnico_ou_superior.pontos_a_favor
+
+
+ITENS_COM_ALTERNATIVAS = [
+    ("Administração", "Técnico em Administração ou Administração", "Administração"),
+    (
+        "Ciência da Computação",
+        "Técnico em Informática ou Ciência da Computação",
+        "Ciência da Computação",
+    ),
+    ("Enfermagem", "Técnico em Enfermagem ou Enfermagem", "Enfermagem"),
+    ("Administração", "Administração ou Técnico em Administração", "Administração"),
+    ("Administração", "ADM ou Técnico em ADM", "ADM"),
+    ("Administração", "Técnico e/ou superior em Administração", "Administração"),
+    ("Administração", "Técnico ou superior", "Ensino Superior"),
+    (
+        "Administração",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Administração",
+    ),
+    (
+        "Ciências Contábeis",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Contabilidade",
+    ),
+    (
+        "Economia",
+        "Técnico ou Superior em Administração, Contabilidade ou Economia",
+        "Economia",
+    ),
+]
+
+
+@pytest.mark.parametrize(("curso", "item", "curso_aceito"), ITENS_COM_ALTERNATIVAS)
+def test_item_com_alternativas_pontua_como_o_curso_que_ele_aceita(
+    curso: str, item: str, curso_aceito: str
+):
+    candidato = graduando_em(curso)
+    com_alternativas = extracao(cursos_aceitos=[item], habilidades_obrigatorias=["Excel"])
+    so_o_curso = extracao(cursos_aceitos=[curso_aceito], habilidades_obrigatorias=["Excel"])
+
+    assert resumo_da_nota(resultado_da(com_alternativas, candidato)) == resumo_da_nota(
+        resultado_da(so_o_curso, candidato)
+    )
 
 
 def test_curso_parcial_limita_a_nota_a_75():

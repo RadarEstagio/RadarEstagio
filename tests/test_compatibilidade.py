@@ -282,6 +282,8 @@ def niveis_da_vaga_de_administracao(aceitos: list[str], candidato: Perfil | None
         ["Ensino Técnico"],
         ["Ensino médio", "Técnico em Administração"],
         ["Técnico em Administração", "Áreas afins"],
+        ["Técnico em Administração ou Técnico em Logística"],
+        ["Ensino médio ou Técnico em Administração"],
     ],
 )
 def test_vaga_so_para_curso_tecnico_e_incompativel_para_quem_faz_graduacao(aceitos):
@@ -344,6 +346,20 @@ def test_item_tecnico_ou_superior_de_outro_curso_continua_de_outra_area():
     niveis = niveis_da_vaga_de_administracao(["Técnico ou superior em Contabilidade"])
 
     assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_item_tecnico_sem_separador_e_comparado_como_no_main():
+    niveis = niveis_da_vaga_de_administracao(["Técnica em Administração de Empresas", "Letras"])
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert not niveis.so_para_curso_tecnico
+
+
+def test_tecnico_ou_superior_sem_curso_fica_parcial_como_ensino_superior():
+    niveis = niveis_da_vaga_de_administracao(["Técnico ou superior"])
+
+    assert niveis.curso is NivelCompatibilidade.PARCIAL
     assert not niveis.so_para_curso_tecnico
 
 

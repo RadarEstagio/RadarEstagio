@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 from radar.domain.areas import (
     AREAS_POR_NOME,
-    PADRAO_NIVEL_SUPERIOR,
     area_do_curso,
     curso_de_nivel_tecnico,
     formacao_de_nivel_superior,
@@ -20,7 +19,7 @@ ABERTURAS_A_QUALQUER_CURSO = frozenset(
     {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
 )
 PADRAO_TECNICO_NO_ITEM = re.compile(r"\btecnic[oa]s?\b")
-PADRAO_ALTERNATIVAS_DO_ITEM = re.compile(r"\s+(?:e/)?ou\s+|\s*/\s*")
+PADRAO_ALTERNATIVAS_DO_ITEM = re.compile(r"\s+(?:e/)?ou\s+|\s*[/,]\s*")
 PADRAO_NIVEL_NO_INICIO = re.compile(
     r"^(?:(?:cursando|estudantes?|ensino|curso|nivel)\s+)*"
     r"(?:tecnic[oa]s?|superior|graduacao|graduand[oa]s?|bacharel(?:ado)?|licenciatura"
@@ -75,17 +74,23 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
     return NivelCompatibilidade.INCOMPATIVEL
 
 
-def cursos_do_item(curso: str) -> list[str]:
+def alternativas_do_item(curso: str) -> list[str]:
     texto = normalizar(curso)
     if PADRAO_TECNICO_NO_ITEM.search(texto) is None:
+        return []
+    alternativas = PADRAO_ALTERNATIVAS_DO_ITEM.split(texto)
+    return alternativas if len(alternativas) > 1 else []
+
+
+def formacoes_do_item(curso: str) -> list[str]:
+    return alternativas_do_item(curso) or [curso]
+
+
+def cursos_do_item(curso: str) -> list[str]:
+    alternativas = alternativas_do_item(curso)
+    if not alternativas:
         return [curso]
-    if PADRAO_NIVEL_SUPERIOR.search(texto) is None:
-        return [curso]
-    cursos = {
-        normalizar_curso(PADRAO_NIVEL_NO_INICIO.sub("", parte))
-        for parte in PADRAO_ALTERNATIVAS_DO_ITEM.split(texto)
-    }
-    return sorted(cursos - {""}) or [curso]
+    return [PADRAO_NIVEL_NO_INICIO.sub("", alternativa) for alternativa in alternativas]
 
 
 def aceita_qualquer_curso(extracao: ExtracaoDaVaga) -> bool:
@@ -97,9 +102,11 @@ def aceita_qualquer_curso(extracao: ExtracaoDaVaga) -> bool:
 def vaga_so_para_curso_tecnico(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
     if curso_de_nivel_tecnico(perfil.curso) or aceita_qualquer_curso(extracao):
         return False
-    cursos = extracao.cursos_aceitos
-    return any(curso_de_nivel_tecnico(curso) for curso in cursos) and not any(
-        formacao_de_nivel_superior(curso) for curso in cursos
+    formacoes = [
+        formacao for curso in extracao.cursos_aceitos for formacao in formacoes_do_item(curso)
+    ]
+    return any(curso_de_nivel_tecnico(formacao) for formacao in formacoes) and not any(
+        formacao_de_nivel_superior(formacao) for formacao in formacoes
     )
 
 
