@@ -106,3 +106,21 @@ def test_modalidade_desconhecida_ou_ausente_vira_nenhuma():
 
     assert sem.modalidade_reconhecida() is None
     assert invalida.modalidade_reconhecida() is None
+
+
+@pytest.mark.parametrize("periodo", [0, -1, 13, 2028])
+def test_periodo_minimo_fora_da_faixa_de_periodos_vira_nenhum(periodo):
+    extracao = ExtracaoDaVaga.model_validate(
+        {"id_vaga": "1", "area_da_vaga": "computacao", "periodo_minimo": periodo}
+    )
+
+    assert extracao.periodo_minimo is None
+
+
+@pytest.mark.parametrize("periodo", [1, 7, 12])
+def test_periodo_minimo_plausivel_e_mantido(periodo):
+    extracao = ExtracaoDaVaga.model_validate(
+        {"id_vaga": "1", "area_da_vaga": "computacao", "periodo_minimo": periodo}
+    )
+
+    assert extracao.periodo_minimo == periodo

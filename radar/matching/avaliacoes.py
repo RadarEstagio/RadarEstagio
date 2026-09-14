@@ -21,6 +21,7 @@ from radar.matching.compatibilidade import (
     NiveisDeCompatibilidade,
     derivar_niveis,
     montar_pontos,
+    periodo_abaixo_do_minimo,
 )
 
 PESO_HABILIDADES = 45
@@ -38,6 +39,8 @@ LIMITE_FORA_DAS_AREAS_DE_INTERESSE = 65
 LIMITE_CURSO_PARCIAL = 75
 LIMITE_CURSO_INCOMPATIVEL = 35
 AVISO_CURSO_INCOMPATIVEL = "Exige formação de outra área"
+LIMITE_PERIODO_ABAIXO_DO_MINIMO = 35
+AVISO_PERIODO_ABAIXO_DO_MINIMO = "Exige a partir do {periodo}º período"
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 INTERESSE_SEM_AREA_RECONHECIDA = 0.5
 INTERESSE_DE_OUTRA_SUBAREA = 0.5
@@ -438,6 +441,7 @@ def _calcular_nota(
     )
     nota = min(nota, _limite_por_interesse(extracao, perfil, interesse))
     nota = min(nota, _limite_por_curso(niveis))
+    nota = min(nota, _limite_por_periodo(extracao, perfil))
     return int(nota + 0.5)
 
 
@@ -454,6 +458,12 @@ def _limite_por_curso(niveis: NiveisDeCompatibilidade) -> float:
         return LIMITE_CURSO_INCOMPATIVEL
     if niveis.curso is NivelCompatibilidade.PARCIAL:
         return LIMITE_CURSO_PARCIAL
+    return 100.0
+
+
+def _limite_por_periodo(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
+    if periodo_abaixo_do_minimo(extracao, perfil):
+        return LIMITE_PERIODO_ABAIXO_DO_MINIMO
     return 100.0
 
 
@@ -495,6 +505,8 @@ def _avisos_objetivos(
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
     if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
+    if periodo_abaixo_do_minimo(extracao, perfil):
+        avisos.append(AVISO_PERIODO_ABAIXO_DO_MINIMO.format(periodo=extracao.periodo_minimo))
     if _nota_sem_habilidades_declaradas(extracao, perfil):
         avisos.append(AVISO_SEM_HABILIDADES_NO_PERFIL)
     return avisos

@@ -10,6 +10,7 @@ from radar.matching.avaliacoes import (
     pontuar,
 )
 from radar.matching.prompt import INSTRUCAO_DE_EXTRACAO
+from radar.storage.postgres import interpretar_extracao
 
 EXEMPLOS_DE_NIVEL_NO_PROMPT = ("Excel avançado", "inglês intermediário")
 
@@ -44,6 +45,29 @@ def extracao_exigindo(habilidade: str) -> ExtracaoDaVaga:
         area_da_vaga="administracao",
         habilidades_obrigatorias=[habilidade],
     )
+
+
+def test_extracao_guardada_com_ano_no_lugar_do_periodo_e_lida_e_nao_esconde_a_vaga():
+    linha = {
+        "fonte": "adzuna",
+        "id_externo": "1",
+        "extracao": {
+            "id_vaga": "adzuna:1",
+            "area_da_vaga": "administracao",
+            "cursos_aceitos": ["Administração"],
+            "periodo_minimo": 2028,
+        },
+    }
+
+    lida = interpretar_extracao(linha)
+
+    assert lida is not None
+    chave, extracao = lida
+    assert chave == ("adzuna", "1")
+    assert extracao.periodo_minimo is None
+    resultado = pontuar(vaga_de_teste(), extracao, perfil_com([]))
+    assert resultado.avisos_objetivos == []
+    assert resultado.nota > 35
 
 
 @pytest.mark.parametrize("exemplo", EXEMPLOS_DE_NIVEL_NO_PROMPT)

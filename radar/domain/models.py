@@ -16,6 +16,8 @@ class Modalidade(StrEnum):
 
 
 AreaDeInteresse = StrEnum("AreaDeInteresse", {valor.upper(): valor for valor in SUBAREAS})
+PRIMEIRO_PERIODO = 1
+ULTIMO_PERIODO_PLAUSIVEL = 12
 
 
 class NivelCompatibilidade(StrEnum):
@@ -69,6 +71,13 @@ class ExtracaoDaVaga(BaseModel):
             return None
         area = normalizar(valor)
         return area if area in AREAS_POR_NOME else None
+
+    @field_validator("periodo_minimo")
+    @classmethod
+    def descartar_periodo_implausivel(cls, valor: int | None) -> int | None:
+        if valor is None or PRIMEIRO_PERIODO <= valor <= ULTIMO_PERIODO_PLAUSIVEL:
+            return valor
+        return None
 
     def modalidade_reconhecida(self) -> Modalidade | None:
         if not self.modalidade:

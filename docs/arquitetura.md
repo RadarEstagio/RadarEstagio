@@ -148,6 +148,9 @@ no plano pago cada extração é requisição cobrada.
   compatível/parcial/incompatível contra o catálogo de cursos de `domain/areas.py`;
   `periodo_minimo` e `experiencia_minima_anos` viram o nível de período; os pontos a favor e
   contra são montados da comparação, não escritos pela IA. Mesmos dados, mesma nota, sempre.
+  Curso incompatível e período abaixo do `periodo_minimo` são elegibilidade: limitam a nota a
+  35, abaixo da nota mínima, com os avisos “Exige formação de outra área” e “Exige a partir do
+  Nº período” (o do período desde 14/09/2026). Experiência exigida só zera o fator.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
   área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
   habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos:
