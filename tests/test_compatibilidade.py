@@ -320,15 +320,6 @@ def test_tecnico_ou_superior_no_mesmo_item_nao_e_vaga_so_para_curso_tecnico():
     ).so_para_curso_tecnico
 
 
-def test_curso_tecnico_nao_comprova_a_graduacao_quando_a_vaga_nomeia_outros_cursos():
-    niveis = niveis_da_vaga_de_administracao(
-        ["Letras", "Pedagogia", "Matemática", "Técnico em Administração"]
-    )
-
-    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
-    assert not niveis.so_para_curso_tecnico
-
-
 @pytest.mark.parametrize(
     "aceitos",
     [

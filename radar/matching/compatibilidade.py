@@ -52,7 +52,7 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
         return NivelCompatibilidade.COMPATIVEL
     if vaga_so_para_curso_tecnico(extracao, perfil):
         return NivelCompatibilidade.INCOMPATIVEL
-    aceitos = cursos_comparaveis(extracao, perfil)
+    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
     if not aceitos:
         return NivelCompatibilidade.PARCIAL
     if any(mesma_area(curso, perfil.curso) for curso in aceitos):
@@ -75,16 +75,6 @@ def vaga_so_para_curso_tecnico(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool
     return any(curso_de_nivel_tecnico(curso) for curso in cursos) and not any(
         formacao_de_nivel_superior(curso) for curso in cursos
     )
-
-
-def cursos_comparaveis(extracao: ExtracaoDaVaga, perfil: Perfil) -> list[str]:
-    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
-    if curso_de_nivel_tecnico(perfil.curso):
-        return aceitos
-    if not any(curso_de_nivel_tecnico(curso) for curso in aceitos):
-        return aceitos
-    superiores = [curso for curso in aceitos if formacao_de_nivel_superior(curso)]
-    return superiores or aceitos
 
 
 def nivel_do_periodo(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
