@@ -519,6 +519,15 @@ def test_vaga_sem_periodo_minimo_nao_limita_a_nota():
     assert resultado.avisos_objetivos == []
 
 
+def test_ano_confundido_com_periodo_nao_esconde_a_vaga():
+    resultado = resultado_da(
+        extracao_de_administracao(periodo_minimo=2028), perfil_de_administracao(1)
+    )
+
+    assert resultado.nota == 100
+    assert resultado.avisos_objetivos == []
+
+
 def test_curso_e_periodo_incompativeis_juntos_dao_um_teto_so_e_os_dois_avisos():
     resultado = resultado_da(
         extracao_de_administracao(cursos_aceitos=["Engenharia Civil"]), perfil_de_administracao(1)
