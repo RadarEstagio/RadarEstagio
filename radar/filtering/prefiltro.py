@@ -1,7 +1,7 @@
 import re
 
 from radar.domain.areas import (
-    PADRAO_NIVEL_SUPERIOR,
+    PADRAO_NIVEL_SUPERIOR_POR_EXTENSO,
     area_do_curso,
     curso_de_nivel_tecnico,
     descricao_e_da_area,
@@ -24,6 +24,9 @@ PADRAO_ENSINO_TECNICO = re.compile(
     r"\b(?:vaga|estagio|estagiari[oa]s?|oportunidade)(?: de estagio)?\s+para\s+(?:(?:os|as)\s+)?"
     r"(?:estudantes?|alun[oa]s?)\s+(?:d[eoa]s?\s+)?(?:(?:ensino|curso|nivel)\s+)?tecnic[oa]s?\b"
     r"|^\W*estagi\w*\W+(?:para\s+)?curso tecnico\b|\bnivel tecnico\b"
+)
+PADRAO_TITULO_TAMBEM_SUPERIOR = re.compile(
+    rf"{PADRAO_NIVEL_SUPERIOR_POR_EXTENSO.pattern}|\b(?:ou|e|em) (?:cst|ads)\b"
 )
 PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
@@ -61,7 +64,7 @@ def exige_pos_graduacao(vaga: Vaga) -> bool:
 
 def exige_ensino_medio(vaga: Vaga) -> bool:
     titulo = normalizar(vaga.titulo)
-    if PADRAO_NIVEL_SUPERIOR.search(titulo):
+    if PADRAO_TITULO_TAMBEM_SUPERIOR.search(titulo):
         return False
     return PADRAO_ENSINO_MEDIO.search(titulo) is not None
 
@@ -70,7 +73,7 @@ def exige_ensino_tecnico(vaga: Vaga, perfil: Perfil) -> bool:
     if curso_de_nivel_tecnico(perfil.curso):
         return False
     titulo = normalizar(vaga.titulo)
-    if PADRAO_NIVEL_SUPERIOR.search(titulo):
+    if PADRAO_TITULO_TAMBEM_SUPERIOR.search(titulo):
         return False
     return PADRAO_ENSINO_TECNICO.search(titulo) is not None
 

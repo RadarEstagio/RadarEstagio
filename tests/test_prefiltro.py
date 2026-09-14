@@ -722,6 +722,7 @@ def test_titulo_administrativo_com_sinal_da_propria_area_continua(titulo: str, c
         "ESTÁGIO - Ensino Médio - Recrutamento Aberto",
         "Estagiário Administrativo Financeiro - Estudantes Ensino Médio",
         "Jovem Aprendiz e Estagiário em Supermercado",
+        "Estágio em Marketing para estudantes de ensino médio - Meta Ads",
     ],
 )
 def test_estagio_para_ensino_medio_ou_aprendiz_nao_vai_a_universitario(titulo: str):
@@ -754,6 +755,7 @@ def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
         "Estágio Nível Técnico - Administração",
         "Estagiário Administrativo - Nível Técnico",
         "Vaga de estágio para estudantes de ensino técnico",
+        "Estágio para estudantes de ensino técnico - Google Ads",
     ],
 )
 def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: str):
@@ -783,6 +785,8 @@ def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: s
         "Estágio para estudantes de curso técnico ou bacharelado em Administração",
         "Estágio para alunos de ensino técnico ou licenciatura",
         "Estágio para Ensino Técnico ou CST em Logística",
+        "Estágio para estudantes de ensino técnico ou CST em Logística",
+        "Vaga de estágio para estudantes de técnico em TI ou ADS",
         "Estágio em Tecnologia - estudantes de técnico em TI ou ADS",
         "Estágio de apoio a alunos do ensino técnico",
         "Estágio de docência para alunos do curso técnico",

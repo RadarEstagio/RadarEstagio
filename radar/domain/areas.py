@@ -839,10 +839,11 @@ PADRAO_CURSO_TECNICO = re.compile(
     r"tecnic[oa]s?\b"
 )
 PADRAO_ENSINO_MEDIO = re.compile(r"^(?:cursando\s+)?(?:ensino|nivel) medio\b")
-PADRAO_NIVEL_SUPERIOR = re.compile(
+PADRAO_NIVEL_SUPERIOR_POR_EXTENSO = re.compile(
     r"\b(?:superior|graduacao|graduand[oa]s?|bacharel(?:ado)?|licenciatura|tecnolog[oa]s?"
-    r"|faculdade|universitari[oa]s?|cst|ads)\b"
+    r"|faculdade|universitari[oa]s?)\b"
 )
+PADRAO_NIVEL_SUPERIOR = re.compile(rf"{PADRAO_NIVEL_SUPERIOR_POR_EXTENSO.pattern}|\b(?:cst|ads)\b")
 
 
 def curso_de_nivel_tecnico(curso: str) -> bool:
