@@ -102,7 +102,7 @@ um dashboard ou novas consultas para começar essa conversa.
 ## 2.1 Rodada de confiabilidade (10/09/2026)
 
 Uma revisão externa apontou defeitos no núcleo do produto, e eles foram corrigidos com teste
-que reproduz cada falha. O detalhe operacional está no [CLAUDE.md](../CLAUDE.md); a decisão de
+que reproduz cada falha. O detalhe está nas [decisões do motor](decisoes-do-motor.md); a decisão de
 arquitetura, em [arquitetura.md](arquitetura.md). Em resumo: fronteira de transação, identidade
 da vaga por fonte e id, deduplicação que preserva cidade, prompt preservando o nível da
 habilidade, recusa corrigida deixando de penalizar, negação no pré-filtro de experiência, falha

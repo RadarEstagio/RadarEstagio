@@ -368,6 +368,7 @@ vínculo estão implementados. O cadastro é validado e criado pelo banco após 
 a interface edita campos permitidos e chama RPCs para operações protegidas. As Edge Functions
 tratam vínculo, feedback e navegação. Jooble existe como fonte opcional, desligada por padrão.
 
+As medições por trás de cada regra do motor estão nas [decisões do motor](decisoes-do-motor.md).
 O [catálogo](funcionalidades.md) detalha as capacidades. Publicação e validação estão no
 [guia](guia-publicacao-e-piloto.md), e as pendências no [plano geral](plano-geral.md).
 Novos adapters devem cumprir os contratos do domínio; medir cobertura, custo e comportamento

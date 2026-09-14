@@ -11,11 +11,13 @@ diferentes. Esta revisão reorganizou registros locais; não consultou serviços
   ordem de publicação, reversão e roteiro de validação.
 - [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.
 - [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
+- [Decisões do motor](decisoes-do-motor.md): por que cada regra de coleta, pré-filtro, pontuação
+  e mensagem existe, com as medições que a sustentaram.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
 - [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
-  no plano geral, e o que virou regra, na arquitetura e no `CLAUDE.md`.
+  no plano geral, e o que virou regra, nas decisões do motor e no `CLAUDE.md`.
 - [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): rascunhos
   para revisão; sincronizar com HTML e versão aceita antes da vigência.
 - [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
