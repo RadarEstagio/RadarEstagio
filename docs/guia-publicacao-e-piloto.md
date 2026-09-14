@@ -78,8 +78,8 @@ Miguel também está identificado como responsável pelos dados. Registrem:
 
 - Concordância com a descrição do serviço, dados, fornecedores e retenção de 60 dias.
 - Bases legais por finalidade e condições de processamento internacional, logs e backups:
-  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política (Markdown e HTML
-  iguais). Falta só a aprovação dos três.
+  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política. Falta só a
+  aprovação dos três.
 - Quem atenderá solicitações de dados e pedidos de eliminação sem aguardar arrependimento.
 - Quem acompanha falhas do job e a rotina de apagamento.
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
@@ -93,7 +93,7 @@ Proposta de divisão registrada em 08/09/2026 por Ian, **a confirmar por Igor e 
 | Domínio `radarestagio.com`, DNS, e-mail e renovação | Igor | O domínio está na conta pessoal dele; ao fim da disciplina, transferir para quem continuar ou deixar expirar com aviso no site |
 
 Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
-(`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
+(`legal-updated` e o `aside.legal-notice`, que sai) e trocar
 `VERSAO_DOS_TERMOS` em `web/assets/app.js` para a mesma data, porque o banco guarda a versão
 aceita por cada conta. Confiram também os controles reais descritos no
 [contrato frontend](contrato-front.md).

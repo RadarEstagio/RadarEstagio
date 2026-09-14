@@ -84,7 +84,7 @@ os bloqueadores antes de convidar outras pessoas.
 ### 4. Concluir os textos e combinar a manutenção
 
 - [ ] Igor, Ian e Miguel revisarem Termos e Política e resolverem as passagens pendentes.
-- [ ] Definir versão/vigência e sincronizar Markdown e páginas HTML.
+- [ ] Definir versão/vigência nas páginas e em `VERSAO_DOS_TERMOS`.
 - [ ] Combinar quem responde ao contato, acompanha falhas e paga a renovação do domínio.
 
 As páginas seguem como rascunhos até essa revisão; a implementação não aprova os textos.

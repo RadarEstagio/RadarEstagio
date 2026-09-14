@@ -18,8 +18,8 @@ diferentes. Esta revisão reorganizou registros locais; não consultou serviços
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
 - [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
   no plano geral, e o que virou regra, nas decisões do motor e no `CLAUDE.md`.
-- [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): rascunhos
-  para revisão; sincronizar com HTML e versão aceita antes da vigência.
+- [Termos](../web/termos.html) e [Política de Privacidade](../web/privacidade.html): rascunhos
+  para revisão, sem vigência; a versão aceita pelo cadastro é `VERSAO_DOS_TERMOS`.
 - [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
   [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
   decisões externas ainda abertos, com dados ausentes explicitados.
