@@ -756,6 +756,8 @@ def test_estagio_que_tambem_aceita_superior_continua(titulo: str):
         "Estagiário Administrativo - Nível Técnico",
         "Vaga de estágio para estudantes de ensino técnico",
         "Estágio para estudantes de ensino técnico - Google Ads",
+        "Estágio de Nível Técnico em Administração",
+        "Vaga de estágio para alunos técnicos em Administração",
     ],
 )
 def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: str):
@@ -791,6 +793,10 @@ def test_estagio_para_estudantes_de_ensino_tecnico_nao_vai_a_graduando(titulo: s
         "Estágio de apoio a alunos do ensino técnico",
         "Estágio de docência para alunos do curso técnico",
         "Secretaria Escolar - atendimento a alunos do ensino técnico",
+        "Estágio em TI - Inglês nível técnico",
+        "Estágio para estudantes de Técnicas de Enfermagem",
+        "Estágio para estudantes de técnica vocal",
+        "Estágio para estudantes de técnicas de vendas",
     ],
 )
 def test_titulo_tecnico_ambiguo_ou_que_tambem_aceita_superior_continua(titulo: str):

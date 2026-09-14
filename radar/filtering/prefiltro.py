@@ -22,8 +22,10 @@ PADRAO_ENSINO_MEDIO = re.compile(
 )
 PADRAO_ENSINO_TECNICO = re.compile(
     r"\b(?:vaga|estagio|estagiari[oa]s?|oportunidade)(?: de estagio)?\s+para\s+(?:(?:os|as)\s+)?"
-    r"(?:estudantes?|alun[oa]s?)\s+(?:d[eoa]s?\s+)?(?:(?:ensino|curso|nivel)\s+)?tecnic[oa]s?\b"
-    r"|^\W*estagi\w*\W+(?:para\s+)?curso tecnico\b|\bnivel tecnico\b"
+    r"(?:estudantes?|alun[oa]s?)\s+(?:d[eoa]s?\s+)?"
+    r"(?:(?:ensino|curso|nivel)\s+tecnico|tecnicos?)\b"
+    r"|^\W*estagi\w*\W+(?:(?:de|para)\s+)?(?:curso|nivel) tecnico\b"
+    r"|(?:^|\s[-|:]\s*)nivel tecnico\s*(?:$|[-|:(])"
 )
 PADRAO_TITULO_TAMBEM_SUPERIOR = re.compile(
     rf"{PADRAO_NIVEL_SUPERIOR_POR_EXTENSO.pattern}|\b(?:ou|e|em) (?:cst|ads)\b"
