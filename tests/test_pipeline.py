@@ -333,6 +333,62 @@ def test_envia_vagas_ordenadas_por_nota():
     assert texto.index("Empresa 2") < texto.index("Empresa 3") < texto.index("Empresa 1")
 
 
+def vaga_sem_descricao_completa(numero: int, empresa: str) -> Vaga:
+    return vaga(numero).model_copy(update={"empresa": empresa, "descricao_completa": False})
+
+
+def test_empate_na_trava_de_descricao_incompleta_favorece_a_maior_nota_antes_da_trava():
+    jovem_valor = vaga_sem_descricao_completa(5880188747, "Jovem Valor")
+    cocari = vaga_sem_descricao_completa(5880156883, "Cocari")
+    vettore = vaga_sem_descricao_completa(5880176423, "Vettore")
+    na_ordem_do_run = [jovem_valor, cocari, vettore]
+    notas = {"5880188747": 61, "5880156883": 65, "5880176423": 81}
+
+    duas_vagas, _, _ = rodar(na_ordem_do_run, notas, quantidade=2)
+    todas, notificador, _ = rodar(na_ordem_do_run, notas)
+
+    assert [resultado.vaga.empresa for resultado in duas_vagas] == ["Vettore", "Cocari"]
+    assert [(resultado.vaga.empresa, resultado.nota) for resultado in todas] == [
+        ("Vettore", 60),
+        ("Cocari", 60),
+        ("Jovem Valor", 60),
+    ]
+    texto = notificador.textos[0]
+    assert texto.index("Vettore") < texto.index("Cocari") < texto.index("Jovem Valor")
+
+
+def test_vaga_presa_na_trava_fica_atras_de_vaga_completa_com_nota_final_maior():
+    vettore = vaga_sem_descricao_completa(5880176423, "Vettore")
+    completa_de_61 = vaga(61).model_copy(update={"empresa": "Completa de 61"})
+    completa_de_70 = vaga(70).model_copy(update={"empresa": "Completa de 70"})
+    na_ordem_desfavoravel = [vettore, completa_de_61, completa_de_70]
+    notas = {"5880176423": 81, "61": 61, "70": 70}
+
+    duas_vagas, _, _ = rodar(na_ordem_desfavoravel, notas, quantidade=2)
+    todas, notificador, _ = rodar(na_ordem_desfavoravel, notas)
+
+    assert [resultado.vaga.empresa for resultado in duas_vagas] == [
+        "Completa de 70",
+        "Completa de 61",
+    ]
+    assert [(resultado.vaga.empresa, resultado.nota) for resultado in todas] == [
+        ("Completa de 70", 70),
+        ("Completa de 61", 61),
+        ("Vettore", 60),
+    ]
+    texto = notificador.textos[0]
+    assert texto.index("Completa de 70") < texto.index("Completa de 61") < texto.index("Vettore")
+
+
+def test_empate_sem_trava_mantem_a_ordem_em_que_as_vagas_chegaram():
+    for ordem in ([1, 2, 3], [3, 1, 2]):
+        selecionadas, _, _ = rodar([vaga(numero) for numero in ordem], {"1": 70, "2": 70, "3": 70})
+
+        assert [resultado.vaga.id_externo for resultado in selecionadas] == [
+            str(numero) for numero in ordem
+        ]
+
+
 def test_nao_envia_se_conta_sai_durante_a_coleta():
     repositorio = RepositorioFalso([usuario()])
     notificador = NotificadorFalso()

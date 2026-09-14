@@ -11,6 +11,7 @@ from radar.notification.formatador import (
     formatar_falha_da_execucao,
     formatar_mensagem,
     formatar_mensagem_sem_vagas,
+    formatar_pergunta_de_feedback,
     formatar_resumo_da_execucao,
     recomendacoes_por_parte,
 )
@@ -489,6 +490,47 @@ def test_recomendacoes_sao_distribuidas_entre_as_partes_na_ordem_da_mensagem():
 
     assert [len(grupo) for grupo in grupos] == [5]
     assert [r.resultado.nota for r in grupos[0]] == [89, 88, 87, 86, 85]
+
+
+def test_empate_de_nota_poe_antes_a_vaga_de_maior_nota_antes_dos_limites():
+    natural = resultado(60, titulo="Estágio Jovem Valor", numero=1)
+    limitada = resultado(60, titulo="Estágio Vettore", numero=2).model_copy(
+        update={"nota_antes_dos_limites_objetivos": 81}
+    )
+    sem_limite = [
+        resultado(60, titulo=f"Estágio {letra}", numero=n) for n, letra in [(3, "A"), (4, "B")]
+    ]
+    recomendacoes = [Recomendacao(resultado=item) for item in [natural, limitada, *sem_limite]]
+
+    texto = formatar_mensagem(recomendacoes, MOMENTO_DE_TESTE)
+    grupos = recomendacoes_por_parte(dividir_em_mensagens(texto), recomendacoes)
+    pergunta = formatar_pergunta_de_feedback(recomendacoes)
+
+    assert (
+        texto.index("Vettore")
+        < texto.index("Jovem Valor")
+        < texto.index("Estágio A")
+        < texto.index("Estágio B")
+    )
+    assert [item.resultado.vaga.id_externo for item in grupos[0]] == ["2", "1", "3", "4"]
+    assert pergunta.linhas_de_botoes[0][0].dados.endswith(str(recomendacoes[1].token))
+
+
+def test_vaga_presa_na_trava_fica_atras_de_vaga_com_nota_final_maior():
+    limitada = resultado(60, titulo="Estágio Vettore", numero=1).model_copy(
+        update={"nota_antes_dos_limites_objetivos": 81}
+    )
+    de_61 = resultado(61, titulo="Estágio Sessenta e Um", numero=2)
+    de_70 = resultado(70, titulo="Estágio Setenta", numero=3)
+    recomendacoes = [Recomendacao(resultado=item) for item in [limitada, de_61, de_70]]
+
+    texto = formatar_mensagem(recomendacoes, MOMENTO_DE_TESTE)
+    grupos = recomendacoes_por_parte(dividir_em_mensagens(texto), recomendacoes)
+    pergunta = formatar_pergunta_de_feedback(recomendacoes)
+
+    assert texto.index("Setenta") < texto.index("Sessenta e Um") < texto.index("Vettore")
+    assert [item.resultado.vaga.id_externo for item in grupos[0]] == ["3", "2", "1"]
+    assert pergunta.linhas_de_botoes[0][-1].dados.endswith(str(recomendacoes[0].token))
 
 
 def test_cada_parte_leva_as_vagas_que_estao_dentro_dela():

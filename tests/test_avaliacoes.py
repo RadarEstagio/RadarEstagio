@@ -667,16 +667,98 @@ def test_habilidade_nao_vira_ponto_porque_ja_aparece_na_lista_de_requisitos():
     assert resultado.pontos_contra == []
 
 
-def test_periodo_minimo_acima_do_perfil_vira_ponto_contra():
-    resultado = resultado_da(extracao(periodo_minimo=8))
+def perfil_de_administracao(periodo: int) -> Perfil:
+    return Perfil(
+        curso="Administração",
+        periodo=periodo,
+        habilidades=["Pacote Office"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.HIBRIDO,
+    )
 
-    assert resultado.pontos_contra == ["Período mínimo incompatível"]
+
+def extracao_de_administracao(**alteracoes) -> ExtracaoDaVaga:
+    dados = {
+        "id_vaga": "adzuna:5882921354",
+        "modalidade": "hibrido",
+        "area_da_vaga": "administracao",
+        "areas_da_vaga": ["rotinas_administrativas"],
+        "cursos_aceitos": ["Administração"],
+        "periodo_minimo": 4,
+        "habilidades_principais": ["pacote Office"],
+    }
+    dados.update(alteracoes)
+    return ExtracaoDaVaga.model_validate(dados)
 
 
-def test_experiencia_exigida_vira_ponto_contra_no_lugar_do_periodo():
+def test_vaga_que_exige_periodo_acima_do_perfil_fica_abaixo_da_nota_minima_com_aviso():
+    resultado = resultado_da(extracao_de_administracao(), perfil_de_administracao(1))
+
+    assert resultado.nota == 35
+    assert resultado.avisos_objetivos == ["Exige a partir do 4º período"]
+    assert resultado.pontos_contra == []
+
+
+def test_periodo_igual_ao_minimo_nao_limita_a_nota():
+    resultado = resultado_da(extracao_de_administracao(), perfil_de_administracao(4))
+
+    assert resultado.nota == 100
+    assert resultado.avisos_objetivos == []
+
+
+def test_periodo_acima_do_minimo_nao_limita_a_nota():
+    resultado = resultado_da(extracao_de_administracao(), perfil_de_administracao(7))
+
+    assert resultado.nota == 100
+    assert resultado.avisos_objetivos == []
+
+
+def test_vaga_sem_periodo_minimo_nao_limita_a_nota():
+    resultado = resultado_da(
+        extracao_de_administracao(periodo_minimo=None), perfil_de_administracao(1)
+    )
+
+    assert resultado.nota == 100
+    assert resultado.avisos_objetivos == []
+
+
+def test_ano_confundido_com_periodo_nao_esconde_a_vaga():
+    resultado = resultado_da(
+        extracao_de_administracao(periodo_minimo=2028), perfil_de_administracao(1)
+    )
+
+    assert resultado.nota == 100
+    assert resultado.avisos_objetivos == []
+
+
+def test_curso_e_periodo_incompativeis_juntos_dao_um_teto_so_e_os_dois_avisos():
+    resultado = resultado_da(
+        extracao_de_administracao(cursos_aceitos=["Engenharia Civil"]), perfil_de_administracao(1)
+    )
+
+    assert resultado.nota == 35
+    assert resultado.avisos_objetivos == [
+        "Exige formação de outra área",
+        "Exige a partir do 4º período",
+    ]
+
+
+def test_experiencia_exigida_vira_ponto_contra_e_o_periodo_vira_aviso():
     resultado = resultado_da(extracao(periodo_minimo=8, experiencia_minima_anos=2))
 
+    assert resultado.nota == 35
     assert resultado.pontos_contra == ["Exige experiência prévia"]
+    assert resultado.avisos_objetivos == ["Exige a partir do 8º período"]
+
+
+def test_experiencia_exigida_continua_sem_teto_de_elegibilidade():
+    resultado = resultado_da(
+        extracao(experiencia_minima_anos=2, habilidades_obrigatorias=["Python", "Java"])
+    )
+
+    assert resultado.nota == 83
+    assert resultado.pontos_contra == ["Exige experiência prévia"]
+    assert resultado.avisos_objetivos == []
 
 
 def test_variantes_de_office_e_google_nao_contam_na_nota():

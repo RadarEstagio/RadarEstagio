@@ -356,6 +356,16 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
   12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
   sai e a extração passa a ler só os 500 caracteres da API.
+  **Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
+  `/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
+  28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
+  (19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
+  quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
+  nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
+  a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
+  presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
+  atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
+  mérito, porque 81 antes da trava vence 60.
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
   envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
@@ -605,8 +615,27 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   em computação, onde Ciência da Computação, Engenharia de Software e ADS disputam as mesmas
   vagas. Sem essa trava, Engenharia Civil valia por Engenharia Química e Contábeis por Economia
   (08/09/2026).
+- **Período mínimo** (14/09/2026): perfil abaixo do `periodo_minimo` extraído limita a 35 com o
+  aviso "Exige a partir do Nº período", como curso incompatível. Antes só zerava os 15 pontos de
+  período/experiência, e um perfil de Administração no 1º período recebeu em 1º lugar, com 80, a
+  vaga do CIEE que pede "4º ou 5º período". O aviso substitui o ponto contra genérico, mas avisos
+  não são gravados em `avaliacoes` (como no curso incompatível): `baixar_meus_dados` mostra 35 sem
+  motivo, e as linhas antigas ainda têm "Período mínimo incompatível". Experiência exigida segue
+  só no fator, e faixa ("4º ao 6º") segue sem teto superior, porque o prompt não extrai o limite.
+  Valor fora de 1 a 12 vira `None` na validação: ano lido como período esconderia a vaga de todos.
+  Das 131 extrações da versão `7efdbc95` com `periodo_minimo`, 130 batem com o anúncio. O erro é
+  frase de preferência lida como mínimo, e o modelo é inconsistente nela: de 4 achadas, só "é
+  desejável que esteja cursando entre o 4 ao 7 semestre" (adzuna:5872138783) virou 4; a mesma
+  frase na 5872067515, "preferencialmente o 6º ou 7º período" (5880906488) e "desejável entre 4º
+  e 7º período" (5881849408) vieram nulas. Com o teto, esse erro esconde a vaga; a correção é uma
+  frase no prompt, adiada porque muda `VERSAO_DA_EXTRACAO` e reextrai o cache. Nos 9 anúncios com
+  faixa por curso a extração guardou o menor mínimo (5880225477: ADS a partir do 3º e CC a partir
+  do 7º → 3), mas é comportamento observado: o prompt não manda. Nos 4 perfis ativos, 54 de 663
+  pares caem abaixo de 40 e 8 dos 188 envios de 7 dias não teriam saído. Risco aberto:
+  `perfis.periodo` é o que a pessoa digitou no cadastro e não avança sozinho, então perfil
+  desatualizado passa a perder vaga que já pode fazer.
 - **Pontos a favor e contra são gerados da comparação** (03/09/2026), não escritos pela IA.
-  Sobraram "Curso compatível", "Período mínimo incompatível" e "Exige experiência prévia", porque
+  Sobraram "Curso compatível" e "Exige experiência prévia" (o período virou aviso em 14/09), porque
   as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
   vindo do modelo.
 - **Viés conhecido, registrado em 03/09/2026**: anúncio que declara

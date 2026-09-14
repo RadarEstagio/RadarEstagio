@@ -16,6 +16,8 @@ class Modalidade(StrEnum):
 
 
 AreaDeInteresse = StrEnum("AreaDeInteresse", {valor.upper(): valor for valor in SUBAREAS})
+PRIMEIRO_PERIODO = 1
+ULTIMO_PERIODO_PLAUSIVEL = 12
 
 
 class NivelCompatibilidade(StrEnum):
@@ -69,6 +71,13 @@ class ExtracaoDaVaga(BaseModel):
             return None
         area = normalizar(valor)
         return area if area in AREAS_POR_NOME else None
+
+    @field_validator("periodo_minimo")
+    @classmethod
+    def descartar_periodo_implausivel(cls, valor: int | None) -> int | None:
+        if valor is None or PRIMEIRO_PERIODO <= valor <= ULTIMO_PERIODO_PLAUSIVEL:
+            return valor
+        return None
 
     def modalidade_reconhecida(self) -> Modalidade | None:
         if not self.modalidade:
@@ -132,6 +141,12 @@ class ResultadoMatch(BaseModel):
     pontos_contra: list[str] = Field(default_factory=list)
     avisos_objetivos: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None
+    nota_antes_dos_limites_objetivos: int | None = Field(default=None, ge=0, le=100)
+
+    def criterio_de_ranking(self) -> tuple[int, int]:
+        if self.nota_antes_dos_limites_objetivos is None:
+            return self.nota, self.nota
+        return self.nota, self.nota_antes_dos_limites_objetivos
 
 
 class ProblemaJulgado(StrEnum):

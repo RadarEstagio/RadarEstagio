@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -61,6 +62,76 @@ def test_nao_abre_pagina_de_vaga_que_nao_e_resumo_truncado(httpx_mock: HTTPXMock
 
     assert enriquecidas[0].descricao == "Descrição completa da vaga"
     assert httpx_mock.get_requests() == []
+
+
+def anuncio_da_adzuna(id_externo: str, url: str) -> Vaga:
+    return vaga_truncada().model_copy(update={"id_externo": id_externo, "url": url})
+
+
+def test_nao_pede_a_pagina_de_anuncio_land_ad_que_a_adzuna_sempre_recusa(
+    httpx_mock: HTTPXMock, caplog
+):
+    anuncio = anuncio_da_adzuna(
+        "5880177309",
+        "https://www.adzuna.com.br/land/ad/5880177309?se=abc&utm_medium=api&v=1",
+    )
+    caplog.set_level(logging.INFO, logger="radar.matching.enriquecimento")
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([anuncio, anuncio])
+
+    assert httpx_mock.get_requests() == []
+    assert enriquecidas == [anuncio, anuncio]
+    assert not enriquecidas[0].descricao_completa
+    assert not [registro for registro in caplog.records if registro.levelno >= logging.WARNING]
+
+
+def test_pula_so_o_anuncio_land_ad_e_informa_quantos_ficaram_de_fora(httpx_mock: HTTPXMock, caplog):
+    pagina = CAMINHO_DA_PAGINA.read_text(encoding="utf-8")
+    httpx_mock.add_response(url="https://www.adzuna.com.br/details/5862521726", text=pagina)
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747", text=pagina
+    )
+    detalhe = vaga_truncada()
+    detalhe_com_land_ad_na_consulta = anuncio_da_adzuna(
+        "5880188747", "https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747"
+    )
+    anuncios = [
+        anuncio_da_adzuna(numero, f"https://www.adzuna.com.br/land/ad/{numero}?se=x")
+        for numero in ("5880177309", "5880176423")
+    ]
+    caplog.set_level(logging.INFO, logger="radar.matching.enriquecimento")
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(
+            [anuncios[0], detalhe, anuncios[1], detalhe_com_land_ad_na_consulta]
+        )
+
+    assert [str(pedido.url) for pedido in httpx_mock.get_requests()] == [
+        "https://www.adzuna.com.br/details/5862521726",
+        "https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747",
+    ]
+    assert [vaga.descricao_completa for vaga in enriquecidas] == [False, True, False, True]
+    informativos = [
+        registro.getMessage() for registro in caplog.records if registro.levelno == logging.INFO
+    ]
+    assert informativos == [
+        "2 vagas da Adzuna com anúncio /land/ad/ ficaram com a descrição da API"
+    ]
+
+
+def test_reconhece_land_ad_sem_diferenciar_caixa_nem_barra_dupla(httpx_mock: HTTPXMock):
+    variantes = [
+        anuncio_da_adzuna(numero, url)
+        for numero, url in [
+            ("5880177309", "https://www.adzuna.com.br/LAND/AD/5880177309?se=x"),
+            ("5880176423", "https://www.adzuna.com.br//land/ad/5880176423?se=x"),
+            ("5880188747", "https://www.adzuna.com.br/Land//Ad/5880188747"),
+        ]
+    ]
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(variantes)
+
+    assert httpx_mock.get_requests() == []
+    assert enriquecidas == variantes
 
 
 def test_mantem_descricao_marcada_como_incompleta_quando_pagina_falha(

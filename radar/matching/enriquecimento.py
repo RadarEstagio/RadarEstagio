@@ -1,5 +1,7 @@
 import logging
+import re
 from html.parser import HTMLParser
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -8,6 +10,8 @@ from radar.domain.models import Vaga
 logger = logging.getLogger(__name__)
 
 FONTE_ADZUNA = "adzuna"
+CAMINHO_DO_ANUNCIO_LAND_AD = "/land/ad/"
+BARRAS_REPETIDAS = re.compile(r"/{2,}")
 CLASSE_DA_DESCRICAO = "adp-body"
 TAGS_DE_QUEBRA = frozenset({"br", "div", "li", "p"})
 TAGS_SEM_FECHAMENTO = frozenset(
@@ -35,10 +39,20 @@ class EnriquecedorDeDescricoes:
         self._cache: dict[tuple[str, str], Vaga] = {}
 
     def enriquecer(self, vagas: list[Vaga]) -> list[Vaga]:
+        sem_pagina_de_detalhe = [
+            vaga
+            for vaga in vagas
+            if descricao_parece_truncada(vaga) and aponta_para_anuncio_land_ad(vaga.url)
+        ]
+        if sem_pagina_de_detalhe:
+            logger.info(
+                "%d vagas da Adzuna com anúncio /land/ad/ ficaram com a descrição da API",
+                len(sem_pagina_de_detalhe),
+            )
         return [self._enriquecer(vaga) for vaga in vagas]
 
     def _enriquecer(self, vaga: Vaga) -> Vaga:
-        if not descricao_parece_truncada(vaga):
+        if not descricao_parece_truncada(vaga) or aponta_para_anuncio_land_ad(vaga.url):
             return vaga
         chave = (vaga.fonte, vaga.id_externo)
         if chave in self._cache:
@@ -50,6 +64,11 @@ class EnriquecedorDeDescricoes:
 
 def descricao_parece_truncada(vaga: Vaga) -> bool:
     return vaga.fonte == FONTE_ADZUNA and not vaga.descricao_completa
+
+
+def aponta_para_anuncio_land_ad(url: str) -> bool:
+    caminho = BARRAS_REPETIDAS.sub("/", urlsplit(url).path).casefold()
+    return caminho.startswith(CAMINHO_DO_ANUNCIO_LAND_AD)
 
 
 def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:

@@ -13,7 +13,6 @@ from radar.domain.areas import (
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
-PONTO_PERIODO_INCOMPATIVEL = "Período mínimo incompatível"
 PONTO_EXPERIENCIA_EXIGIDA = "Exige experiência prévia"
 ABERTURAS_A_QUALQUER_CURSO = frozenset(
     {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
@@ -113,11 +112,15 @@ def vaga_so_para_curso_tecnico(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool
 def nivel_do_periodo(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
     if extracao.experiencia_minima_anos:
         return NivelCompatibilidade.INCOMPATIVEL
-    if extracao.periodo_minimo is not None and perfil.periodo < extracao.periodo_minimo:
+    if periodo_abaixo_do_minimo(extracao, perfil):
         return NivelCompatibilidade.INCOMPATIVEL
     if extracao.experiencia_desejavel:
         return NivelCompatibilidade.PARCIAL
     return NivelCompatibilidade.COMPATIVEL
+
+
+def periodo_abaixo_do_minimo(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
+    return extracao.periodo_minimo is not None and perfil.periodo < extracao.periodo_minimo
 
 
 def montar_pontos(
@@ -131,8 +134,6 @@ def montar_pontos(
         a_favor.append(PONTO_CURSO_COMPATIVEL)
     if extracao.experiencia_minima_anos:
         contra.append(PONTO_EXPERIENCIA_EXIGIDA)
-    elif niveis.periodo_experiencia is NivelCompatibilidade.INCOMPATIVEL:
-        contra.append(PONTO_PERIODO_INCOMPATIVEL)
     return a_favor, contra
 
 
