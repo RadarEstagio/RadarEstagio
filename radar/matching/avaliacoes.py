@@ -38,6 +38,7 @@ LIMITE_FORA_DAS_AREAS_DE_INTERESSE = 65
 LIMITE_CURSO_PARCIAL = 75
 LIMITE_CURSO_INCOMPATIVEL = 35
 AVISO_CURSO_INCOMPATIVEL = "Exige formação de outra área"
+AVISO_VAGA_PARA_CURSO_TECNICO = "Vaga para estudantes de curso técnico"
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 INTERESSE_SEM_AREA_RECONHECIDA = 0.5
 INTERESSE_DE_OUTRA_SUBAREA = 0.5
@@ -493,7 +494,9 @@ def _avisos_objetivos(
         avisos.append(aviso_de_area_recusada(recusadas))
     elif _compatibilidade_de_interesse(extracao, perfil) == 0.0 and perfil.areas_de_interesse:
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
-    if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
+    if niveis.so_para_curso_tecnico:
+        avisos.append(AVISO_VAGA_PARA_CURSO_TECNICO)
+    elif niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
     if _nota_sem_habilidades_declaradas(extracao, perfil):
         avisos.append(AVISO_SEM_HABILIDADES_NO_PERFIL)

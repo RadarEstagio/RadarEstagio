@@ -431,6 +431,45 @@ def test_curso_incompativel_limita_a_nota_a_35_com_aviso():
     assert "Exige formação de outra área" in resultado.avisos_objetivos
 
 
+def de_administracao() -> Perfil:
+    return Perfil(
+        curso="Administração",
+        periodo=1,
+        habilidades=["Excel"],
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
+    )
+
+
+def vaga_de_administracao(cursos_aceitos: list[str]) -> ExtracaoDaVaga:
+    return extracao(
+        area_da_vaga="administracao",
+        cursos_aceitos=cursos_aceitos,
+        habilidades_obrigatorias=["Excel"],
+    )
+
+
+def test_vaga_so_para_curso_tecnico_limita_a_35_com_aviso_proprio():
+    resultado = resultado_da(
+        vaga_de_administracao(["Técnico em Administração"]), de_administracao()
+    )
+
+    assert resultado.nota == 35
+    assert resultado.avisos_objetivos == ["Vaga para estudantes de curso técnico"]
+    assert "Curso compatível" not in resultado.pontos_a_favor
+
+
+def test_curso_tecnico_como_acrescimo_nao_muda_a_nota():
+    so_graduacao = resultado_da(vaga_de_administracao(["Administração"]), de_administracao())
+    com_tecnico = resultado_da(
+        vaga_de_administracao(["Administração", "Técnico em Administração"]), de_administracao()
+    )
+
+    assert com_tecnico.nota == so_graduacao.nota > 35
+    assert com_tecnico.avisos_objetivos == so_graduacao.avisos_objetivos == []
+    assert "Curso compatível" in com_tecnico.pontos_a_favor
+
+
 def test_curso_parcial_limita_a_nota_a_75():
     resultado = resultado_da(
         extracao(cursos_aceitos=[], habilidades_obrigatorias=["Python", "Java"])

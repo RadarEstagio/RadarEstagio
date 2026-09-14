@@ -2,18 +2,29 @@ import re
 
 from pydantic import BaseModel
 
-from radar.domain.areas import AREAS_POR_NOME, area_do_curso, normalizar, normalizar_curso
+from radar.domain.areas import (
+    AREAS_POR_NOME,
+    area_do_curso,
+    curso_de_nivel_tecnico,
+    formacao_de_nivel_superior,
+    normalizar,
+    normalizar_curso,
+)
 from radar.domain.models import ExtracaoDaVaga, NivelCompatibilidade, Perfil
 
 PONTO_CURSO_COMPATIVEL = "Curso compatível"
 PONTO_PERIODO_INCOMPATIVEL = "Período mínimo incompatível"
 PONTO_EXPERIENCIA_EXIGIDA = "Exige experiência prévia"
+ABERTURAS_A_QUALQUER_CURSO = frozenset(
+    {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
+)
 
 
 class NiveisDeCompatibilidade(BaseModel):
     area: NivelCompatibilidade
     curso: NivelCompatibilidade
     periodo_experiencia: NivelCompatibilidade
+    so_para_curso_tecnico: bool = False
 
 
 def derivar_niveis(extracao: ExtracaoDaVaga, perfil: Perfil) -> NiveisDeCompatibilidade:
@@ -21,6 +32,7 @@ def derivar_niveis(extracao: ExtracaoDaVaga, perfil: Perfil) -> NiveisDeCompatib
         area=nivel_da_area(extracao, perfil),
         curso=nivel_do_curso(extracao, perfil),
         periodo_experiencia=nivel_do_periodo(extracao, perfil),
+        so_para_curso_tecnico=vaga_so_para_curso_tecnico(extracao, perfil),
     )
 
 
@@ -36,13 +48,11 @@ def nivel_da_area(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilid
 
 
 def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:
-    if extracao.aceita_qualquer_curso or any(
-        normalizar(curso)
-        in {"qualquer curso", "qualquer graduacao", "qualquer formacao", "todos os cursos"}
-        for curso in extracao.cursos_aceitos
-    ):
+    if aceita_qualquer_curso(extracao):
         return NivelCompatibilidade.COMPATIVEL
-    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
+    if vaga_so_para_curso_tecnico(extracao, perfil):
+        return NivelCompatibilidade.INCOMPATIVEL
+    aceitos = cursos_comparaveis(extracao, perfil)
     if not aceitos:
         return NivelCompatibilidade.PARCIAL
     if any(mesma_area(curso, perfil.curso) for curso in aceitos):
@@ -50,6 +60,31 @@ def nivel_do_curso(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibili
     if any(mesmo_curso(curso, perfil.curso) for curso in aceitos):
         return NivelCompatibilidade.COMPATIVEL
     return NivelCompatibilidade.INCOMPATIVEL
+
+
+def aceita_qualquer_curso(extracao: ExtracaoDaVaga) -> bool:
+    return extracao.aceita_qualquer_curso or any(
+        normalizar(curso) in ABERTURAS_A_QUALQUER_CURSO for curso in extracao.cursos_aceitos
+    )
+
+
+def vaga_so_para_curso_tecnico(extracao: ExtracaoDaVaga, perfil: Perfil) -> bool:
+    if curso_de_nivel_tecnico(perfil.curso) or aceita_qualquer_curso(extracao):
+        return False
+    cursos = extracao.cursos_aceitos
+    return any(curso_de_nivel_tecnico(curso) for curso in cursos) and not any(
+        formacao_de_nivel_superior(curso) for curso in cursos
+    )
+
+
+def cursos_comparaveis(extracao: ExtracaoDaVaga, perfil: Perfil) -> list[str]:
+    aceitos = [curso for curso in extracao.cursos_aceitos if normalizar_curso(curso)]
+    if curso_de_nivel_tecnico(perfil.curso):
+        return aceitos
+    if not any(curso_de_nivel_tecnico(curso) for curso in aceitos):
+        return aceitos
+    superiores = [curso for curso in aceitos if formacao_de_nivel_superior(curso)]
+    return superiores or aceitos
 
 
 def nivel_do_periodo(extracao: ExtracaoDaVaga, perfil: Perfil) -> NivelCompatibilidade:

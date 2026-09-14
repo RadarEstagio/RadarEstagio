@@ -834,6 +834,32 @@ def curso_e_generico(curso: str) -> bool:
     return bool(normalizar(curso)) and not normalizar_curso(curso)
 
 
+PADRAO_CURSO_TECNICO = re.compile(
+    r"^(?:(?:cursando|estudantes?(?: de| do)?|curso|ensino|medio|nivel|formacao)\s+)*"
+    r"tecnic[oa]s?\b"
+)
+PADRAO_ENSINO_MEDIO = re.compile(r"^(?:cursando\s+)?(?:ensino|nivel) medio\b")
+PADRAO_NIVEL_SUPERIOR = re.compile(
+    r"\b(?:superior|graduacao|graduand[oa]s?|bacharel(?:ado)?|licenciatura|tecnolog[oa]s?"
+    r"|faculdade|universitari[oa]s?)\b"
+)
+
+
+def curso_de_nivel_tecnico(curso: str) -> bool:
+    texto = normalizar(curso)
+    return (
+        PADRAO_CURSO_TECNICO.match(texto) is not None
+        and PADRAO_NIVEL_SUPERIOR.search(texto) is None
+    )
+
+
+def formacao_de_nivel_superior(curso: str) -> bool:
+    texto = normalizar(curso)
+    if curso_de_nivel_tecnico(curso) or PADRAO_ENSINO_MEDIO.match(texto):
+        return False
+    return bool(normalizar_curso(curso)) or PADRAO_NIVEL_SUPERIOR.search(texto) is not None
+
+
 def area_do_curso(curso: str) -> str | None:
     normalizado = normalizar_curso(curso)
     candidatas = [
