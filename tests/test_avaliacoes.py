@@ -585,6 +585,55 @@ def test_item_com_alternativas_pontua_como_o_curso_que_ele_aceita(
     )
 
 
+NOTAS_DO_MAIN_PARA_ITENS_SEM_TECNICO = [
+    ("Administração", "Administração/Economia", 88, [], ["Curso compatível"]),
+    ("Economia", "Administração/Economia", 35, ["Exige formação de outra área"], []),
+    ("Engenharia Civil", "Engenharia Civil ou Mecânica", 35, ["Exige formação de outra área"], []),
+    (
+        "Engenharia Mecânica",
+        "Engenharia Civil ou Mecânica",
+        35,
+        ["Exige formação de outra área"],
+        [],
+    ),
+    ("Direito", "Direito e/ou Relações Internacionais", 35, ["Exige formação de outra área"], []),
+    (
+        "Relações Internacionais",
+        "Direito e/ou Relações Internacionais",
+        35,
+        ["Exige formação de outra área"],
+        [],
+    ),
+    ("Letras", "Letras - Português/Inglês", 88, [], ["Curso compatível"]),
+    (
+        "Ciência da Computação",
+        "Ciência da Computação/Sistemas de Informação",
+        64,
+        [],
+        ["Curso compatível"],
+    ),
+    (
+        "Sistemas de Informação",
+        "Ciência da Computação/Sistemas de Informação",
+        64,
+        [],
+        ["Curso compatível"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("curso", "item", "nota", "avisos", "a_favor"), NOTAS_DO_MAIN_PARA_ITENS_SEM_TECNICO
+)
+def test_item_sem_tecnico_com_barra_ou_alternativa_pontua_como_no_main(
+    curso: str, item: str, nota: int, avisos: list[str], a_favor: list[str]
+):
+    anuncio = extracao(cursos_aceitos=[item], habilidades_obrigatorias=["Excel"])
+    resultado = resultado_da(anuncio, graduando_em(curso))
+
+    assert resumo_da_nota(resultado) == (nota, avisos, a_favor, [])
+
+
 def test_curso_parcial_limita_a_nota_a_75():
     resultado = resultado_da(
         extracao(cursos_aceitos=[], habilidades_obrigatorias=["Python", "Java"])
