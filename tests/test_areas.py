@@ -310,6 +310,9 @@ def test_ensino_medio_no_titulo_nao_e_sinal_de_educacao():
         "Ensino Médio Técnico em Logística",
         "Nível técnico",
         "Técnico em Tecnologia da Informação",
+        "Alunos do curso técnico em Administração",
+        "Aluna de curso técnico em Enfermagem",
+        "Aluno do ensino técnico",
     ],
 )
 def test_reconhece_curso_de_nivel_tecnico(curso: str):

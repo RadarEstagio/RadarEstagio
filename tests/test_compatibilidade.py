@@ -284,6 +284,7 @@ def niveis_da_vaga_de_administracao(aceitos: list[str], candidato: Perfil | None
         ["Técnico em Administração", "Áreas afins"],
         ["Técnico em Administração ou Técnico em Logística"],
         ["Ensino médio ou Técnico em Administração"],
+        ["Alunos do curso técnico em Administração"],
     ],
 )
 def test_vaga_so_para_curso_tecnico_e_incompativel_para_quem_faz_graduacao(aceitos):

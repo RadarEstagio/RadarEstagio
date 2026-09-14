@@ -835,7 +835,7 @@ def curso_e_generico(curso: str) -> bool:
 
 
 PADRAO_CURSO_TECNICO = re.compile(
-    r"^(?:(?:cursando|estudantes?(?: de| do)?|curso|ensino|medio|nivel|formacao)\s+)*"
+    r"^(?:(?:cursando|estudantes?|alun[oa]s?|curso|ensino|medio|nivel|formacao)(?: d[eoa])?\s+)*"
     r"tecnic[oa]s?\b"
 )
 PADRAO_ENSINO_MEDIO = re.compile(r"^(?:cursando\s+)?(?:ensino|nivel) medio\b")
