@@ -115,6 +115,22 @@ def test_guarda_a_nota_de_antes_dos_limites_sem_mudar_a_nota_limitada():
     assert incompleta.nota_antes_dos_limites_objetivos is None
 
 
+def test_reaplicar_as_regras_preserva_a_nota_de_antes_dos_limites():
+    incompleta = ResultadoMatch(
+        vaga=vaga(Modalidade.REMOTO).model_copy(update={"descricao_completa": False}),
+        nota=81,
+    )
+    presencial = ResultadoMatch(vaga=vaga(Modalidade.PRESENCIAL), nota=90)
+
+    uma_vez = aplicar_regras_objetivas([incompleta, presencial], perfil())
+    duas_vezes = aplicar_regras_objetivas(uma_vez, perfil())
+
+    assert [
+        (corrigido.nota, corrigido.nota_antes_dos_limites_objetivos) for corrigido in duas_vezes
+    ] == [(60, 81), (30, 90)]
+    assert duas_vezes == uma_vez
+
+
 def vaga_em(localizacao: str, modalidade: Modalidade | None) -> Vaga:
     return vaga(modalidade).model_copy(update={"localizacao": localizacao})
 

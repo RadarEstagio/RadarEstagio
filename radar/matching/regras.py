@@ -38,10 +38,13 @@ def aplicar_regras_ao_resultado(resultado: ResultadoMatch, perfil: Perfil) -> Re
         if AVISO_DESCRICAO_INCOMPLETA not in avisos:
             avisos.append(AVISO_DESCRICAO_INCOMPLETA)
     pontos_contra = [ponto for ponto in resultado.pontos_contra if not descreve_modalidade(ponto)]
+    nota_antes_dos_limites = resultado.nota_antes_dos_limites_objetivos
+    if nota_antes_dos_limites is None:
+        nota_antes_dos_limites = resultado.nota
     return resultado.model_copy(
         update={
             "nota": nota,
-            "nota_antes_dos_limites_objetivos": resultado.nota,
+            "nota_antes_dos_limites_objetivos": nota_antes_dos_limites,
             "pontos_contra": pontos_contra,
             "avisos_objetivos": avisos,
         }
