@@ -67,6 +67,18 @@ def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
     assert ".hero > .hero-grid { background: none; animation: none; }" in css
 
 
+def test_marca_leva_ao_topo_pelo_hero_e_nao_pelo_cabecalho_grudado():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert "position: sticky; top: 0;" in css[css.index(".site-header {") :]
+    assert '<header class="site-header">' in html
+    assert '<main id="conteudo">\n      <section class="hero" id="inicio">' in html
+    assert html.count('id="inicio"') == 1
+    assert html.count('href="#inicio"') == 2
+    assert "#conteudo > section[id] { scroll-margin-top: 100px; }" in css
+
+
 def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
     html = (RAIZ / "web/index.html").read_text()
 
