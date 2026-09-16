@@ -16,7 +16,9 @@ fontes → dedupe/pré-filtro → enriquecimento → extração compartilhada
   → trava e histórico por perfil → pontuação → revalidação → Telegram → registro de envio
 ```
 
-A extração é reaproveitada entre usuários; pontuação e seleção são individuais. A trava
+A extração é reaproveitada entre usuários; pontuação e seleção são individuais. Ela guarda se
+leu a descrição completa, e a nota limitada a 60 segue o que ela leu, não a vaga do dia; a extração
+feita sobre a descrição cortada volta à IA uma vez quando a completa chega. A trava
 serializa atendimento do mesmo perfil. Banco e envio ao Telegram não são transação única.
 O [catálogo](funcionalidades.md) detalha recursos e limites; o [contrato](contrato-front.md)
 descreve o cadastro e as RPCs atuais.
@@ -185,7 +187,10 @@ antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
 Regex não lê negação sozinho: "não exigimos 2 anos de experiência" descartava a vaga pela
 menção. A negação passou a valer dentro da mesma frase, e só dentro dela, para que um "não"
-da frase anterior não libere a exigência seguinte.
+da frase anterior não libere a exigência seguinte. Depois da exigência ela vale nas palavras
+logo seguintes, sem atravessar vírgula ("Experiência de 2 anos não é necessária"), e a exigência
+precisa do "de" ("2 anos de experiência"), porque a quebra de linha some e "Duração: 2 anos"
+colava no rótulo "Experiência" da linha seguinte.
 
 Cortar antes da IA economiza cota e também esconde erro: quem só julga a vaga entregue nunca
 vê a boa vaga que sumiu aqui. `python -m radar descartes` grava uma amostra do que o
@@ -259,9 +264,10 @@ A Adzuna devolve descrição truncada e raramente informa modalidade; a Gupy tem
 coletor: o pipeline não sabe quantas fontes existem. Uma fonte fora do ar vira `warning`; só
 falha se nenhuma responder. `FONTES` liga e desliga fontes sem mexer no código.
 
-A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa
-normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
-descrição mais longa. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
+A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa +
+cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
+descrição mais longa. Empresa sem nome ("Empresa não informada", "Confidencial") não distingue
+anúncio algum, então nesse caso a chave leva também a descrição. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
 que muda é a informação que chega ao extrator.
 
 `Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
@@ -271,7 +277,8 @@ A chave de duplicata inclui a cidade. Sem ela, duas vagas presenciais da mesma e
 mesmo título em cidades diferentes viravam uma só, e essa etapa roda antes do filtro por
 perfil: quem era de Recife perdia a vaga de Recife para a de São Paulo, sem erro na execução.
 A segunda etapa, a de republicações, continua comparando o início da descrição dentro da
-mesma cidade.
+mesma cidade. A cidade é o município com o estado, lido por `domain/regioes.py`, porque o mesmo
+nome existe em mais de um estado.
 
 Para decidir se a vaga é alcançável, a cidade da vaga e a do perfil passam por
 `domain/regioes.py`, que devolve mesma cidade, mesma região imediata do IBGE ou distante. Mesma

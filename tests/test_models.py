@@ -124,3 +124,43 @@ def test_periodo_minimo_plausivel_e_mantido(periodo):
     )
 
     assert extracao.periodo_minimo == periodo
+
+
+def test_extracao_guardada_antes_do_registro_da_descricao_lida_fica_sem_origem():
+    antiga = ExtracaoDaVaga.model_validate({"id_vaga": "1", "area_da_vaga": "computacao"})
+    registrada = antiga.model_copy(update={"descricao_completa": False})
+
+    assert antiga.descricao_completa is None
+    assert ExtracaoDaVaga.model_validate(registrada.model_dump(mode="json")) == registrada
+
+
+@pytest.mark.parametrize(
+    ("lida_completa", "completa_hoje", "leu_menos"),
+    [
+        (False, True, True),
+        (False, False, False),
+        (True, True, False),
+        (True, False, False),
+        (None, True, False),
+        (None, False, False),
+    ],
+)
+def test_extracao_so_leu_menos_se_foi_feita_sobre_a_cortada_e_hoje_ha_a_completa(
+    lida_completa, completa_hoje, leu_menos
+):
+    extracao = ExtracaoDaVaga(
+        id_vaga="adzuna:1", area_da_vaga="computacao", descricao_completa=lida_completa
+    )
+    vaga = Vaga(
+        id_externo="1",
+        fonte="adzuna",
+        titulo="Estágio",
+        empresa="Empresa",
+        localizacao="Rio de Janeiro",
+        descricao="descrição",
+        url="https://exemplo.com/1",
+        publicada_em=datetime(2026, 9, 16),
+        descricao_completa=completa_hoje,
+    )
+
+    assert extracao.leu_menos_que(vaga) is leu_menos

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#17201a" />
-    <script>try { if (localStorage.getItem("radar-tema") === "escuro") document.documentElement.dataset.tema = "escuro"; } catch {}</script>
+    <script>document.documentElement.dataset.tema = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";</script>
     <title>Encontre estágios que combinam com seu curso e seu momento. | Radar de Estágio</title>
     <meta name="description" content="O Radar reúne oportunidades de diferentes áreas, compara com seu perfil e envia até sete recomendações explicadas no Telegram, quando houver vagas compatíveis." />
     <meta property="og:title" content="Encontre estágios que combinam com seu curso e seu momento." />
@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="assets/styles.css?v=20260913-excluir-sem-perfil" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260913-perfil-e-habilidades" defer></script>
+    <script src="assets/app.js?v=20260916-tema-do-sistema" defer></script>
   </head>
   <body>
     <div id="landing-page">
