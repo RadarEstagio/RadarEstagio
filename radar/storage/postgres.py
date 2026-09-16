@@ -165,19 +165,23 @@ SQL_VAGAS_ENCERRADAS = """
           and e.ocorrido_em > now() - interval '30 days'
         order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
     )
-    select distinct v.fonte, v.id_externo
-    from ultima_resposta r
-    join vagas v on v.id = r.vaga_id
-    where r.nome = 'vaga_irrelevante'
-      and r.motivo = 'motivo_encerrada'
-      and exists (
-          select 1
-          from eventos_produto a
-          where a.nome = 'vaga_aberta'
-            and a.perfil_id = r.perfil_id
-            and a.vaga_id = r.vaga_id
-            and a.ocorrido_em <= r.ocorrido_em
-      )
+    select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
+           v.publicada_em, v.modalidade
+    from vagas v
+    where v.id in (
+        select r.vaga_id
+        from ultima_resposta r
+        where r.nome = 'vaga_irrelevante'
+          and r.motivo = 'motivo_encerrada'
+          and exists (
+              select 1
+              from eventos_produto a
+              where a.nome = 'vaga_aberta'
+                and a.perfil_id = r.perfil_id
+                and a.vaga_id = r.vaga_id
+                and a.ocorrido_em <= r.ocorrido_em
+          )
+    )
 """
 
 SQL_GUARDAR_VAGA = """
@@ -483,14 +487,15 @@ class RepositorioPostgres:
             vagas_repetidas=[converter_em_vaga_enviada(linha) for linha in repetidas],
         )
 
-    def vagas_encerradas(self) -> set[ChaveDaVaga]:
+    def vagas_encerradas(self) -> list[Vaga]:
         try:
-            linhas = self._conexao.execute(SQL_VAGAS_ENCERRADAS).fetchall()
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linhas = cursor.execute(SQL_VAGAS_ENCERRADAS).fetchall()
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao ler as vagas encerradas: {descrever(erro)}"
             ) from erro
-        return {(fonte, id_externo) for fonte, id_externo in linhas}
+        return [converter_em_vaga_enviada(linha) for linha in linhas]
 
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str

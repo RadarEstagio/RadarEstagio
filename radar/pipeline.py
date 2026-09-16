@@ -108,7 +108,7 @@ def executar(
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
-    unicas = sem_vagas_encerradas(remover_duplicatas(coletadas), repositorio)
+    unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
     candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
     unicas = substituir_enriquecidas(unicas, candidatas)
     logger.info(
@@ -161,7 +161,10 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
     except ErroDeArmazenamento as erro:
         logger.warning("vagas marcadas como encerradas não puderam ser lidas: %s", erro)
         return vagas
-    abertas = [vaga for vaga in vagas if vaga.chave() not in encerradas]
+    chaves_encerradas = {vaga.chave() for vaga in encerradas}
+    abertas = remover_republicacoes_de(
+        [vaga for vaga in vagas if vaga.chave() not in chaves_encerradas], encerradas
+    )
     if len(abertas) < len(vagas):
         logger.info("%d vagas marcadas como encerradas ficaram de fora", len(vagas) - len(abertas))
     return abertas

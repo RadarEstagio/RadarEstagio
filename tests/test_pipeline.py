@@ -1517,30 +1517,47 @@ def test_quem_nao_informou_recebe_vaga_pcd_na_ordem_da_nota_e_com_aviso():
 
 
 class RepositorioComVagasEncerradas(RepositorioFalso):
-    def __init__(self, usuarios: list[Usuario], encerradas: set[tuple[str, str]]) -> None:
+    def __init__(self, usuarios: list[Usuario], encerradas: list[Vaga]) -> None:
         super().__init__(usuarios)
         self._encerradas = encerradas
 
-    def vagas_encerradas(self) -> set[tuple[str, str]]:
-        return set(self._encerradas)
+    def vagas_encerradas(self) -> list[Vaga]:
+        return list(self._encerradas)
 
 
 class RepositorioSemLeituraDasEncerradas(RepositorioFalso):
-    def vagas_encerradas(self) -> set[tuple[str, str]]:
+    def vagas_encerradas(self) -> list[Vaga]:
         raise ErroDeArmazenamento("falha ao ler as vagas encerradas")
 
 
-def rodar_com(repositorio: RepositorioFalso) -> tuple[list[str], ExtratorFalso, NotificadorFalso]:
-    extrator = ExtratorFalso({"1": 90, "2": 80})
+DESCRICAO_DO_ANUNCIO = (
+    "Estágio em desenvolvimento de sistemas para estudantes de tecnologia com conhecimento em "
+    "SQL HTML e Java inglês intermediário atuação presencial no Rio de Janeiro em empresa de "
+    "serviços portuários e logísticos"
+)
+
+
+def anuncio(numero: int, empresa: str, sufixo: str = "") -> Vaga:
+    return vaga(numero).model_copy(
+        update={"empresa": empresa, "descricao": f"{DESCRICAO_DO_ANUNCIO}{sufixo}"}
+    )
+
+
+def rodar_com(
+    repositorio: RepositorioFalso, coletadas: list[Vaga] | None = None
+) -> tuple[list[str], ExtratorFalso, NotificadorFalso]:
+    coletadas = coletadas if coletadas is not None else [vaga(1), vaga(2)]
+    notas = {item.id_externo: 90 - int(item.id_externo) for item in coletadas}
+    extrator = ExtratorFalso(notas)
     notificador = NotificadorFalso()
     resumo = executar(
-        ColetorFalso([vaga(1), vaga(2)]),
+        ColetorFalso(coletadas),
         extrator,
         notificador,
         repositorio,
         parametros(),
         AGORA_DE_TESTE,
-        PontuadorFalso({"1": 90, "2": 80}),
+        PontuadorFalso(notas),
     )
     enviadas = resumo.enviadas_por_usuario.get(ID_USUARIO, [])
     return [item.resultado.vaga.id_externo for item in enviadas], extrator, notificador
@@ -1548,7 +1565,7 @@ def rodar_com(repositorio: RepositorioFalso) -> tuple[list[str], ExtratorFalso, 
 
 def test_vaga_marcada_como_encerrada_nao_e_extraida_nem_enviada_a_ninguem():
     repositorio = RepositorioComVagasEncerradas(
-        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")], {("adzuna", "1")}
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")], [vaga(1)]
     )
 
     enviadas, extrator, notificador = rodar_com(repositorio)
@@ -1559,11 +1576,24 @@ def test_vaga_marcada_como_encerrada_nao_e_extraida_nem_enviada_a_ninguem():
 
 
 def test_encerrada_em_outra_fonte_com_o_mesmo_numero_nao_tira_a_vaga():
-    repositorio = RepositorioComVagasEncerradas([usuario()], {("jooble", "1")})
+    repositorio = RepositorioComVagasEncerradas([usuario()], [vaga(1, fonte="jooble")])
 
     enviadas, _, _ = rodar_com(repositorio)
 
     assert enviadas == ["1", "2"]
+
+
+def test_republicacao_da_vaga_encerrada_com_outro_numero_tambem_fica_de_fora():
+    encerrada = anuncio(1, "Wilson Sons")
+    repositorio = RepositorioComVagasEncerradas([usuario()], [encerrada])
+
+    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "Agregador"), vaga(2)])
+    as_duas_com_republicacao_maior, _, _ = rodar_com(
+        repositorio, [encerrada, anuncio(9, "Agregador", " e benefícios"), vaga(2)]
+    )
+
+    assert so_a_republicacao == ["2"]
+    assert as_duas_com_republicacao_maior == ["2"]
 
 
 def test_falha_ao_ler_as_vagas_encerradas_nao_impede_a_entrega():
