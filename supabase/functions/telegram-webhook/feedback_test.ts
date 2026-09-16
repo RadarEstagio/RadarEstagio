@@ -3,8 +3,10 @@ import {
   ACAO_DE_RECUSA,
   ACAO_SEM_RECUSA,
   eMotivo,
+  eventoDoFeedback,
   extrairClique,
   ROTULOS_DE_MOTIVO,
+  tecladoDeFeedback,
   tecladoDeMotivos,
   tecladoSemONumeroRespondido,
 } from "./feedback.ts";
@@ -91,11 +93,11 @@ Deno.test("responder o ultimo numero esvazia o teclado para a pergunta ser apaga
   assertEquals(restante, []);
 });
 
-Deno.test("feedback individual tem seis opções e separa positivo dos cinco motivos", async () => {
+Deno.test("feedback individual tem sete opções e separa positivo dos seis motivos", async () => {
   const { tecladoDeFeedback, eventoDoFeedback } = await import("./feedback.ts");
   const token = "00000000-0000-4000-8000-000000000001";
   const teclado = tecladoDeFeedback(token);
-  if (teclado.length !== 6) throw new Error("esperadas seis opções");
+  if (teclado.length !== 7) throw new Error("esperadas sete opções");
   for (const [botao] of teclado) {
     if (new TextEncoder().encode(botao.callback_data).length > 64) {
       throw new Error("callback longo");
@@ -110,4 +112,17 @@ Deno.test("feedback individual tem seis opções e separa positivo dos cinco mot
   if (eventoDoFeedback("constructor") !== null || eventoDoFeedback("todas") !== null) {
     throw new Error("ação inválida aceita");
   }
+});
+
+Deno.test("quem acha a vaga fechada marca como encerrada, registrada como recusa com motivo", () => {
+  const linhas = tecladoDeFeedback(TOKEN);
+
+  assertEquals(
+    linhas.at(-1),
+    [{ text: "👎 Vaga encerrada", callback_data: `motivo_encerrada:${TOKEN}` }],
+  );
+  assertEquals(eventoDoFeedback("motivo_encerrada"), {
+    nome: "vaga_irrelevante",
+    propriedades: { motivo: "motivo_encerrada" },
+  });
 });

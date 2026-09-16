@@ -112,7 +112,8 @@ with limites as (
   order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
 ), grupos as (
   select t.grupo, count(*) as entregas,
-    count(*) filter(where r.nome = 'vaga_irrelevante') as recusas,
+    count(*) filter(where r.nome = 'vaga_irrelevante'
+      and r.propriedades->>'motivo' is distinct from 'motivo_encerrada') as recusas,
     count(*) filter(where r.nome = 'vaga_irrelevante' and r.propriedades->>'motivo' = 'motivo_nota') as recusas_da_nota
   from entregas_do_periodo t left join respostas_do_periodo r using(perfil_id, vaga_id)
   group by t.grupo

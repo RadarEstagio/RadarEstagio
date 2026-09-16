@@ -2,7 +2,12 @@ from collections import Counter
 from statistics import median
 
 from radar.domain.datas import data_local
-from radar.domain.models import ChaveDaEntrega, EntregaJulgada, ResultadoDoJulgamento
+from radar.domain.models import (
+    ChaveDaEntrega,
+    EntregaJulgada,
+    MotivoDeRecusa,
+    ResultadoDoJulgamento,
+)
 
 FEEDBACK_POSITIVO = "vaga_util"
 FEEDBACK_NEGATIVO = "vaga_irrelevante"
@@ -92,7 +97,10 @@ def linhas_de_problemas(julgadas: list[EntregaJulgada]) -> list[str]:
 
 def linhas_de_concordancia(julgadas: list[EntregaJulgada]) -> list[str]:
     com_feedback = [
-        item for item in julgadas if item.entrega.feedback in (FEEDBACK_POSITIVO, FEEDBACK_NEGATIVO)
+        item
+        for item in julgadas
+        if item.entrega.feedback in (FEEDBACK_POSITIVO, FEEDBACK_NEGATIVO)
+        and item.entrega.motivo_do_feedback != MotivoDeRecusa.ENCERRADA
     ]
     if not com_feedback:
         return ["  nenhuma entrega julgada tem feedback registrado"]

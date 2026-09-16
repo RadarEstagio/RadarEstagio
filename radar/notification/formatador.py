@@ -42,6 +42,7 @@ ROTULOS_DE_MOTIVO = {
     MotivoDeRecusa.EXIGENCIA: "Pedem demais",
     MotivoDeRecusa.LOGISTICA: "Local ou modalidade",
     MotivoDeRecusa.REPETIDA: "Já vi essa",
+    MotivoDeRecusa.ENCERRADA: "Vaga encerrada",
 }
 ROTULOS_MODALIDADE = {
     "remoto": "Remoto",

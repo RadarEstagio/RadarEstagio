@@ -49,6 +49,9 @@ class RepositorioEmMemoria:
     def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
         return RecusasDoUsuario()
 
+    def vagas_encerradas(self) -> list[Vaga]:
+        return []
+
     def travar_atendimento(self, usuario: Usuario) -> None:
         return None
 

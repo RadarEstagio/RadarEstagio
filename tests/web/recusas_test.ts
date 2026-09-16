@@ -130,3 +130,142 @@ Deno.test("resposta positiva antiga não apaga a recusa mais recente", async () 
     await db.close();
   }
 });
+
+async function eventoDaVaga(
+  db: PGlite,
+  { nome, perfil, vaga, quando, motivo }: {
+    nome: string;
+    perfil: number;
+    vaga: number;
+    quando: string;
+    motivo?: string;
+  },
+) {
+  await db.query(
+    `insert into eventos_produto(nome, perfil_id, vaga_id, propriedades, ocorrido_em)
+     values ($1, $2, $3, $4::jsonb, ${quando})`,
+    [nome, perfil, vaga, JSON.stringify(motivo ? { motivo } : {})],
+  );
+}
+
+async function encerradas(db: PGlite) {
+  const linhas = await db.query<{ fonte: string; id_externo: string; titulo: string }>(
+    await consulta("SQL_VAGAS_ENCERRADAS"),
+  );
+  return linhas.rows.map((linha) => `${linha.fonte}:${linha.id_externo}:${linha.titulo}`);
+}
+
+Deno.test("vaga marcada como encerrada por quem a abriu fica de fora para todos", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 2, vaga: 1, quando: "now() - interval '2 hours'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 1,
+      quando: "now() - interval '1 hour'",
+      motivo: "motivo_encerrada",
+    });
+
+    assert.deepEqual(await encerradas(db), ["adzuna:1:Estágio A"]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("marcar como encerrada sem ter aberto a vaga antes não tira a vaga de ninguém", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 1,
+      quando: "now() - interval '2 hours'",
+      motivo: "motivo_encerrada",
+    });
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 2, vaga: 1, quando: "now() - interval '1 hour'" });
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 3, vaga: 2, quando: "now() - interval '2 hours'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 4,
+      vaga: 2,
+      quando: "now() - interval '1 hour'",
+      motivo: "motivo_encerrada",
+    });
+
+    assert.deepEqual(await encerradas(db), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("encerrada trocada por outra resposta ou outro motivo não conta como encerrada", async () => {
+  const db = await bancoComFeedback();
+  try {
+    for (const vaga of [1, 2]) {
+      await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 2, vaga, quando: "now() - interval '3 hours'" });
+    }
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 1,
+      quando: "now() - interval '2 hours'",
+      motivo: "motivo_encerrada",
+    });
+    await eventoDaVaga(db, { nome: "vaga_util", perfil: 2, vaga: 1, quando: "now() - interval '1 hour'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 2,
+      quando: "now() - interval '2 hours'",
+      motivo: "motivo_encerrada",
+    });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 2,
+      quando: "now() - interval '1 hour'",
+      motivo: "motivo_repetida",
+    });
+
+    assert.deepEqual(await encerradas(db), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("abrir outra vaga não vale como abertura da vaga marcada como encerrada", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 2, vaga: 2, quando: "now() - interval '2 hours'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 1,
+      quando: "now() - interval '1 hour'",
+      motivo: "motivo_encerrada",
+    });
+
+    assert.deepEqual(await encerradas(db), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("marcação de vaga encerrada com mais de 30 dias deixa de contar", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil: 2, vaga: 1, quando: "now() - interval '32 days'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_irrelevante",
+      perfil: 2,
+      vaga: 1,
+      quando: "now() - interval '31 days'",
+      motivo: "motivo_encerrada",
+    });
+
+    assert.deepEqual(await encerradas(db), []);
+  } finally {
+    await db.close();
+  }
+});
