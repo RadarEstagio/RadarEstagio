@@ -724,6 +724,12 @@ def test_hibrido_e_indiferente_mantem_vaga_remota_de_outra_cidade_e_qualquer_vag
         "Estágio de Mestrado em Meteorologia - EPE/RJ",
         "Estágio para doutorandos em Química",
         "Estágio de Pós-Graduação em Direito",
+        "Estágio para Pós-Graduandos em Economia",
+        "Estágio de Mestrado em Tecnologia da Informação",
+        "Estágio de Doutorado - Pós-Graduação em Engenharia",
+        "Estágio de Mestrado no Hospital Universitário",
+        "Estágio de Mestrado em Engenharia - Graduação concluída",
+        "Estágio docente para mestrandos da graduação em Letras",
     ],
 )
 def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
@@ -734,6 +740,24 @@ def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
 @pytest.mark.parametrize("titulo", ["Estágio em Economia", "Estágio em Direito - Graduação"])
 def test_estagio_de_graduacao_nao_e_confundido_com_pos(titulo: str):
     assert not exige_pos_graduacao(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Economia - Graduação ou Pós-Graduação",
+        "Programa de Estágio - Graduação e Pós-Graduação",
+        "Estágio em Economia (graduação ou pós-graduação)",
+        "Estágio para Graduandos e Mestrandos em Economia",
+        "Estágio para universitários e pós-graduandos",
+        "Estágio de Nível Superior ou Mestrado em Economia",
+    ],
+)
+def test_estagio_que_tambem_aceita_graduacao_nao_e_descartado_como_pos(titulo: str):
+    assert not exige_pos_graduacao(vaga(titulo=titulo))
+    assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso="Economia")) != (
+        "exige_pos_graduacao"
+    )
 
 
 @pytest.mark.parametrize("titulo", ["Estágio: Administrativa", "Estágio Administrativo"])

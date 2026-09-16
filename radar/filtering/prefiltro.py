@@ -34,6 +34,14 @@ PADRAO_TITULO_TAMBEM_SUPERIOR = re.compile(
 PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
 )
+NIVEL_DE_GRADUACAO = (
+    r"(?<!pos-)(?<!pos )\b(?:graduacao|graduand[oa]s?|universitari[oa]s?|superior)\b"
+)
+LIGACAO_ENTRE_NIVEIS = r"(?:\s*(?:,|/|\bou\b|\be\b)\s*)+"
+PADRAO_GRADUACAO_JUNTO_DA_POS = re.compile(
+    rf"{NIVEL_DE_GRADUACAO}{LIGACAO_ENTRE_NIVEIS}{PADRAO_POS_GRADUACAO.pattern}"
+    rf"|{PADRAO_POS_GRADUACAO.pattern}{LIGACAO_ENTRE_NIVEIS}{NIVEL_DE_GRADUACAO}"
+)
 PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"(\d+)\s*\+?\s*anos?\s+de\s+experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
@@ -64,7 +72,10 @@ def exige_senioridade(vaga: Vaga) -> bool:
 
 
 def exige_pos_graduacao(vaga: Vaga) -> bool:
-    return PADRAO_POS_GRADUACAO.search(normalizar(vaga.titulo)) is not None
+    titulo = normalizar(vaga.titulo)
+    if PADRAO_GRADUACAO_JUNTO_DA_POS.search(titulo):
+        return False
+    return PADRAO_POS_GRADUACAO.search(titulo) is not None
 
 
 def exige_ensino_medio(vaga: Vaga) -> bool:
