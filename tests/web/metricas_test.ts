@@ -128,6 +128,16 @@ Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denom
       { grupo: "uma_ou_duas", entregas: 2, recusas: 0, recusas_da_nota: 0 },
     ]);
     await db.exec(
+      `insert into eventos_produto(nome,perfil_id,vaga_id,ocorrido_em,propriedades) values ('vaga_irrelevante',1,1,'2026-09-07','{"motivo":"motivo_encerrada"}');`,
+    );
+    const comEncerrada = (await db.query<Metricas>(sql)).rows[0];
+    assert.equal(comEncerrada.recusas_por_motivo.motivo_encerrada, 1);
+    assert.deepEqual(
+      comEncerrada.recusas_por_grupo.find((grupo) => grupo.grupo === "uma_ou_duas"),
+      { grupo: "uma_ou_duas", entregas: 2, recusas: 0, recusas_da_nota: 0 },
+    );
+    await db.exec(`delete from eventos_produto where propriedades->>'motivo' = 'motivo_encerrada';`);
+    await db.exec(
       `insert into eventos_produto(nome,perfil_id,vaga_id,ocorrido_em) values ('vaga_irrelevante',2,1,'2026-09-09');`,
     );
     const changed = (await db.query<Metricas>(sql)).rows[0];
