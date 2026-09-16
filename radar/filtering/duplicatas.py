@@ -1,26 +1,32 @@
 import re
 
 from radar.domain.models import Vaga
-from radar.filtering.prefiltro import cidade, normalizar
+from radar.domain.regioes import Municipio, identificar_municipio
+from radar.filtering.prefiltro import normalizar
 
-PADRAO_NAO_ALFANUMERICO = re.compile(r"[^a-z0-9]+")
+PADRAO_PALAVRA = re.compile(r"[a-z0-9]+(?:#|\+\+)?")
 PADRAO_SUFIXO_DE_AGREGADOR = re.compile(r"\s*-\s*(?:vaga(?: aberta)?|recrutamento aberto)\s*$")
 SEMELHANCA_MINIMA_ENTRE_DESCRICOES = 0.8
 MINIMO_DE_PALAVRAS_PARA_COMPARAR = 20
 PALAVRAS_COMPARADAS_DA_DESCRICAO = 40
+EMPRESAS_NAO_IDENTIFICADAS = frozenset(
+    {"", "empresa nao informada", "confidencial", "empresa confidencial"}
+)
 
 
-def chave_de_duplicata(vaga: Vaga) -> str:
-    return limpar(f"{vaga.titulo} {vaga.empresa} {cidade(vaga.localizacao)}")
+def chave_de_duplicata(vaga: Vaga) -> tuple[str, str, Municipio, str]:
+    empresa = limpar(vaga.empresa)
+    descricao = limpar(vaga.descricao) if empresa in EMPRESAS_NAO_IDENTIFICADAS else ""
+    return (limpar(vaga.titulo), empresa, identificar_municipio(vaga.localizacao), descricao)
 
 
-def chave_de_anuncio(vaga: Vaga) -> str:
+def chave_de_anuncio(vaga: Vaga) -> tuple[str, Municipio]:
     titulo = PADRAO_SUFIXO_DE_AGREGADOR.sub("", normalizar(vaga.titulo))
-    return limpar(f"{titulo} {cidade(vaga.localizacao)}")
+    return (limpar(titulo), identificar_municipio(vaga.localizacao))
 
 
 def limpar(texto: str) -> str:
-    return PADRAO_NAO_ALFANUMERICO.sub(" ", normalizar(texto)).strip()
+    return " ".join(PADRAO_PALAVRA.findall(normalizar(texto)))
 
 
 def palavras_iniciais(texto: str) -> set[str]:
@@ -47,7 +53,7 @@ def mais_completa(primeira: Vaga, segunda: Vaga) -> Vaga:
 
 
 def remover_duplicatas(vagas: list[Vaga]) -> list[Vaga]:
-    escolhidas: dict[str, Vaga] = {}
+    escolhidas: dict[tuple[str, str, Municipio, str], Vaga] = {}
     for vaga in vagas:
         chave = chave_de_duplicata(vaga)
         escolhidas[chave] = mais_completa(escolhidas[chave], vaga) if chave in escolhidas else vaga
@@ -56,7 +62,7 @@ def remover_duplicatas(vagas: list[Vaga]) -> list[Vaga]:
 
 def remover_republicacoes(vagas: list[Vaga]) -> list[Vaga]:
     escolhidas: list[Vaga] = []
-    posicoes_por_anuncio: dict[str, list[int]] = {}
+    posicoes_por_anuncio: dict[tuple[str, Municipio], list[int]] = {}
     for vaga in vagas:
         posicoes = posicoes_por_anuncio.setdefault(chave_de_anuncio(vaga), [])
         repetida = next(
@@ -72,7 +78,7 @@ def remover_republicacoes(vagas: list[Vaga]) -> list[Vaga]:
 
 
 def remover_republicacoes_de(vagas: list[Vaga], ja_conhecidas: list[Vaga]) -> list[Vaga]:
-    conhecidas_por_anuncio: dict[str, list[Vaga]] = {}
+    conhecidas_por_anuncio: dict[tuple[str, Municipio], list[Vaga]] = {}
     for conhecida in ja_conhecidas:
         conhecidas_por_anuncio.setdefault(chave_de_anuncio(conhecida), []).append(conhecida)
     return [

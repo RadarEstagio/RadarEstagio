@@ -66,6 +66,25 @@ def test_modalidade_da_fonte_prevalece_sobre_a_extraida():
     assert resultado.vaga.modalidade is Modalidade.HIBRIDO
 
 
+@pytest.mark.parametrize("lida_completa", [True, False])
+def test_vaga_avaliada_carrega_a_descricao_que_a_extracao_leu(lida_completa):
+    for completa_hoje in (True, False):
+        vaga_de_hoje = vaga().model_copy(update={"descricao_completa": completa_hoje})
+
+        resultado = pontuar(vaga_de_hoje, extracao(descricao_completa=lida_completa), perfil())
+
+        assert resultado.vaga.descricao_completa is lida_completa
+
+
+@pytest.mark.parametrize("completa_hoje", [True, False])
+def test_extracao_sem_registro_da_descricao_lida_segue_a_descricao_de_hoje(completa_hoje):
+    vaga_de_hoje = vaga().model_copy(update={"descricao_completa": completa_hoje})
+
+    resultado = pontuar(vaga_de_hoje, extracao(), perfil())
+
+    assert resultado.vaga.descricao_completa is completa_hoje
+
+
 def test_modalidade_extraida_entra_na_logistica_da_nota():
     sem_modalidade = resultado_da(extracao())
     presencial_extraida = resultado_da(extracao(modalidade="presencial"))

@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from radar.domain.models import Modalidade, Vaga
 from radar.filtering.duplicatas import (
     chave_de_duplicata,
@@ -187,6 +189,71 @@ def test_remover_republicacoes_de_sem_conhecidas_mantem_tudo():
     assert remover_republicacoes_de(candidatas, []) == candidatas
 
 
+OUTRO_ANUNCIO = (
+    "Apoio ao setor financeiro no lançamento de notas, conciliação bancária e controle de "
+    "contas a pagar e a receber. Necessário cursar Administração ou Ciências Contábeis a "
+    "partir do terceiro período, com disponibilidade de seis horas por dia."
+)
+
+
+@pytest.mark.parametrize(
+    "empresa", ["Empresa não informada", "Confidencial", "EMPRESA CONFIDENCIAL", "", "  "]
+)
+def test_empresa_sem_nome_nao_junta_anuncios_diferentes_com_o_mesmo_titulo(empresa: str):
+    primeira = vaga("Estágio Administrativo", empresa, descricao=ANUNCIO, numero=1)
+    segunda = vaga("Estágio Administrativo", empresa, descricao=OUTRO_ANUNCIO, numero=2)
+
+    assert remover_duplicatas([primeira, segunda]) == [primeira, segunda]
+
+
+def test_empresa_sem_nome_ainda_une_o_mesmo_anuncio_republicado():
+    original = vaga("Estágio em Programação", "Empresa não informada", descricao=ANUNCIO)
+    republicada = vaga(
+        "Estágio em Programação",
+        "Empresa não informada",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+    )
+
+    assert remover_duplicatas([original, republicada]) == [original]
+
+
+def test_empresa_sem_nome_ainda_une_anuncio_curto_repetido_com_o_mesmo_texto():
+    curta = "Alimentação de planilhas, cadastro de imóveis e atendimento telefônico."
+    original = vaga("ESTAGIO ADMINISTRATIVO", "Empresa não informada", descricao=curta)
+    repetida = vaga(
+        "Estágio Administrativo",
+        "Empresa não informada",
+        descricao=curta.upper().rstrip("."),
+        numero=2,
+    )
+
+    assert remover_duplicatas([original, repetida]) == [original]
+
+
+def test_linguagens_que_so_diferem_pelo_simbolo_nao_sao_duplicatas():
+    csharp = vaga("Estágio em Desenvolvimento C#", numero=1)
+    cpp = vaga("Estágio em Desenvolvimento C++", numero=2)
+    c = vaga("Estágio em Desenvolvimento C", numero=3)
+
+    assert remover_duplicatas([csharp, cpp, c]) == [csharp, cpp, c]
+
+
+def test_republicacao_nao_junta_linguagens_que_so_diferem_pelo_simbolo():
+    csharp = vaga("Estágio Desenvolvedor C#", "BuscarVagas", descricao=ANUNCIO, numero=1)
+    cpp = vaga("Estágio Desenvolvedor C++", "Divulga Vagas", descricao=ANUNCIO, numero=2)
+
+    assert remover_duplicatas([csharp, cpp]) == [csharp, cpp]
+    assert remover_republicacoes_de([cpp], [csharp]) == [cpp]
+
+
+def test_simbolo_de_linguagem_ainda_ignora_caixa_acento_e_pontuacao():
+    original = vaga("Estágio - Desenvolvedor C#/.NET", numero=1)
+    variacao = vaga("ESTAGIO DESENVOLVEDOR c# .net", numero=2)
+
+    assert remover_duplicatas([original, variacao]) == [original]
+
+
 def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
     em_sao_paulo = vaga(localizacao="São Paulo", numero=1)
     em_recife = vaga(localizacao="Recife", numero=2)
@@ -194,6 +261,76 @@ def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
     restantes = remover_duplicatas([em_sao_paulo, em_recife])
 
     assert [vaga.localizacao for vaga in restantes] == ["São Paulo", "Recife"]
+
+
+def test_cidades_de_mesmo_nome_em_estados_diferentes_nao_sao_duplicatas():
+    no_piaui = vaga(localizacao="Bom Jesus, Piauí", numero=1)
+    no_rio_grande_do_sul = vaga(localizacao="Bom Jesus, RS", numero=2)
+
+    assert remover_duplicatas([no_piaui, no_rio_grande_do_sul]) == [
+        no_piaui,
+        no_rio_grande_do_sul,
+    ]
+
+
+def test_republicacao_nao_junta_cidades_de_mesmo_nome_em_estados_diferentes():
+    no_piaui = vaga(
+        "Estágio em Programação",
+        "BuscarVagas",
+        descricao=ANUNCIO,
+        localizacao="Bom Jesus, Piauí",
+    )
+    no_rio_grande_do_sul = vaga(
+        "Estágio em Programação",
+        "Divulga Vagas",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+        localizacao="Bom Jesus, Rio Grande do Sul",
+    )
+
+    assert remover_duplicatas([no_piaui, no_rio_grande_do_sul]) == [
+        no_piaui,
+        no_rio_grande_do_sul,
+    ]
+    assert remover_republicacoes_de([no_rio_grande_do_sul], [no_piaui]) == [no_rio_grande_do_sul]
+
+
+@pytest.mark.parametrize(
+    ("com_estado", "outra_forma"),
+    [
+        ("Niterói, Estado do Rio de Janeiro", "Niterói"),
+        ("Rio de Janeiro, Estado do Rio de Janeiro", "Rio de Janeiro, Rio de Janeiro"),
+        ("São Paulo, Estado de São Paulo", "São Paulo, SP"),
+    ],
+)
+def test_mesma_cidade_escrita_de_outra_forma_segue_duplicata(com_estado: str, outra_forma: str):
+    da_adzuna = vaga(numero=1, localizacao=com_estado)
+    da_gupy = vaga(fonte="gupy", numero=2, localizacao=outra_forma, modalidade=Modalidade.HIBRIDO)
+    original = vaga(
+        "Estágio em Programação",
+        "BuscarVagas",
+        descricao=ANUNCIO,
+        numero=3,
+        localizacao=com_estado,
+    )
+    republicada = vaga(
+        "Estágio em Programação",
+        "Divulga Vagas",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=4,
+        localizacao=outra_forma,
+    )
+
+    assert remover_duplicatas([da_adzuna, da_gupy]) == [da_gupy]
+    assert remover_duplicatas([original, republicada]) == [original]
+    assert remover_republicacoes_de([republicada], [original]) == []
+
+
+def test_cidade_sem_estado_de_nome_repetido_nao_e_unida_por_palpite():
+    sem_estado = vaga(localizacao="Bom Jesus", numero=1)
+    no_piaui = vaga(localizacao="Bom Jesus, PI", numero=2)
+
+    assert remover_duplicatas([sem_estado, no_piaui]) == [sem_estado, no_piaui]
 
 
 def test_mesma_vaga_na_mesma_cidade_por_duas_fontes_continua_sendo_uma_so():
