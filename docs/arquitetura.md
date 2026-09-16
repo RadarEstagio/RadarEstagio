@@ -320,6 +320,12 @@ Regras para não afetar quem já usa:
   transação implícita, os blocos virariam savepoints dentro dela e nada ficaria visível para
   outra conexão até o processo fechar: a mensagem chegaria ao estudante antes de o token do
   envio existir para o webhook, e a trava do perfil seria liberada antes da confirmação.
+- **Texto que o banco recusa não chega a ele.** Como a transação é por operação, uma vaga com
+  NUL (recusado em `text` e `jsonb`) fazia todas as extrações do run ou todos os envios do
+  usuário ficarem sem gravar, e um surrogate solto (metade de emoji) fazia o psycopg levantar
+  `UnicodeEncodeError` e derrubar o job. `Vaga` e `ExtracaoDaVaga` limpam esses dois caracteres
+  ao serem validadas (`domain/texto.py`), o que vale para toda fonte, toda IA e o prompt, e as
+  gravações tratam o `UnicodeEncodeError` que ainda escapar como falha do banco.
 - **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
   contrato com o site: ninguém altera tabela pelo painel.
 - **RLS** em todas as tabelas. `perfis` e `eventos_produto` têm policy: cada usuário lê e
