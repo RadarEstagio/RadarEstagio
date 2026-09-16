@@ -1313,6 +1313,50 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   equipe em vaga real tira a vaga de todos se a marcação não for desfeita (o roteiro do guia
   avisa). Publicação: `supabase functions deploy telegram-webhook`, porque o teclado e o aviso
   são da função; o `radar/` não precisa de migration.
+  **Quem pode tirar a vaga de todos (16/09/2026).** Uma marcação bastava, e daí saíam três
+  defeitos: uma pessoa, ou uma conta de teste esquecida, podia marcar em série as vagas que recebeu
+  e esvaziar as mensagens dos outros por 30 dias; a marcação de conta excluída seguia valendo durante
+  a carência; e a republicação espalhava o voto, porque texto padrão de agência nas 40 primeiras
+  palavras junta vagas de empresas diferentes com o mesmo título e cidade. Agora a marcação tem dois
+  alcances:
+  - **Quem marcou deixa de receber, sempre.** A última resposta "Vaga encerrada" dos últimos 30 dias
+    entra em `SQL_VAGAS_QUE_NAO_VOLTAM`, junto com "Já vi essa", sem exigir abertura e em qualquer
+    estado da conta, e a vaga e as republicações dela pela regra ampla deixam de chegar à pessoa. O
+    envio já a barrava pelo número, mas pela republicação só até 30 dias depois do envio.
+  - **Os outros, com três condições** (`SQL_VAGAS_ENCERRADAS`). Abertura pelo link antes da
+    marcação, como antes. Perfil existente e sem exclusão: a conta apagada já perdia os eventos em
+    cascata, e excluir suspende o efeito, que volta se a exclusão for cancelada. Pausada ou sem
+    Telegram segue valendo, decisão do dono: essa conta não recebe vagas nem consegue votar, e a
+    marcação que conta foi dada com a conta ativa (a primeira versão desta correção a tirava, porque
+    a conta não consegue desfazer o voto). E só as `MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS` (3)
+    primeiras marcações vigentes do perfil em 30 dias, em ordem de `ocorrido_em` com a vaga
+    desempatando; da quarta em diante a marcação vale só para quem marcou, e a vaga que já saiu para
+    os outros não volta quando a pessoa marca mais uma (a primeira versão anulava todas, também
+    decisão revista pelo dono). Marcação sem abertura ocupa lugar na ordem, sem sair para os outros.
+    Desfazer uma marcação a tira da ordem e a seguinte sobe; remarcar a põe no fim. A republicação
+    só sai para todos se for da mesma empresa ou de empresa sem nome
+    (`republicacao_da_mesma_empresa`, com `EMPRESAS_NAO_IDENTIFICADAS`, como na chave de duplicata).
+
+  Medido no banco em 16/09: há 1 marcação, de conta ativa que abriu a vaga antes, e ela continua
+  valendo para todos; nenhuma vem de conta excluída ou pausada, e a vaga não tem republicação
+  guardada. O teto: 1 marcação em 31 vagas abertas pelo link, e o perfil que mais abre abriu 20 em 10
+  dias, cerca de 60 por mês, o que dá 3 marcações mesmo com 5% de vagas fechadas; a mensagem tem até
+  7 vagas, e da quarta marcação em diante, mesmo de uma mensagem só, o efeito fica com quem marcou.
+  A empresa: das 307 vagas já enviadas, as que podem ser marcadas, 49 têm republicação entre as 1.003
+  guardadas, 134 no total; com a regra da empresa, 39 e 74. As 60 que deixam de sair para todos foram
+  conferidas à mão e são todas o mesmo anúncio com outro rótulo de empresa (BuscarVagas e Divulga
+  Vagas, "Ltda" a mais, "Oportunidades Petros"). É o custo aceito: essa cópia chega uma vez a quem não
+  marcou, visível. Nenhum par de empresas realmente diferentes com o mesmo título e cidade passa de
+  0,31 de semelhança nas 40 primeiras palavras, então a proteção ainda não evitou um caso real.
+  Limites: as agências (Fundação Mudes, CIEE, Nube) aparecem com o próprio nome na empresa, e entre as
+  vagas delas só o texto separa, como antes; cada conta ainda tira até três vagas de todos por 30
+  dias, e contas combinadas somam; marcação errada de conta pausada ou desvinculada não tem como ser
+  desfeita até a conta voltar; quem recebe a vaga no mesmo envio segue sem proteção; e marcar sem
+  abrir gasta um dos três lugares. A contagem de `motivo_encerrada` nas métricas deixa de ser o
+  número de vagas tiradas de todos (`docs/metricas.md`). O teste em PGlite lê as constantes inteiras
+  de `postgres.py` para montar a consulta, porque o teto entra nela como literal. Publicação: só o
+  `radar/`, sem migration e sem deploy de função; o aviso do bot ("Essa vaga deixa de ser enviada")
+  segue verdadeiro para quem marcou.
 
 ### Cidades vizinhas: região imediata do IBGE (10/09/2026)
 
@@ -1460,7 +1504,8 @@ três casos, e a pessoa perdia uma delas sem aviso:
   só existe num estado, então "Niterói" segue igual a "Niterói, Estado do Rio de Janeiro".
 
 Símbolo e cidade valem também para a republicação e, com ela, para "Já vi essa", as enviadas nos
-últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha. Medido nas
+últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha (o efeito de
+"Vaga encerrada" para os outros passou a olhar, ver "Vaga fechada na origem"). Medido nas
 1.003 vagas guardadas, com a regra do `main` e a nova sobre o conjunto e sobre janelas que imitam
 uma execução (vagas publicadas nos 4 dias antes de cada dia de coleta): o conjunto passa de 879 para
 888 vagas únicas, e 8 das 20 janelas, todas de 08 a 16/09, ganham de 1 a 6. Os 17 grupos desfeitos

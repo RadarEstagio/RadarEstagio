@@ -18,7 +18,11 @@ from radar.domain.models import (
     Vaga,
 )
 from radar.domain.ports import ColetorDeVagas, ExtratorDeVagas, Notificador, Repositorio
-from radar.filtering.duplicatas import remover_duplicatas, remover_republicacoes_de
+from radar.filtering.duplicatas import (
+    remover_duplicatas,
+    remover_republicacoes_de,
+    republicacao_da_mesma_empresa,
+)
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
@@ -166,7 +170,9 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
         return vagas
     chaves_encerradas = {vaga.chave() for vaga in encerradas}
     abertas = remover_republicacoes_de(
-        [vaga for vaga in vagas if vaga.chave() not in chaves_encerradas], encerradas
+        [vaga for vaga in vagas if vaga.chave() not in chaves_encerradas],
+        encerradas,
+        republicacao_da_mesma_empresa,
     )
     if len(abertas) < len(vagas):
         logger.info("%d vagas marcadas como encerradas ficaram de fora", len(vagas) - len(abertas))
@@ -386,7 +392,7 @@ def atender_usuario_travado(
     ]
     candidatas = remover_republicacoes_de(
         candidatas,
-        repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_repetidas,
+        repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_que_nao_voltam,
     )
     novas = aplicar_regras_objetivas(
         pontuador(candidatas, extracoes, usuario.perfil), usuario.perfil

@@ -734,7 +734,7 @@ def test_vaga_marcada_como_ja_vista_bloqueia_os_sosias():
         update={"titulo": recusada.titulo + " - Vaga", "descricao": descricao}
     )
     repositorio = RepositorioFalso(
-        [usuario()], recusas=RecusasDoUsuario(vagas_repetidas=[recusada])
+        [usuario()], recusas=RecusasDoUsuario(vagas_que_nao_voltam=[recusada])
     )
 
     selecionadas, _, _ = rodar([sosia], {"2": 90}, repositorio=repositorio)
@@ -1788,17 +1788,78 @@ def test_encerrada_em_outra_fonte_com_o_mesmo_numero_nao_tira_a_vaga():
     assert enviadas == ["1", "2"]
 
 
-def test_republicacao_da_vaga_encerrada_com_outro_numero_tambem_fica_de_fora():
+def test_republicacao_da_vaga_encerrada_pela_mesma_empresa_tambem_fica_de_fora():
     encerrada = anuncio(1, "Wilson Sons")
     repositorio = RepositorioComVagasEncerradas([usuario()], [encerrada])
 
-    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "Agregador"), vaga(2)])
+    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "WILSON SONS"), vaga(2)])
     as_duas_com_republicacao_maior, _, _ = rodar_com(
-        repositorio, [encerrada, anuncio(9, "Agregador", " e benefícios"), vaga(2)]
+        repositorio, [encerrada, anuncio(9, "Empresa não informada", " e benefícios"), vaga(2)]
     )
 
     assert so_a_republicacao == ["2"]
     assert as_duas_com_republicacao_maior == ["2"]
+
+
+class RepositorioComMarcacoesDeCadaUm(RepositorioComVagasEncerradas):
+    def __init__(
+        self,
+        usuarios: list[Usuario],
+        encerradas: list[Vaga],
+        marcadas_por_usuario: dict[UUID, list[Vaga]],
+    ) -> None:
+        super().__init__(usuarios, encerradas)
+        self._marcadas_por_usuario = marcadas_por_usuario
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
+        return RecusasDoUsuario(vagas_que_nao_voltam=self._marcadas_por_usuario.get(usuario.id, []))
+
+
+def enviadas_a_cada_um(
+    repositorio: RepositorioFalso, coletadas: list[Vaga]
+) -> dict[UUID, list[str]]:
+    notas = {item.id_externo: 90 - int(item.id_externo) for item in coletadas}
+    resumo = executar(
+        ColetorFalso(coletadas),
+        ExtratorFalso(notas),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso(notas),
+    )
+    return {
+        id_usuario: [item.resultado.vaga.id_externo for item in enviadas]
+        for id_usuario, enviadas in resumo.enviadas_por_usuario.items()
+    }
+
+
+def test_republicacao_de_outra_empresa_so_deixa_de_chegar_a_quem_marcou_a_vaga():
+    encerrada = anuncio(1, "Wilson Sons")
+    repositorio = RepositorioComMarcacoesDeCadaUm(
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+        [encerrada],
+        {ID_USUARIO: [encerrada]},
+    )
+
+    enviadas = enviadas_a_cada_um(
+        repositorio, [encerrada, anuncio(9, "Agência de Estágios"), vaga(2)]
+    )
+
+    assert enviadas == {ID_USUARIO: ["2"], ID_OUTRO_USUARIO: ["2", "9"]}
+
+
+def test_marcacao_sem_efeito_para_os_outros_ainda_tira_a_vaga_de_quem_marcou():
+    marcada = anuncio(1, "Wilson Sons")
+    repositorio = RepositorioComMarcacoesDeCadaUm(
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+        [],
+        {ID_USUARIO: [marcada]},
+    )
+
+    enviadas = enviadas_a_cada_um(repositorio, [anuncio(9, "Wilson Sons"), vaga(2)])
+
+    assert enviadas == {ID_USUARIO: ["2"], ID_OUTRO_USUARIO: ["2", "9"]}
 
 
 def test_falha_ao_ler_as_vagas_encerradas_nao_impede_a_entrega():

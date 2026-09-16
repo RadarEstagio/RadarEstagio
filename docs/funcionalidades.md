@@ -148,8 +148,10 @@ e o Radar não sabe quando isso acontece, porque a Adzuna segue listando o anún
 Tocar no número e responder sobre aquela vaga.
 
 **Condições e limites:** Abre título, empresa e sete opções; exige envio persistido e conta/chat válidos.
-"Vaga encerrada" marcada por quem abriu a vaga pelo link tira essa vaga das próximas entregas de
-todos; quem a recebeu no mesmo envio não é protegido.
+"Vaga encerrada" tira a vaga e as republicações dela das próximas entregas de quem marcou. Das de
+todos, só se a pessoa abriu a vaga pelo link, não excluiu a conta e a marcação está entre as três
+primeiras dela nos últimos 30 dias, e a republicação só sai se for da mesma empresa ou de empresa
+sem nome; quem a recebeu no mesmo envio não é protegido.
 
 #### 15. Corrigir feedback
 
