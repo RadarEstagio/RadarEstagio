@@ -52,7 +52,10 @@ def test_entrega_imediata_sem_banco_atende_so_o_perfil_pedido():
 
     assert repositorio.reivindicar_entregas_imediatas(usuario.id) == {usuario.id}
     assert repositorio.reivindicar_entregas_imediatas(uuid4()) == set()
+    assert repositorio.entregas_imediatas_pendentes(usuario.id) == {usuario.id}
+    assert repositorio.entregas_imediatas_pendentes(uuid4()) == set()
     assert repositorio.marcar_entregas_imediatas_atendidas([usuario.id]) is None
+    assert repositorio.entregas_imediatas_pendentes(usuario.id) == {usuario.id}
 
 
 def test_conta_em_quantos_dias_diferentes_cada_vaga_ficou_sem_extracao():

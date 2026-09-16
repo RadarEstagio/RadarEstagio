@@ -61,6 +61,14 @@ SQL_REIVINDICAR_ENTREGAS_IMEDIATAS = """
     returning id
 """
 
+SQL_ENTREGAS_IMEDIATAS_PENDENTES = """
+    select id
+    from perfis
+    where (id = %(perfil_id)s or entrega_imediata_disparada_em is not null)
+      and entrega_imediata_atendida_em is null
+      and ativo and excluida_em is null and telegram_chat_id is not null
+"""
+
 SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS = """
     update perfis
     set entrega_imediata_atendida_em = now()
@@ -362,6 +370,18 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao reivindicar as entregas imediatas: {descrever(erro)}"
+            ) from erro
+        return {perfil for (perfil,) in linhas}
+
+    def entregas_imediatas_pendentes(self, perfil_id: UUID) -> set[UUID]:
+        try:
+            with self._conexao.cursor() as cursor:
+                linhas = cursor.execute(
+                    SQL_ENTREGAS_IMEDIATAS_PENDENTES, {"perfil_id": perfil_id}
+                ).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler as entregas imediatas pendentes: {descrever(erro)}"
             ) from erro
         return {perfil for (perfil,) in linhas}
 

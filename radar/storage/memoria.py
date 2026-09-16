@@ -28,6 +28,9 @@ class RepositorioEmMemoria:
     def reivindicar_entregas_imediatas(self, perfil_id: UUID) -> set[UUID]:
         return {usuario.id for usuario in self._usuarios if usuario.id == perfil_id}
 
+    def entregas_imediatas_pendentes(self, perfil_id: UUID) -> set[UUID]:
+        return {usuario.id for usuario in self._usuarios if usuario.id == perfil_id}
+
     def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
         return None
 
