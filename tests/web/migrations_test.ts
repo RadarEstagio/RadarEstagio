@@ -10,7 +10,8 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       create schema auth;
       create table auth.users (
         id uuid primary key, email text, created_at timestamptz default now(),
-        email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}'
+        email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}',
+        confirmation_sent_at timestamptz
       );
       create function auth.uid() returns uuid language sql stable as
         $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
