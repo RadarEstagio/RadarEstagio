@@ -16,7 +16,9 @@ fontes → dedupe/pré-filtro → enriquecimento → extração compartilhada
   → trava e histórico por perfil → pontuação → revalidação → Telegram → registro de envio
 ```
 
-A extração é reaproveitada entre usuários; pontuação e seleção são individuais. A trava
+A extração é reaproveitada entre usuários; pontuação e seleção são individuais. Ela guarda se
+leu a descrição completa, e a nota limitada a 60 segue o que ela leu, não a vaga do dia; a extração
+feita sobre a descrição cortada volta à IA uma vez quando a completa chega. A trava
 serializa atendimento do mesmo perfil. Banco e envio ao Telegram não são transação única.
 O [catálogo](funcionalidades.md) detalha recursos e limites; o [contrato](contrato-front.md)
 descreve o cadastro e as RPCs atuais.

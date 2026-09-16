@@ -425,6 +425,36 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
   atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
   mérito, porque 81 antes da trava vence 60.
+  **A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
+  técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
+  extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
+  num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
+  ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
+  falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
+  com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
+  modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
+  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
+  a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
+  antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
+  Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
+  registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
+  texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
+  não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
+  histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
+  sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
+  cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
+  têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
+  no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
+  descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
+  só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
+  reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
+  texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
+  do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
+  a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
+  feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
+  e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
+  completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
+  medição acima) pode ver outro texto que o lido pela IA.
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
   envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
