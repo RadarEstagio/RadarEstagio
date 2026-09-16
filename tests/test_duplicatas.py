@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from radar.domain.models import Modalidade, Vaga
 from radar.filtering.duplicatas import (
     chave_de_duplicata,
@@ -185,6 +187,48 @@ def test_remover_republicacoes_de_sem_conhecidas_mantem_tudo():
     candidatas = [vaga("Estágio em TI", "A", descricao=ANUNCIO)]
 
     assert remover_republicacoes_de(candidatas, []) == candidatas
+
+
+OUTRO_ANUNCIO = (
+    "Apoio ao setor financeiro no lançamento de notas, conciliação bancária e controle de "
+    "contas a pagar e a receber. Necessário cursar Administração ou Ciências Contábeis a "
+    "partir do terceiro período, com disponibilidade de seis horas por dia."
+)
+
+
+@pytest.mark.parametrize(
+    "empresa", ["Empresa não informada", "Confidencial", "EMPRESA CONFIDENCIAL", "", "  "]
+)
+def test_empresa_sem_nome_nao_junta_anuncios_diferentes_com_o_mesmo_titulo(empresa: str):
+    primeira = vaga("Estágio Administrativo", empresa, descricao=ANUNCIO, numero=1)
+    segunda = vaga("Estágio Administrativo", empresa, descricao=OUTRO_ANUNCIO, numero=2)
+
+    assert remover_duplicatas([primeira, segunda]) == [primeira, segunda]
+
+
+def test_empresa_sem_nome_ainda_une_o_mesmo_anuncio_republicado():
+    original = vaga("Estágio em Programação", "Empresa não informada", descricao=ANUNCIO)
+    republicada = vaga(
+        "Estágio em Programação",
+        "Empresa não informada",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+    )
+
+    assert remover_duplicatas([original, republicada]) == [original]
+
+
+def test_empresa_sem_nome_ainda_une_anuncio_curto_repetido_com_o_mesmo_texto():
+    curta = "Alimentação de planilhas, cadastro de imóveis e atendimento telefônico."
+    original = vaga("ESTAGIO ADMINISTRATIVO", "Empresa não informada", descricao=curta)
+    repetida = vaga(
+        "Estágio Administrativo",
+        "Empresa não informada",
+        descricao=curta.upper().rstrip("."),
+        numero=2,
+    )
+
+    assert remover_duplicatas([original, repetida]) == [original]
 
 
 def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
