@@ -29,8 +29,8 @@ Para assuntos de privacidade e pedidos sobre seus dados: [contato@radarestagio.c
   para PCD que combinam com o perfil vêm primeiro; com não, vagas exclusivas para PCD deixam de
   ser enviadas. Ela não vai para serviços de inteligência artificial nem para os eventos de uso,
   mas as mensagens no Telegram podem indicar que uma vaga é destinada a PCD. Escolher “Prefiro
-  não informar” na edição do perfil remove a resposta do perfil; as recomendações já enviadas
-  continuam no histórico até a exclusão da conta.
+  não informar” na edição do perfil remove a resposta do perfil; as avaliações de vagas e as
+  recomendações feitas até ali continuam no histórico até a exclusão da conta.
 - **Telegram.** Usamos o identificador do seu chat para vincular a conta e entregar mensagens.
 - **Uso do Radar.** Registramos aberturas de links, feedback sobre vagas, identificador de
   sessão e eventos de navegação e cadastro para entender o uso do serviço e identificar
