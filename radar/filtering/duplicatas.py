@@ -1,4 +1,5 @@
 import re
+from collections.abc import Callable
 
 from radar.domain.models import Vaga
 from radar.domain.regioes import Municipio, identificar_municipio
@@ -43,6 +44,17 @@ def descricoes_semelhantes(primeira: Vaga, segunda: Vaga) -> bool:
     return em_comum / total >= SEMELHANCA_MINIMA_ENTRE_DESCRICOES
 
 
+def mesma_empresa_ou_sem_nome(primeira: Vaga, segunda: Vaga) -> bool:
+    empresas = {limpar(primeira.empresa), limpar(segunda.empresa)}
+    return len(empresas) == 1 or not empresas.isdisjoint(EMPRESAS_NAO_IDENTIFICADAS)
+
+
+def republicacao_da_mesma_empresa(primeira: Vaga, segunda: Vaga) -> bool:
+    return mesma_empresa_ou_sem_nome(primeira, segunda) and descricoes_semelhantes(
+        primeira, segunda
+    )
+
+
 def mais_completa(primeira: Vaga, segunda: Vaga) -> Vaga:
     informa_modalidade = (primeira.modalidade is not None, segunda.modalidade is not None)
     if informa_modalidade == (False, True):
@@ -77,7 +89,11 @@ def remover_republicacoes(vagas: list[Vaga]) -> list[Vaga]:
     return escolhidas
 
 
-def remover_republicacoes_de(vagas: list[Vaga], ja_conhecidas: list[Vaga]) -> list[Vaga]:
+def remover_republicacoes_de(
+    vagas: list[Vaga],
+    ja_conhecidas: list[Vaga],
+    e_republicacao: Callable[[Vaga, Vaga], bool] = descricoes_semelhantes,
+) -> list[Vaga]:
     conhecidas_por_anuncio: dict[tuple[str, Municipio], list[Vaga]] = {}
     for conhecida in ja_conhecidas:
         conhecidas_por_anuncio.setdefault(chave_de_anuncio(conhecida), []).append(conhecida)
@@ -85,7 +101,7 @@ def remover_republicacoes_de(vagas: list[Vaga], ja_conhecidas: list[Vaga]) -> li
         vaga
         for vaga in vagas
         if not any(
-            descricoes_semelhantes(vaga, conhecida)
+            e_republicacao(vaga, conhecida)
             for conhecida in conhecidas_por_anuncio.get(chave_de_anuncio(vaga), [])
         )
     ]

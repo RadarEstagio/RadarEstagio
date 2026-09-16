@@ -9,6 +9,7 @@ from radar.filtering.duplicatas import (
     mais_completa,
     remover_duplicatas,
     remover_republicacoes_de,
+    republicacao_da_mesma_empresa,
 )
 
 
@@ -187,6 +188,63 @@ def test_remover_republicacoes_de_sem_conhecidas_mantem_tudo():
     candidatas = [vaga("Estágio em TI", "A", descricao=ANUNCIO)]
 
     assert remover_republicacoes_de(candidatas, []) == candidatas
+
+
+TEXTO_DE_AGENCIA = (
+    "Agência de integração seleciona estudantes de Administração do terceiro ao sexto período "
+    "para estágio em empresa parceira no Centro do Rio de Janeiro, com bolsa auxílio, auxílio "
+    "transporte, seguro de vida, recesso remunerado, carga de seis horas diárias de segunda a "
+    "sexta e possibilidade de efetivação ao fim do contrato."
+)
+
+
+def test_republicacao_da_mesma_empresa_nao_junta_clientes_diferentes_com_texto_de_agencia():
+    marcada = vaga(
+        "Estágio em Administração",
+        "Vistorias Rio",
+        descricao=TEXTO_DE_AGENCIA + " Atividades: vistoria de imóveis e laudos.",
+    )
+    de_outra_empresa = vaga(
+        "Estágio em Administração",
+        "Engenharia Rio",
+        descricao=TEXTO_DE_AGENCIA + " Atividades: apoio ao canteiro de obras.",
+        numero=2,
+    )
+
+    assert remover_republicacoes_de([de_outra_empresa], [marcada]) == []
+    assert remover_republicacoes_de(
+        [de_outra_empresa], [marcada], republicacao_da_mesma_empresa
+    ) == [de_outra_empresa]
+
+
+@pytest.mark.parametrize(
+    ("empresa_marcada", "empresa_republicada"),
+    [
+        ("Divulga Vagas", "DIVULGA VAGAS"),
+        ("Empresa não informada", "BuscarVagas"),
+        ("BuscarVagas", "Confidencial"),
+        ("Divulga Vagas", ""),
+    ],
+)
+def test_republicacao_da_mesma_empresa_ou_de_empresa_sem_nome_continua_junta(
+    empresa_marcada: str, empresa_republicada: str
+):
+    marcada = vaga("Estágio em Programação", empresa_marcada, descricao=ANUNCIO)
+    republicada = vaga(
+        "Estágio em Programação - Vaga",
+        empresa_republicada,
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+    )
+
+    assert remover_republicacoes_de([republicada], [marcada], republicacao_da_mesma_empresa) == []
+
+
+def test_republicacao_da_mesma_empresa_ainda_exige_descricao_semelhante():
+    marcada = vaga("Estágio em TI", "A", descricao=ANUNCIO)
+    outra = vaga("Estágio em TI", "A", descricao=OUTRO_ANUNCIO, numero=2)
+
+    assert not republicacao_da_mesma_empresa(marcada, outra)
 
 
 OUTRO_ANUNCIO = (

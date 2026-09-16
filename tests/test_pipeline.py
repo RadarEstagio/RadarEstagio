@@ -1753,13 +1753,13 @@ def test_encerrada_em_outra_fonte_com_o_mesmo_numero_nao_tira_a_vaga():
     assert enviadas == ["1", "2"]
 
 
-def test_republicacao_da_vaga_encerrada_com_outro_numero_tambem_fica_de_fora():
+def test_republicacao_da_vaga_encerrada_pela_mesma_empresa_tambem_fica_de_fora():
     encerrada = anuncio(1, "Wilson Sons")
     repositorio = RepositorioComVagasEncerradas([usuario()], [encerrada])
 
-    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "Agregador"), vaga(2)])
+    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "WILSON SONS"), vaga(2)])
     as_duas_com_republicacao_maior, _, _ = rodar_com(
-        repositorio, [encerrada, anuncio(9, "Agregador", " e benefícios"), vaga(2)]
+        repositorio, [encerrada, anuncio(9, "Empresa não informada", " e benefícios"), vaga(2)]
     )
 
     assert so_a_republicacao == ["2"]
@@ -1797,6 +1797,21 @@ def enviadas_a_cada_um(
         id_usuario: [item.resultado.vaga.id_externo for item in enviadas]
         for id_usuario, enviadas in resumo.enviadas_por_usuario.items()
     }
+
+
+def test_republicacao_de_outra_empresa_so_deixa_de_chegar_a_quem_marcou_a_vaga():
+    encerrada = anuncio(1, "Wilson Sons")
+    repositorio = RepositorioComMarcacoesDeCadaUm(
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+        [encerrada],
+        {ID_USUARIO: [encerrada]},
+    )
+
+    enviadas = enviadas_a_cada_um(
+        repositorio, [encerrada, anuncio(9, "Agência de Estágios"), vaga(2)]
+    )
+
+    assert enviadas == {ID_USUARIO: ["2"], ID_OUTRO_USUARIO: ["2", "9"]}
 
 
 def test_marcacao_sem_efeito_para_os_outros_ainda_tira_a_vaga_de_quem_marcou():
