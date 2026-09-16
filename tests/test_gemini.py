@@ -18,7 +18,7 @@ from radar.matching.errors import (
     FalhaInternaDoAvaliador,
 )
 from radar.matching.extracao import ExtracoesDeVagas
-from radar.matching.gemini import ExtratorGemini
+from radar.matching.gemini import ExtratorGemini, gerar_json
 from radar.matching.lotes import (
     ESPERA_PADRAO_EM_SEGUNDOS,
     MARGEM_DE_ESPERA_EM_SEGUNDOS,
@@ -404,6 +404,64 @@ def test_corpo_200_que_nao_e_json_e_indisponibilidade_temporaria(corpo: str | by
     with pytest.raises(AvaliadorIndisponivel, match="não é JSON") as capturado:
         extrator.extrair([vaga_exemplo()])
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida | FalhaInternaDoAvaliador)
+
+
+def envelope_valido() -> dict:
+    return envelope_com_texto(json.dumps({"extracoes": [extracao("adzuna:1")]}))
+
+
+def corpo_json_200(envelope: object) -> Callable[[httpx.Request], httpx.Response]:
+    return lambda requisicao: httpx.Response(200, json=envelope)
+
+
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        pytest.param({"candidates": [{"content": {"parts": [{"text": 5}]}}]}, id="texto-numero"),
+        pytest.param({"candidates": [{"content": {"parts": "x"}}]}, id="partes-texto"),
+        pytest.param({"candidates": [{"content": "x"}]}, id="conteudo-texto"),
+        pytest.param({**envelope_valido(), "usageMetadata": "x"}, id="uso-texto"),
+        pytest.param({"candidates": 5}, id="candidatos-numero"),
+        pytest.param({"candidates": [5]}, id="candidato-numero"),
+        pytest.param(5, id="corpo-numero"),
+        pytest.param(True, id="corpo-booleano"),
+    ],
+)
+def test_envelope_fora_do_formato_da_api_e_indisponibilidade_temporaria(envelope: object):
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_json_200(envelope)))
+
+    with pytest.raises(AvaliadorIndisponivel, match="fora do formato da API") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida | FalhaInternaDoAvaliador)
+
+
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        pytest.param(
+            {"promptFeedback": {"blockReason": "PROHIBITED_CONTENT"}}, id="pedido-barrado"
+        ),
+        pytest.param({"candidates": [{"finishReason": "SAFETY"}]}, id="resposta-barrada"),
+        pytest.param(
+            {"candidates": [{"content": {"role": "model"}, "finishReason": "MAX_TOKENS"}]},
+            id="sem-partes",
+        ),
+        pytest.param({"candidates": []}, id="sem-candidatos"),
+    ],
+)
+def test_envelope_sem_texto_segue_como_erro_do_lote_que_se_divide(envelope: dict):
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_json_200(envelope)))
+
+    with pytest.raises(ErroDeAvaliacao, match="resposta vazia") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, ErroTemporarioDeAvaliacao)
+
+
+def test_erro_ao_montar_o_pedido_nao_vira_indisponibilidade():
+    cliente = cliente_do_sdk(corpo_json_200(envelope_valido()))
+
+    with pytest.raises(TypeError):
+        gerar_json(cliente, MODELO_DE_TESTE, "prompt", ExtracoesDeVagas, None)
 
 
 def test_erro_de_corpo_que_nao_e_json_mostra_o_inicio_do_corpo():
