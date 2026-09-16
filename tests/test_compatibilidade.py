@@ -299,6 +299,25 @@ def test_termo_generico_sozinho_nao_comprova_curso(generico):
     )
 
 
+@pytest.mark.parametrize(
+    ("curso", "aceitos"),
+    [
+        ("Direito", ["Estatística", "Matemática"]),
+        ("Medicina Veterinária", ["Estatística", "Matemática"]),
+        ("Administração", ["Engenharia"]),
+        ("Administração", ["Ensino Médio"]),
+        ("Administração", ["Ensino Médio", "EJA"]),
+        ("Engenharia de Software", ["Técnico em Automação", "Eletrotécnica", "Eletrônica"]),
+        ("Engenharia de Software", ["Gestão Ambiental", "Técnico em Meio Ambiente"]),
+    ],
+)
+def test_nome_fora_do_catalogo_de_outra_formacao_segue_incompativel(curso, aceitos):
+    assert (
+        curso_de(extracao(cursos_aceitos=aceitos), perfil(curso=curso))
+        is NivelCompatibilidade.INCOMPATIVEL
+    )
+
+
 def test_anuncio_que_aceita_tecnologia_da_informacao_e_compativel_com_computacao():
     extracao = ExtracaoDaVaga(
         id_vaga="v", area_da_vaga="computacao", cursos_aceitos=["Tecnologia da Informação"]
