@@ -174,18 +174,31 @@ async function marcarComoEncerrada(
   db: PGlite,
   perfil: number,
   vaga: number,
-  { abriuAntes = true }: { abriuAntes?: boolean } = {},
+  { abriuAntes = true, horasAtras = 1 }: { abriuAntes?: boolean; horasAtras?: number } = {},
 ) {
   if (abriuAntes) {
-    await eventoDaVaga(db, { nome: "vaga_aberta", perfil, vaga, quando: "now() - interval '2 hours'" });
+    await eventoDaVaga(db, {
+      nome: "vaga_aberta",
+      perfil,
+      vaga,
+      quando: `now() - interval '${horasAtras + 1} hours'`,
+    });
   }
   await eventoDaVaga(db, {
     nome: "vaga_irrelevante",
     perfil,
     vaga,
-    quando: "now() - interval '1 hour'",
+    quando: `now() - interval '${horasAtras} hours'`,
     motivo: "motivo_encerrada",
   });
+}
+
+async function queNaoVoltam(db: PGlite, perfil: number) {
+  const linhas = await db.query<{ id_externo: string }>(
+    await consulta("SQL_VAGAS_QUE_NAO_VOLTAM"),
+    [perfil],
+  );
+  return linhas.rows.map((linha) => linha.id_externo).sort();
 }
 
 Deno.test("vaga marcada como encerrada por quem a abriu fica de fora para todos", async () => {
@@ -341,16 +354,45 @@ Deno.test("marcação de conta pausada ou sem Telegram continua tirando a vaga d
   }
 });
 
-Deno.test("até três vagas marcadas por um perfil saem para todos e a quarta tira o efeito de todas", async () => {
+Deno.test("as três primeiras marcações do perfil saem para todos e da quarta em diante só para quem marcou", async () => {
   const db = await bancoComFeedback();
   try {
     await vagasAte(db, 7);
-    for (const vaga of [1, 2, 3]) {
-      await marcarComoEncerrada(db, 2, vaga);
+    for (const [vaga, horasAtras] of [[7, 7], [6, 6], [5, 5]]) {
+      await marcarComoEncerrada(db, 3, vaga, { horasAtras });
     }
-    for (const vaga of [4, 5, 6, 7]) {
-      await marcarComoEncerrada(db, 3, vaga);
-    }
+
+    assert.deepEqual(await encerradas(db), [
+      "adzuna:5:Estágio 5",
+      "adzuna:6:Estágio 6",
+      "adzuna:7:Estágio 7",
+    ]);
+
+    await marcarComoEncerrada(db, 3, 4, { horasAtras: 1 });
+
+    assert.deepEqual(await encerradas(db), [
+      "adzuna:5:Estágio 5",
+      "adzuna:6:Estágio 6",
+      "adzuna:7:Estágio 7",
+    ]);
+    assert.deepEqual(await queNaoVoltam(db, 3), ["4", "5", "6", "7"]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("marcações no mesmo instante entram na ordem pela vaga", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await vagasAte(db, 8);
+    await db.exec(`
+      insert into eventos_produto(nome, perfil_id, vaga_id, propriedades, ocorrido_em)
+      select evento.nome, 2, vaga, evento.propriedades::jsonb, now() - evento.atraso
+      from unnest(array[8, 3, 2, 1]) vaga,
+           (values ('vaga_aberta', '{}', interval '2 hours'),
+                   ('vaga_irrelevante', '{"motivo":"motivo_encerrada"}', interval '1 hour'))
+             evento(nome, propriedades, atraso);
+    `);
 
     assert.deepEqual(await encerradas(db), [
       "adzuna:1:Estágio A",
@@ -362,24 +404,25 @@ Deno.test("até três vagas marcadas por um perfil saem para todos e a quarta ti
   }
 });
 
-Deno.test("marcação sem abertura conta no teto e desfazê-la devolve o efeito das outras", async () => {
+Deno.test("marcação sem abertura ocupa lugar na ordem e desfazer uma marcação faz a seguinte subir", async () => {
   const db = await bancoComFeedback();
   try {
     await vagasAte(db, 4);
-    for (const vaga of [1, 2, 3]) {
-      await marcarComoEncerrada(db, 2, vaga);
-    }
-    await marcarComoEncerrada(db, 2, 4, { abriuAntes: false });
+    await marcarComoEncerrada(db, 2, 1, { abriuAntes: false, horasAtras: 4 });
+    await marcarComoEncerrada(db, 2, 2, { horasAtras: 3 });
+    await marcarComoEncerrada(db, 2, 3, { horasAtras: 2 });
+    await marcarComoEncerrada(db, 2, 4, { horasAtras: 1 });
 
-    assert.deepEqual(await encerradas(db), []);
+    assert.deepEqual(await encerradas(db), ["adzuna:2:Estágio B", "adzuna:3:Estágio 3"]);
 
-    await eventoDaVaga(db, { nome: "vaga_util", perfil: 2, vaga: 4, quando: "now()" });
+    await eventoDaVaga(db, { nome: "vaga_util", perfil: 2, vaga: 1, quando: "now()" });
 
     assert.deepEqual(await encerradas(db), [
-      "adzuna:1:Estágio A",
       "adzuna:2:Estágio B",
       "adzuna:3:Estágio 3",
+      "adzuna:4:Estágio 4",
     ]);
+    assert.deepEqual(await queNaoVoltam(db, 2), ["2", "3", "4"]);
   } finally {
     await db.close();
   }
@@ -396,12 +439,7 @@ Deno.test("vaga marcada como encerrada não volta para quem marcou, mesmo sem ef
     await recusa(db, 5, "motivo_repetida", "now() - interval '1 hour'");
     await marcarComoEncerrada(db, 2, 3);
 
-    const linhas = await db.query<{ id_externo: string }>(
-      await consulta("SQL_VAGAS_QUE_NAO_VOLTAM"),
-      [1],
-    );
-
-    assert.deepEqual(linhas.rows.map((linha) => linha.id_externo).sort(), ["1", "2", "3", "4", "5"]);
+    assert.deepEqual(await queNaoVoltam(db, 1), ["1", "2", "3", "4", "5"]);
     assert.deepEqual(await encerradas(db), ["adzuna:3:Estágio 3"]);
   } finally {
     await db.close();

@@ -167,7 +167,9 @@ SQL_VAGAS_ENCERRADAS = f"""
     ),
     marcadas as (
         select r.perfil_id, r.vaga_id, r.ocorrido_em,
-               count(*) over (partition by r.perfil_id) as marcadas_pelo_perfil
+               row_number() over (
+                   partition by r.perfil_id order by r.ocorrido_em, r.vaga_id
+               ) as ordem_no_perfil
         from ultima_resposta r
         where r.nome = 'vaga_irrelevante'
           and r.motivo = 'motivo_encerrada'
@@ -179,7 +181,7 @@ SQL_VAGAS_ENCERRADAS = f"""
         select m.vaga_id
         from marcadas m
         join perfis p on p.id = m.perfil_id
-        where m.marcadas_pelo_perfil <= {MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS}
+        where m.ordem_no_perfil <= {MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS}
           and p.excluida_em is null
           and exists (
               select 1
