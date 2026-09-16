@@ -42,7 +42,7 @@ PADRAO_QUALQUER_FORMACAO = re.compile(
     r"\b(?:qualquer|todos os|todas as)\s+(?:cursos?|formacao|formacoes|graduacao|graduacoes)"
     r"\b(?!\s+(?:de|da|do|das|dos|em|na|no)\b)"
 )
-PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
+PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home[\s-]*office|tele-?trabalho)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
 PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
     r"\bnao\s+(?:\w+\s+){0,3}?(?:exig\w*|ped\w*|precis\w*|requer\w*|necessari\w*)"

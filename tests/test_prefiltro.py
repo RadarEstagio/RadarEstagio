@@ -899,6 +899,58 @@ def test_remoto_mantem_vaga_de_outra_cidade_que_admite_remoto_e_qualquer_da_prop
     assert not localizacao_incompativel(vaga(localizacao="Rio de Janeiro, Rio de Janeiro"), remoto)
 
 
+GRAFIAS_DE_TRABALHO_REMOTO = [
+    "Trabalho em home-office.",
+    "Modelo home - office, com encontros mensais na sede.",
+    "Regime de teletrabalho.",
+    "Contrato em tele-trabalho.",
+]
+
+
+@pytest.mark.parametrize(
+    "modalidade", [Modalidade.HIBRIDO, Modalidade.INDIFERENTE, Modalidade.REMOTO]
+)
+@pytest.mark.parametrize("descricao", GRAFIAS_DE_TRABALHO_REMOTO)
+def test_home_office_com_hifen_e_teletrabalho_admitem_remoto_em_outra_cidade(
+    modalidade: Modalidade, descricao: str
+):
+    do_rio = perfil(modalidade=modalidade, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, do_rio) is None
+
+
+@pytest.mark.parametrize("descricao", GRAFIAS_DE_TRABALHO_REMOTO)
+def test_home_office_com_hifen_e_teletrabalho_nao_levam_vaga_distante_a_quem_e_presencial(
+    descricao: str,
+):
+    presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, presencial) == "localizacao_incompativel"
+
+
+def test_presencial_com_dia_de_home_office_com_hifen_nao_e_incompativel_com_perfil_remoto():
+    parcial = vaga(descricao="Presencial na sede, com um dia de home-office por semana.")
+
+    assert not modalidade_incompativel(parcial, perfil(modalidade=Modalidade.REMOTO))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Domínio do pacote Office. Atendimento em home care.",
+        "Conhecimento em Office 365; vaga para a sede.",
+        "Trabalho em equipe e boa comunicação.",
+    ],
+)
+def test_office_ou_home_soltos_nao_admitem_remoto_em_outra_cidade(descricao: str):
+    hibrido = perfil(modalidade=Modalidade.HIBRIDO, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, hibrido) == "localizacao_incompativel"
+
+
 VAGA_EXCLUSIVA_PARA_PCD = "Processo seletivo exclusivo para pessoas com deficiência. Python e SQL."
 
 
