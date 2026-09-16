@@ -164,10 +164,6 @@ def admite_remoto(vaga: Vaga) -> bool:
     return PADRAO_TRABALHO_REMOTO.search(texto) is not None
 
 
-def cidade(localizacao: str) -> str:
-    return normalizar(localizacao.split(",")[0]).strip()
-
-
 def modalidade_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
     if perfil.modalidade is not Modalidade.REMOTO:
         return False

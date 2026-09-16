@@ -690,6 +690,11 @@ CONTEXTO_DE_ATUACAO = (
     r"|requisitos?|vivencia|interesse (?:em|por)|habilidades? (?:em|com)|dominio (?:de|em)"
     r"|nocoes (?:de|em)|elaborar|elaboracao"
 )
+ROTULO_DE_FORMACAO = (
+    r"(?:curso(?:s|\(s\))?|formacao|graduacao|escolaridade|cursando|(?:ensino|nivel) superior)"
+    r"(?:[\s*]+(?:aceit[oa]s|academica|desejad[oa]s?|desejave(?:l|is)|necessari[oa]s?|em|de"
+    r"|andamento|curso|abaixo)){0,2}"
+)
 PALAVRAS_ATE_O_TERMO = 24
 JANELA_DE_CONTEXTO = 260
 FIM_DE_FRASE = ". "
@@ -703,10 +708,16 @@ def _padrao_de_contexto(alternativas: str) -> re.Pattern[str]:
 
 PADRAO_CONTEXTO_DE_FORMACAO = _padrao_de_contexto(CONTEXTO_DE_FORMACAO)
 PADRAO_CONTEXTO_DE_ATUACAO = _padrao_de_contexto(CONTEXTO_DE_ATUACAO)
+PADRAO_ROTULO_DE_FORMACAO = re.compile(
+    rf"\b{ROTULO_DE_FORMACAO}[\s*]*:"
+    rf"(?:[^:\w]*\w+(?:[^:\w]+\w+){{0,{PALAVRAS_ATE_O_TERMO - 1}}}?)?[^:\w]*$"
+)
 
 
 def precedido_de_contexto_de_formacao(texto: str, posicao: int) -> bool:
-    return _precedido_de(PADRAO_CONTEXTO_DE_FORMACAO, texto, posicao)
+    return _precedido_de(PADRAO_CONTEXTO_DE_FORMACAO, texto, posicao) or _precedido_de(
+        PADRAO_ROTULO_DE_FORMACAO, texto, posicao
+    )
 
 
 def precedido_de_contexto_de_atuacao(texto: str, posicao: int) -> bool:

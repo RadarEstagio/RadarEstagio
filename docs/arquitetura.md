@@ -261,9 +261,10 @@ A Adzuna devolve descrição truncada e raramente informa modalidade; a Gupy tem
 coletor: o pipeline não sabe quantas fontes existem. Uma fonte fora do ar vira `warning`; só
 falha se nenhuma responder. `FONTES` liga e desliga fontes sem mexer no código.
 
-A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa
-normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
-descrição mais longa. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
+A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa +
+cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
+descrição mais longa. Empresa sem nome ("Empresa não informada", "Confidencial") não distingue
+anúncio algum, então nesse caso a chave leva também a descrição. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
 que muda é a informação que chega ao extrator.
 
 `Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
@@ -273,7 +274,8 @@ A chave de duplicata inclui a cidade. Sem ela, duas vagas presenciais da mesma e
 mesmo título em cidades diferentes viravam uma só, e essa etapa roda antes do filtro por
 perfil: quem era de Recife perdia a vaga de Recife para a de São Paulo, sem erro na execução.
 A segunda etapa, a de republicações, continua comparando o início da descrição dentro da
-mesma cidade.
+mesma cidade. A cidade é o município com o estado, lido por `domain/regioes.py`, porque o mesmo
+nome existe em mais de um estado.
 
 Para decidir se a vaga é alcançável, a cidade da vaga e a do perfil passam por
 `domain/regioes.py`, que devolve mesma cidade, mesma região imediata do IBGE ou distante. Mesma

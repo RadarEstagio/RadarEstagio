@@ -736,6 +736,35 @@ Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à n
    e perdia "cursando Administração ou Ciências Contábeis" — 23 vagas reais, mais 2 de Ciências
    Econômicas e 3 de "gestão de RH". Sigla e palavra solta ("si", "ti", "redes") ficam de fora
    porque aparecem em texto comum ("entre si", "redes sociais").
+   **Rótulo de formação com qualificador (16/09/2026).** A trava do dois-pontos só deixava passar
+   o dois-pontos colado ao termo ("Formação:", "Cursos:"), e a vaga de título genérico caía com
+   "Cursos aceitos: Administração", "Formação acadêmica: Direito", "**Cursos desejáveis**: -
+   Marketing", "Graduação em: …", "Curso(s): …" e "Graduação:Economia | Administração", em que
+   só o primeiro curso contava por faltar espaço depois do dois-pontos. `PADRAO_ROTULO_DE_FORMACAO`
+   aceita o termo de formação (curso, cursos, curso(s), formação, graduação, escolaridade,
+   cursando, ensino ou nível superior) com até dois qualificadores de uma lista fechada (aceitos,
+   acadêmica, desejada, desejáveis, necessária, em, de, andamento, curso, abaixo), ligados só por
+   espaço ou negrito de markdown. Depois do rótulo valem as mesmas 24 palavras, e o segundo
+   dois-pontos continua travando: "formação acadêmica: não informado … ramo: recursos humanos"
+   segue de fora. A lista é fechada porque a descrição chega sem quebra de linha e o valor de um
+   campo emenda no rótulo do seguinte; aceitando qualquer palavra e qualquer termo de formação
+   antes do dois-pontos, três anúncios reais vazavam: "área de atuação : jurídico … logística"
+   para Logística, "graduação;desejáveis: inglês …;boa comunicação" para Comunicação e
+   "conhecimentos e formação requeridos: … conhecimento básico em informática" para Informática.
+   Medido contra o `main` nas 1.003 vagas guardadas com 65 cursos sintéticos (65.195 pares): 129
+   citações de curso em 44 vagas ganham contexto e nenhuma perde; 27 pares deixam de ser
+   descartados e nenhum passa a ser. 24 são cursos que o anúncio lista ("Cursos desejáveis" do
+   grupo YDUQS, "Estágio Comercial" com "cursando **Ensino Superior** em:", "Graduação:" sem
+   espaço numa vaga de análise de sistemas que aceita Administração); os outros 3 são do curso
+   "Gestão", que casa dentro de "gestão de TI", "gestão comercial" e "gestão da informação", como
+   já casava em "cursando gestão comercial". `vagas` só guarda o que passou no pré-filtro de algum
+   perfil, então a vaga que o defeito descartava para todos não entra na conta, e o ganho real é
+   maior que o medido. Limites: "exigida" e "requerida" ficaram fora dos qualificadores (a única
+   ocorrência era a de Informática), então "Formação exigida: X" segue travada; rótulo com frase
+   não conta ("Graduação em andamento a partir do 5º período:", 2 pares reais de uma vaga de PMO
+   perdidos para Engenharia de Produção e Relações Internacionais; "nas seguintes áreas:"); e,
+   como já valia para "Formação:", contam as 24 palavras depois do rótulo, não só a lista, e ponto
+   sem espaço (".conhecimento em banco de dados") não fecha a frase.
 2. Curso sem área conhecida: mantém só título sem marcador forte de área alguma ("Programa de
    Estágio", "Estagiário"). Sem isso, um perfil de Agronomia passava 96% das vagas (641 de 667)
    para a extração.
@@ -867,6 +896,33 @@ título.
 
   Resultado nas 1.003: 1 exclusiva, 1 afirmativa com PCD (MUDES), 2 afirmativas sem lista, 999
   gerais, igual à leitura manual das 29, antes e depois da correção.
+
+  **Formatos que dizem não ser só de PCD** (16/09/2026, auditoria). "Vaga para PCD/Ampla
+  concorrência", "Vaga para PCD (não exclusiva)" e "Vaga para PCD - Não" eram exclusivas: depois do
+  termo a regra só via "e", "ou", " também" e ": não" ou "? não", e no título o trecho "Estágio -
+  PCD - Não" ou "(PcD - não exclusiva)" bastava, sem olhar o que vinha depois do separador. Agora,
+  logo depois de PCD, e também depois da sigla em "pessoas com deficiência (PCD)", a barra sempre
+  tira a exclusividade ("PCD/Ampla", "PCD/Não PCD", "PCD/reabilitados"), e "também", "ampla",
+  "preferencialmente", "N/A", "não se aplica", "não informado", "não PCD" e o "não" como resposta
+  solta a tiram depois de qualquer sequência de espaço, hífen, dois-pontos, interrogação, vírgula,
+  parêntese ou barra vertical (`SEM_OUTRO_PUBLICO_DEPOIS`). Resposta solta é o "não" seguido de fim
+  de texto, ".", ";", ",", "|", ")", "/" ou " - " (`NAO_COMO_RESPOSTA_SOLTA`): "Vaga para PCD -
+  Não", "PCD: Não." e "PCD - Não - Bolsa" são gerais, mas "Vaga exclusiva para pessoas com
+  deficiência, não exigimos experiência" e "Vaga PCD: não é necessário experiência" seguem
+  exclusivas, porque o "não" é de outra oração. A primeira versão desta correção aceitava "não"
+  seguido de qualquer palavra e tornava geral essa vaga, que no `main` era exclusiva: quem respondeu
+  não voltava a recebê-la. Quebra de linha não tem regra própria: coletores e enriquecimento juntam
+  os espaços, e nenhuma das 1.003 vagas guardadas tem quebra. O trecho do título passa pela mesma
+  regra depois do separador, e "não exclusiva" ou "não é exclusivo" até 60 caracteres depois do
+  termo, sem ponto no meio, também tira. Seguem exclusivas "Vaga PCD: Sim", "Vaga exclusiva para
+  PCD | Bolsa", "Estágio - PCD - Rio de Janeiro", "Estágio - PCD - Não requer experiência" e
+  "Processo seletivo exclusivo para PCD. Atuação não exclusiva em TI.". Nas 1.003 vagas a
+  classificação é a mesma do `main`: nenhuma usa esses formatos, e a leitura manual das 30 que citam
+  PCD, deficiência, necessidades especiais ou ação afirmativa confere com ela. Limites aceitos, para
+  o lado de não exclusiva: "e" logo depois do separador do título tira a exclusividade ("Estágio -
+  PCD - E-commerce"), e a barra trata sinônimo ("PCD/PNE") como outro público. Seguem exclusivas,
+  sem regra: "Vaga para PCD - aberta a todos", "PCD: Opcional", "( ) Sim (X) Não" e "não
+  exclusiva" depois de ponto ou a mais de 60 caracteres.
 
   É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
   ao lado para que serve, e a resposta não entra em evento, log, prompt nem export. O juiz monta o
@@ -1322,6 +1378,41 @@ descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias 
 candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
 repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
 modalidade e, em empate, a de descrição mais longa.
+
+**Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
+três casos, e a pessoa perdia uma delas sem aviso:
+- **Empresa sem nome.** Com "Empresa não informada", "Confidencial", "Empresa Confidencial" ou
+  empresa vazia, a chave título + empresa + cidade virava só título e cidade. Nas vagas guardadas,
+  "Estágio Em Administração - Recrutamento Aberto" tinha cinco anúncios de descrições diferentes, e
+  todos viravam um. Para essas empresas (`EMPRESAS_NAO_IDENTIFICADAS`) a chave leva também a
+  descrição normalizada inteira: o mesmo anúncio repetido segue unido pela chave, mesmo com menos de
+  20 palavras, que a republicação não compara, e o texto parecido segue unido pela republicação.
+- **Símbolo no título.** A limpeza trocava por espaço tudo que não é letra ou número, e "C#", "C++"
+  e "C" viravam "c". "#" e "++" colados ao fim da palavra agora fazem parte dela; caixa, acento e o
+  resto da pontuação seguem ignorados ("C#/.NET" é "c# .net").
+- **Cidade sem estado.** A chave usava o nome antes da vírgula, e "Bom Jesus, PI" era "Bom Jesus,
+  RS" (240 nomes de município existem em mais de um estado). As chaves usam `identificar_municipio`
+  de `domain/regioes.py`: o estado vale nos formatos das fontes e, sem estado, vem do nome quando ele
+  só existe num estado, então "Niterói" segue igual a "Niterói, Estado do Rio de Janeiro".
+
+Símbolo e cidade valem também para a republicação e, com ela, para "Já vi essa", as enviadas nos
+últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha. Medido nas
+1.003 vagas guardadas, com a regra do `main` e a nova sobre o conjunto e sobre janelas que imitam
+uma execução (vagas publicadas nos 4 dias antes de cada dia de coleta): o conjunto passa de 879 para
+888 vagas únicas, e 8 das 20 janelas, todas de 08 a 16/09, ganham de 1 a 6. Os 17 grupos desfeitos
+são todos de empresa sem nome e foram conferidos à mão: nenhum par com descrição igual ou parecida
+se separa, nenhum par com descrição diferente se junta, e o anúncio repetido (restaurante, suporte
+nas lojas, "Auxílio nas atividades administrativas") continua um só. O filtro entre dias bloqueia os
+mesmos 100 pares de enviada e candidata, e a única vaga encerrada não tira nada a mais nem a menos.
+Símbolo e cidade não mudam nenhum grupo nos dados, porque `vagas` guarda só o que passou no
+pré-filtro de algum perfil, quase tudo do Rio, e só um título tem C#: ficam cobertos pelos testes.
+Limites aceitos: nome repetido sem estado ("Bom Jesus") não é unido a estado algum, então a mesma
+vaga pode chegar duas vezes em vez de sumir; empresa sem nome que repete o anúncio com texto curto
+e diferente também chega duas vezes; agência com nome que anuncia vagas de clientes com o mesmo
+título continua juntando vagas distintas (numa janela de 14/09, a Fundação Mudes juntou "Estágio em
+Administração" de uma empresa de vistorias e de uma de engenharia), e tratá-la como empresa sem nome
+separaria a vaga que a empresa republica com texto reescrito; outro rótulo de empresa escondida
+("Sigilosa") segue valendo como nome; e "T.I" e "TI" continuam chaves diferentes, como antes.
 
 ### Transferência para a organização (08/09/2026)
 

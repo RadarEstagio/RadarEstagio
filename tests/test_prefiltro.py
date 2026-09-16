@@ -511,6 +511,70 @@ def test_curso_citado_com_contexto_de_formacao_mantem_a_vaga(
     assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
 
 
+@pytest.mark.parametrize(
+    ("curso", "descricao"),
+    [
+        ("Administração", "Cursos aceitos: Administração, Economia ou Contabilidade."),
+        ("Economia", "Cursos aceitos: Administração, Economia ou Contabilidade."),
+        ("Direito", "Formação acadêmica: Direito, a partir do 5º período."),
+        ("Administração", "Formação desejada: - Administração de Empresas, Ensino Superior"),
+        ("Marketing", "**Cursos desejáveis**: - Administração - Marketing - Publicidade"),
+        (
+            "Relações Internacionais",
+            "Cursando graduação em: Administração, Relações Internacionais",
+        ),
+        ("Contabilidade", "Graduação em andamento: Administração, Ciências Contábeis."),
+        ("Administração", "Graduação:Economia | Administração | Direito"),
+        ("Administração", "Nível: superior Curso(s): Administração Período: a partir do 3º"),
+        ("Administração", "Requisitos: estar cursando **Ensino Superior** em: Administração"),
+    ],
+)
+def test_curso_listado_depois_de_rotulo_de_formacao_mantem_a_vaga(curso: str, descricao: str):
+    assert menciona_o_curso(normalizar(descricao), curso)
+    assert not fora_da_area_do_curso(
+        vaga(titulo="Estagiário(a)", descricao=descricao), perfil(curso=curso)
+    )
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        (
+            "Recursos Humanos",
+            "Estagiário(a)",
+            "Formação acadêmica: não informado Salário: a combinar Cargo: estagiário"
+            " Empresa: consultoria em recursos humanos Ramo: recursos humanos/recrutamento",
+        ),
+        (
+            "Direito",
+            "Estágio em Informática",
+            "Formação acadêmica: não informado Salário: a combinar Cargo: estágio em direito",
+        ),
+        (
+            "Logística",
+            "Estagiário(a)",
+            "Área de atuação da empresa: jurídico nosso cliente é uma empresa de logística",
+        ),
+        ("Administração", "Estagiário(a)", "Formação desejada: não informada Setor: administração"),
+        (
+            "Informática",
+            "Estágio em Departamento Pessoal",
+            "Conhecimentos e formação requeridos: noções de legislação; noções de informática",
+        ),
+        (
+            "Comunicação",
+            "Estágio em Tecnologia",
+            "Estar no fim da graduação;Desejáveis: inglês para leitura;boa comunicação",
+        ),
+    ],
+)
+def test_rotulo_que_nao_e_de_formacao_continua_travando_a_citacao_do_curso(
+    curso: str, titulo: str, descricao: str
+):
+    assert not menciona_o_curso(normalizar(descricao), curso)
+    assert fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
+
+
 def test_perfil_remoto_aceita_vaga_remota_de_outra_cidade():
     vaga_em_outra_cidade = vaga(localizacao="Salvador, Bahia", modalidade=Modalidade.REMOTO)
     assert not localizacao_incompativel(vaga_em_outra_cidade, perfil(modalidade=Modalidade.REMOTO))
