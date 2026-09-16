@@ -265,6 +265,7 @@ def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection
         cursos_aceitos=["Ciência da Computação"],
         habilidades_obrigatorias=["Python"],
         periodo_minimo=3,
+        descricao_completa=False,
     )
 
     assert repositorio.extracoes_existentes([vaga(1)], "modelo-teste") == {}

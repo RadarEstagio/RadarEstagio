@@ -18,8 +18,14 @@ from radar.domain.models import (
 )
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.lotes import ExtratorEmLotes
+from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
-from radar.pipeline import ParametrosDaExecucao, candidatas_de_algum_perfil, executar
+from radar.pipeline import (
+    ParametrosDaExecucao,
+    candidatas_de_algum_perfil,
+    executar,
+    manter_descricoes_como_estao,
+)
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioDoModoLocal, RepositorioEmMemoria
 
@@ -300,6 +306,163 @@ def test_vaga_enriquecida_e_pontuada_com_a_descricao_completa():
     selecionadas = resumo.enviadas_por_usuario[ID_USUARIO]
     assert selecionadas[0].resultado.nota == 90
     assert selecionadas[0].resultado.avisos_objetivos == []
+
+
+class ExtratorDeVagaDePython(ExtratorFalso):
+    def __init__(self) -> None:
+        super().__init__({})
+
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(vaga.id_externo for vaga in vagas)
+        return [extracao_de_vaga_de_python(vaga.identidade()) for vaga in vagas]
+
+
+def extracao_de_vaga_de_python(id_vaga: str) -> ExtracaoDaVaga:
+    return ExtracaoDaVaga(
+        id_vaga=id_vaga,
+        area_da_vaga="computacao",
+        cursos_aceitos=["Engenharia de Software"],
+        habilidades_obrigatorias=["Python"],
+    )
+
+
+def completar_descricoes(vagas: list[Vaga]) -> list[Vaga]:
+    return [item.model_copy(update={"descricao_completa": True}) for item in vagas]
+
+
+def rodar_no_dia(
+    repositorio: RepositorioFalso,
+    coletada: Vaga,
+    extrator: ExtratorFalso,
+    dia: int,
+    enriquecer=manter_descricoes_como_estao,
+) -> ResultadoMatch:
+    resumo = executar(
+        ColetorFalso([coletada]),
+        extrator,
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE + timedelta(days=dia),
+        enriquecer=enriquecer,
+    )
+    return resumo.enviadas_por_usuario[ID_USUARIO][0].resultado
+
+
+def test_extracao_feita_sobre_a_descricao_cortada_segue_travada_quando_a_completa_chega():
+    repositorio = RepositorioFalso([usuario()])
+    cortada = vaga(1).model_copy(update={"descricao_completa": False})
+
+    ontem = rodar_no_dia(repositorio, cortada, ExtratorDeVagaDePython(), dia=0)
+    hoje = rodar_no_dia(
+        repositorio,
+        cortada,
+        ExtratorQueNaoDevolveNada({}),
+        dia=1,
+        enriquecer=completar_descricoes,
+    )
+
+    assert ontem.nota == 60
+    assert repositorio.extracoes_guardadas[("adzuna", "1")].descricao_completa is False
+    assert hoje.nota == 60
+    assert AVISO_DESCRICAO_INCOMPLETA in hoje.avisos_objetivos
+
+
+def test_extracao_feita_sobre_a_descricao_completa_nao_trava_quando_a_de_hoje_vem_cortada():
+    repositorio = RepositorioFalso([usuario()])
+    completa = vaga(1)
+    cortada_hoje = completa.model_copy(update={"descricao_completa": False})
+
+    ontem = rodar_no_dia(repositorio, completa, ExtratorDeVagaDePython(), dia=0)
+    hoje = rodar_no_dia(repositorio, cortada_hoje, ExtratorQueNaoDevolveNada({}), dia=1)
+
+    assert ontem.nota == 100
+    assert hoje.nota == 100
+    assert hoje.avisos_objetivos == []
+
+
+def test_vaga_extraida_sobre_a_descricao_cortada_volta_a_ia_uma_vez_quando_a_completa_chega():
+    repositorio = RepositorioFalso([usuario()])
+    cortada = vaga(1).model_copy(update={"descricao_completa": False})
+    rodar_no_dia(repositorio, cortada, ExtratorDeVagaDePython(), dia=0)
+    extrator_de_hoje = ExtratorDeVagaDePython()
+    extrator_de_amanha = ExtratorDeVagaDePython()
+
+    hoje = rodar_no_dia(
+        repositorio, cortada, extrator_de_hoje, dia=1, enriquecer=completar_descricoes
+    )
+    amanha = rodar_no_dia(
+        repositorio, cortada, extrator_de_amanha, dia=2, enriquecer=completar_descricoes
+    )
+
+    assert extrator_de_hoje.extraidas == ["1"]
+    assert hoje.nota == 100
+    assert hoje.avisos_objetivos == []
+    assert repositorio.extracoes_guardadas[("adzuna", "1")].descricao_completa is True
+    assert extrator_de_amanha.extraidas == []
+    assert amanha.nota == 100
+
+
+def test_vaga_que_nao_volta_da_ia_segue_com_a_extracao_cortada_sem_segurar_a_mensagem():
+    repositorio = RepositorioFalso([usuario()])
+    cortada = vaga(1).model_copy(update={"descricao_completa": False})
+    rodar_no_dia(repositorio, cortada, ExtratorDeVagaDePython(), dia=0)
+    extrator = ExtratorQueNaoDevolveNada({})
+    notificador = NotificadorFalso()
+
+    resumo = executar(
+        ColetorFalso([cortada]),
+        extrator,
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE + timedelta(days=1),
+        enriquecer=completar_descricoes,
+    )
+
+    assert resumo.vagas_sem_extracao == 0
+    assert resumo.vagas_extraidas_agora == 0
+    assert [item.resultado.nota for item in resumo.enviadas_por_usuario[ID_USUARIO]] == [60]
+    assert repositorio.extracoes_guardadas[("adzuna", "1")].descricao_completa is False
+
+
+@pytest.mark.parametrize("completa_hoje", [True, False])
+def test_extracao_sem_registro_ou_ja_completa_nao_volta_a_ia(completa_hoje):
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.extracoes_guardadas[("adzuna", "1")] = extracao_de_vaga_de_python("adzuna:1")
+    repositorio.extracoes_guardadas[("adzuna", "2")] = extracao_de_vaga_de_python(
+        "adzuna:2"
+    ).model_copy(update={"descricao_completa": True})
+    extrator = ExtratorDeVagaDePython()
+
+    executar(
+        ColetorFalso(
+            [
+                vaga(numero).model_copy(update={"descricao_completa": completa_hoje})
+                for numero in (1, 2)
+            ]
+        ),
+        extrator,
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert extrator.extraidas == []
+
+
+@pytest.mark.parametrize(("completa_hoje", "nota"), [(True, 100), (False, 60)])
+def test_extracao_antiga_sem_registro_da_descricao_lida_segue_a_descricao_de_hoje(
+    completa_hoje, nota
+):
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.extracoes_guardadas[("adzuna", "1")] = extracao_de_vaga_de_python("adzuna:1")
+    coletada = vaga(1).model_copy(update={"descricao_completa": completa_hoje})
+
+    resultado = rodar_no_dia(repositorio, coletada, ExtratorQueNaoDevolveNada({}), dia=0)
+
+    assert resultado.nota == nota
 
 
 def rodar(

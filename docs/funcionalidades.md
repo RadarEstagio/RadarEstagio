@@ -281,9 +281,12 @@ Gemini API ou adapter local AGY; lotes, tentativas e recuperação parcial.
 
 #### 08. Reuso de extração
 
-Uma extração por vaga compartilhada entre perfis.
+Uma extração por vaga compartilhada entre perfis. Ela registra se leu a descrição completa, e a
+nota limitada a 60 por descrição incompleta segue esse registro.
 
-**Condições e limites:** Novas vagas elegíveis ainda podem consumir IA.
+**Condições e limites:** Novas vagas elegíveis ainda podem consumir IA, e a vaga extraída sobre a
+descrição cortada volta à IA uma vez quando a completa chega. Extração anterior a 16/09/2026 não
+tem o registro e segue a descrição do dia.
 
 #### 09. Nota determinística
 
