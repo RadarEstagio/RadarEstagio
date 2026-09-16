@@ -39,8 +39,9 @@ o site abre no claro. Termos e Privacidade mantêm o próprio visual escuro.
 #### 01. Cadastro por e-mail e senha
 
 Informar curso, período, habilidades, áreas, cidade e modalidade e, no último passo, e-mail e
-senha. Quem já tem conta escolhe "Entrar" e vê só o passo da conta; quem edita o perfil depois
-do login não passa por ele.
+senha. O curso é escolhido numa lista dos cursos do catálogo, filtrada conforme a digitação, ou
+digitado livremente quando não está nela. Quem já tem conta escolhe "Entrar" e vê só o passo
+da conta; quem edita o perfil depois do login não passa por ele.
 
 **Condições e limites:** Confirmação de e-mail mantida; a conta só é criada no envio do último
 passo, nunca ao avançar entre etapas; interface pública depende da hospedagem.

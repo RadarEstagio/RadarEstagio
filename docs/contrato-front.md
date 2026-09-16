@@ -22,6 +22,12 @@ As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `as
 só as subáreas dela. Curso sem área conhecida esconde o campo em vez de oferecer opções de outra
 formação. O banco recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
 
+O campo de curso abre uma lista com os `cursos_sugeridos` do mesmo `areas.json`, em ordem
+alfabética e filtrada sem acento conforme a digitação, com o mesmo comportamento da lista de
+cidades. Ao contrário da cidade, o curso continua livre: quem não acha o seu na lista segue com o
+texto digitado, e o `index.html` não guarda cópia da lista. Se o arquivo não carregar, o campo
+avisa e a digitação vale.
+
 O banco valida o payload e preserva cópia em `cadastros_pendentes`, sem acesso direto pelo
 navegador. Na confirmação, cria o perfil com os dados e aceite registrados. O retorno consulta
 sessão e banco, inclusive quando a confirmação ocorre em outro aparelho.
