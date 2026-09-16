@@ -118,9 +118,9 @@ Uma resposta negativa corrigida para positiva deixa de contar como recusa, e vic
 `vagas_irrelevantes` e tira a vaga das úteis quando vem depois de "Essa serviu". Isso não foi
 separado de propósito nesta versão; só as recusas por grupo de extração a excluem.
 A contagem de `motivo_encerrada` não é o número de vagas tiradas de todos: desde 16/09 a marcação
-sempre tira a vaga de quem marcou, mas só vale para os outros com abertura pelo link, conta ativa
-e vinculada e até três marcações vigentes do perfil em 30 dias, e o feedback de uma conta pausada
-ou excluída continua contado aqui.
+sempre tira a vaga de quem marcou, mas só vale para os outros com abertura pelo link, conta não
+excluída e entre as três primeiras marcações vigentes do perfil em 30 dias, e o feedback de uma
+conta excluída continua contado aqui.
 
 Vagas úteis formam a união de feedback positivo vigente e candidatura atribuída histórica,
 sem duplicar quem tem os dois sinais. **Candidatura não tem emissor no piloto**; o relatório
