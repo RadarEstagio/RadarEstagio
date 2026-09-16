@@ -263,6 +263,76 @@ def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
     assert [vaga.localizacao for vaga in restantes] == ["São Paulo", "Recife"]
 
 
+def test_cidades_de_mesmo_nome_em_estados_diferentes_nao_sao_duplicatas():
+    no_piaui = vaga(localizacao="Bom Jesus, Piauí", numero=1)
+    no_rio_grande_do_sul = vaga(localizacao="Bom Jesus, RS", numero=2)
+
+    assert remover_duplicatas([no_piaui, no_rio_grande_do_sul]) == [
+        no_piaui,
+        no_rio_grande_do_sul,
+    ]
+
+
+def test_republicacao_nao_junta_cidades_de_mesmo_nome_em_estados_diferentes():
+    no_piaui = vaga(
+        "Estágio em Programação",
+        "BuscarVagas",
+        descricao=ANUNCIO,
+        localizacao="Bom Jesus, Piauí",
+    )
+    no_rio_grande_do_sul = vaga(
+        "Estágio em Programação",
+        "Divulga Vagas",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+        localizacao="Bom Jesus, Rio Grande do Sul",
+    )
+
+    assert remover_duplicatas([no_piaui, no_rio_grande_do_sul]) == [
+        no_piaui,
+        no_rio_grande_do_sul,
+    ]
+    assert remover_republicacoes_de([no_rio_grande_do_sul], [no_piaui]) == [no_rio_grande_do_sul]
+
+
+@pytest.mark.parametrize(
+    ("com_estado", "outra_forma"),
+    [
+        ("Niterói, Estado do Rio de Janeiro", "Niterói"),
+        ("Rio de Janeiro, Estado do Rio de Janeiro", "Rio de Janeiro, Rio de Janeiro"),
+        ("São Paulo, Estado de São Paulo", "São Paulo, SP"),
+    ],
+)
+def test_mesma_cidade_escrita_de_outra_forma_segue_duplicata(com_estado: str, outra_forma: str):
+    da_adzuna = vaga(numero=1, localizacao=com_estado)
+    da_gupy = vaga(fonte="gupy", numero=2, localizacao=outra_forma, modalidade=Modalidade.HIBRIDO)
+    original = vaga(
+        "Estágio em Programação",
+        "BuscarVagas",
+        descricao=ANUNCIO,
+        numero=3,
+        localizacao=com_estado,
+    )
+    republicada = vaga(
+        "Estágio em Programação",
+        "Divulga Vagas",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=4,
+        localizacao=outra_forma,
+    )
+
+    assert remover_duplicatas([da_adzuna, da_gupy]) == [da_gupy]
+    assert remover_duplicatas([original, republicada]) == [original]
+    assert remover_republicacoes_de([republicada], [original]) == []
+
+
+def test_cidade_sem_estado_de_nome_repetido_nao_e_unida_por_palpite():
+    sem_estado = vaga(localizacao="Bom Jesus", numero=1)
+    no_piaui = vaga(localizacao="Bom Jesus, PI", numero=2)
+
+    assert remover_duplicatas([sem_estado, no_piaui]) == [sem_estado, no_piaui]
+
+
 def test_mesma_vaga_na_mesma_cidade_por_duas_fontes_continua_sendo_uma_so():
     da_adzuna = vaga(fonte="adzuna", numero=1, localizacao="Rio de Janeiro, RJ")
     da_gupy = vaga(
