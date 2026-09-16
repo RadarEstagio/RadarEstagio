@@ -885,8 +885,8 @@ título.
   só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35); parênteses davam
   parcial ("Técnico ou Superior (Administração)") e desde 16/09 valem como "Técnico ou superior em
   Administração" (ver "Curso com pontuação, complemento ou abreviação"); "ADM ou Técnico em ADM"
-  fica igual a ["ADM"], 35, porque "ADM" não é curso do catálogo e o alias exigiria mudar
-  `normalizar_curso`.
+  fica igual a ["ADM"], que dava 35 até "ADM" virar sinônimo de administração em 16/09/2026 e agora
+  vale como Administração (ver "Curso aceito fora do catálogo").
 - **Vagas para PCD** (16/09/2026). A vaga afirmativa da MUDES ("Vaga Afirmativa (Lgbtqiapn, Raça,
   Gênero, Pcd, 40)") chegou em 1º lugar, com 100, a quem não é PCD e sem indicação nenhuma. O
   perfil ganhou `pessoa_com_deficiencia` (`0026`): `true`, `false` ou `null`, e `null` é tanto
@@ -1624,6 +1624,41 @@ ligação das automações, porque cada uma guardava o dono no nome:
   aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
   genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é
   um alias.
+- **Curso aceito fora do catálogo** (16/09/2026). Na vaga, nome que o catálogo não reconhece não
+  tem área, e a lista feita só desses nomes dava curso incompatível, teto 35 e "Exige formação de
+  outra área". Nas 566 extrações da versão `7efdbc95` com os 4 perfis ativos, 62 dos 2.264 pares
+  caíam nisso. Conferidos à mão: 50 estão certos (vaga de ensino médio ou EJA, 16; só para
+  técnico, 4; lista técnica em que a IA tirou o "Técnico em" dos itens seguintes, 12; nome de
+  outra formação para quem não é dela, 18), 10 eram sinônimo que faltava ("ADM" para
+  Administração; "Tecnologia", "Tecnologia/Sistemas", "Cibersegurança" e "Sistemas para a
+  Internet" para computação) e 2 são erro da extração: adzuna:5882923702 pede "TI, Estatística,
+  Matemática, Engenharias" e a IA guardou só Estatística e Matemática. Fora dos 62, lista mista
+  escondia mais 3 pares ("T.I, ADM" de Administração e "desenvolvimento de software ou
+  administração" de computação). A correção são sinônimos: "ADM", "Tecnologia", "Cibersegurança",
+  "Sistemas para a Internet" e "Desenvolvimento de Software", mais "Rede de Computadores" e
+  "Análise de Sistema", que estão em 7 vagas e só passavam porque a lista trazia outro curso de
+  computação. **A regra não mudou.** Tratar como parcial (teto 75) a lista sem nome reconhecido
+  subia 22 pares que passam no pré-filtro, 12 certos e 10 errados (ensino médio para Administração
+  a 54, técnico em automação e em mecânica para computação de 43 a 53); mesmo tirando ensino médio
+  e técnico, levava a vaga que pede Engenharia a Administração (54) e a de Estatística e Matemática
+  a Medicina Veterinária (59). Os nomes fora do catálogo nas vagas são quase todos curso de outra
+  formação (Estatística em 13 vagas, Matemática em 11, Ciências Sociais, Design de Moda,
+  Biblioteconomia), a família "Engenharia(s)" (28 vagas), que `mesmo_curso` já resolve para quem é
+  de engenharia, ou nível de ensino, e para eles o 35 está certo;
+  `test_nome_fora_do_catalogo_de_outra_formacao_segue_incompativel` impede relaxar a lista inteira.
+  Medido contra o `main` com 43 perfis (os 4 ativos e 39 sintéticos, 24.338 pares): 75 pares mudam,
+  todos sobem, 55 passam no pré-filtro e cruzam a nota mínima, e nenhum descarte muda. Nos 4 ativos
+  são 13 (35 → 51 a 80), 11 entregáveis; agrupando por dia de coleta, sem histórico, a vaga de
+  Ciência de Dados que aceita "Tecnologia" entraria no top 7 dos dois perfis de computação em 11/09
+  e a de estágio administrativo que aceita "ADM" no de Administração em 12/09. Sinônimo não entra
+  no padrão de título, mas o composto entra em `nomes_do_curso`: quem cursa Sistemas para Internet,
+  Desenvolvimento de Sistemas, Redes de Computadores ou Análise de Sistemas passa a achar também a
+  forma nova citada na descrição. Limites: "Curso Superior de Tecnologia" e "Graduação em
+  Tecnologia" sozinhos passam a valer como Tecnologia da Informação (nenhum caso nas 790
+  extrações); o erro da extração segue, porque a correção é de prompt e muda `VERSAO_DA_EXTRACAO`;
+  grafia errada ("Administação") e "Administração Bacharelado" seguem desconhecidas e hoje só
+  aparecem ao lado de um nome reconhecido ("Eng. Elétrica" passou a valer pela expansão de
+  abreviações do item seguinte); e nome novo continua dando 35 até ganhar alias.
 - **Curso com pontuação, complemento ou abreviação** (16/09/2026). "Ciência da Computação.",
   "Direito, UERJ" e "Eng. de Software" ficavam sem área: `normalizar_curso` só cortava o
   complemento depois de hífen, barra, "|" ou de parêntese que fechava o nome, e não conhecia
@@ -1634,8 +1669,8 @@ ligação das automações, porque cada uma guardava o dono no nome:
   no `areas.json`): "Graduação em Eng. Elétrica" chega a engenharia elétrica. As de ciência viram
   "ciencias", que os sinônimos levam a ciência da computação e que fecha com Contábeis,
   Econômicas, Atuariais, Biológicas e Jurídicas; "C. de Dados" segue desconhecido. Abreviação
-  sozinha ("Eng.", "ADM") não expande: "adm" solto seria alias de curso aceito, assunto da
-  compatibilidade. O site espelha a regra e a fixture de paridade ganhou as formas. Um fuzz de
+  sozinha não expande: "Eng." solto segue desconhecido, e "ADM" solto vale como Administração pelo
+  sinônimo do item anterior. O site espelha a regra e a fixture de paridade ganhou as formas. Um fuzz de
   5.150 entradas (catálogo, sinônimos, os 296 `cursos_aceitos` reais e variações com pontuação,
   complemento e abreviação) deu zero divergência entre Python e site, nenhuma perdeu a área que
   tinha e a normalização segue idempotente; só trocam de área "Licenciatura em X" com pontuação no

@@ -51,7 +51,10 @@ Desde a revisão de 08/09, menção ao curso do perfil ou abertura a qualquer fo
 descrição impede o veto antecipado por título: a extração e a compatibilidade verificam os
 requisitos depois. Nomes de cursos são comparados inteiros, com aliases explícitos e remoção
 de prefixos de formação, da pontuação nas pontas, do complemento depois de vírgula, hífen, barra
-ou parêntese e expansão de abreviações no começo ("Eng.", "Adm.", "C."). Um nome desconhecido não herda a área de um trecho do nome. A menção
+ou parêntese e expansão de abreviações no começo ("Eng.", "Adm.", "C."). Um nome desconhecido não
+herda a área de um trecho do nome, e curso aceito pela vaga fora do catálogo continua contando como
+formação de outra área: nas vagas reais esses nomes são quase sempre curso de outra formação ou
+nível de ensino, e o sinônimo que falta entra como alias (16/09/2026). A menção
 na descrição vale também pelos sinônimos de nome composto que o catálogo converte no curso
 ("Ciências Contábeis" para quem cursa Contabilidade); sigla e palavra solta, como "si" e
 "redes", ficam de fora porque aparecem em texto comum.
