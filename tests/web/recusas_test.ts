@@ -301,6 +301,25 @@ Deno.test("marcação de vaga encerrada com mais de 30 dias deixa de contar", as
   }
 });
 
+Deno.test("marcação de conta excluída, pausada, sem Telegram ou já apagada não tira a vaga dos outros", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await db.exec(`
+      update perfis set excluida_em = now() where id = 2;
+      update perfis set ativo = false where id = 3;
+      update perfis set telegram_chat_id = null where id = 4;
+    `);
+    for (const perfil of [2, 3, 4, 99]) {
+      await marcarComoEncerrada(db, perfil, 1);
+    }
+    await marcarComoEncerrada(db, 5, 2);
+
+    assert.deepEqual(await encerradas(db), ["adzuna:2:Estágio B"]);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("vaga marcada como encerrada não volta para quem marcou, mesmo sem efeito para os outros", async () => {
   const db = await bancoComFeedback();
   try {

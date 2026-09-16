@@ -170,8 +170,10 @@ SQL_VAGAS_ENCERRADAS = """
     where v.id in (
         select r.vaga_id
         from ultima_resposta r
+        join perfis p on p.id = r.perfil_id
         where r.nome = 'vaga_irrelevante'
           and r.motivo = 'motivo_encerrada'
+          and p.ativo and p.excluida_em is null and p.telegram_chat_id is not null
           and exists (
               select 1
               from eventos_produto a
