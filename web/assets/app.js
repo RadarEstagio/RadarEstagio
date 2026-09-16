@@ -156,6 +156,7 @@ const campoDeCurso = form.elements.curso;
 const botaoDeCursos = document.querySelector("#mostrar-cursos");
 const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
+const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
 
 function ativarSecaoDaConta(linkAtivo) {
@@ -441,17 +442,26 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
 function normalizarCurso(curso, catalogo) {
   const sufixo = new RegExp(`(?:\\s*[-–|:]\\s*|\\s+)(?:${catalogo.sufixos.join("|")})$`);
   let texto = normalizarTexto(curso)
-    .replace(/\s+/g, " ")
-    .replace(/\s*(?:\(.*\)|[-–|/].*)$/, "")
+    .replace(/^[^a-z0-9]+/, "")
+    .replace(/\s*(?:\(|[-–|/,]).*$/, "")
+    .replace(/[^a-z0-9]+$/, "")
     .replace(sufixo, "");
   const conhecidos = new Set(catalogo.areas.flatMap((area) => area.cursos));
   const prefixo = new RegExp(
     `^(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+`,
   );
+  const abreviacao = new RegExp(
+    `^(${Object.keys(catalogo.abreviacoes).join("|")})(?:\\.\\s*|\\s+)(?=[a-z])`,
+  );
   for (;;) {
     if (catalogo.genericos.includes(texto)) return "";
     if (Object.hasOwn(catalogo.sinonimos, texto)) return catalogo.sinonimos[texto];
     if (conhecidos.has(texto)) return texto;
+    const abreviada = texto.match(abreviacao);
+    if (abreviada) {
+      texto = `${catalogo.abreviacoes[abreviada[1]]} ${texto.slice(abreviada[0].length)}`;
+      continue;
+    }
     const encontrado = texto.match(prefixo);
     if (!encontrado) return texto;
     texto = texto.slice(encontrado[0].length);
@@ -527,11 +537,13 @@ async function montarHabilidadesDoCurso() {
   if (!catalogo) {
     picker.replaceChildren();
     aviso.hidden = false;
+    avisoDeCursoNaoReconhecido.hidden = true;
     renderSkills();
     return;
   }
   aviso.hidden = true;
   const area = areaDoCurso(cursoSolicitado, catalogo);
+  avisarCursoNaoReconhecido(area ? "" : cursoSolicitado.trim());
   const sugeridas = area?.habilidades ?? [];
   picker.replaceChildren(...sugeridas.map((habilidade) => {
     const botao = document.createElement("button");
@@ -542,6 +554,13 @@ async function montarHabilidadesDoCurso() {
     return botao;
   }));
   renderSkills();
+}
+
+function avisarCursoNaoReconhecido(curso) {
+  avisoDeCursoNaoReconhecido.hidden = !curso;
+  avisoDeCursoNaoReconhecido.textContent = curso
+    ? `Não reconhecemos o curso “${curso}”. Sem um curso reconhecido, as vagas ficam menos precisas e não há sugestões de habilidades nem áreas de interesse. Se o seu curso aparece na lista de cursos, volte e escolha o nome de lá. Se não aparece, pode continuar.`
+    : "";
 }
 
 function lembrarAreasEscolhidas() {
@@ -943,6 +962,7 @@ function limparRascunhoDoCadastro() {
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = true;
   document.querySelector("#skills-catalog-notice").hidden = true;
+  avisarCursoNaoReconhecido("");
   renderSkills();
 }
 

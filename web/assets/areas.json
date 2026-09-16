@@ -687,5 +687,12 @@
     "desenvolvimento de software": "desenvolvimento de sistemas",
     "rede de computadores": "redes de computadores",
     "analise de sistema": "analise de sistemas"
+  },
+  "abreviacoes": {
+    "eng": "engenharia",
+    "adm": "administracao",
+    "cienc": "ciencias",
+    "cien": "ciencias",
+    "c": "ciencias"
   }
 }

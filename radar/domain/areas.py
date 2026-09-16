@@ -814,18 +814,29 @@ SINONIMOS_DE_CURSO = {
     "rede de computadores": "redes de computadores",
     "analise de sistema": "analise de sistemas",
 }
+ABREVIACOES_DE_FORMACAO = {
+    "eng": "engenharia",
+    "adm": "administracao",
+    "cienc": "ciencias",
+    "cien": "ciencias",
+    "c": "ciencias",
+}
 CURSOS_CONHECIDOS = frozenset(nome for area in AREAS for nome in area.cursos)
 _UM_PREFIXO_DE_FORMACAO = re.compile(
     rf"^(?:{'|'.join(PREFIXOS_DE_FORMACAO)})(?: (?:{'|'.join(CONECTORES_DE_FORMACAO)}))?\s+"
 )
 _SUFIXO_DE_FORMACAO = re.compile(rf"(?:\s*[-–|:]\s*|\s+)(?:{'|'.join(SUFIXOS_DE_FORMACAO)})$")
+_ABREVIACAO_NO_INICIO = re.compile(rf"^({'|'.join(ABREVIACOES_DE_FORMACAO)})(?:\.\s*|\s+)(?=[a-z])")
 
 
-_COMPLEMENTO_DO_NOME = re.compile(r"\s*(?:\(.*\)|[-–|/].*)$")
+_PONTUACAO_NO_INICIO = re.compile(r"^[^a-z0-9]+")
+_PONTUACAO_NO_FIM = re.compile(r"[^a-z0-9]+$")
+_COMPLEMENTO_DO_NOME = re.compile(r"\s*(?:\(|[-–|/,]).*$")
 
 
 def normalizar_curso(curso: str) -> str:
-    texto = _SUFIXO_DE_FORMACAO.sub("", _COMPLEMENTO_DO_NOME.sub("", normalizar(curso)))
+    sem_complemento = _COMPLEMENTO_DO_NOME.sub("", _PONTUACAO_NO_INICIO.sub("", normalizar(curso)))
+    texto = _SUFIXO_DE_FORMACAO.sub("", _PONTUACAO_NO_FIM.sub("", sem_complemento))
     while True:
         if texto in TERMOS_GENERICOS_DE_FORMACAO:
             return ""
@@ -833,6 +844,11 @@ def normalizar_curso(curso: str) -> str:
             return SINONIMOS_DE_CURSO[texto]
         if texto in CURSOS_CONHECIDOS:
             return texto
+        abreviacao = _ABREVIACAO_NO_INICIO.match(texto)
+        if abreviacao is not None:
+            expansao = ABREVIACOES_DE_FORMACAO[abreviacao.group(1)]
+            texto = f"{expansao} {texto[abreviacao.end() :]}"
+            continue
         prefixo = _UM_PREFIXO_DE_FORMACAO.match(texto)
         if prefixo is None:
             return texto
@@ -944,4 +960,5 @@ def catalogo_do_site() -> dict:
         "sufixos": list(SUFIXOS_DE_FORMACAO),
         "genericos": list(TERMOS_GENERICOS_DE_FORMACAO),
         "sinonimos": dict(SINONIMOS_DE_CURSO),
+        "abreviacoes": dict(ABREVIACOES_DE_FORMACAO),
     }

@@ -20,8 +20,8 @@
     "computacao"
   ],
   "Eng. Civil": [
-    "eng. civil",
-    null
+    "engenharia civil",
+    "engenharias"
   ],
   "Engenharia Civil - Bacharelado": [
     "engenharia civil",
@@ -286,5 +286,77 @@
   "Economia ´": [
     "economia",
     "financas"
+  ],
+  "Ciência da Computação.": [
+    "ciencia da computacao",
+    "computacao"
+  ],
+  "Direito, UERJ": [
+    "direito",
+    "direito"
+  ],
+  "Letras, 5º período": [
+    "letras",
+    "educacao"
+  ],
+  "Psicologia (UFRJ) - noturno": [
+    "psicologia",
+    "pessoas"
+  ],
+  "Administração (noturno).": [
+    "administracao",
+    "administracao"
+  ],
+  "\"Pedagogia\".": [
+    "pedagogia",
+    "educacao"
+  ],
+  "- Enfermagem": [
+    "enfermagem",
+    "saude"
+  ],
+  "T.I.": [
+    "tecnologia da informacao",
+    "computacao"
+  ],
+  "Eng. de Software": [
+    "engenharia de software",
+    "computacao"
+  ],
+  "Eng Civil": [
+    "engenharia civil",
+    "engenharias"
+  ],
+  "Graduação em Eng. Elétrica": [
+    "engenharia eletrica",
+    "engenharias"
+  ],
+  "Adm. Pública": [
+    "administracao publica",
+    "administracao"
+  ],
+  "C. Contábeis": [
+    "contabilidade",
+    "financas"
+  ],
+  "Ciênc. Econômicas": [
+    "economia",
+    "financas"
+  ],
+  "Ciên. da Computação": [
+    "ciencia da computacao",
+    "computacao"
+  ],
+  "Eng.": [
+    "eng",
+    null
+  ],
+  "Engenharia, UFRJ": [
+    "engenharia",
+    null
+  ],
+  "Medicina Veterinária, UFF": [
+    "medicina veterinaria",
+    null
   ]
 }

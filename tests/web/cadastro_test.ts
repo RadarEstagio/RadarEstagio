@@ -3807,6 +3807,96 @@ Deno.test("curso fora da lista avança e é salvo como foi digitado", async () =
   }
 });
 
+Deno.test("curso não reconhecido avisa logo na etapa seguinte e não impede o cadastro", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    fill(a.w);
+    form.elements.curso.value = "Agronomia";
+    const aviso = a.w.document.querySelector("#curso-nao-reconhecido");
+    assert.equal(aviso.hidden, true);
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "3");
+    assert.equal(aviso.closest(".form-step").dataset.step, "3");
+    assert.equal(aviso.hidden, false);
+    assert.match(aviso.textContent, /“Agronomia”/);
+    assert.match(aviso.textContent, /menos precisas/);
+    assert.match(aviso.textContent, /lista de cursos, volte e escolha o nome de lá/);
+    assert.match(aviso.textContent, /pode continuar/);
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "4");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.curso, "Agronomia");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("voltar e trocar por um curso reconhecido tira o aviso, mesmo com complemento", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    fill(a.w);
+    const doc = a.w.document;
+    const aviso = doc.querySelector("#curso-nao-reconhecido");
+    form.elements.curso.value = "Curso Que Ninguem Tem";
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(aviso.hidden, false);
+    doc.querySelector("#previous-step").click();
+    form.elements.curso.value = "Direito, UERJ";
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(aviso.hidden, true);
+    const sugeridas = [...doc.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
+    assert.equal(sugeridas.includes("Redação"), true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("entrar pelo cabeçalho limpa o aviso com o curso digitado no rascunho", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    fill(a.w);
+    const doc = a.w.document;
+    const aviso = doc.querySelector("#curso-nao-reconhecido");
+    form.elements.curso.value = "Agronomia";
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(aviso.hidden, false);
+    doc.querySelector(".js-open-login").click();
+    await settle();
+    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sem o catálogo de áreas não há como saber o curso e o aviso não aparece", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.fetch = async () => {
+      throw new Error("offline");
+    };
+    const form = await abrirMomento(a);
+    fill(a.w);
+    form.elements.curso.value = "Agronomia";
+    a.w.document.querySelector("#next-step").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#skills-catalog-notice").hidden, false);
+    assert.equal(a.w.document.querySelector("#curso-nao-reconhecido").hidden, true);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("lista de cursos fora do ar avisa e não bloqueia o cadastro", async () => {
   const a = app();
   try {
