@@ -804,9 +804,11 @@ contexto no passo 1.
   perfil. Limites: quando a IA tira o "Técnico em" dos itens seguintes ("Técnico em Automação",
   "Eletrotécnica"), a vaga parece mista e segue como no `main` (3 extrações); "Técnico em X ou Y"
   em que o técnico vale para os dois ("Técnico em Informática ou Telecomunicações") deixa de ser
-  só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35) e parênteses dão
-  parcial ("Técnico ou Superior (Administração)"); "ADM ou Técnico em ADM" fica igual a ["ADM"],
-  35, porque "ADM" não é curso do catálogo e o alias exigiria mudar `normalizar_curso`.
+  só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35); parênteses davam
+  parcial ("Técnico ou Superior (Administração)") e desde 16/09 valem como "Técnico ou superior em
+  Administração" (ver "Curso com pontuação, complemento ou abreviação"); "ADM ou Técnico em ADM"
+  fica igual a ["ADM"], 35, porque "ADM" não é curso do catálogo e o alias exigiria mudar
+  `normalizar_curso`.
 - **Vagas para PCD** (16/09/2026). A vaga afirmativa da MUDES ("Vaga Afirmativa (Lgbtqiapn, Raça,
   Gênero, Pcd, 40)") chegou em 1º lugar, com 100, a quem não é PCD e sem indicação nenhuma. O
   perfil ganhou `pessoa_com_deficiencia` (`0026`): `true`, `false` ou `null`, e `null` é tanto
@@ -1445,6 +1447,44 @@ ligação das automações, porque cada uma guardava o dono no nome:
   aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
   genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é
   um alias.
+- **Curso com pontuação, complemento ou abreviação** (16/09/2026). "Ciência da Computação.",
+  "Direito, UERJ" e "Eng. de Software" ficavam sem área: `normalizar_curso` só cortava o
+  complemento depois de hífen, barra, "|" ou de parêntese que fechava o nome, e não conhecia
+  abreviação. O site não dizia nada à pessoa. Agora a normalização tira a pontuação das pontas,
+  corta a partir de vírgula e de parêntese no meio do nome ("Psicologia (UFRJ) - noturno") e
+  expande "Eng", "Adm", "Ciên", "Ciênc" e "C" no começo do que sobra depois dos prefixos de
+  formação, com ponto ou espaço e só com outra palavra depois (`ABREVIACOES_DE_FORMACAO`, que vai
+  no `areas.json`): "Graduação em Eng. Elétrica" chega a engenharia elétrica. As de ciência viram
+  "ciencias", que os sinônimos levam a ciência da computação e que fecha com Contábeis,
+  Econômicas, Atuariais, Biológicas e Jurídicas; "C. de Dados" segue desconhecido. Abreviação
+  sozinha ("Eng.", "ADM") não expande: "adm" solto seria alias de curso aceito, assunto da
+  compatibilidade. O site espelha a regra e a fixture de paridade ganhou as formas. Um fuzz de
+  5.150 entradas (catálogo, sinônimos, os 296 `cursos_aceitos` reais e variações com pontuação,
+  complemento e abreviação) deu zero divergência entre Python e site, nenhuma perdeu a área que
+  tinha e a normalização segue idempotente; só trocam de área "Licenciatura em X" com pontuação no
+  fim, que caía em educação e passa à área de X, como já acontecia sem a pontuação.
+  Medido no banco: os 6 perfis reais já tinham área e continuam (0 → 0 sem área). Das 296 formas
+  distintas de `cursos_aceitos` das 790 extrações, só "Eng. Elétrica", "Eng. de Computação" e
+  "Eng. de Produção" mudam, as três para o curso certo (170 → 173 com área). Nas 600 extrações
+  que validam no modelo atual, nenhum par com os perfis reais muda; com os cursos sugeridos do
+  catálogo, 3 de 27.600 pares mudam, Engenharia Elétrica e de Produção em duas vagas de dados que
+  listam "Eng." (35 → 52 e 63, curso compatível), e as duas seguem cortadas pelo pré-filtro para
+  esses perfis. Um perfil sintético "Direito, UERJ" passa de 42 vagas com nota 40 ou mais, nenhuma
+  com curso compatível, a 71, com 61 compatíveis. Do lado da vaga, sem caso nos dados: item sem
+  técnico com vírgula vale pelo primeiro curso, como já valia com barra ("Administração,
+  Contabilidade ou Economia" dá compatível a Administração e segue 35 para os outros, que antes
+  também tinham 35), e "Técnico ou Superior (Administração)" deixa de ser parcial e fica
+  compatível para Administração e 35 para Contábeis, como "Técnico ou superior em Administração".
+  O aviso do site abre a etapa de habilidades quando o catálogo carregou e o curso não tem área:
+  diz o nome digitado, que as vagas ficam menos precisas e sem sugestões nem áreas de interesse, e
+  sugere voltar e escolher o nome na lista; Continuar segue e o curso é salvo como foi digitado.
+  Fica no topo dessa etapa, a primeira tela depois do curso, e não embaixo do campo, onde a lista
+  aberta o cobre durante a digitação e o clique em Continuar troca de etapa antes da leitura. Sem
+  catálogo o aviso some, e limpar o rascunho o apaga, porque ele leva o curso da pessoa. Limites:
+  curso sem separador ("Direito UERJ", "Direito 5º período"), com ponto no meio ("Direito. UERJ")
+  ou abreviação fora do começo ("Sist. de Informação", "Anal. de Sistemas") continua desconhecido
+  e só ganha o aviso; e vírgula corta o nome, então o que vem depois dela nunca conta. Publicação:
+  site e `radar/` juntos, sem migration; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 - "laboratório" saiu do padrão de exclusão de saúde: vetava "Desenvolvimento de Software para
   Laboratório" para quem é de computação. Continua no padrão positivo, então saúde ainda
   reconhece laboratório como título seu.

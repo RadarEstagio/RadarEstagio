@@ -57,7 +57,10 @@ para PCD deixam de chegar; "Prefiro não informar", o padrão, mantém a entrega
 **Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente. Até 50
 habilidades de até 100 caracteres. Lista vazia significa habilidade não informada, não incapacidade:
 a vaga continua sendo avaliada pelos demais critérios. Curso sem área conhecida não recebe
-sugestões de habilidade; a digitação livre continua valendo. Cidade fora da lista não avança; se a
+sugestões de habilidade e ganha um aviso, na etapa de habilidades, de que as vagas ficam menos
+precisas e de que vale escolher o nome na lista; a digitação livre continua valendo. Pontuação nas
+pontas, complemento depois de vírgula, hífen ou parênteses ("Direito, UERJ") e abreviação no
+começo ("Eng. Civil", "Adm. Pública", "C. Contábeis") não impedem o reconhecimento. Cidade fora da lista não avança; se a
 lista não carregar, o texto digitado vale e o formulário avisa. Vaga de outra cidade da mesma
 região imediata do IBGE conta como da cidade (Niterói e Rio, por exemplo), com meia pontuação de
 localização.

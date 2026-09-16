@@ -21,6 +21,10 @@ As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `as
 (arquivo gerado a partir de `radar/domain/areas.py`), descobre a área do curso digitado e monta
 só as subáreas dela. Curso sem área conhecida esconde o campo em vez de oferecer opções de outra
 formação. O banco recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
+A área sai de `normalizarCurso`, que espelha `normalizar_curso` com os prefixos, sufixos,
+sinônimos, genéricos e abreviações do `areas.json`; `tests/fixtures/cursos_normalizados.json`
+trava a paridade. Com o catálogo carregado e o curso sem área, a etapa de habilidades abre com um
+aviso que não bloqueia: as vagas ficam menos precisas e vale voltar e escolher o nome na lista.
 
 O campo de curso abre uma lista com os `cursos_sugeridos` do mesmo `areas.json`, em ordem
 alfabética e filtrada sem acento conforme a digitação, com o mesmo comportamento da lista de
