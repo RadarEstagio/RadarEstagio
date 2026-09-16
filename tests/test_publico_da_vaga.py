@@ -27,6 +27,8 @@ def vaga(titulo: str = "Estágio em Dados", descricao: str = "Apoio às rotinas 
         "PCD | Estagiário de Suporte",
         "Vaga exclusiva para PCD - Estágio em RH",
         "Estágio para Pessoas com Deficiência",
+        "Estágio em RH - PCD - Rio de Janeiro",
+        "Estágio em Dados (PcD) - Híbrido",
     ],
 )
 def test_titulo_que_dirige_a_vaga_a_pcd_e_exclusivo(titulo):
@@ -238,6 +240,24 @@ def test_instituicao_que_atende_pcd_nao_torna_a_vaga_exclusiva(descricao):
 )
 def test_titulo_que_so_cita_pcd_nao_torna_a_vaga_exclusiva(titulo):
     assert publico_da_vaga(vaga(titulo=titulo)) is not PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em RH - PCD - Não",
+        "Estágio em RH - PCD - Não exclusiva",
+        "Estágio em RH (PcD - não exclusiva)",
+        "Estágio em RH - PCD - Ampla Concorrência",
+        "Estágio em RH (PCD) ou Ampla Concorrência",
+        "Estágio em RH (PCD) / Ampla Concorrência",
+        "Estágio em RH - Vaga PCD - Não",
+        "PCD - Não | Estágio em RH",
+        "PCD | Também ampla concorrência | Estágio em RH",
+    ],
+)
+def test_trecho_pcd_do_titulo_seguido_de_outro_publico_nao_e_exclusivo(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.GERAL
 
 
 def test_titulo_afirmativa_sem_a_palavra_vaga_continua_afirmativa_com_pcd():

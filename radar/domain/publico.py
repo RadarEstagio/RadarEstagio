@@ -29,7 +29,7 @@ PADRAO_EXCLUSIVA_PARA_PCD = re.compile(
 )
 PADRAO_PCD_COMO_TRECHO_DO_TITULO = re.compile(
     rf"(?:^|\s[-|]\s*|\()\s*(?:vaga\s+)?(?:exclusiv[ao]\s+(?:para\s+)?)?{TERMO_PCD}"
-    r"\s*(?:$|\)|\s[-|]\s)"
+    rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
     rf"|^\W*estagi\w*\s+(?:exclusivo\s+)?para\s+{TERMO_PCD}\b{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
 PADRAO_CONTEXTO_QUE_ANULA = re.compile(
