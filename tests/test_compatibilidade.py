@@ -188,6 +188,29 @@ def test_nome_de_curso_de_computacao_segue_de_outra_area_para_quem_cursa_direito
     assert curso_de(anuncio, perfil(curso="Direito")) is NivelCompatibilidade.INCOMPATIVEL
 
 
+@pytest.mark.parametrize("aceitos", [["ADM"], ["T.I", "ADM"]])
+def test_adm_aceito_pela_vaga_vale_para_quem_cursa_administracao(aceitos):
+    anuncio = extracao(area_da_vaga="administracao", cursos_aceitos=aceitos)
+
+    assert curso_de(anuncio, perfil(curso="Administração")) is NivelCompatibilidade.COMPATIVEL
+
+
+def test_adm_aceito_pela_vaga_segue_de_outra_area_para_quem_cursa_direito():
+    anuncio = extracao(area_da_vaga="administracao", cursos_aceitos=["ADM"])
+
+    assert curso_de(anuncio, perfil(curso="Direito")) is NivelCompatibilidade.INCOMPATIVEL
+
+
+def test_tecnico_em_adm_segue_so_para_curso_tecnico():
+    niveis = derivar_niveis(
+        extracao(area_da_vaga="administracao", cursos_aceitos=["Técnico em ADM"]),
+        perfil(curso="Administração"),
+    )
+
+    assert niveis.curso is NivelCompatibilidade.INCOMPATIVEL
+    assert niveis.so_para_curso_tecnico
+
+
 def test_prefixo_de_formacao_nao_impede_curso_explicitamente_aceito():
     anuncio = extracao(cursos_aceitos=["Bacharelado em Administração"])
     assert curso_de(anuncio, perfil(curso="Administração")) is NivelCompatibilidade.COMPATIVEL

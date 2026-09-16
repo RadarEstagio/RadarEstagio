@@ -774,6 +774,7 @@ SINONIMOS_DE_CURSO = {
     "ciencias atuariais": "atuaria",
     "gestao de recursos humanos": "recursos humanos",
     "administracao de empresas": "administracao",
+    "adm": "administracao",
     "publicidade e propaganda": "publicidade",
     "propaganda": "publicidade",
     "ciencias da computacao": "ciencia da computacao",
