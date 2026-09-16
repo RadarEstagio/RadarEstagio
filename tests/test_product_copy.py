@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
@@ -129,6 +130,73 @@ def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
     regra_do_celular = css[css.index("@media (max-width: 760px)") :]
 
     assert "overflow-y: auto" in regra_do_celular.split(".dialog-shell")[0]
+
+
+def _regras_das_telas_estreitas(css):
+    regras = []
+    for abertura in re.finditer(r"@media \(max-width: \d+px\) \{", css):
+        profundidade = 1
+        posicao = abertura.end()
+        while profundidade:
+            if css[posicao] == "{":
+                profundidade += 1
+            elif css[posicao] == "}":
+                profundidade -= 1
+            posicao += 1
+        corpo = css[abertura.end() : posicao - 1]
+        regras += [
+            (seletores.strip(), declaracoes)
+            for seletores, declaracoes in re.findall(r"([^{}]+)\{([^{}]*)\}", corpo)
+        ]
+    return regras
+
+
+def _alcanca_a_navegacao_da_conta(seletor):
+    compostos = re.split(r"\s*[>+~]\s*|\s+", seletor.strip())
+    sujeito = compostos[-1]
+    if re.search(r"(\.account-(nav|sidebar|sidebar-inner|shell)|#account-page)(?![\w-])", sujeito):
+        return True
+    return re.match(r"a(?![\w-])", sujeito) is not None and any(
+        ".account-nav" in composto for composto in compostos[:-1]
+    )
+
+
+def test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    navegacao = re.search(r'<nav class="account-nav"[^>]*>(.*?)</nav>', html, re.S).group(1)
+
+    assert re.findall(r'<a [^>]*href="#([\w-]+)"', navegacao) == [
+        "account-overview-panel",
+        "account-delivery-panel",
+        "account-data-panel",
+        "account-privacy-panel",
+    ]
+    regras_que_escondem = [
+        seletores
+        for seletores, declaracoes in _regras_das_telas_estreitas(css)
+        if re.search(r"display:\s*none|visibility:\s*hidden", declaracoes)
+        and any(_alcanca_a_navegacao_da_conta(seletor) for seletor in seletores.split(","))
+    ]
+    assert regras_que_escondem == []
+
+
+def test_navegacao_da_conta_no_celular_rola_sozinha_sem_alargar_a_pagina():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    regras = _regras_das_telas_estreitas(css)
+    navegacao = " ".join(
+        declaracoes for seletores, declaracoes in regras if seletores == ".account-nav"
+    )
+    alturas_dos_links = [
+        int(altura)
+        for seletores, declaracoes in regras
+        if seletores == ".account-nav a"
+        for altura in re.findall(r"min-height:\s*(\d+)px", declaracoes)
+    ]
+
+    assert "overflow-x: auto" in navegacao
+    assert re.search(r"\n\.account-nav a \{[^}]*min-height: 44px", css)
+    assert all(altura >= 44 for altura in alturas_dos_links)
 
 
 def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
