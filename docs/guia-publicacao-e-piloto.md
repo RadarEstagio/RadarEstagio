@@ -305,6 +305,9 @@ Use dados sintéticos e seus próprios endereços e Telegram:
 - Link expirado, reenvio e login antes da confirmação têm saídas claras.
 - Recuperação troca a senha e permite entrar com a nova senha.
 - Vínculo, primeira entrega, links e sete opções de feedback funcionam conforme os planos.
+  A conta de teste recebe vagas reais: "Vaga encerrada" depois de abrir o link tira a vaga de
+  todos por 30 dias. Confira esse botão só numa vaga que esteja mesmo fechada, ou toque no
+  número de novo e escolha outra opção logo depois, o que desfaz a marcação.
 - Edição, pausa, retomada, desvínculo e preferência de e-mail persistem após novo login.
 - Download contém só os dados do dono, sem credenciais.
 - Exclusão interrompe novas entregas/eventos e libera o chat; cancelamento preserva a pausa.

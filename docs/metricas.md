@@ -114,6 +114,10 @@ Uma recomendação é o par `(perfil_id, vaga_id)`. Três cliques na mesma vaga 
 abertura. Para feedback, vale a última resposta do par por instante e, em empate, ID do evento.
 Uma resposta negativa corrigida para positiva deixa de contar como recusa, e vice-versa.
 
+"Vaga encerrada" é gravada como `vaga_irrelevante` e, por ser a última resposta, conta em
+`vagas_irrelevantes` e tira a vaga das úteis quando vem depois de "Essa serviu". Isso não foi
+separado de propósito nesta versão; só as recusas por grupo de extração a excluem.
+
 Vagas úteis formam a união de feedback positivo vigente e candidatura atribuída histórica,
 sem duplicar quem tem os dois sinais. **Candidatura não tem emissor no piloto**; o relatório
 explicita essa limitação. A definição conceitual de vaga útil permanece no `CONTEXT.md`.

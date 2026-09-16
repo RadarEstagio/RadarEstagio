@@ -1062,15 +1062,23 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   informa expiração e segue listando o anúncio, e conferir a origem exigiria seguir o link da
   Adzuna de forma automática, que é o clique que ela contabiliza. Reler a página da Adzuna antes
   de enviar não teria pegado este caso. A resposta é o feedback: "👎 Vaga encerrada"
-  (`motivo_encerrada`) tira a vaga de todos no pipeline, logo depois da deduplicação, antes da
-  extração e da entrega, desde que a mesma pessoa tenha aberto a vaga pelo link antes de marcar
-  (`vaga_aberta` anterior) e que essa seja a última resposta dela à vaga nos últimos 30 dias
-  (`SQL_VAGAS_ENCERRADAS`). O efeito é global porque vaga fechada está fechada para todos; exigir a
-  abertura evita que um toque errado no teclado tire a vaga de alguém. Falha ao ler as marcações
-  só avisa no log. Nas métricas, `motivo_encerrada` fica fora das recusas por grupo de extração,
-  que medem o ranking, e aparece na quebra por motivo. Limite: quem recebe a vaga no mesmo envio
-  de quem a marcou não é protegido. Publicação: `supabase functions deploy telegram-webhook`,
-  porque o teclado de motivos é montado pela função; o `radar/` não precisa de migration.
+  (`motivo_encerrada`) tira a vaga de todos no pipeline, antes da deduplicação, da extração e da
+  entrega, desde que a mesma pessoa tenha aberto a vaga pelo link antes de marcar (`vaga_aberta`
+  anterior) e que essa seja a última resposta dela à vaga nos últimos 30 dias
+  (`SQL_VAGAS_ENCERRADAS`). O efeito é global porque vaga fechada está fechada para todos. Saem a
+  vaga com a mesma fonte e número e as republicações dela (`remover_republicacoes_de`, a regra de
+  "Já vi essa"), e o filtro roda antes da deduplicação: agregadores republicam com outro número, e
+  a deduplicação fica com a versão de descrição maior, que escapava. Exigir a abertura só barra
+  quem não abriu; o toque errado de quem abriu ("Já vi essa" fica logo acima) é tratado pelo
+  aviso próprio, que diz que a vaga deixa de ser enviada e que tocar no número de novo desfaz.
+  Falha ao ler as marcações só avisa no log. `motivo_encerrada` fica fora das recusas por grupo
+  de extração e da concordância do `julgar`, que medem o ranking, e aparece na quebra por motivo;
+  continua em `vagas_irrelevantes` e na última resposta da utilidade (ver `docs/metricas.md`).
+  Limites: quem recebe a vaga no mesmo envio de quem a marcou não é protegido; link encaminhado a
+  outra pessoa grava `vaga_aberta` no perfil de quem recebeu a mensagem; e teste com conta da
+  equipe em vaga real tira a vaga de todos se a marcação não for desfeita (o roteiro do guia
+  avisa). Publicação: `supabase functions deploy telegram-webhook`, porque o teclado e o aviso
+  são da função; o `radar/` não precisa de migration.
 
 ### Cidades vizinhas: região imediata do IBGE (10/09/2026)
 
