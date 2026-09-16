@@ -665,10 +665,12 @@ p, h1, h2, h3 { margin-top: 0; }
 @media (max-width: 860px) {
   .account-shell { display: block; }
   .account-sidebar { height: auto; border-inline-end: 0; border-bottom: 1px solid var(--line); }
-  .account-sidebar-inner { height: auto; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; }
+  .account-sidebar-inner { display: grid; height: auto; grid-template-columns: auto auto; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 14px 20px; }
   .account-sidebar .brand { margin: 0; }
   .account-back { padding-inline: 12px; }
-  .account-nav { display: none; }
+  .account-nav { grid-column: 1 / -1; flex-direction: row; margin: -6px -20px; padding: 6px 20px; overflow-x: auto; overscroll-behavior-x: contain; scroll-padding-inline: 20px; scrollbar-width: thin; contain: inline-size; }
+  .account-nav p { display: none; }
+  .account-nav a { flex: none; }
   .account-page-content { width: min(calc(100% - 40px), 720px); }
 }
 @media (max-width: 620px) {
