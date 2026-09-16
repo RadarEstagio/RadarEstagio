@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from radar.domain.areas import AREAS_POR_NOME, SUBAREAS, normalizar
+from radar.domain.texto import sem_caracteres_invalidos
 
 
 class Modalidade(StrEnum):
@@ -43,6 +44,11 @@ class Vaga(BaseModel):
     modalidade: Modalidade | None = None
     descricao_completa: bool = True
 
+    @field_validator("id_externo", "fonte", "titulo", "empresa", "localizacao", "descricao", "url")
+    @classmethod
+    def remover_caracteres_invalidos(cls, texto: str) -> str:
+        return sem_caracteres_invalidos(texto)
+
     def chave(self) -> ChaveDaVaga:
         return (self.fonte, self.id_externo)
 
@@ -65,6 +71,22 @@ class ExtracaoDaVaga(BaseModel):
     modalidade: str | None = None
     alerta_pegadinha: str | None = None
     descricao_completa: SkipJsonSchema[bool | None] = None
+
+    @field_validator("id_vaga", "modalidade", "alerta_pegadinha")
+    @classmethod
+    def remover_caracteres_invalidos(cls, texto: str | None) -> str | None:
+        return texto if texto is None else sem_caracteres_invalidos(texto)
+
+    @field_validator(
+        "areas_da_vaga",
+        "cursos_aceitos",
+        "habilidades_obrigatorias",
+        "habilidades_principais",
+        "habilidades_desejaveis",
+    )
+    @classmethod
+    def remover_caracteres_invalidos_das_listas(cls, textos: list[str]) -> list[str]:
+        return [sem_caracteres_invalidos(texto) for texto in textos]
 
     @field_validator("area_da_vaga", mode="before")
     @classmethod

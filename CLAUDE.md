@@ -54,7 +54,8 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
-  banco, a mensagem volta a apontar direto para a vaga.
+  banco, a mensagem volta a apontar direto para a vaga. O banco guarda só a primeira abertura de
+  cada envio (ver "Aberturas, pausas e vínculos repetidos").
 - **Feedback individual**: o teclado numerado acompanha a mensagem diária. Cada número abre
   título e empresa com uma opção positiva e seis recusas, incluindo `motivo_nota` e
   `motivo_encerrada` ("Vaga encerrada", ver "Vaga fechada na origem"). A última
@@ -536,6 +537,36 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
   extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
   os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+- **Resposta malformada do avaliador não derruba o job** (16/09/2026, item 14 da auditoria). Só
+  erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
+  (página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
+  `json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
+  `usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
+  `TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
+  qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
+  terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
+  do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
+  e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
+  é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
+  lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
+  formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
+  mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
+  configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
+  aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
+  barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
+  candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
+  modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
+  julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
+  `UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
+  o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
+  mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
+  `candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
+  lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
+  recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
+  do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
+  ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
+  minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
+  `7efdbc95`.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
 
 ### Pontuação: por que os pesos são estes
@@ -973,7 +1004,8 @@ título.
   põe um gatilho `before update` em `auth.users` que tira a chave de toda gravação depois da
   inserção (a inserção precisa dela para a cópia, e nada mais a lê) e limpou as contas antigas.
   Conferir depois do push: `select count(*) from auth.users where raw_user_meta_data ?
-  'cadastro_radar'` deve dar zero.
+  'cadastro_radar'` deve dar zero. A identidade do Auth guardava outra cópia, que a `0030` tira
+  (ver "Cadastro que não confirma o e-mail tem prazo").
 
   Publicação: `db push` da `0026` e da `0027` antes do merge, porque o `rodar` passa a ler a coluna
   e o site manda a chave, que a validação anterior recusa. Limites: vaga dirigida a outro grupo
@@ -1546,6 +1578,56 @@ ligação das automações, porque cada uma guardava o dono no nome:
   abrir nesse estado), e encerra a sessão local depois. Publicação: `db push` antes do merge, porque
   o site novo chama a função e o atual não a conhece. Se a `0024` subir antes da `0023`, o push da
   `0023` pede `--include-all`.
+- **Cadastro que não confirma o e-mail tem prazo** (16/09/2026, `0030`). O cadastro ia para
+  `cadastros_pendentes` no `signUp` e só saía na confirmação: quem nunca confirmava deixava ali para
+  sempre curso, cidade, habilidades e a resposta sobre deficiência, e a conta ficava no Auth. Refazer
+  o cadastro não trocava nada: no GoTrue 2.196 (`internal/api/signup.go`), `signUp` com e-mail já
+  cadastrado e não confirmado não regrava metadados nem senha ("do not update the user because we
+  can't be sure of their claimed identity"), só reenvia o link, gravando `confirmation_token` e
+  `confirmation_sent_at`, com 429 se o último envio tem menos de 60 s. O cadastro novo nunca chegava
+  ao banco, a confirmação criava o perfil com o antigo e o `concluir_meu_cadastro` seguinte não o
+  trocava (`on conflict do nothing`). E esse mesmo `signUp`, feito por quem sabe o e-mail de alguém
+  que ainda não confirmou, devolve o usuário real com `identities[].identity_data`, para onde o Auth
+  copia os metadados do `signUp`: a `0027` só limpou `raw_user_meta_data`, e em 16/09 5 das 6
+  identidades ainda tinham `cadastro_radar`, lidas por qualquer um nesse caso. O que mudou:
+  - **Todo link depois do primeiro descarta o pendente** (gatilho `after update of
+    confirmation_sent_at`, com a conta não confirmada e `confirmation_sent_at` já preenchido antes).
+    O banco não distingue a pessoa refazendo o cadastro, o "Reenviar confirmação" e um terceiro com
+    o e-mail dela, porque `auth.resend` grava as mesmas duas colunas. Trocar pelo cadastro novo não
+    dá, porque o Auth não o entrega, e se desse um terceiro trocaria o perfil de outra pessoa;
+    descartando, quem confirma cai em "Complete seu perfil" e preenche de novo, o que percebe. Custo
+    aceito: quem só reenvia o link, por não achar o e-mail, também preenche de novo.
+  - **A identidade não guarda o cadastro**: gatilho `before insert or update` em `auth.identities`,
+    como o da `0027` em `auth.users`, e a migração limpa as antigas. A cópia para
+    `cadastros_pendentes` lê a inserção em `auth.users`, que vem antes da identidade.
+  - **O job apaga o pendente recebido há mais de 2 dias e a conta não confirmada 30 dias depois do
+    último link** (`DIAS_ATE_APAGAR_CADASTRO_PENDENTE` e `DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA`, no
+    `pipeline.py`), com os eventos anônimos das sessões da conta, como na conta excluída; a cascata
+    leva o pendente, a identidade e os eventos da conta. Conta com perfil ou sem link enviado
+    (criada no painel) fica. Dois dias porque o pendente só serve ao primeiro link, que vale 24 h no
+    padrão do GoTrue; trinta porque `metricas` lê a coorte de 30 dias, e apagar antes tiraria do
+    funil quem não confirmou, o abandono que ele deve mostrar. São constantes, não variáveis de
+    ambiente, porque a política de privacidade promete os números e
+    `test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado` os lê delas. Falha ao
+    apagar só avisa no log.
+
+  Medido em 16/09, só leitura: nenhum pendente, nenhuma conta sem confirmar, as 6 contas confirmaram
+  entre 0,02 s e 147 s depois do link e nenhuma pediu outro; o banco não tem `pg_cron`. Os testes
+  repetem em PGlite as escritas do GoTrue (`cadastro_pendente_test.ts`,
+  `metadados_do_cadastro_test.ts` e `prazo_do_cadastro_test.ts`, que lê o SQL do `postgres.py`), e
+  os bancos de teste ganharam `confirmation_sent_at` e `auth.identities`. Limites: o GoTrue mantém a
+  senha do primeiro `signUp`, então quem cadastra antes o e-mail de outra pessoa conhece a senha da
+  conta que ela confirmar; o descarte tira os dados dele do perfil, não a senha, e só o prazo de 30
+  dias, renovado a cada link (que chega ao e-mail da pessoa), fecha a janela. Um aviso no site para
+  usar "Esqueci a senha" ficou de fora. `signUp` repetido em menos de 60 s, ou com o limite de
+  e-mails do Auth esgotado, volta 429 sem gravar nada, e o primeiro link ainda cria o perfil com o
+  cadastro antigo. Reenvio pedido depois de a conta ser apagada responde 200 sem mandar e-mail; quem
+  tenta entrar vê "E-mail ou senha incorretos" e cadastra de novo. Os 2 dias supõem "Email OTP
+  Expiration" de até 24 h no painel, a conferir; se for maior, a confirmação tardia só pede o perfil
+  de novo. Publicação: `db push` da `0030` antes do merge, para o descarte valer quando a política
+  já o descreve; invertida, nada quebra, porque o SQL do job não depende da `0030`. Conferir depois
+  do push: `select count(*) from auth.identities where identity_data ? 'cadastro_radar'` deve dar
+  zero. Se a `0030` subir antes da `0028` ou da `0029`, o push delas pede `--include-all`.
 - **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
   `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
@@ -1587,6 +1669,39 @@ ligação das automações, porque cada uma guardava o dono no nome:
 - **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
   que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
   `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
+- **Texto que o Postgres recusa sai na entrada** (16/09/2026). Dois caracteres vindos da fonte ou
+  da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo de 500 caracteres
+  da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
+  levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
+  antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
+  (a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
+  levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
+  extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
+  vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a
+  retenção da `0022` não contar o dia e o envio não ser gravado, e a mesma mensagem voltava todo
+  dia. As duas falhas foram reproduzidas num Postgres local com todas as migrations, rodando o
+  pipeline com o coletor da Adzuna, o agy e o Telegram atrás de `httpx.MockTransport`. A limpeza é
+  feita uma vez, nos modelos: `Vaga` e `ExtracaoDaVaga` passam todo texto por
+  `sem_caracteres_invalidos` (`domain/texto.py`), que tira NUL e surrogate solto e junta as duas
+  metades de um emoji que chegam separadas; nenhum outro caractere muda (acento, travessão, `<`,
+  `&`, emoji inteiro, `�`). O validador da `Vaga` cobre os três coletores, e o da extração cobre
+  a resposta do Gemini, a do agy e a leitura do cache; o enriquecimento limpa a descrição da
+  página por conta própria, porque o `model_copy` não valida. A identidade das vagas guardadas não
+  muda, porque o banco nunca aceitou esses caracteres, e o schema da extração é o mesmo:
+  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Como defesa, `guardar_extracoes`,
+  `registrar_vagas_sem_extracao`, `guardar_avaliacoes` e `registrar_envios` tratam o
+  `UnicodeEncodeError` como falha do banco (`FALHAS_AO_GRAVAR_TEXTO`): aviso do dia, não queda.
+  Medido em 16/09, só leitura: nenhuma das 1.003 vagas nem das 790 extrações tem `�` ou NUL
+  escapado, e nenhuma das 966 vagas da Adzuna tem emoji ou outro caractere fora do plano básico;
+  as 18 com emoji são da Gupy, com a descrição inteira. Não se sabe se a Adzuna manda esses
+  caracteres, e a correção é para não depender disso. Limites: gravar cada extração em separado,
+  para uma ruim não levar as outras, ficou de fora, porque depois da limpeza nenhum texto da
+  extração é recusado e o que sobra para falhar é o banco inteiro; o `model_validate_json` recusa
+  a resposta do Gemini inteira se ela trouxer um surrogate solto escapado (erro de avaliação, o
+  lote se divide até isolar a vaga), o que só acontece se o modelo o inventar, já que o prompt sai
+  limpo; corpo da Adzuna com byte UTF-8 inválido continua sendo corpo que não é JSON (ver "Coleta
+  resiliente"); e os testes do storage são de integração, fora do CI. Publicação: sem migration
+  nem deploy.
 - **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
   operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
   por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
@@ -1621,6 +1736,47 @@ ligação das automações, porque cada uma guardava o dono no nome:
   confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
   nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
   dos limites.
+- **Aberturas, pausas e vínculos repetidos** (16/09/2026, migration `0028`). O limite da `0023`
+  só vale para evento `web`, e dois caminhos ainda gravavam sem fim: cada GET no link rastreável
+  grava um `vaga_aberta`, então um script chamando em laço o link de uma mensagem encaminhada
+  enchia `eventos_produto`; e cada volta de pausar e retomar por `update` direto na própria linha
+  de `perfis` gravava um `entregas_pausadas`. Desvincular pela RPC e mandar `/start` de novo
+  gravava um `telegram_vinculado` por volta, pelo mesmo gatilho da `0005`. O gatilho
+  `z_descartar_eventos_repetidos` descarta, sem erro (`return null`), o `vaga_aberta` de um par
+  `(perfil_id, vaga_id)` que já tem um, e o `entregas_pausadas` ou `telegram_vinculado` do mesmo
+  perfil a menos de um dia (por `ocorrido_em`) do anterior. Descarte, e não `PT429` como na
+  `0023`, porque o `update` de pausa não pode falhar por causa do evento e abrir de novo não é
+  erro: o estado do perfil muda sempre, o motivo da pausa fica em `perfis.motivo_pausa` (o evento
+  nunca o levou) e a `ir` redireciona como antes. Sem teto por hora nem aviso no resumo de
+  operação: fica sempre a primeira ocorrência, então abuso não apaga evento legítimo, e o tamanho
+  fica preso ao que o Radar controla, uma abertura por envio (`envios` tem chave
+  `(perfil_id, vaga_id)`) e duas linhas por perfil por dia. Nenhum número muda porque os leitores
+  já tratam repetição: o `metricas.sql` conta pares distintos com abertura depois do envio, a
+  primeira abertura e pessoas distintas por etapa, e `perfis_vinculados` e `SQL_VAGAS_ENCERRADAS`
+  perguntam se o evento existe; a encerrada quer abertura anterior ao voto, e a primeira é a mais
+  antiga. A abertura trava o par com `pg_advisory_xact_lock` antes de conferir, para GETs
+  simultâneos não passarem juntos; pausa e vínculo já são serializados pela trava da linha de
+  `perfis`. O prefixo `z_` faz o gatilho rodar depois de `verificar_perfil_da_interacao`, e
+  abertura de conta pausada segue recusada com `42501`. Medido em 16/09, só leitura: 379 eventos;
+  41 `vaga_aberta` em 31 pares (24 com uma, 6 com duas, 1 com cinco), repetições de 1 s a 37 min,
+  no máximo 7 aberturas por perfil numa hora e 7 no banco inteiro; 2 `entregas_pausadas`, do mesmo
+  perfil, a 5 dias uma da outra; 4 `telegram_vinculado`, um por perfil. Aplicada a esse histórico,
+  a regra descartaria as 10 aberturas repetidas, e o funil de 7, 30 e 365 dias e as vagas
+  encerradas saem iguais. `tests/web/eventos_repetidos_test.ts` monta o mesmo histórico com e sem
+  o gatilho (repetições, feedback corrigido, voto de encerrada antes e depois da abertura, pausas e
+  revínculos em laço) e exige as mesmas métricas. Limites: a segunda pausa e o revínculo do mesmo
+  dia e as reaberturas somem do histórico bruto, e um leitor futuro de "última abertura" ou de
+  pausas por dia não os terá; GET em laço ainda executa a `ir` com duas consultas, o que não cresce
+  o banco mas gasta invocações de Edge Function, que têm cota própria no plano; a corrida entre
+  GETs simultâneos não é testada, porque o PGlite tem uma conexão só, e o descarte não foi
+  exercitado pelo PostgREST publicado (a `ir` não pede a linha de volta, e o esperado é 201 com
+  zero linhas; se vier erro, o `catch` da `ir` já segue para a vaga); e o feedback (`vaga_util`,
+  `vaga_irrelevante`) segue sem limite, porque a utilidade semanal lê a última resposta de cada
+  semana e descartar resposta igual à anterior mudaria a semana seguinte; tocar os botões em laço
+  exige automatizar uma conta do Telegram, e é o próximo caminho a fechar se aparecer.
+  Publicação: `db push` da `0028` antes ou depois do merge, tanto faz, porque nada no código
+  depende dela; a `ir` não muda e não precisa de deploy. Se a `0029` ou a `0030` subirem antes, o
+  push da `0028` pede `--include-all`.
 - **Textos do perfil têm teto no banco** (13/09/2026, migration `0025`). Uma conta comum gravava
   210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
   `cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não

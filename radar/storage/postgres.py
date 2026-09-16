@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 RECUSAS_POR_AREA_PARA_DESCONTAR = 2
 MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS = 3
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
+FALHAS_AO_GRAVAR_TEXTO = (psycopg.Error, UnicodeEncodeError)
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
@@ -284,6 +285,32 @@ SQL_APAGAR_CONTAS_EXCLUIDAS = """
     )
 """
 
+SQL_APAGAR_CADASTROS_PENDENTES = """
+    delete from cadastros_pendentes
+    where recebido_em < now() - make_interval(days => %(dias)s)
+"""
+
+SQL_APAGAR_CONTAS_NAO_CONFIRMADAS = """
+    with vencidas as (
+      select u.id
+      from auth.users u
+      where u.email_confirmed_at is null
+        and u.confirmation_sent_at < now() - make_interval(days => %(dias)s)
+        and not exists (select 1 from perfis p where p.user_id = u.id)
+    ), eventos_anonimos as (
+      delete from eventos_produto
+      where user_id is null
+        and sessao_id in (
+          select e.sessao_id
+          from eventos_produto e
+          join vencidas v on v.id = e.user_id
+          where e.sessao_id is not null
+        )
+    )
+    delete from auth.users
+    where id in (select id from vencidas)
+"""
+
 SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     update perfis
     set silencio_avisado_em = now()
@@ -415,7 +442,7 @@ class RepositorioPostgres:
                             "modelo": modelo,
                         },
                     )
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
 
     def registrar_vagas_sem_extracao(
@@ -432,7 +459,7 @@ class RepositorioPostgres:
                         SQL_REGISTRAR_VAGA_SEM_EXTRACAO, {"vaga_id": vaga_id, "dia": dia}
                     ).fetchone()
                     dias[vaga.chave()] = linha[0]
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao registrar as vagas sem extração: {descrever(erro)}"
             ) from erro
@@ -517,7 +544,7 @@ class RepositorioPostgres:
                 for resultado in avaliadas:
                     vaga_id = guardar_vaga(cursor, resultado.vaga)
                     guardar_avaliacao(cursor, usuario.id, vaga_id, resultado, modelo)
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar avaliações: {descrever(erro)}") from erro
 
     def registrar_envios(self, usuario: Usuario, enviadas: list[Recomendacao]) -> None:
@@ -530,7 +557,7 @@ class RepositorioPostgres:
                     guardar_envio(cursor, usuario.id, vaga_id, recomendacao.token)
                 ativado_agora = registrar_ativacao(cursor, usuario.id)
                 cursor.execute(SQL_ZERAR_FALHAS_DE_ENVIO, {"perfil_id": usuario.id})
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar envios: {descrever(erro)}") from erro
         if ativado_agora:
             logger.info("Perfil %s ativado pela primeira entrega relevante", usuario.id)
@@ -562,6 +589,26 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao apagar contas excluídas: {descrever(erro)}"
+            ) from erro
+
+    def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_APAGAR_CADASTROS_PENDENTES, {"dias": dias_de_prazo})
+                return cursor.rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao apagar cadastros pendentes: {descrever(erro)}"
+            ) from erro
+
+    def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_APAGAR_CONTAS_NAO_CONFIRMADAS, {"dias": dias_de_prazo})
+                return cursor.rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao apagar contas não confirmadas: {descrever(erro)}"
             ) from erro
 
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:
@@ -745,5 +792,5 @@ def converter_em_usuario(linha: dict) -> Usuario:
     )
 
 
-def descrever(erro: psycopg.Error) -> str:
+def descrever(erro: Exception) -> str:
     return type(erro).__name__

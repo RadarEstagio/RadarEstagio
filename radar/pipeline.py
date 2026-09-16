@@ -43,6 +43,8 @@ Enriquecedor = Callable[[list[Vaga]], list[Vaga]]
 DiasSemExtracao = dict[ChaveDaVaga, int] | None
 
 DIAS_SEM_EXTRACAO_ATE_SOLTAR_A_MENSAGEM = 3
+DIAS_ATE_APAGAR_CADASTRO_PENDENTE = 2
+DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA = 30
 
 
 def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
@@ -109,6 +111,7 @@ def executar(
     coleta_incompleta: Callable[[], bool] = coleta_completa,
 ) -> ResumoDaExecucao:
     apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
+    apagar_cadastros_nao_confirmados(repositorio)
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
@@ -189,6 +192,21 @@ def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> N
         return
     if apagadas:
         logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
+
+
+def apagar_cadastros_nao_confirmados(repositorio: Repositorio) -> None:
+    try:
+        cadastros = repositorio.apagar_cadastros_pendentes(DIAS_ATE_APAGAR_CADASTRO_PENDENTE)
+        contas = repositorio.apagar_contas_nao_confirmadas(DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA)
+    except ErroDeArmazenamento as erro:
+        logger.warning("cadastros não confirmados não foram apagados: %s", erro)
+        return
+    if cadastros or contas:
+        logger.info(
+            "%d cadastros pendentes e %d contas sem e-mail confirmado apagados no prazo",
+            cadastros,
+            contas,
+        )
 
 
 def com_areas_recusadas(usuario: Usuario, recusas: RecusasDoUsuario) -> Usuario:

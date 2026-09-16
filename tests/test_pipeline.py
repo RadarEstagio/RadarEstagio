@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
+from pydantic import BaseModel
 
 from radar.collectors.errors import ErroDeColeta
 from radar.domain.models import (
@@ -171,6 +172,8 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.avisos_de_silencio: list[UUID] = []
         self.travas: list[tuple[str, UUID]] = []
         self.carencias_aplicadas: list[int] = []
+        self.prazos_de_cadastro_pendente: list[int] = []
+        self.prazos_de_conta_nao_confirmada: list[int] = []
         self.extracoes_guardadas: dict[ChaveDaVaga, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
@@ -233,6 +236,14 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         self.carencias_aplicadas.append(dias_de_carencia)
+        return 0
+
+    def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+        self.prazos_de_cadastro_pendente.append(dias_de_prazo)
+        return 0
+
+    def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int:
+        self.prazos_de_conta_nao_confirmada.append(dias_de_prazo)
         return 0
 
     def registrar_aviso_de_silencio(self, usuario) -> None:
@@ -1059,6 +1070,30 @@ def test_a_execucao_apaga_as_contas_que_venceram_a_carencia():
     executar_com(repositorio, [vaga(1)], {"1": 70})
 
     assert repositorio.carencias_aplicadas == [60]
+
+
+def test_a_execucao_apaga_cadastros_e_contas_que_nao_confirmaram_o_email_no_prazo():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar_com(repositorio, [vaga(1)], {"1": 70})
+
+    assert repositorio.prazos_de_cadastro_pendente == [2]
+    assert repositorio.prazos_de_conta_nao_confirmada == [30]
+
+
+def test_falha_ao_apagar_cadastros_nao_confirmados_nao_impede_a_entrega(
+    caplog: pytest.LogCaptureFixture,
+):
+    class RepositorioQueNaoApaga(RepositorioFalso):
+        def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+            raise ErroDeArmazenamento("banco caiu")
+
+    repositorio = RepositorioQueNaoApaga([usuario()])
+
+    executar_com(repositorio, [vaga(1)], {"1": 70})
+
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["1"])]
+    assert "cadastros não confirmados não foram apagados" in caplog.text
 
 
 def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():
@@ -2026,3 +2061,87 @@ def test_atendimento_e_registrado_antes_de_liberar_a_trava_do_perfil():
         ("atendido", ID_USUARIO),
         ("liberar", ID_USUARIO),
     ]
+
+
+NUL = chr(0)
+METADE_DE_EMOJI = chr(0xD83D)
+
+
+def textos_de(valor: object) -> list[str]:
+    if isinstance(valor, str):
+        return [valor]
+    if isinstance(valor, dict):
+        valor = list(valor.values())
+    if isinstance(valor, list | tuple):
+        return [texto for item in valor for texto in textos_de(item)]
+    return []
+
+
+def gravar_como_o_postgres(modelos: list[BaseModel]) -> None:
+    for texto in textos_de([modelo.model_dump() for modelo in modelos]):
+        texto.encode("utf-8")
+        if NUL in texto:
+            raise ErroDeArmazenamento("Falha ao gravar: DataError")
+
+
+class RepositorioQueRecusaTextoComoOPostgres(RepositorioFalso):
+    def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
+        gravar_como_o_postgres([item for par in extracoes for item in par])
+        super().guardar_extracoes(extracoes, modelo)
+
+    def registrar_vagas_sem_extracao(self, vagas, dia):
+        gravar_como_o_postgres(vagas)
+        return super().registrar_vagas_sem_extracao(vagas, dia)
+
+    def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
+        gravar_como_o_postgres(avaliadas)
+        super().guardar_avaliacoes(usuario, avaliadas, modelo)
+
+    def registrar_envios(self, usuario, enviadas) -> None:
+        gravar_como_o_postgres(enviadas)
+        super().registrar_envios(usuario, enviadas)
+
+
+class NotificadorQueCodificaComoOHttpx(NotificadorFalso):
+    def enviar(self, chat_id: str, texto: str) -> None:
+        texto.encode("utf-8")
+        super().enviar(chat_id, texto)
+
+
+class ExtratorQueDevolveTextoInvalido(ExtratorFalso):
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        return [
+            ExtracaoDaVaga.model_validate(
+                {
+                    "id_vaga": vaga.identidade(),
+                    "area_da_vaga": "computacao",
+                    "cursos_aceitos": ["Engenharia de Software"],
+                    "habilidades_obrigatorias": ["Python" + NUL, "Docker" + METADE_DE_EMOJI],
+                    "alerta_pegadinha": "Exige experiência" + NUL,
+                }
+            )
+            for vaga in vagas
+        ]
+
+
+def test_texto_invalido_da_fonte_e_da_ia_nao_impede_gravar_extracao_e_envio():
+    coletadas = [
+        Vaga(**(vaga(1).model_dump() | {"titulo": "Estágio Python" + NUL})),
+        Vaga(**(vaga(2).model_dump() | {"descricao": "Python e Docker " + METADE_DE_EMOJI})),
+    ]
+    repositorio = RepositorioQueRecusaTextoComoOPostgres([usuario()])
+    notificador = NotificadorQueCodificaComoOHttpx()
+
+    resumo = executar(
+        ColetorFalso(coletadas),
+        ExtratorQueDevolveTextoInvalido({}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert resumo.extracoes_nao_gravadas == 0
+    assert set(repositorio.extracoes_guardadas) == {("adzuna", "1"), ("adzuna", "2")}
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
+    assert NUL not in notificador.textos[0]

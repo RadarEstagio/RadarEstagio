@@ -1,12 +1,18 @@
 import json
+import re
+from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import UUID
 
+import httpx
 import pytest
+from google import genai
+from google.genai import types
 
 import radar.__main__
+from radar.avaliacao.gemini import JuizGemini
 from radar.avaliacao.julgar import TAMANHO_DO_LOTE, amostrar, julgar_entregas
 from radar.avaliacao.prompt import apenas_das_vagas
 from radar.domain.models import (
@@ -281,3 +287,56 @@ def test_vaga_encerrada_nao_conta_como_discordancia_com_o_juiz():
 
     assert "1/1 concordam (100%)" in texto
     assert "Estágio 2" not in texto.split("Concordância")[1]
+
+
+def cliente_do_gemini(responder: Callable[[httpx.Request], httpx.Response]) -> genai.Client:
+    transporte = httpx.MockTransport(responder)
+    return genai.Client(
+        api_key="gemini-de-teste",
+        http_options=types.HttpOptions(httpx_client=httpx.Client(transport=transporte)),
+    )
+
+
+def test_juiz_gemini_com_corpo_que_nao_e_json_perde_so_o_lote_e_segue_julgando():
+    lotes_pedidos: list[list[str]] = []
+
+    def gemini(requisicao: httpx.Request) -> httpx.Response:
+        prompt = json.loads(requisicao.content)["contents"][0]["parts"][0]["text"]
+        ids = re.findall(r"^id: (\S+)$", prompt, flags=re.MULTILINE)
+        lotes_pedidos.append(ids)
+        if len(lotes_pedidos) == 1:
+            return httpx.Response(
+                200, headers={"content-type": "text/html"}, text="<html>502 Bad Gateway</html>"
+            )
+        julgamentos = [
+            {"id_vaga": id_vaga, "relevante": True, "nota_juiz": 80, "problema": "nenhum"}
+            for id_vaga in ids
+        ]
+        texto = json.dumps({"julgamentos": julgamentos})
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": texto}], "role": "model"}}]}
+        )
+
+    settings = Settings(
+        _env_file=None,
+        adzuna_app_id="id",
+        adzuna_app_key="chave",
+        gemini_api_key="gemini-de-teste",
+        telegram_bot_token="token",
+        telegram_chat_id="1",
+    )
+    entregas = [entrega(numero) for numero in range(1, TAMANHO_DO_LOTE + 3)]
+
+    resultado = julgar_entregas(
+        entregas,
+        JuizGemini(settings, cliente_do_gemini(gemini)),
+        amostra=100,
+        semente=1,
+        modelo="m",
+        dias=7,
+    )
+
+    assert [len(lote) for lote in lotes_pedidos] == [TAMANHO_DO_LOTE, 2]
+    assert resultado.sem_julgamento == TAMANHO_DO_LOTE
+    assert [item.entrega.vaga.identidade() for item in resultado.julgadas] == lotes_pedidos[1]
+    assert "não é JSON" in resultado.ultimo_erro

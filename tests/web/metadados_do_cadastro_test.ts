@@ -3,6 +3,7 @@ import { PGlite } from "pglite";
 
 const MIGRACOES = new URL("../../supabase/migrations/", import.meta.url);
 const MIGRACAO_DA_LIMPEZA = "0027_";
+const MIGRACAO_DA_IDENTIDADE = "0030_";
 
 const pessoa = "00000000-0000-4000-8000-000000000001";
 const antiga = "00000000-0000-4000-8000-000000000002";
@@ -16,7 +17,15 @@ async function banco(ate?: string): Promise<{ db: PGlite; restantes: string[] }>
     create schema auth;
     create table auth.users (
       id uuid primary key, email text, created_at timestamptz default now(),
-      email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}'
+      email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}',
+      confirmation_sent_at timestamptz
+    );
+    create table auth.identities (
+      id uuid primary key default gen_random_uuid(),
+      provider_id text not null,
+      user_id uuid not null references auth.users (id) on delete cascade,
+      identity_data jsonb not null,
+      provider text not null default 'email'
     );
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
@@ -53,6 +62,14 @@ function metadados(cadastroRadar: boolean) {
     sessao_id: sessao,
   };
   return cadastroRadar ? { cadastro_radar: cadastro, email_verified: true } : { email_verified: true };
+}
+
+async function identidadeDe(db: PGlite, id: string): Promise<Record<string, unknown>> {
+  const linhas = await db.query<{ dados: Record<string, unknown> }>(
+    "select identity_data dados from auth.identities where user_id = $1",
+    [id],
+  );
+  return linhas.rows[0].dados;
 }
 
 async function metadadosDe(db: PGlite, id: string): Promise<Record<string, unknown>> {
@@ -109,6 +126,56 @@ Deno.test("a migração limpa o cadastro que ficou nos metadados das contas anti
     assert.deepEqual(await metadadosDe(db, antiga), { email_verified: true });
     const perfis = await db.query<{ n: number }>("select count(*)::int n from perfis where user_id = $1", [antiga]);
     assert.equal(perfis.rows[0].n, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("cadastro não fica nos dados da identidade que o Auth devolve no signUp", async () => {
+  const { db } = await banco();
+  try {
+    const daIdentidade = { ...metadados(true), sub: pessoa, email: "a@x.com", email_verified: false };
+    await db.query("insert into auth.users(id, email, raw_user_meta_data) values ($1, 'a@x.com', $2)", [
+      pessoa,
+      metadados(true),
+    ]);
+    await db.query("insert into auth.identities(provider_id, user_id, identity_data) values ($1::text, $1::uuid, $2)", [
+      pessoa,
+      daIdentidade,
+    ]);
+    const semCadastro = { sub: pessoa, email: "a@x.com", email_verified: false };
+    assert.deepEqual(await identidadeDe(db, pessoa), semCadastro);
+
+    await db.query("update auth.identities set identity_data = $2 where user_id = $1", [
+      pessoa,
+      { ...daIdentidade, email_verified: true },
+    ]);
+    assert.deepEqual(await identidadeDe(db, pessoa), { ...semCadastro, email_verified: true });
+
+    await db.query("update auth.users set email_confirmed_at = now() where id = $1", [pessoa]);
+    const perfil = await db.query<{ resposta: boolean }>(
+      "select pessoa_com_deficiencia resposta from perfis where user_id = $1",
+      [pessoa],
+    );
+    assert.equal(perfil.rows[0].resposta, true);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a migração limpa o cadastro que ficou nas identidades das contas antigas", async () => {
+  const { db, restantes } = await banco(MIGRACAO_DA_IDENTIDADE);
+  try {
+    await db.query("insert into auth.users(id, email, email_confirmed_at) values ($1, 'b@x.com', now())", [antiga]);
+    await db.query("insert into auth.identities(provider_id, user_id, identity_data) values ($1::text, $1::uuid, $2)", [
+      antiga,
+      { ...metadados(true), sub: antiga },
+    ]);
+    assert.ok("cadastro_radar" in await identidadeDe(db, antiga), "o cenário precisa reproduzir a conta antiga");
+
+    for (const nome of restantes) await db.exec(await Deno.readTextFile(new URL(nome, MIGRACOES)));
+
+    assert.deepEqual(await identidadeDe(db, antiga), { sub: antiga, email_verified: true });
   } finally {
     await db.close();
   }

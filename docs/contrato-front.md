@@ -36,6 +36,13 @@ O banco valida o payload e preserva cópia em `cadastros_pendentes`, sem acesso 
 navegador. Na confirmação, cria o perfil com os dados e aceite registrados. O retorno consulta
 sessão e banco, inclusive quando a confirmação ocorre em outro aparelho.
 
+A cópia só vale para o primeiro link. `signUp` repetido com e-mail ainda não confirmado não regrava
+o cadastro nem a senha no Auth, só reenvia o link, e todo link novo (esse `signUp` ou
+`auth.resend`) descarta a cópia (`0030`): quem confirma por ele chega sem perfil e completa com
+`concluir_meu_cadastro`. O job diário apaga a cópia 2 dias depois do envio e a conta não confirmada
+30 dias depois do último link. O cadastro não fica nos metadados nem na identidade do Auth
+(`0027` e `0030`).
+
 **Não inserir diretamente em `perfis`.** A `0014` revogou essa permissão. Para usuário
 confirmado sem perfil, o frontend chama `concluir_meu_cadastro({ cadastro })`. A RPC valida o
 payload e usa a identidade autenticada. Senha é enviada somente ao Auth.

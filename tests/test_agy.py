@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -145,6 +146,17 @@ def test_saida_do_agy_que_nao_e_objeto_nao_derruba_a_extracao_em_lotes():
     assert ExtratorEmLotes(extrator, 10).extrair([vaga_exemplo()]) == []
 
 
+def test_saida_do_agy_que_nao_e_utf8_vira_erro_de_avaliacao():
+    def executor_com_bytes_invalidos(comando: list[str], **opcoes) -> subprocess.CompletedProcess:
+        escrever_bytes_invalidos = "import sys; sys.stdout.buffer.write(bytes([255, 254, 123]))"
+        return subprocess.run([sys.executable, "-c", escrever_bytes_invalidos], **opcoes)
+
+    extrator = ExtratorAgy(settings_de_teste(), executor=executor_com_bytes_invalidos)
+
+    with pytest.raises(ErroDeAvaliacao, match="saída inválida"):
+        extrator.extrair([vaga_exemplo()])
+
+
 def test_saida_estruturada_fora_do_contrato_vira_erro_de_avaliacao():
     envelope = {"status": "SUCCESS", "structured_output": {"resultado": []}}
     extrator = ExtratorAgy(
@@ -192,3 +204,28 @@ def test_nao_entrega_segredos_do_radar_ao_processo_agy(monkeypatch: pytest.Monke
     ambiente = executor.opcoes["env"]
     assert isinstance(ambiente, dict)
     assert "TELEGRAM_BOT_TOKEN" not in ambiente
+
+
+def test_saida_do_agy_com_nul_e_metade_solta_de_emoji_chega_limpa():
+    envelope = {
+        "status": "SUCCESS",
+        "structured_output": {
+            "extracoes": [
+                {
+                    "id_vaga": "adzuna:vaga-1",
+                    "area_da_vaga": "computacao",
+                    "habilidades_obrigatorias": ["Python" + chr(0), "SQL" + chr(0xD83D)],
+                    "alerta_pegadinha": "Sem remuneração" + chr(0xDE00),
+                }
+            ]
+        },
+    }
+    extrator = ExtratorAgy(
+        settings_de_teste(),
+        executor=ExecutorFalso(ProcessoFalso(0, json.dumps(envelope))),
+    )
+
+    extracao = extrator.extrair([vaga_exemplo()])[0]
+
+    assert extracao.habilidades_obrigatorias == ["Python", "SQL"]
+    assert extracao.alerta_pegadinha == "Sem remuneração"
