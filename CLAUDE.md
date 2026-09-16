@@ -736,6 +736,35 @@ Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à n
    e perdia "cursando Administração ou Ciências Contábeis" — 23 vagas reais, mais 2 de Ciências
    Econômicas e 3 de "gestão de RH". Sigla e palavra solta ("si", "ti", "redes") ficam de fora
    porque aparecem em texto comum ("entre si", "redes sociais").
+   **Rótulo de formação com qualificador (16/09/2026).** A trava do dois-pontos só deixava passar
+   o dois-pontos colado ao termo ("Formação:", "Cursos:"), e a vaga de título genérico caía com
+   "Cursos aceitos: Administração", "Formação acadêmica: Direito", "**Cursos desejáveis**: -
+   Marketing", "Graduação em: …", "Curso(s): …" e "Graduação:Economia | Administração", em que
+   só o primeiro curso contava por faltar espaço depois do dois-pontos. `PADRAO_ROTULO_DE_FORMACAO`
+   aceita o termo de formação (curso, cursos, curso(s), formação, graduação, escolaridade,
+   cursando, ensino ou nível superior) com até dois qualificadores de uma lista fechada (aceitos,
+   acadêmica, desejada, desejáveis, necessária, em, de, andamento, curso, abaixo), ligados só por
+   espaço ou negrito de markdown. Depois do rótulo valem as mesmas 24 palavras, e o segundo
+   dois-pontos continua travando: "formação acadêmica: não informado … ramo: recursos humanos"
+   segue de fora. A lista é fechada porque a descrição chega sem quebra de linha e o valor de um
+   campo emenda no rótulo do seguinte; aceitando qualquer palavra e qualquer termo de formação
+   antes do dois-pontos, três anúncios reais vazavam: "área de atuação : jurídico … logística"
+   para Logística, "graduação;desejáveis: inglês …;boa comunicação" para Comunicação e
+   "conhecimentos e formação requeridos: … conhecimento básico em informática" para Informática.
+   Medido contra o `main` nas 1.003 vagas guardadas com 65 cursos sintéticos (65.195 pares): 129
+   citações de curso em 44 vagas ganham contexto e nenhuma perde; 27 pares deixam de ser
+   descartados e nenhum passa a ser. 24 são cursos que o anúncio lista ("Cursos desejáveis" do
+   grupo YDUQS, "Estágio Comercial" com "cursando **Ensino Superior** em:", "Graduação:" sem
+   espaço numa vaga de análise de sistemas que aceita Administração); os outros 3 são do curso
+   "Gestão", que casa dentro de "gestão de TI", "gestão comercial" e "gestão da informação", como
+   já casava em "cursando gestão comercial". `vagas` só guarda o que passou no pré-filtro de algum
+   perfil, então a vaga que o defeito descartava para todos não entra na conta, e o ganho real é
+   maior que o medido. Limites: "exigida" e "requerida" ficaram fora dos qualificadores (a única
+   ocorrência era a de Informática), então "Formação exigida: X" segue travada; rótulo com frase
+   não conta ("Graduação em andamento a partir do 5º período:", 2 pares reais de uma vaga de PMO
+   perdidos para Engenharia de Produção e Relações Internacionais; "nas seguintes áreas:"); e,
+   como já valia para "Formação:", contam as 24 palavras depois do rótulo, não só a lista, e ponto
+   sem espaço (".conhecimento em banco de dados") não fecha a frase.
 2. Curso sem área conhecida: mantém só título sem marcador forte de área alguma ("Programa de
    Estágio", "Estagiário"). Sem isso, um perfil de Agronomia passava 96% das vagas (641 de 667)
    para a extração.
