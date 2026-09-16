@@ -156,6 +156,30 @@ SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = f"""
       and r.motivo = 'motivo_repetida'
 """
 
+SQL_VAGAS_ENCERRADAS = """
+    with ultima_resposta as (
+        select distinct on (e.perfil_id, e.vaga_id)
+               e.perfil_id, e.vaga_id, e.nome, e.propriedades ->> 'motivo' as motivo, e.ocorrido_em
+        from eventos_produto e
+        where e.nome in ('vaga_util', 'vaga_irrelevante')
+          and e.ocorrido_em > now() - interval '30 days'
+        order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
+    )
+    select distinct v.fonte, v.id_externo
+    from ultima_resposta r
+    join vagas v on v.id = r.vaga_id
+    where r.nome = 'vaga_irrelevante'
+      and r.motivo = 'motivo_encerrada'
+      and exists (
+          select 1
+          from eventos_produto a
+          where a.nome = 'vaga_aberta'
+            and a.perfil_id = r.perfil_id
+            and a.vaga_id = r.vaga_id
+            and a.ocorrido_em <= r.ocorrido_em
+      )
+"""
+
 SQL_GUARDAR_VAGA = """
     insert into vagas
       (fonte, id_externo, titulo, empresa, localizacao, descricao, url, publicada_em, modalidade)
@@ -458,6 +482,15 @@ class RepositorioPostgres:
             ],
             vagas_repetidas=[converter_em_vaga_enviada(linha) for linha in repetidas],
         )
+
+    def vagas_encerradas(self) -> set[ChaveDaVaga]:
+        try:
+            linhas = self._conexao.execute(SQL_VAGAS_ENCERRADAS).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler as vagas encerradas: {descrever(erro)}"
+            ) from erro
+        return {(fonte, id_externo) for fonte, id_externo in linhas}
 
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
