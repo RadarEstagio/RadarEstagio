@@ -31,6 +31,7 @@ from radar.storage.errors import ErroDeArmazenamento
 logger = logging.getLogger(__name__)
 
 RECUSAS_POR_AREA_PARA_DESCONTAR = 2
+MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS = 3
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
@@ -155,7 +156,7 @@ SQL_VAGAS_QUE_NAO_VOLTAM = f"""
       and r.motivo in ('motivo_repetida', 'motivo_encerrada')
 """
 
-SQL_VAGAS_ENCERRADAS = """
+SQL_VAGAS_ENCERRADAS = f"""
     with ultima_resposta as (
         select distinct on (e.perfil_id, e.vaga_id)
                e.perfil_id, e.vaga_id, e.nome, e.propriedades ->> 'motivo' as motivo, e.ocorrido_em
@@ -163,24 +164,30 @@ SQL_VAGAS_ENCERRADAS = """
         where e.nome in ('vaga_util', 'vaga_irrelevante')
           and e.ocorrido_em > now() - interval '30 days'
         order by e.perfil_id, e.vaga_id, e.ocorrido_em desc, e.id desc
+    ),
+    marcadas as (
+        select r.perfil_id, r.vaga_id, r.ocorrido_em,
+               count(*) over (partition by r.perfil_id) as marcadas_pelo_perfil
+        from ultima_resposta r
+        where r.nome = 'vaga_irrelevante'
+          and r.motivo = 'motivo_encerrada'
     )
     select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
            v.publicada_em, v.modalidade
     from vagas v
     where v.id in (
-        select r.vaga_id
-        from ultima_resposta r
-        join perfis p on p.id = r.perfil_id
-        where r.nome = 'vaga_irrelevante'
-          and r.motivo = 'motivo_encerrada'
+        select m.vaga_id
+        from marcadas m
+        join perfis p on p.id = m.perfil_id
+        where m.marcadas_pelo_perfil <= {MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS}
           and p.ativo and p.excluida_em is null and p.telegram_chat_id is not null
           and exists (
               select 1
               from eventos_produto a
               where a.nome = 'vaga_aberta'
-                and a.perfil_id = r.perfil_id
-                and a.vaga_id = r.vaga_id
-                and a.ocorrido_em <= r.ocorrido_em
+                and a.perfil_id = m.perfil_id
+                and a.vaga_id = m.vaga_id
+                and a.ocorrido_em <= m.ocorrido_em
           )
     )
 """

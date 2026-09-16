@@ -5,12 +5,14 @@ async function consulta(nome: string): Promise<string> {
   const fonte = await Deno.readTextFile(
     new URL("../../radar/storage/postgres.py", import.meta.url),
   );
-  const modulo = { SQL_ULTIMA_RESPOSTA_POR_VAGA: "" } as Record<string, string>;
-  for (const bloco of fonte.matchAll(/^(SQL_\w+) = f?"""\n([\s\S]*?)"""$/gm)) {
-    modulo[bloco[1]] = bloco[2].replace(
-      /\{SQL_ULTIMA_RESPOSTA_POR_VAGA\}/g,
-      modulo.SQL_ULTIMA_RESPOSTA_POR_VAGA,
-    );
+  const modulo: Record<string, string> = {};
+  for (const constante of fonte.matchAll(/^([A-Z_]+) = (\d+)$/gm)) {
+    modulo[constante[1]] = constante[2];
+  }
+  for (const bloco of fonte.matchAll(/^(SQL_\w+) = (f?)"""\n([\s\S]*?)"""$/gm)) {
+    modulo[bloco[1]] = bloco[2]
+      ? bloco[3].replace(/\{(\w+)\}/g, (trecho, nome: string) => modulo[nome] ?? trecho)
+      : bloco[3];
   }
   const sql = modulo[nome];
   assert.ok(sql, `constante ${nome} não encontrada em postgres.py`);
@@ -315,6 +317,50 @@ Deno.test("marcação de conta excluída, pausada, sem Telegram ou já apagada n
     await marcarComoEncerrada(db, 5, 2);
 
     assert.deepEqual(await encerradas(db), ["adzuna:2:Estágio B"]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("até três vagas marcadas por um perfil saem para todos e a quarta tira o efeito de todas", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await vagasAte(db, 7);
+    for (const vaga of [1, 2, 3]) {
+      await marcarComoEncerrada(db, 2, vaga);
+    }
+    for (const vaga of [4, 5, 6, 7]) {
+      await marcarComoEncerrada(db, 3, vaga);
+    }
+
+    assert.deepEqual(await encerradas(db), [
+      "adzuna:1:Estágio A",
+      "adzuna:2:Estágio B",
+      "adzuna:3:Estágio 3",
+    ]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("marcação sem abertura conta no teto e desfazê-la devolve o efeito das outras", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await vagasAte(db, 4);
+    for (const vaga of [1, 2, 3]) {
+      await marcarComoEncerrada(db, 2, vaga);
+    }
+    await marcarComoEncerrada(db, 2, 4, { abriuAntes: false });
+
+    assert.deepEqual(await encerradas(db), []);
+
+    await eventoDaVaga(db, { nome: "vaga_util", perfil: 2, vaga: 4, quando: "now()" });
+
+    assert.deepEqual(await encerradas(db), [
+      "adzuna:1:Estágio A",
+      "adzuna:2:Estágio B",
+      "adzuna:3:Estágio 3",
+    ]);
   } finally {
     await db.close();
   }
