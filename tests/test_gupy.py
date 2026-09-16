@@ -199,3 +199,17 @@ def test_erro_transitorio_e_tentado_de_novo_antes_de_desistir(httpx_mock: HTTPXM
 
     assert vagas == []
     assert esperas == [2]
+
+
+def test_texto_com_nul_e_metade_solta_de_emoji_chega_limpo(
+    httpx_mock: HTTPXMock, coletor: ColetorGupy
+):
+    anuncio = item(1)
+    anuncio["name"] = "Estágio" + chr(0) + " em TI"
+    anuncio["description"] = "<p>Vaga " + chr(0xDE00) + "aberta</p>"
+    httpx_mock.add_response(content=json.dumps({"data": [anuncio]}).encode())
+
+    vaga = coletor.coletar()[0]
+
+    assert vaga.titulo == "Estágio em TI"
+    assert vaga.descricao == "Vaga aberta"

@@ -1,5 +1,5 @@
 import os
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 import psycopg
@@ -16,6 +16,7 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
+from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.postgres import RepositorioPostgres, guardar_vaga
 
 DATABASE_URL_TESTE = os.environ.get("DATABASE_URL_TESTE", "")
@@ -676,3 +677,35 @@ def test_marcar_atendidas_nao_troca_a_data_de_quem_ja_tinha_sido_atendido(
     assert atendida_em(conexao, antigo) == datetime(2026, 9, 1, 10, 23, tzinfo=UTC)
     assert atendida_em(conexao, novo) is not None
     assert novo not in repositorio.entregas_imediatas_pendentes(novo)
+
+
+@pytest.mark.parametrize(
+    "gravacao",
+    ["extracoes", "vagas_sem_extracao", "avaliacoes", "envios"],
+)
+def test_texto_que_o_psycopg_nao_codifica_vira_falha_de_gravacao(
+    conexao: psycopg.Connection, usuario: Usuario, gravacao: str
+):
+    repositorio = RepositorioPostgres(conexao)
+    invalida = vaga(1).model_copy(update={"titulo": "Estágio " + chr(0xD83D)})
+    resultado = ResultadoMatch(vaga=invalida, nota=80)
+    gravar = {
+        "extracoes": lambda: repositorio.guardar_extracoes(
+            [(invalida, ExtracaoDaVaga(id_vaga="adzuna:teste-1", area_da_vaga=None))], "modelo"
+        ),
+        "vagas_sem_extracao": lambda: repositorio.registrar_vagas_sem_extracao(
+            [invalida], date(2026, 9, 16)
+        ),
+        "avaliacoes": lambda: repositorio.guardar_avaliacoes(usuario, [resultado], "modelo"),
+        "envios": lambda: repositorio.registrar_envios(
+            usuario, [Recomendacao(resultado=resultado)]
+        ),
+    }[gravacao]
+
+    with pytest.raises(ErroDeArmazenamento, match="UnicodeEncodeError"):
+        gravar()
+
+    repositorio.registrar_envios(
+        usuario, [Recomendacao(resultado=ResultadoMatch(vaga=vaga(2), nota=80))]
+    )
+    assert repositorio.ids_ja_enviadas(usuario) == {("adzuna", "teste-2")}

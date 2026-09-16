@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 import httpx
@@ -130,3 +131,18 @@ def test_erro_de_chave_nao_e_tentado_de_novo(httpx_mock: HTTPXMock, coletor: Col
 
     with pytest.raises(ErroDeColeta, match="403"):
         coletor.coletar()
+
+
+def test_texto_com_nul_e_metade_solta_de_emoji_chega_limpo(
+    httpx_mock: HTTPXMock, coletor: ColetorJooble
+):
+    anuncio = item(1)
+    anuncio["title"] = "Estágio\x00 em TI"
+    anuncio["snippet"] = "Apoiar o " + chr(0xD83D) + "time"
+    httpx_mock.add_response(content=json.dumps(resposta(anuncio)).encode())
+    httpx_mock.add_response(json=resposta(), is_reusable=True)
+
+    vaga = coletor.coletar()[0]
+
+    assert vaga.titulo == "Estágio em TI"
+    assert vaga.descricao == "Apoiar o time"

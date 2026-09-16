@@ -1572,6 +1572,39 @@ ligação das automações, porque cada uma guardava o dono no nome:
 - **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
   que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
   `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
+- **Texto que o Postgres recusa sai na entrada** (16/09/2026). Dois caracteres vindos da fonte ou
+  da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo de 500 caracteres
+  da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
+  levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
+  antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
+  (a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
+  levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
+  extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
+  vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a
+  retenção da `0022` não contar o dia e o envio não ser gravado, e a mesma mensagem voltava todo
+  dia. As duas falhas foram reproduzidas num Postgres local com todas as migrations, rodando o
+  pipeline com o coletor da Adzuna, o agy e o Telegram atrás de `httpx.MockTransport`. A limpeza é
+  feita uma vez, nos modelos: `Vaga` e `ExtracaoDaVaga` passam todo texto por
+  `sem_caracteres_invalidos` (`domain/texto.py`), que tira NUL e surrogate solto e junta as duas
+  metades de um emoji que chegam separadas; nenhum outro caractere muda (acento, travessão, `<`,
+  `&`, emoji inteiro, `�`). O validador da `Vaga` cobre os três coletores, e o da extração cobre
+  a resposta do Gemini, a do agy e a leitura do cache; o enriquecimento limpa a descrição da
+  página por conta própria, porque o `model_copy` não valida. A identidade das vagas guardadas não
+  muda, porque o banco nunca aceitou esses caracteres, e o schema da extração é o mesmo:
+  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Como defesa, `guardar_extracoes`,
+  `registrar_vagas_sem_extracao`, `guardar_avaliacoes` e `registrar_envios` tratam o
+  `UnicodeEncodeError` como falha do banco (`FALHAS_AO_GRAVAR_TEXTO`): aviso do dia, não queda.
+  Medido em 16/09, só leitura: nenhuma das 1.003 vagas nem das 790 extrações tem `�` ou NUL
+  escapado, e nenhuma das 966 vagas da Adzuna tem emoji ou outro caractere fora do plano básico;
+  as 18 com emoji são da Gupy, com a descrição inteira. Não se sabe se a Adzuna manda esses
+  caracteres, e a correção é para não depender disso. Limites: gravar cada extração em separado,
+  para uma ruim não levar as outras, ficou de fora, porque depois da limpeza nenhum texto da
+  extração é recusado e o que sobra para falhar é o banco inteiro; o `model_validate_json` recusa
+  a resposta do Gemini inteira se ela trouxer um surrogate solto escapado (erro de avaliação, o
+  lote se divide até isolar a vaga), o que só acontece se o modelo o inventar, já que o prompt sai
+  limpo; corpo da Adzuna com byte UTF-8 inválido continua sendo corpo que não é JSON (ver "Coleta
+  resiliente"); e os testes do storage são de integração, fora do CI. Publicação: sem migration
+  nem deploy.
 - **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
   operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
   por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
