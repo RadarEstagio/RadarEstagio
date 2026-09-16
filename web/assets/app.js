@@ -91,7 +91,7 @@ const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
-const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
+const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,pessoa_com_deficiencia,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
@@ -139,6 +139,7 @@ const VISITANTE = "visitante";
 let donoDoRascunho = VISITANTE;
 let emailDoCadastroEnviado = "";
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
+const RESPOSTAS_SOBRE_DEFICIENCIA = { sim: true, nao: false };
 const campoDeAreas = document.querySelector("#campo-areas");
 const gradeDeAreas = document.querySelector("#grade-de-areas");
 let catalogoDeAreas = null;
@@ -977,6 +978,7 @@ function profileFromForm() {
     cidade: cidadeDoFormulario() ?? "",
     modalidade: data.get("modalidade"),
     areas_de_interesse: areasDeInteresseDoFormulario(data),
+    pessoa_com_deficiencia: RESPOSTAS_SOBRE_DEFICIENCIA[data.get("pessoa_com_deficiencia")] ?? null,
   };
   if (!profile.curso) throw validationError(mensagensValidacao.curso);
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
@@ -993,6 +995,12 @@ function profileFromForm() {
     throw validationError(mensagensValidacao.modalidade);
   }
   return profile;
+}
+
+function opcaoDaRespostaSobreDeficiencia(resposta) {
+  if (resposta === true) return "sim";
+  if (resposta === false) return "nao";
+  return "";
 }
 
 function readPendingProfile() {
@@ -1145,6 +1153,7 @@ function preencherFormularioCom(profile) {
   form.elements.periodo.value = String(profile.periodo);
   form.elements.cidade.value = profile.cidade;
   form.elements.modalidade.value = profile.modalidade;
+  form.elements.pessoa_com_deficiencia.value = opcaoDaRespostaSobreDeficiencia(profile.pessoa_com_deficiencia);
   selectedSkills.clear();
   profile.habilidades.forEach((skill) => selectedSkills.add(skill));
   continuarSemHabilidades = profile.habilidades.length === 0;

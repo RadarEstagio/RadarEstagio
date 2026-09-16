@@ -28,6 +28,7 @@ const profile = {
   cidade: "Recife, PE",
   modalidade: "remoto",
   areas_de_interesse: [],
+  pessoa_com_deficiencia: null as boolean | null,
   token_vinculo: "token",
   ativo: true,
   motivo_pausa: null as string | null,
@@ -3442,6 +3443,96 @@ Deno.test("perfil antigo sem estado na cidade é corrigido ao salvar a edição"
     await settle();
     const update = called(a.calls, "update");
     assert.equal(update[2].cidade, "Rio de Janeiro, RJ");
+  } finally {
+    a.close();
+  }
+});
+
+function respostaSobreDeficiencia(form: { querySelector: (seletor: string) => { value: string } | null }) {
+  return form.querySelector('input[name="pessoa_com_deficiencia"]:checked')?.value ?? "nenhuma marcada";
+}
+
+Deno.test("pergunta sobre deficiência começa em prefiro não informar e manda nulo", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    assert.equal(respostaSobreDeficiencia(form), "");
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.pessoa_com_deficiencia, null);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sim e não sobre deficiência chegam ao cadastro como verdadeiro e falso", async () => {
+  for (const [opcao, esperada] of [["sim", true], ["nao", false]] as const) {
+    const a = app();
+    try {
+      const form = await abrirPreferencias(a);
+      form.querySelector(`input[name="pessoa_com_deficiencia"][value="${opcao}"]`).click();
+      form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+      await settle();
+      const [, signup] = called(a.calls, "signup");
+      assert.equal(signup.options.data.cadastro_radar.perfil.pessoa_com_deficiencia, esperada, opcao);
+    } finally {
+      a.close();
+    }
+  }
+});
+
+Deno.test("edição mostra a resposta sobre deficiência salva e grava a troca", async () => {
+  const casos = [
+    [true, "sim"],
+    [false, "nao"],
+    [null, ""],
+    [undefined, ""],
+  ] as const;
+  for (const [salva, opcao] of casos) {
+    const a = app({
+      session: { user },
+      savedProfile: {
+        ...profile,
+        telegram_chat_id: "123",
+        pessoa_com_deficiencia: salva,
+      } as unknown as Profile,
+    });
+    try {
+      await settle();
+      a.w.setAuthMode("login");
+      a.w.document.querySelector("#edit-profile").click();
+      await settle();
+      const form = a.w.document.querySelector("#signup-form");
+      assert.equal(respostaSobreDeficiencia(form), opcao, String(salva));
+      form.querySelector('input[name="pessoa_com_deficiencia"][value="sim"]').click();
+      form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+      await settle();
+      assert.equal(called(a.calls, "update")[2].pessoa_com_deficiencia, true);
+    } finally {
+      a.close();
+    }
+  }
+});
+
+Deno.test("sair da conta volta a pergunta sobre deficiência para prefiro não informar", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123", pessoa_com_deficiencia: true } as unknown as Profile,
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    a.w.document.querySelector("#edit-profile").click();
+    await settle();
+    const form = a.w.document.querySelector("#signup-form");
+    assert.equal(respostaSobreDeficiencia(form), "sim");
+    a.w.document.querySelector("#logout-account").click();
+    await settle();
+    a.w.setAuthMode("signup");
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(respostaSobreDeficiencia(form), "");
   } finally {
     a.close();
   }

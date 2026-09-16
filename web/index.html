@@ -442,6 +442,11 @@
                   <label><input type="radio" name="modalidade" value="indiferente" /><span>Indiferente</span></label>
                 </div></div>
                 <div class="field field-full" id="campo-areas" hidden><span>Áreas de interesse (opcional)</span><div class="option-grid" id="grade-de-areas"></div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
+                <div class="field field-full" id="campo-pcd"><span id="rotulo-pcd">Você é pessoa com deficiência (PCD)? (opcional)</span><div class="option-grid option-grid-tres" role="radiogroup" aria-labelledby="rotulo-pcd" aria-describedby="ajuda-pcd">
+                  <label><input type="radio" name="pessoa_com_deficiencia" value="sim" /><span>Sim</span></label>
+                  <label><input type="radio" name="pessoa_com_deficiencia" value="nao" /><span>Não</span></label>
+                  <label><input type="radio" name="pessoa_com_deficiencia" value="" checked /><span>Prefiro não informar</span></label>
+                </div><small id="ajuda-pcd">Usamos a resposta só para escolher suas vagas. Com sim, vagas para PCD que combinam com você vêm primeiro; com não, vagas exclusivas para PCD deixam de chegar. Dá para mudar quando quiser.</small></div>
                 </div>
             </fieldset>
             <p class="form-message" id="form-message" role="alert"></p>
