@@ -99,6 +99,7 @@ class Perfil(BaseModel):
     modalidade: Modalidade
     areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
     areas_recusadas: list[AreaDeInteresse] = Field(default_factory=list)
+    pessoa_com_deficiencia: bool | None = None
 
     def nome_da_cidade(self) -> str:
         return self.cidade.split(",")[0].strip()
