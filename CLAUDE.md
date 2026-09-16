@@ -654,8 +654,10 @@ nada pode ganhar uma lista própria:
 - A migration `0017` foi **gerada** do mesmo catálogo — o `CHECK` de `perfis.areas_de_interesse`
   e a função `validar_cadastro_radar`.
 - `web/assets/areas.json` é **arquivo gerado** e serve o cadastro, que monta as áreas conforme o
-  curso digitado. Mexeu em `areas.py`, regere; `tests/test_areas_do_front.py` e
-  `tests/test_migracao_das_areas.py` quebram se alguma das três listas sair do lugar.
+  curso digitado e lista os `cursos_sugeridos` no campo de curso (16/09/2026: o `datalist`
+  com cópia da lista saiu do `index.html`; o curso segue livre, ao contrário da cidade). Mexeu
+  em `areas.py`, regere; `tests/test_areas_do_front.py` e `tests/test_migracao_das_areas.py`
+  quebram se alguma das três listas sair do lugar.
 
 Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
 `exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". O padrão `titulo`
