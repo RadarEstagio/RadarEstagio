@@ -132,6 +132,48 @@ def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
     assert "overflow-y: auto" in regra_do_celular.split(".dialog-shell")[0]
 
 
+def declaracoes_do_css(css: str, seletor: str, media: str | None = None) -> dict[str, str]:
+    declaracoes: dict[str, str] = {}
+    blocos_abertos: list[str] = []
+    posicao = 0
+    while (fechamento := css.find("}", posicao)) != -1:
+        abertura = css.find("{", posicao)
+        if abertura == -1 or fechamento < abertura:
+            blocos_abertos.pop()
+            posicao = fechamento + 1
+            continue
+        cabecalho = " ".join(css[posicao:abertura].split())
+        if cabecalho.startswith("@"):
+            blocos_abertos.append(cabecalho)
+            posicao = abertura + 1
+            continue
+        fim = css.index("}", abertura)
+        contexto = blocos_abertos[-1] if blocos_abertos else None
+        if contexto == media and seletor in [parte.strip() for parte in cabecalho.split(",")]:
+            for declaracao in css[abertura + 1 : fim].split(";"):
+                if ":" in declaracao:
+                    propriedade, valor = declaracao.split(":", 1)
+                    declaracoes[propriedade.strip()] = valor.strip()
+        posicao = fim + 1
+    return declaracoes
+
+
+def test_cadastro_rola_no_computador_em_vez_de_cortar_o_botao():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    dialogo = declaracoes_do_css(css, ".signup-dialog")
+    limite = dialogo["max-height"]
+
+    for coluna in (".signup-dialog .dialog-intro", ".signup-dialog .dialog-form-area"):
+        regra = declaracoes_do_css(css, coluna, media="@media (width > 760px)")
+        assert regra.get("max-height") == limite
+        assert regra.get("overflow-y") == "auto"
+    assert dialogo["overflow"] == "hidden"
+    assert limite == "var(--signup-dialog-max-height)"
+    assert dialogo["--signup-dialog-max-height"] == "min(780px, calc(100dvh - 28px))"
+    assert declaracoes_do_css(css, ".dialog-shell")["min-height"] == f"min(650px, {limite})"
+    assert declaracoes_do_css(css, ".dialog-form-area")["position"] == "relative"
+
+
 def _regras_das_telas_estreitas(css):
     regras = []
     for abertura in re.finditer(r"@media \(max-width: \d+px\) \{", css):
