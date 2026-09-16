@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from radar.domain.models import Vaga
+from radar.domain.texto import sem_caracteres_invalidos
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
 def extrair_descricao_da_pagina(pagina: str) -> str:
     extrator = ExtratorDaDescricao()
     extrator.feed(pagina)
-    return " ".join("".join(extrator.partes).split())
+    return " ".join(sem_caracteres_invalidos("".join(extrator.partes)).split())
 
 
 class ExtratorDaDescricao(HTMLParser):

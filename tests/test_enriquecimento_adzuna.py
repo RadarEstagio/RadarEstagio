@@ -145,3 +145,15 @@ def test_mantem_descricao_marcada_como_incompleta_quando_pagina_falha(
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_truncada()])
 
     assert not enriquecidas[0].descricao_completa
+
+
+def test_descricao_lida_da_pagina_chega_sem_nul(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5862521726",
+        text='<section class="adp-body">Vaga\x00 com C# e SQL</section>',
+    )
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_truncada()])
+
+    assert enriquecidas[0].descricao == "Vaga com C# e SQL"
+    assert enriquecidas[0].descricao_completa
