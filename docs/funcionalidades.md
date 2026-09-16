@@ -250,6 +250,10 @@ Composto continua com fontes que responderam; falha se nenhuma responder.
 
 Une duplicatas e filtra republicações, incluindo histórico recente do usuário.
 
+**Condições e limites:** Une mesmo título, empresa e cidade com estado; com empresa não informada ou
+confidencial, exige também a mesma descrição. "C#", "C++" e "C" são títulos diferentes. Agência com
+nome que anuncia vagas de clientes com o mesmo título ainda pode juntar vagas distintas.
+
 **Código de referência:** `radar/filtering/duplicatas.py`.
 
 #### 05. Pré-filtro

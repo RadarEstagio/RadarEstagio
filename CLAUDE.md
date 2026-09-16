@@ -1296,6 +1296,41 @@ candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, p
 repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
 modalidade e, em empate, a de descrição mais longa.
 
+**Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
+três casos, e a pessoa perdia uma delas sem aviso:
+- **Empresa sem nome.** Com "Empresa não informada", "Confidencial", "Empresa Confidencial" ou
+  empresa vazia, a chave título + empresa + cidade virava só título e cidade. Nas vagas guardadas,
+  "Estágio Em Administração - Recrutamento Aberto" tinha cinco anúncios de descrições diferentes, e
+  todos viravam um. Para essas empresas (`EMPRESAS_NAO_IDENTIFICADAS`) a chave leva também a
+  descrição normalizada inteira: o mesmo anúncio repetido segue unido pela chave, mesmo com menos de
+  20 palavras, que a republicação não compara, e o texto parecido segue unido pela republicação.
+- **Símbolo no título.** A limpeza trocava por espaço tudo que não é letra ou número, e "C#", "C++"
+  e "C" viravam "c". "#" e "++" colados ao fim da palavra agora fazem parte dela; caixa, acento e o
+  resto da pontuação seguem ignorados ("C#/.NET" é "c# .net").
+- **Cidade sem estado.** A chave usava o nome antes da vírgula, e "Bom Jesus, PI" era "Bom Jesus,
+  RS" (240 nomes de município existem em mais de um estado). As chaves usam `identificar_municipio`
+  de `domain/regioes.py`: o estado vale nos formatos das fontes e, sem estado, vem do nome quando ele
+  só existe num estado, então "Niterói" segue igual a "Niterói, Estado do Rio de Janeiro".
+
+Símbolo e cidade valem também para a republicação e, com ela, para "Já vi essa", as enviadas nos
+últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha. Medido nas
+1.003 vagas guardadas, com a regra do `main` e a nova sobre o conjunto e sobre janelas que imitam
+uma execução (vagas publicadas nos 4 dias antes de cada dia de coleta): o conjunto passa de 879 para
+888 vagas únicas, e 8 das 20 janelas, todas de 08 a 16/09, ganham de 1 a 6. Os 17 grupos desfeitos
+são todos de empresa sem nome e foram conferidos à mão: nenhum par com descrição igual ou parecida
+se separa, nenhum par com descrição diferente se junta, e o anúncio repetido (restaurante, suporte
+nas lojas, "Auxílio nas atividades administrativas") continua um só. O filtro entre dias bloqueia os
+mesmos 100 pares de enviada e candidata, e a única vaga encerrada não tira nada a mais nem a menos.
+Símbolo e cidade não mudam nenhum grupo nos dados, porque `vagas` guarda só o que passou no
+pré-filtro de algum perfil, quase tudo do Rio, e só um título tem C#: ficam cobertos pelos testes.
+Limites aceitos: nome repetido sem estado ("Bom Jesus") não é unido a estado algum, então a mesma
+vaga pode chegar duas vezes em vez de sumir; empresa sem nome que repete o anúncio com texto curto
+e diferente também chega duas vezes; agência com nome que anuncia vagas de clientes com o mesmo
+título continua juntando vagas distintas (numa janela de 14/09, a Fundação Mudes juntou "Estágio em
+Administração" de uma empresa de vistorias e de uma de engenharia), e tratá-la como empresa sem nome
+separaria a vaga que a empresa republica com texto reescrito; outro rótulo de empresa escondida
+("Sigilosa") segue valendo como nome; e "T.I" e "TI" continuam chaves diferentes, como antes.
+
 ### Transferência para a organização (08/09/2026)
 
 O repositório saiu de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio`. Commits, autores,
