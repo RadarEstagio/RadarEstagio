@@ -44,6 +44,9 @@ def test_titulo_que_dirige_a_vaga_a_pcd_e_exclusivo(titulo):
         "Vaga para pessoas com deficiência auditiva, com intérprete de Libras.",
         "Vaga PCD: Sim.",
         "Vaga PCD, com adaptação do posto de trabalho.",
+        "Vaga para PCD - Sim",
+        "Vaga exclusiva para PCD | Bolsa: R$ 1.200",
+        "Vaga para pessoas com deficiência (PCD). Bolsa: R$ 1.200.",
     ],
 )
 def test_descricao_que_reserva_a_vaga_a_pcd_e_exclusiva(descricao):
@@ -161,6 +164,51 @@ def test_acoes_afirmativas_da_empresa_nao_tornam_a_vaga_afirmativa():
 )
 def test_cota_programa_ou_outras_vagas_nao_tornam_esta_vaga_exclusiva(descricao):
     assert publico_da_vaga(vaga(descricao=descricao)) is not PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Vaga para PCD/Ampla concorrência.",
+        "Vaga para PCD / ampla concorrência.",
+        "Vaga PCD / Ampla concorrência.",
+        "Vaga para PCD (não exclusiva).",
+        "Vaga PCD (não exclusiva).",
+        "Vaga exclusiva para PCD (não exclusiva).",
+        "Vaga para PCD - Não. Nível: estágio.",
+        "Vaga PCD - Não",
+        "Vaga para PCD – Não",
+        "Vaga para PCD, não exclusiva.",
+        "Vaga para PCD? - Não",
+        "Vaga PCD | Não | Bolsa: R$ 1.200",
+        "Vaga para PCD/Não PCD.",
+        "Vaga para PCD (também ampla concorrência).",
+        "Vaga para PCD - ampla concorrência.",
+        "Processo seletivo exclusivo para PCD / ampla concorrência.",
+        "Inscrições somente para PCD/reabilitados.",
+        "Vaga para pessoas com deficiência (PCD) / ampla concorrência.",
+        "Vaga para pessoas com deficiência (PCD) - Não",
+        "Vaga para pessoas com deficiência (PCD) e pessoas negras.",
+        "Vaga para PCD, preferencialmente.",
+        "Vaga PCD: N/A",
+    ],
+)
+def test_vaga_que_diz_nao_ser_so_de_pcd_nao_e_exclusiva(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio para PCD/Ampla Concorrência",
+        "Estágio para PCD (não exclusiva)",
+        "Estágio para PCD - Não",
+        "Estágio em RH - Vaga PCD/Ampla",
+        "Estágio em RH - Vaga para PCD (não exclusiva)",
+    ],
+)
+def test_titulo_que_diz_nao_ser_so_de_pcd_depois_do_termo_nao_e_exclusivo(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.GERAL
 
 
 @pytest.mark.parametrize(
