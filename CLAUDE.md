@@ -256,6 +256,20 @@ o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpan
 mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
 entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
 
+**Navegação da conta no celular (16/09/2026).** A conta mostra um painel por vez
+(`mostrarSecaoDaConta`), e os links de `.account-nav` são o único caminho para Entregas, Dados e
+acesso e Privacidade. A regra que escondia a navegação até 860px vinha de quando as seções apareciam
+juntas; depois da troca para um painel por vez, no celular não havia como pausar, sair, baixar os
+dados, desvincular o Telegram ou excluir a conta. Agora ela é uma barra horizontal abaixo da marca,
+de borda a borda e com rolagem própria, dentro do cabeçalho grudado, que cresce uma linha de 44px.
+A barra lateral vira grade para a barra ocupar a linha inteira, e a navegação leva
+`contain: inline-size`: sem isso a largura dos links entra no cálculo das colunas da marca e do
+"Voltar ao site" e pode quebrar o botão em duas linhas. O JSDOM não avalia media query, então
+`test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes` lê o CSS e recusa regra de
+tela estreita que esconda a navegação ou os links. Limite aceito: quem abre a conta direto numa
+seção pelo endereço (`#account-privacy-panel`) pode ver o item ativo cortado na borda direita até
+rolar a barra; o título da página já diz a seção.
+
 **Ações da conta conferem a conta mostrada (16/09/2026).** As ações de "Minha conta" usavam a sessão
 atual, e o auth-js relê a sessão do armazenamento a cada `getSession`. Com a conta de A na tela e B
 entrando em outra aba, Excluir marcava B e soltava o Telegram dele, Desvincular soltava o de B, pausa,
