@@ -130,13 +130,16 @@ vaga para PCD enviada a quem é PCD diz isso nos pontos a favor.
 
 Ir à página de origem para ler e se candidatar.
 
-**Condições e limites:** Candidatura acontece fora do Radar; a fonte pode encerrar ou alterar a vaga.
+**Condições e limites:** Candidatura acontece fora do Radar; a fonte pode encerrar ou alterar a vaga,
+e o Radar não sabe quando isso acontece, porque a Adzuna segue listando o anúncio.
 
 #### 14. Feedback individual
 
 Tocar no número e responder sobre aquela vaga.
 
-**Condições e limites:** Abre título, empresa e seis opções; exige envio persistido e conta/chat válidos.
+**Condições e limites:** Abre título, empresa e sete opções; exige envio persistido e conta/chat válidos.
+"Vaga encerrada" marcada por quem abriu a vaga pelo link tira essa vaga das próximas entregas de
+todos; quem a recebeu no mesmo envio não é protegido.
 
 #### 15. Corrigir feedback
 

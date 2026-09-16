@@ -11,7 +11,7 @@ A mensagem diária termina com “Deixe seu feedback 👇” e um número por re
 mesma ordem das vagas. Se exceder o tamanho do Telegram, o teclado fica na última parte.
 Não é enviada uma notificação separada só para solicitar feedback.
 
-O número abre uma mensagem com título, empresa e seis opções:
+O número abre uma mensagem com título, empresa e sete opções:
 
 | Opção | Evento | Motivo |
 |---|---|---|
@@ -21,6 +21,7 @@ O número abre uma mensagem com título, empresa e seis opções:
 | 👎 Pedem demais | `vaga_irrelevante` | `motivo_exigencia` |
 | 👎 Local ou modalidade | `vaga_irrelevante` | `motivo_logistica` |
 | 👎 Já vi essa | `vaga_irrelevante` | `motivo_repetida` |
+| 👎 Vaga encerrada | `vaga_irrelevante` | `motivo_encerrada` |
 
 Responder fecha somente a pergunta aberta; a mensagem diária e seus links permanecem.
 O número pode ser aberto novamente para corrigir a resposta. Essa permanência é intencional;
@@ -165,7 +166,9 @@ Outro bloco considera **todas as recomendações entregues nos últimos 30 dias*
 perfis antigos. Separa anúncios sem extração, sem tecnologias obrigatórias, com uma ou duas,
 e com três ou mais. O grupo vem da extração guardada, não da nota do ranking.
 
-Cada grupo mostra entregas, recusas/entregas e recusas por `motivo_nota`/entregas. Usa a última
+Cada grupo mostra entregas, recusas/entregas e recusas por `motivo_nota`/entregas. Recusa por
+`motivo_encerrada` fica fora das recusas do grupo, porque vaga fechada na origem não diz nada
+sobre o ranking; ela continua na quebra das recusas por motivo. Usa a última
 resposta de cada par depois da entrega, até agora. Ausência de feedback permanece no denominador;
 ela não é classificada como aprovação. Esses números permitem comparar grupos sem confundir
 maior volume entregue com maior rejeição. Não ajustar pesos só por uma contagem bruta.

@@ -56,7 +56,8 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
   banco, a mensagem volta a apontar direto para a vaga.
 - **Feedback individual**: o teclado numerado acompanha a mensagem diária. Cada número abre
-  título e empresa com uma opção positiva e cinco recusas, incluindo `motivo_nota`. A última
+  título e empresa com uma opção positiva e seis recusas, incluindo `motivo_nota` e
+  `motivo_encerrada` ("Vaga encerrada", ver "Vaga fechada na origem"). A última
   resposta por recomendação vale nas métricas; cliques repetidos não multiplicam vagas.
 - **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
   últimos 30 dias, a participação no feedback, as medianas observadas até a primeira entrega e a
@@ -1053,6 +1054,23 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   caracteres por bloco.
 - **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
   chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
+- **Vaga fechada na origem** (16/09/2026). "Estágio em Ti - Desenvolvimento de Sistemas - Rio"
+  (Wilson Sons, adzuna:5885226961) foi publicada na Adzuna às 16:33 de 15/09, coletada e
+  enriquecida às 07:25 de 16/09 com a descrição completa e enviada a duas pessoas às 07:25; horas
+  depois o site de origem dizia "Esta vaga expirou", e a página da Adzuna continuava no ar com a
+  descrição e "Candidatar-se". **O Radar não tem como saber que a vaga fechou**: a Adzuna não
+  informa expiração e segue listando o anúncio, e conferir a origem exigiria seguir o link da
+  Adzuna de forma automática, que é o clique que ela contabiliza. Reler a página da Adzuna antes
+  de enviar não teria pegado este caso. A resposta é o feedback: "👎 Vaga encerrada"
+  (`motivo_encerrada`) tira a vaga de todos no pipeline, logo depois da deduplicação, antes da
+  extração e da entrega, desde que a mesma pessoa tenha aberto a vaga pelo link antes de marcar
+  (`vaga_aberta` anterior) e que essa seja a última resposta dela à vaga nos últimos 30 dias
+  (`SQL_VAGAS_ENCERRADAS`). O efeito é global porque vaga fechada está fechada para todos; exigir a
+  abertura evita que um toque errado no teclado tire a vaga de alguém. Falha ao ler as marcações
+  só avisa no log. Nas métricas, `motivo_encerrada` fica fora das recusas por grupo de extração,
+  que medem o ranking, e aparece na quebra por motivo. Limite: quem recebe a vaga no mesmo envio
+  de quem a marcou não é protegido. Publicação: `supabase functions deploy telegram-webhook`,
+  porque o teclado de motivos é montado pela função; o `radar/` não precisa de migration.
 
 ### Cidades vizinhas: região imediata do IBGE (10/09/2026)
 

@@ -304,7 +304,7 @@ Use dados sintéticos e seus próprios endereços e Telegram:
 - Cadastro no computador e confirmação no celular recuperam o perfil correto.
 - Link expirado, reenvio e login antes da confirmação têm saídas claras.
 - Recuperação troca a senha e permite entrar com a nova senha.
-- Vínculo, primeira entrega, links e seis opções de feedback funcionam conforme os planos.
+- Vínculo, primeira entrega, links e sete opções de feedback funcionam conforme os planos.
 - Edição, pausa, retomada, desvínculo e preferência de e-mail persistem após novo login.
 - Download contém só os dados do dono, sem credenciais.
 - Exclusão interrompe novas entregas/eventos e libera o chat; cancelamento preserva a pausa.
