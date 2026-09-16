@@ -130,7 +130,14 @@ Anúncios públicos de vagas podem permanecer no catálogo. Mensagens já recebi
 e dados enviados aos sites de candidatura não são removidos por essa rotina. O apagamento do
 banco também não limpa automaticamente o armazenamento local dos seus outros dispositivos.
 
-Não há rotina de exclusão automática de contas apenas por inatividade.
+Se o e-mail não for confirmado, o perfil enviado no cadastro, inclusive a resposta sobre
+deficiência, é apagado pela rotina diária 2 dias depois do envio. Pedir um novo link de
+confirmação também o descarta, inclusive refazendo o cadastro com o mesmo e-mail: ao confirmar,
+você preenche o perfil de novo. A conta que não confirmou o e-mail é apagada 30 dias depois do
+último link enviado, com os eventos ligados a ela e os eventos sem dono das sessões do cadastro.
+
+Fora a conta que não confirmou o e-mail, não há rotina de exclusão automática de contas apenas
+por inatividade.
 
 Os fornecedores mantêm registros técnicos e cópias de segurança por prazos definidos nos planos
 contratados, que os responsáveis não controlam item a item: o GitHub guarda os registros de cada
