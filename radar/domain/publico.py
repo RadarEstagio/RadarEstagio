@@ -15,6 +15,7 @@ PALAVRA_DE_OUTRO_PUBLICO = r"(?:nao|tambem|ampla|preferencial\w*|n/a)"
 SEM_OUTRO_PUBLICO_DEPOIS = (
     rf"(?!{SIGLA_DEPOIS_DO_TERMO}\s*"
     rf"(?:/|,?\s*(?:e|ou)\b|[-:?,(|\s]*{PALAVRA_DE_OUTRO_PUBLICO}\b))"
+    r"(?![^.]{0,60}\bnao\s+(?:e\s+)?exclusiv)"
 )
 PADRAO_CITA_PCD = re.compile(rf"\b{TERMO_PCD}\b")
 PADRAO_EXCLUSIVA_PARA_PCD = re.compile(

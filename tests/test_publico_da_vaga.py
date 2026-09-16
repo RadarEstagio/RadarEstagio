@@ -214,6 +214,25 @@ def test_titulo_que_diz_nao_ser_so_de_pcd_depois_do_termo_nao_e_exclusivo(titulo
 
 
 @pytest.mark.parametrize(
+    ("titulo", "descricao"),
+    [
+        ("Estágio em Dados", "Vaga para PCD (vaga não exclusiva)."),
+        ("Estágio em Dados", "Vaga para PCD, mas não exclusiva."),
+        ("Estágio em Dados", "Processo seletivo para PCD, porém não é exclusivo."),
+        ("Estágio em RH - PCD - Vaga não exclusiva", "Apoio às rotinas da área."),
+    ],
+)
+def test_nao_exclusiva_na_mesma_frase_tira_a_exclusividade(titulo, descricao):
+    assert publico_da_vaga(vaga(titulo=titulo, descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+def test_nao_exclusiva_em_outra_frase_nao_tira_a_exclusividade():
+    exclusiva = vaga(descricao="Processo seletivo exclusivo para PCD. Atuação não exclusiva em TI.")
+
+    assert publico_da_vaga(exclusiva) is PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
     "descricao",
     [
         "Estágio em instituição que atende exclusivamente pessoas com deficiência.",
