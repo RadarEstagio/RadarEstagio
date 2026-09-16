@@ -1514,3 +1514,59 @@ def test_quem_nao_informou_recebe_vaga_pcd_na_ordem_da_nota_e_com_aviso():
 
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2", "1"]
     assert "Vaga exclusiva para pessoas com deficiência (PCD)" in notificador.textos[0]
+
+
+class RepositorioComVagasEncerradas(RepositorioFalso):
+    def __init__(self, usuarios: list[Usuario], encerradas: set[tuple[str, str]]) -> None:
+        super().__init__(usuarios)
+        self._encerradas = encerradas
+
+    def vagas_encerradas(self) -> set[tuple[str, str]]:
+        return set(self._encerradas)
+
+
+class RepositorioSemLeituraDasEncerradas(RepositorioFalso):
+    def vagas_encerradas(self) -> set[tuple[str, str]]:
+        raise ErroDeArmazenamento("falha ao ler as vagas encerradas")
+
+
+def rodar_com(repositorio: RepositorioFalso) -> tuple[list[str], ExtratorFalso, NotificadorFalso]:
+    extrator = ExtratorFalso({"1": 90, "2": 80})
+    notificador = NotificadorFalso()
+    resumo = executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        extrator,
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90, "2": 80}),
+    )
+    enviadas = resumo.enviadas_por_usuario.get(ID_USUARIO, [])
+    return [item.resultado.vaga.id_externo for item in enviadas], extrator, notificador
+
+
+def test_vaga_marcada_como_encerrada_nao_e_extraida_nem_enviada_a_ninguem():
+    repositorio = RepositorioComVagasEncerradas(
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")], {("adzuna", "1")}
+    )
+
+    enviadas, extrator, notificador = rodar_com(repositorio)
+
+    assert enviadas == ["2"]
+    assert extrator.extraidas == ["2"]
+    assert all("Empresa 1" not in texto for texto in notificador.textos)
+
+
+def test_encerrada_em_outra_fonte_com_o_mesmo_numero_nao_tira_a_vaga():
+    repositorio = RepositorioComVagasEncerradas([usuario()], {("jooble", "1")})
+
+    enviadas, _, _ = rodar_com(repositorio)
+
+    assert enviadas == ["1", "2"]
+
+
+def test_falha_ao_ler_as_vagas_encerradas_nao_impede_a_entrega():
+    enviadas, _, _ = rodar_com(RepositorioSemLeituraDasEncerradas([usuario()]))
+
+    assert enviadas == ["1", "2"]
