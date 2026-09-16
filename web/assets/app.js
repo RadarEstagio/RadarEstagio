@@ -154,6 +154,11 @@ const listaDeCidades = document.querySelector("#lista-de-cidades");
 const avisoDeCidades = document.querySelector("#cities-catalog-notice");
 let catalogoDeCidades = null;
 let carregamentoDeCidades = null;
+const campoDeCurso = form.elements.curso;
+const botaoDeCursos = document.querySelector("#mostrar-cursos");
+const listaDeCursos = document.querySelector("#lista-de-cursos");
+const avisoDeCursos = document.querySelector("#courses-catalog-notice");
+let cursosSugeridos = null;
 
 function ativarSecaoDaConta(linkAtivo) {
   accountNavLinks.forEach((link) => {
@@ -234,6 +239,21 @@ async function carregarAreas() {
     catalogoDeAreas = null;
   }
   return catalogoDeAreas;
+}
+
+async function carregarCursos() {
+  const catalogo = await carregarAreas();
+  avisoDeCursos.hidden = Boolean(catalogo);
+  if (!catalogo) return null;
+  cursosSugeridos ??= [...new Set(catalogo.areas.flatMap((area) => area.cursos_sugeridos))]
+    .sort((primeiro, segundo) => primeiro.localeCompare(segundo, "pt-BR"))
+    .map((nome) => ({ nome, busca: textoDeBusca(nome) }));
+  return cursosSugeridos;
+}
+
+function cursoDaLista(texto) {
+  const busca = textoDeBusca(texto);
+  return cursosSugeridos?.find((curso) => curso.busca === busca)?.nome ?? null;
 }
 
 function textoDeBusca(texto) {
@@ -1759,6 +1779,17 @@ ligarListaDeOpcoes({
 campoDeCidade.addEventListener("blur", () => {
   const cidade = cidadeDaLista(campoDeCidade.value);
   if (cidade) campoDeCidade.value = cidade;
+});
+
+ligarListaDeOpcoes({
+  campo: campoDeCurso,
+  botao: botaoDeCursos,
+  lista: listaDeCursos,
+  carregar: carregarCursos,
+  sugestoes: (texto) => opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
+  valorDaLista: cursoDaLista,
+  conteudoDaOpcao: (curso) => [curso.nome],
+  semResultado: "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.",
 });
 
 form.addEventListener("submit", async (event) => {

@@ -2949,11 +2949,11 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
   const a = app();
   try {
     await settle();
+    a.w.fetch = async () => { throw new Error("offline"); };
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const doc = a.w.document;
     fill(a.w, false);
-    a.w.fetch = async () => { throw new Error("offline"); };
     doc.querySelector("#next-step").click();
     await settle();
     const input = doc.querySelector("#custom-skill");
@@ -2973,19 +2973,19 @@ Deno.test("resposta assíncrona de curso anterior não substitui o curso atual",
   const a = app();
   try {
     await settle();
+    const respostas: ((resposta: { ok: boolean; json: () => Promise<unknown> }) => void)[] = [];
+    a.w.fetch = () => new Promise((resolve) => respostas.push(resolve));
     a.w.document.querySelector(".js-open-signup").click();
     await settle();
     const form = fill(a.w, false);
     form.elements.curso.value = "Direito";
-    a.w.catalogoDeAreas = null;
-    const respostas: ((resposta: { ok: boolean; json: () => Promise<unknown> }) => void)[] = [];
-    a.w.fetch = () => new Promise((resolve) => respostas.push(resolve));
+    const pedidosAnteriores = respostas.length;
     const primeira = a.w.montarHabilidadesDoCurso();
     form.elements.curso.value = "Computação";
     const segunda = a.w.montarHabilidadesDoCurso();
-    respostas[1]({ ok: true, json: async () => areasJson });
+    respostas[pedidosAnteriores + 1]({ ok: true, json: async () => areasJson });
     await segunda;
-    respostas[0]({ ok: true, json: async () => areasJson });
+    respostas[pedidosAnteriores]({ ok: true, json: async () => areasJson });
     await primeira;
     const sugeridas = [...a.w.document.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
     assert.equal(sugeridas.includes("Python"), true);
@@ -3442,6 +3442,159 @@ Deno.test("perfil antigo sem estado na cidade é corrigido ao salvar a edição"
     await settle();
     const update = called(a.calls, "update");
     assert.equal(update[2].cidade, "Rio de Janeiro, RJ");
+  } finally {
+    a.close();
+  }
+});
+
+const cursosDoCatalogo: string[] = [
+  ...new Set<string>(
+    areasJson.areas.flatMap((area: { cursos_sugeridos: string[] }) => area.cursos_sugeridos),
+  ),
+];
+
+async function abrirMomento(a: ReturnType<typeof app>) {
+  await settle();
+  a.w.document.querySelector(".js-open-signup").click();
+  await settle();
+  const form = a.w.document.querySelector("#signup-form");
+  form.elements.curso.focus();
+  await settle();
+  return form;
+}
+
+async function digitarCurso(a: ReturnType<typeof app>, texto: string) {
+  const campo = a.w.document.querySelector("#curso");
+  campo.value = texto;
+  campo.dispatchEvent(new a.w.Event("input", { bubbles: true }));
+  await settle();
+  return cursosNaLista(a);
+}
+
+function cursosNaLista(a: ReturnType<typeof app>) {
+  return [...a.w.document.querySelectorAll("#lista-de-cursos [data-opcao]")].map(
+    (opcao) => opcao.dataset.opcao,
+  );
+}
+
+function teclarNoCurso(a: ReturnType<typeof app>, key: string) {
+  a.w.document.querySelector("#curso").dispatchEvent(
+    new a.w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+  );
+}
+
+Deno.test("curso sugere os cursos do catálogo conforme a pessoa digita, sem exigir acento", async () => {
+  const a = app();
+  try {
+    await abrirMomento(a);
+    assert.deepEqual(await digitarCurso(a, "engenharia"), [
+      "Engenharia Civil",
+      "Engenharia de Produção",
+      "Engenharia de Software",
+      "Engenharia Elétrica",
+      "Engenharia Mecânica",
+    ]);
+    assert.equal(a.w.document.querySelector("#curso").getAttribute("aria-expanded"), "true");
+    assert.deepEqual(await digitarCurso(a, "contabeis"), ["Ciências Contábeis"]);
+    assert.deepEqual(await digitarCurso(a, "computacao"), ["Ciência da Computação"]);
+    assert.deepEqual(await digitarCurso(a, "medicina veterinaria"), []);
+    assert.equal(
+      a.w.document.querySelector("#lista-de-cursos").textContent,
+      "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.",
+    );
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("setinha abre todos os cursos do catálogo e o clique preenche o curso", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    const setinha = a.w.document.querySelector("#mostrar-cursos");
+    setinha.click();
+    await settle();
+    const todos = cursosNaLista(a);
+    assert.deepEqual([...todos].sort(), [...cursosDoCatalogo].sort());
+    assert.deepEqual(todos.slice(0, 3), [
+      "Administração",
+      "Administração Pública",
+      "Análise e Desenvolvimento de Sistemas",
+    ]);
+    for (const curso of ["Direito", "Enfermagem", "Pedagogia", "Engenharia Civil", "Turismo"]) {
+      assert.ok(todos.includes(curso), `${curso} fora da lista`);
+    }
+    a.w.document.querySelector('#lista-de-cursos [data-opcao="Direito"]').click();
+    assert.equal(form.elements.curso.value, "Direito");
+    assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
+    assert.equal(setinha.getAttribute("aria-expanded"), "false");
+    setinha.click();
+    await settle();
+    assert.equal(cursosNaLista(a).length, cursosDoCatalogo.length);
+    setinha.click();
+    assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("setas escolhem o curso e Enter confirma sem avançar o passo", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    await digitarCurso(a, "ciencia");
+    teclarNoCurso(a, "ArrowDown");
+    teclarNoCurso(a, "ArrowDown");
+    const destacada = a.w.document.querySelector('#lista-de-cursos [aria-selected="true"]');
+    assert.equal(destacada.dataset.opcao, "Ciência de Dados");
+    assert.equal(form.elements.curso.getAttribute("aria-activedescendant"), destacada.id);
+    teclarNoCurso(a, "Enter");
+    assert.equal(form.elements.curso.value, "Ciência de Dados");
+    assert.equal(a.w.document.querySelector('.form-step[data-step="2"]').classList.contains("is-active"), true);
+    await digitarCurso(a, "ciencia");
+    teclarNoCurso(a, "Escape");
+    assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
+    assert.equal(a.w.document.querySelector("#signup-dialog").open, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("curso fora da lista avança e é salvo como foi digitado", async () => {
+  const a = app();
+  try {
+    const form = await abrirMomento(a);
+    fill(a.w);
+    form.elements.curso.value = "Medicina Veterinária";
+    a.w.document.querySelector("#next-step").click();
+    assert.equal(a.w.document.querySelector("#erro-do-campo"), null);
+    assert.equal(a.w.document.querySelector('.form-step[data-step="3"]').classList.contains("is-active"), true);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.curso, "Medicina Veterinária");
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("lista de cursos fora do ar avisa e não bloqueia o cadastro", async () => {
+  const a = app();
+  try {
+    a.w.fetch = async (caminho: string) => ({
+      ok: String(caminho).includes("cidades.json"),
+      json: async () => cidadesJson,
+    });
+    const form = await abrirMomento(a);
+    assert.equal(a.w.document.querySelector("#courses-catalog-notice").hidden, false);
+    a.w.document.querySelector("#mostrar-cursos").click();
+    await settle();
+    assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
+    fill(a.w);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const [, signup] = called(a.calls, "signup");
+    assert.equal(signup.options.data.cadastro_radar.perfil.curso, "Computação");
   } finally {
     a.close();
   }

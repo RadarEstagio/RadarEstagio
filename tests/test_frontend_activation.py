@@ -35,7 +35,7 @@ def test_formulario_tem_as_quatro_etapas_e_as_sugestoes_do_cadastro():
     html = (RAIZ / "web/index.html").read_text()
 
     assert html.count('class="form-step') == 4
-    assert 'id="cursos-sugeridos"' in html
+    assert 'id="lista-de-cursos"' in html
     assert 'data-skill="Python"' in html
     assert 'id="continue-without-skills"' in html
 
