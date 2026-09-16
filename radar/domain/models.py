@@ -111,6 +111,7 @@ class MotivoDeRecusa(StrEnum):
     EXIGENCIA = "motivo_exigencia"
     LOGISTICA = "motivo_logistica"
     REPETIDA = "motivo_repetida"
+    ENCERRADA = "motivo_encerrada"
 
 
 class BotaoDeFeedback(BaseModel):

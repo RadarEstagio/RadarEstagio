@@ -3,7 +3,8 @@ export type MotivoDaRecusa =
   | "motivo_area"
   | "motivo_exigencia"
   | "motivo_logistica"
-  | "motivo_repetida";
+  | "motivo_repetida"
+  | "motivo_encerrada";
 
 export interface BotaoDoTeclado {
   text: string;
@@ -38,6 +39,7 @@ export const ROTULOS_DE_MOTIVO: Record<MotivoDaRecusa, string> = {
   motivo_exigencia: "Pedem demais",
   motivo_logistica: "Local ou modalidade",
   motivo_repetida: "Já vi essa",
+  motivo_encerrada: "Vaga encerrada",
 };
 
 export const AVISO_DE_RECUSA_REGISTRADA = "Obrigado, isso ajuda a melhorar as próximas.";
