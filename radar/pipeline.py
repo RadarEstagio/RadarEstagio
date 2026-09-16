@@ -259,6 +259,7 @@ def obter_extracoes(
         vaga = vagas_por_identidade.get(extracao.id_vaga)
         if vaga is None or vaga.chave() in extracoes:
             continue
+        extracao = extracao.model_copy(update={"descricao_completa": vaga.descricao_completa})
         extracoes[vaga.chave()] = extracao
         guardadas.append((vaga, extracao))
     nao_gravadas = 0
