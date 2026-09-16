@@ -172,6 +172,8 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.avisos_de_silencio: list[UUID] = []
         self.travas: list[tuple[str, UUID]] = []
         self.carencias_aplicadas: list[int] = []
+        self.prazos_de_cadastro_pendente: list[int] = []
+        self.prazos_de_conta_nao_confirmada: list[int] = []
         self.extracoes_guardadas: dict[ChaveDaVaga, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
@@ -234,6 +236,14 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         self.carencias_aplicadas.append(dias_de_carencia)
+        return 0
+
+    def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+        self.prazos_de_cadastro_pendente.append(dias_de_prazo)
+        return 0
+
+    def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int:
+        self.prazos_de_conta_nao_confirmada.append(dias_de_prazo)
         return 0
 
     def registrar_aviso_de_silencio(self, usuario) -> None:
@@ -1060,6 +1070,30 @@ def test_a_execucao_apaga_as_contas_que_venceram_a_carencia():
     executar_com(repositorio, [vaga(1)], {"1": 70})
 
     assert repositorio.carencias_aplicadas == [60]
+
+
+def test_a_execucao_apaga_cadastros_e_contas_que_nao_confirmaram_o_email_no_prazo():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar_com(repositorio, [vaga(1)], {"1": 70})
+
+    assert repositorio.prazos_de_cadastro_pendente == [2]
+    assert repositorio.prazos_de_conta_nao_confirmada == [30]
+
+
+def test_falha_ao_apagar_cadastros_nao_confirmados_nao_impede_a_entrega(
+    caplog: pytest.LogCaptureFixture,
+):
+    class RepositorioQueNaoApaga(RepositorioFalso):
+        def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+            raise ErroDeArmazenamento("banco caiu")
+
+    repositorio = RepositorioQueNaoApaga([usuario()])
+
+    executar_com(repositorio, [vaga(1)], {"1": 70})
+
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["1"])]
+    assert "cadastros não confirmados não foram apagados" in caplog.text
 
 
 def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():

@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+from radar.pipeline import DIAS_ATE_APAGAR_CADASTRO_PENDENTE, DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA
+
 RAIZ = Path(__file__).parent.parent
 
 
@@ -339,3 +341,18 @@ def test_card_de_precos_nao_promete_duas_fontes_de_vagas():
 
     assert "duas fontes" not in html.lower()
     assert "Busca diária de vagas na Adzuna" in html
+
+
+def test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado():
+    for arquivo in ("docs/politica-de-privacidade.md", "web/privacidade.html"):
+        texto = " ".join((RAIZ / arquivo).read_text().split())
+
+        assert (
+            f"é apagado pela rotina diária {DIAS_ATE_APAGAR_CADASTRO_PENDENTE} dias depois do envio"
+            in texto
+        ), arquivo
+        assert "Pedir um novo link de confirmação também o descarta" in texto, arquivo
+        assert (
+            f"é apagada {DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA} dias depois do último link enviado"
+            in texto
+        ), arquivo

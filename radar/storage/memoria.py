@@ -72,6 +72,12 @@ class RepositorioEmMemoria:
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         return 0
 
+    def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+        return 0
+
+    def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int:
+        return 0
+
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:
         return None
 

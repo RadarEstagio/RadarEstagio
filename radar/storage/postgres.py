@@ -274,6 +274,32 @@ SQL_APAGAR_CONTAS_EXCLUIDAS = """
     )
 """
 
+SQL_APAGAR_CADASTROS_PENDENTES = """
+    delete from cadastros_pendentes
+    where recebido_em < now() - make_interval(days => %(dias)s)
+"""
+
+SQL_APAGAR_CONTAS_NAO_CONFIRMADAS = """
+    with vencidas as (
+      select u.id
+      from auth.users u
+      where u.email_confirmed_at is null
+        and u.confirmation_sent_at < now() - make_interval(days => %(dias)s)
+        and not exists (select 1 from perfis p where p.user_id = u.id)
+    ), eventos_anonimos as (
+      delete from eventos_produto
+      where user_id is null
+        and sessao_id in (
+          select e.sessao_id
+          from eventos_produto e
+          join vencidas v on v.id = e.user_id
+          where e.sessao_id is not null
+        )
+    )
+    delete from auth.users
+    where id in (select id from vencidas)
+"""
+
 SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     update perfis
     set silencio_avisado_em = now()
@@ -552,6 +578,26 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao apagar contas excluídas: {descrever(erro)}"
+            ) from erro
+
+    def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_APAGAR_CADASTROS_PENDENTES, {"dias": dias_de_prazo})
+                return cursor.rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao apagar cadastros pendentes: {descrever(erro)}"
+            ) from erro
+
+    def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_APAGAR_CONTAS_NAO_CONFIRMADAS, {"dias": dias_de_prazo})
+                return cursor.rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao apagar contas não confirmadas: {descrever(erro)}"
             ) from erro
 
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:

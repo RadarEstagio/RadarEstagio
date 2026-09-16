@@ -82,13 +82,16 @@ Conferir o que foi digitado.
 
 Retomar com o perfil salvo no cadastro.
 
-**Condições e limites:** Perfil preservado no banco; testar jornada real após publicação.
+**Condições e limites:** Perfil preservado no banco só para o primeiro link e por 2 dias; testar
+jornada real após publicação.
 
 #### 06. Reenvio de confirmação
 
 Corrigir o e-mail informado para a tentativa de reenvio e solicitar outro link.
 
 **Condições e limites:** Espera de um minuto; não altera automaticamente o endereço da conta original.
+O novo link, pedido aqui ou refazendo o cadastro, descarta o perfil enviado, e quem confirma o
+preenche de novo; conta sem confirmação é apagada 30 dias depois do último link.
 
 #### 07. Recuperação de senha
 
