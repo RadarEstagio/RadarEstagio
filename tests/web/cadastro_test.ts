@@ -85,7 +85,7 @@ function app(
     savedProfile = null,
     url = "https://radarestagio.com/",
     key = "",
-    temaSalvo = null,
+    temaDoSistema = "claro",
     armazenamentoBloqueado = false,
     erroDaSessao = null,
     erroDoPerfil = null,
@@ -95,7 +95,7 @@ function app(
     savedProfile?: Profile | null;
     url?: string;
     key?: string;
-    temaSalvo?: string | null;
+    temaDoSistema?: "claro" | "escuro";
     armazenamentoBloqueado?: boolean;
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
@@ -111,7 +111,12 @@ function app(
     runScripts: "dangerously",
     virtualConsole,
     beforeParse: (janela: TestWindow) => {
-      if (temaSalvo) janela.localStorage.setItem("radar-tema", temaSalvo);
+      Object.defineProperty(janela, "matchMedia", {
+        value: (consulta: string) => ({
+          matches: consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro",
+          media: consulta,
+        }),
+      });
       for (const [chave, valor] of Object.entries(armazenado)) janela.localStorage.setItem(chave, valor);
       if (armazenamentoBloqueado) {
         for (const armazenamento of ["localStorage", "sessionStorage"]) {
@@ -259,7 +264,7 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
   } finally { a.close(); }
 });
 
-Deno.test("tema fica direto no cabeçalho, começa claro e guarda a escolha", () => {
+Deno.test("tema fica direto no cabeçalho e começa como o tema claro do sistema", () => {
   const a = app();
   try {
     const raiz = a.w.document.documentElement;
@@ -272,11 +277,9 @@ Deno.test("tema fica direto no cabeçalho, começa claro e guarda a escolha", ()
     botao.click();
     assert.equal(raiz.dataset.tema, "escuro");
     assert.equal(botao.getAttribute("aria-pressed"), "true");
-    assert.equal(a.w.localStorage.getItem("radar-tema"), "escuro");
     botao.click();
     assert.equal(raiz.dataset.tema, "claro");
     assert.equal(botao.getAttribute("aria-pressed"), "false");
-    assert.equal(a.w.localStorage.getItem("radar-tema"), "claro");
   } finally {
     a.close();
   }
@@ -303,11 +306,11 @@ Deno.test("tema e login são controles separados com ações independentes", asy
   }
 });
 
-Deno.test("tema escuro salvo é aplicado no head, antes da aplicação carregar", () => {
-  const a = app({ temaSalvo: "escuro" });
+Deno.test("tema escuro do sistema é aplicado no head, antes da aplicação carregar", () => {
+  const a = app({ temaDoSistema: "escuro" });
   try {
     const scriptsDoHead = [...a.w.document.head.querySelectorAll("script:not([src])")];
-    assert.ok(scriptsDoHead.some((elemento) => elemento.textContent.includes("radar-tema")));
+    assert.ok(scriptsDoHead.some((elemento) => elemento.textContent.includes("prefers-color-scheme: dark")));
     assert.equal(a.temaAntesDoApp, "escuro");
     assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
     assert.equal(a.w.document.querySelector("#theme-toggle").getAttribute("aria-pressed"), "true");
@@ -316,12 +319,24 @@ Deno.test("tema escuro salvo é aplicado no head, antes da aplicação carregar"
   }
 });
 
-Deno.test("tema alterna sem erro quando o navegador bloqueia o armazenamento", () => {
-  const a = app({ armazenamentoBloqueado: true });
+Deno.test("tema salvo antigo não sobrescreve o tema do sistema ao reabrir", () => {
+  const claro = app({ armazenado: { "radar-tema": "escuro" } });
+  const escuro = app({ armazenado: { "radar-tema": "claro" }, temaDoSistema: "escuro" });
   try {
-    assert.equal(a.w.document.documentElement.dataset.tema, "claro");
-    a.w.document.querySelector("#theme-toggle").click();
+    assert.equal(claro.temaAntesDoApp, "claro");
+    assert.equal(escuro.temaAntesDoApp, "escuro");
+  } finally {
+    claro.close();
+    escuro.close();
+  }
+});
+
+Deno.test("tema do sistema e botão funcionam com o armazenamento bloqueado", () => {
+  const a = app({ armazenamentoBloqueado: true, temaDoSistema: "escuro" });
+  try {
     assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
+    a.w.document.querySelector("#theme-toggle").click();
+    assert.equal(a.w.document.documentElement.dataset.tema, "claro");
     assert.deepEqual(a.erros.map((erro) => erro.message), []);
   } finally {
     a.close();
