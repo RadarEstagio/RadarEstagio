@@ -24,6 +24,13 @@ Para assuntos de privacidade e pedidos sobre seus dados: [contato@radarestagio.c
   interesse ajudam a selecionar vagas e calcular a compatibilidade. Guardamos recomendações,
   notas, explicações e histórico de envio para entregar oportunidades, evitar repetições e
   verificar o funcionamento.
+- **Deficiência (opcional).** Se quiser, você informa no perfil se é pessoa com deficiência
+  (PCD). A resposta serve só para escolher suas vagas: com sim, vagas exclusivas ou afirmativas
+  para PCD que combinam com o perfil vêm primeiro; com não, vagas exclusivas para PCD deixam de
+  ser enviadas. Ela não vai para serviços de inteligência artificial nem para os eventos de uso,
+  mas as mensagens no Telegram podem indicar que uma vaga é destinada a PCD. Escolher “Prefiro
+  não informar” na edição do perfil remove a resposta do perfil; as recomendações já enviadas
+  continuam no histórico até a exclusão da conta.
 - **Telegram.** Usamos o identificador do seu chat para vincular a conta e entregar mensagens.
 - **Uso do Radar.** Registramos aberturas de links, feedback sobre vagas, identificador de
   sessão e eventos de navegação e cadastro para entender o uso do serviço e identificar
@@ -56,10 +63,14 @@ Confirmação de e-mail e recuperação de senha são comunicações necessária
 As métricas ajudam a identificar abandono do cadastro, falhas de entrega e recomendações que
 não serviram.
 
-Cada finalidade se apoia em uma das hipóteses do artigo 7º da LGPD:
+Cada finalidade se apoia em uma das hipóteses do artigo 7º da LGPD, e a informação sobre
+deficiência, por ser dado sensível, na do artigo 11:
 
 - **Conta, perfil, vínculo com o Telegram, recomendações e histórico de envio:** necessários
   para prestar o serviço que você pediu ao se cadastrar (art. 7º, V).
+- **Informação sobre deficiência:** dado pessoal sensível, tratado com o seu consentimento
+  específico e destacado, dado ao responder à pergunta, só para selecionar vagas (art. 11, I).
+  Você revoga escolhendo “Prefiro não informar” na edição do perfil.
 - **E-mails ocasionais:** consentimento, dado por uma escolha separada e revogável no painel
   (art. 7º, I).
 - **Métricas de uso, feedback sobre vagas e proteção do site contra abuso:** legítimo interesse
