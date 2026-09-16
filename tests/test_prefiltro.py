@@ -407,6 +407,62 @@ def test_sinal_da_propria_area_vence_o_veto_de_outra(curso: str, titulo: str):
 
 
 @pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        (
+            "Comunicação Social",
+            "Estágio em Produção de Vídeo",
+            "Atividades: apoio à equipe de marketing na edição de vídeos para redes sociais.",
+        ),
+        (
+            "Publicidade e Propaganda",
+            "Estagiário de Produção de Vídeos",
+            "Requisitos: Premiere; desejável experiência com redes sociais.",
+        ),
+        ("Cinema e Audiovisual", "Estágio - Produção Vídeo", "Sem detalhes."),
+        (
+            "Direito",
+            "Estágio em Responsabilidade Civil",
+            "Atividades: apoio à equipe do contencioso na elaboração de petições.",
+        ),
+        ("Cinema e Audiovisual", "Estágio em Responsabilidade Civil", "Sem detalhes."),
+    ],
+)
+def test_producao_de_video_e_responsabilidade_civil_nao_sao_vetadas_como_engenharia(
+    curso: str, titulo: str, descricao: str
+):
+    assert not titulo_e_de_outra_area(normalizar(titulo), "marketing")
+    assert not titulo_e_de_outra_area(normalizar(titulo), "direito")
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo"),
+    [
+        ("Comunicação Social", "Estágio em Engenharia de Produção"),
+        ("Comunicação Social", "Estágio em Produção"),
+        ("Comunicação Social", "Estagiário de Produção Industrial"),
+        ("Cinema e Audiovisual", "Estágio em Planejamento e Controle da Produção"),
+        ("Direito", "Estágio em Engenharia Civil"),
+        ("Direito", "Estágio em Construção Civil"),
+        ("Cinema e Audiovisual", "Estágio em Obras - Construção Civil"),
+    ],
+)
+def test_producao_e_civil_de_engenharia_continuam_vetados_para_outras_areas(
+    curso: str, titulo: str
+):
+    assert fora_da_area_do_curso(
+        vaga(titulo=titulo, descricao="Sem detalhes."), perfil(curso=curso)
+    )
+
+
+def test_producao_de_video_nao_e_titulo_de_engenharia_de_producao():
+    producao_de_video = vaga(titulo="Estágio em Produção de Vídeo", descricao="Sem detalhes.")
+
+    assert fora_da_area_do_curso(producao_de_video, perfil(curso="Engenharia de Produção"))
+
+
+@pytest.mark.parametrize(
     "titulo",
     [
         "Estágio em Redes Sociais",

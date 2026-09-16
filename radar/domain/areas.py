@@ -490,13 +490,16 @@ AREAS = (
             r"engenharia(?! de software| da computacao| de computacao| de dados| de sistemas)"
             r"|eletronic[ao]|eletrotecnic[ao]|eletric[ao]|mecanic[ao]|mecatronic[ao]|civil"
             r"|quimic[ao]|ambiental|manufatura|producao(?! de conteudo| audiovisual| editorial"
-            r"| de material| de eventos)|manutencao|obras|arquitetura|design de interiores"
+            r"| de material| de eventos| (?:de )?videos?)|manutencao|obras|arquitetura"
+            r"|design de interiores"
             r"|embalagens|seguranca do trabalho|automacao industrial|telecomunicacoes"
         ),
         exclusao=(
             r"eletronic[ao](?! eletronico)|eletrotecnic[ao]|mecanic[ao]|(?<!direito )(?<!processo )"
-            r"(?<!registro )civil|quimic[ao]|(?<!direito )(?<!educacao )ambiental|manufatura"
-            r"|producao(?! de conteudo| audiovisual| editorial| de material| de eventos)"
+            r"(?<!registro )(?<!responsabilidade )civil|quimic[ao]|(?<!direito )(?<!educacao )"
+            r"ambiental|manufatura"
+            r"|producao(?! de conteudo| audiovisual| editorial| de material| de eventos"
+            r"| (?:de )?videos?)"
             r"|arquitetura e urbanismo|design de interiores|embalagens"
         ),
         descricao=(
