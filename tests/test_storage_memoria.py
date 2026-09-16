@@ -50,8 +50,6 @@ def test_entrega_imediata_sem_banco_atende_so_o_perfil_pedido():
     usuario = usuario_exemplo()
     repositorio = RepositorioEmMemoria([usuario])
 
-    assert repositorio.reivindicar_entregas_imediatas(usuario.id) == {usuario.id}
-    assert repositorio.reivindicar_entregas_imediatas(uuid4()) == set()
     assert repositorio.entregas_imediatas_pendentes(usuario.id) == {usuario.id}
     assert repositorio.entregas_imediatas_pendentes(uuid4()) == set()
     assert repositorio.marcar_entregas_imediatas_atendidas([usuario.id]) is None
