@@ -908,6 +908,33 @@ contexto no passo 1.
   Resultado nas 1.003: 1 exclusiva, 1 afirmativa com PCD (MUDES), 2 afirmativas sem lista, 999
   gerais, igual à leitura manual das 29, antes e depois da correção.
 
+  **Formatos que dizem não ser só de PCD** (16/09/2026, auditoria). "Vaga para PCD/Ampla
+  concorrência", "Vaga para PCD (não exclusiva)" e "Vaga para PCD - Não" eram exclusivas: depois do
+  termo a regra só via "e", "ou", " também" e ": não" ou "? não", e no título o trecho "Estágio -
+  PCD - Não" ou "(PcD - não exclusiva)" bastava, sem olhar o que vinha depois do separador. Agora,
+  logo depois de PCD, e também depois da sigla em "pessoas com deficiência (PCD)", a barra sempre
+  tira a exclusividade ("PCD/Ampla", "PCD/Não PCD", "PCD/reabilitados"), e "também", "ampla",
+  "preferencialmente", "N/A", "não se aplica", "não informado", "não PCD" e o "não" como resposta
+  solta a tiram depois de qualquer sequência de espaço, hífen, dois-pontos, interrogação, vírgula,
+  parêntese ou barra vertical (`SEM_OUTRO_PUBLICO_DEPOIS`). Resposta solta é o "não" seguido de fim
+  de texto, ".", ";", ",", "|", ")", "/" ou " - " (`NAO_COMO_RESPOSTA_SOLTA`): "Vaga para PCD -
+  Não", "PCD: Não." e "PCD - Não - Bolsa" são gerais, mas "Vaga exclusiva para pessoas com
+  deficiência, não exigimos experiência" e "Vaga PCD: não é necessário experiência" seguem
+  exclusivas, porque o "não" é de outra oração. A primeira versão desta correção aceitava "não"
+  seguido de qualquer palavra e tornava geral essa vaga, que no `main` era exclusiva: quem respondeu
+  não voltava a recebê-la. Quebra de linha não tem regra própria: coletores e enriquecimento juntam
+  os espaços, e nenhuma das 1.003 vagas guardadas tem quebra. O trecho do título passa pela mesma
+  regra depois do separador, e "não exclusiva" ou "não é exclusivo" até 60 caracteres depois do
+  termo, sem ponto no meio, também tira. Seguem exclusivas "Vaga PCD: Sim", "Vaga exclusiva para
+  PCD | Bolsa", "Estágio - PCD - Rio de Janeiro", "Estágio - PCD - Não requer experiência" e
+  "Processo seletivo exclusivo para PCD. Atuação não exclusiva em TI.". Nas 1.003 vagas a
+  classificação é a mesma do `main`: nenhuma usa esses formatos, e a leitura manual das 30 que citam
+  PCD, deficiência, necessidades especiais ou ação afirmativa confere com ela. Limites aceitos, para
+  o lado de não exclusiva: "e" logo depois do separador do título tira a exclusividade ("Estágio -
+  PCD - E-commerce"), e a barra trata sinônimo ("PCD/PNE") como outro público. Seguem exclusivas,
+  sem regra: "Vaga para PCD - aberta a todos", "PCD: Opcional", "( ) Sim (X) Não" e "não
+  exclusiva" depois de ponto ou a mais de 60 caracteres.
+
   É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
   ao lado para que serve, e a resposta não entra em evento, log, prompt nem export. O juiz monta o
   perfil campo a campo e não a recebe; a amostra de `descartes`, que leva `perfil_id`, calcula o
