@@ -41,6 +41,7 @@ def entrega(
     perfil_id: UUID = PERFIL_A,
     nota: int | None = 80,
     feedback: str | None = None,
+    motivo: str | None = None,
 ) -> EntregaParaJulgar:
     return EntregaParaJulgar(
         perfil_id=perfil_id,
@@ -58,6 +59,7 @@ def entrega(
         enviada_em=datetime(2026, 9, 9, 10, tzinfo=UTC),
         nota_do_radar=nota,
         feedback=feedback,
+        motivo_do_feedback=motivo,
     )
 
 
@@ -264,3 +266,18 @@ def test_gabarito_avisa_quantos_rotulos_ficaram_fora_da_janela(monkeypatch, caps
     radar.__main__.julgar(settings_do_juiz(), dias=7, amostra=30, semente=1, gabarito=arquivo)
 
     assert "1 de 2 rótulos do gabarito estão fora" in capsys.readouterr().err
+
+
+def test_vaga_encerrada_nao_conta_como_discordancia_com_o_juiz():
+    entregas = [
+        entrega(1, feedback="vaga_util"),
+        entrega(2, feedback="vaga_irrelevante", motivo="motivo_encerrada"),
+    ]
+    resultado = julgar_entregas(
+        entregas, JuizFalso(relevantes={"1", "2"}), amostra=100, semente=1, modelo="m", dias=7
+    )
+
+    texto = formatar_julgamento(resultado)
+
+    assert "1/1 concordam (100%)" in texto
+    assert "Estágio 2" not in texto.split("Concordância")[1]
