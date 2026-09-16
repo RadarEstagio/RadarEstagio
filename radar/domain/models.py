@@ -81,6 +81,9 @@ class ExtracaoDaVaga(BaseModel):
             return valor
         return None
 
+    def leu_menos_que(self, vaga: Vaga) -> bool:
+        return self.descricao_completa is False and vaga.descricao_completa
+
     def modalidade_reconhecida(self) -> Modalidade | None:
         if not self.modalidade:
             return None

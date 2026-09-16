@@ -381,6 +381,77 @@ def test_extracao_feita_sobre_a_descricao_completa_nao_trava_quando_a_de_hoje_ve
     assert hoje.avisos_objetivos == []
 
 
+def test_vaga_extraida_sobre_a_descricao_cortada_volta_a_ia_uma_vez_quando_a_completa_chega():
+    repositorio = RepositorioFalso([usuario()])
+    cortada = vaga(1).model_copy(update={"descricao_completa": False})
+    rodar_no_dia(repositorio, cortada, ExtratorDeVagaDePython(), dia=0)
+    extrator_de_hoje = ExtratorDeVagaDePython()
+    extrator_de_amanha = ExtratorDeVagaDePython()
+
+    hoje = rodar_no_dia(
+        repositorio, cortada, extrator_de_hoje, dia=1, enriquecer=completar_descricoes
+    )
+    amanha = rodar_no_dia(
+        repositorio, cortada, extrator_de_amanha, dia=2, enriquecer=completar_descricoes
+    )
+
+    assert extrator_de_hoje.extraidas == ["1"]
+    assert hoje.nota == 100
+    assert hoje.avisos_objetivos == []
+    assert repositorio.extracoes_guardadas[("adzuna", "1")].descricao_completa is True
+    assert extrator_de_amanha.extraidas == []
+    assert amanha.nota == 100
+
+
+def test_vaga_que_nao_volta_da_ia_segue_com_a_extracao_cortada_sem_segurar_a_mensagem():
+    repositorio = RepositorioFalso([usuario()])
+    cortada = vaga(1).model_copy(update={"descricao_completa": False})
+    rodar_no_dia(repositorio, cortada, ExtratorDeVagaDePython(), dia=0)
+    extrator = ExtratorQueNaoDevolveNada({})
+    notificador = NotificadorFalso()
+
+    resumo = executar(
+        ColetorFalso([cortada]),
+        extrator,
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE + timedelta(days=1),
+        enriquecer=completar_descricoes,
+    )
+
+    assert resumo.vagas_sem_extracao == 0
+    assert resumo.vagas_extraidas_agora == 0
+    assert [item.resultado.nota for item in resumo.enviadas_por_usuario[ID_USUARIO]] == [60]
+    assert repositorio.extracoes_guardadas[("adzuna", "1")].descricao_completa is False
+
+
+@pytest.mark.parametrize("completa_hoje", [True, False])
+def test_extracao_sem_registro_ou_ja_completa_nao_volta_a_ia(completa_hoje):
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.extracoes_guardadas[("adzuna", "1")] = extracao_de_vaga_de_python("adzuna:1")
+    repositorio.extracoes_guardadas[("adzuna", "2")] = extracao_de_vaga_de_python(
+        "adzuna:2"
+    ).model_copy(update={"descricao_completa": True})
+    extrator = ExtratorDeVagaDePython()
+
+    executar(
+        ColetorFalso(
+            [
+                vaga(numero).model_copy(update={"descricao_completa": completa_hoje})
+                for numero in (1, 2)
+            ]
+        ),
+        extrator,
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert extrator.extraidas == []
+
+
 @pytest.mark.parametrize(("completa_hoje", "nota"), [(True, 100), (False, 60)])
 def test_extracao_antiga_sem_registro_da_descricao_lida_segue_a_descricao_de_hoje(
     completa_hoje, nota

@@ -250,14 +250,23 @@ def obter_extracoes(
     except ErroDeArmazenamento as erro:
         logger.warning("extrações guardadas não puderam ser lidas: %s", erro)
         extracoes = {}
-    pendentes = [vaga for vaga in candidatas if vaga.chave() not in extracoes]
-    logger.info("%d extrações reaproveitadas, %d vagas a extrair", len(extracoes), len(pendentes))
+    pendentes = [
+        vaga
+        for vaga in candidatas
+        if vaga.chave() not in extracoes or extracoes[vaga.chave()].leu_menos_que(vaga)
+    ]
+    logger.info(
+        "%d extrações reaproveitadas, %d vagas a extrair, %d porque a descrição completa chegou",
+        len(candidatas) - len(pendentes),
+        len(pendentes),
+        sum(vaga.chave() in extracoes for vaga in pendentes),
+    )
     novas = extrator.extrair(pendentes)
     vagas_por_identidade = {vaga.identidade(): vaga for vaga in pendentes}
     guardadas = []
     for extracao in novas:
-        vaga = vagas_por_identidade.get(extracao.id_vaga)
-        if vaga is None or vaga.chave() in extracoes:
+        vaga = vagas_por_identidade.pop(extracao.id_vaga, None)
+        if vaga is None:
             continue
         extracao = extracao.model_copy(update={"descricao_completa": vaga.descricao_completa})
         extracoes[vaga.chave()] = extracao
