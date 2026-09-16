@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -143,6 +144,17 @@ def test_saida_do_agy_que_nao_e_objeto_nao_derruba_a_extracao_em_lotes():
     )
 
     assert ExtratorEmLotes(extrator, 10).extrair([vaga_exemplo()]) == []
+
+
+def test_saida_do_agy_que_nao_e_utf8_vira_erro_de_avaliacao():
+    def executor_com_bytes_invalidos(comando: list[str], **opcoes) -> subprocess.CompletedProcess:
+        escrever_bytes_invalidos = "import sys; sys.stdout.buffer.write(bytes([255, 254, 123]))"
+        return subprocess.run([sys.executable, "-c", escrever_bytes_invalidos], **opcoes)
+
+    extrator = ExtratorAgy(settings_de_teste(), executor=executor_com_bytes_invalidos)
+
+    with pytest.raises(ErroDeAvaliacao, match="saída inválida"):
+        extrator.extrair([vaga_exemplo()])
 
 
 def test_saida_estruturada_fora_do_contrato_vira_erro_de_avaliacao():

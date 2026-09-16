@@ -536,6 +536,36 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
   extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
   os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+- **Resposta malformada do avaliador não derruba o job** (16/09/2026, item 14 da auditoria). Só
+  erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
+  (página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
+  `json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
+  `usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
+  `TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
+  qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
+  terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
+  do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
+  e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
+  é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
+  lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
+  formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
+  mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
+  configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
+  aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
+  barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
+  candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
+  modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
+  julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
+  `UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
+  o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
+  mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
+  `candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
+  lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
+  recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
+  do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
+  ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
+  minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
+  `7efdbc95`.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
 
 ### Pontuação: por que os pesos são estes

@@ -1,9 +1,12 @@
 import json
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import httpx
 import pytest
+from google import genai
 from google.genai import errors, types
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
@@ -12,10 +15,15 @@ from radar.matching.errors import (
     CotaDeAvaliacaoExcedida,
     ErroDeAvaliacao,
     ErroTemporarioDeAvaliacao,
+    FalhaInternaDoAvaliador,
 )
 from radar.matching.extracao import ExtracoesDeVagas
-from radar.matching.gemini import ExtratorGemini
-from radar.matching.lotes import ESPERA_PADRAO_EM_SEGUNDOS, ExtratorEmLotes
+from radar.matching.gemini import ExtratorGemini, gerar_json
+from radar.matching.lotes import (
+    ESPERA_PADRAO_EM_SEGUNDOS,
+    MARGEM_DE_ESPERA_EM_SEGUNDOS,
+    ExtratorEmLotes,
+)
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -338,3 +346,174 @@ def test_falha_de_rede_e_indisponibilidade_temporaria():
     with pytest.raises(AvaliadorIndisponivel, match="Falha de rede") as capturado:
         extrator.extrair([vaga_exemplo()])
     assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
+
+
+PADRAO_DO_ID_NO_PROMPT = re.compile(r"Vaga id=(\S+)")
+HTML_DE_PROXY = "<html><body><h1>502 Bad Gateway</h1></body></html>"
+
+
+def cliente_do_sdk(responder: Callable[[httpx.Request], httpx.Response]) -> genai.Client:
+    transporte = httpx.MockTransport(responder)
+    return genai.Client(
+        api_key="gemini-de-teste",
+        http_options=types.HttpOptions(httpx_client=httpx.Client(transport=transporte)),
+    )
+
+
+def ids_no_prompt(requisicao: httpx.Request) -> list[str]:
+    corpo = json.loads(requisicao.content)
+    return PADRAO_DO_ID_NO_PROMPT.findall(corpo["contents"][0]["parts"][0]["text"])
+
+
+def envelope_com_texto(texto: str) -> dict:
+    return {"candidates": [{"content": {"parts": [{"text": texto}], "role": "model"}}]}
+
+
+def extraindo_as_vagas_do_prompt(requisicao: httpx.Request) -> httpx.Response:
+    extracoes = [extracao(id_vaga) for id_vaga in ids_no_prompt(requisicao)]
+    return httpx.Response(200, json=envelope_com_texto(json.dumps({"extracoes": extracoes})))
+
+
+def corpo_200(corpo: str | bytes) -> Callable[[httpx.Request], httpx.Response]:
+    conteudo = corpo.encode() if isinstance(corpo, str) else corpo
+    return lambda requisicao: httpx.Response(
+        200, headers={"content-type": "text/html"}, content=conteudo
+    )
+
+
+def test_resposta_valida_pelo_sdk_vira_extracoes():
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(extraindo_as_vagas_do_prompt))
+
+    extracoes = extrator.extrair([vaga_exemplo(1), vaga_exemplo(2)])
+
+    assert [item.id_vaga for item in extracoes] == ["adzuna:1", "adzuna:2"]
+
+
+@pytest.mark.parametrize(
+    "corpo",
+    [
+        pytest.param(HTML_DE_PROXY, id="html-de-proxy"),
+        pytest.param('{"candidates": [{"content": {"parts": [{"text": "', id="json-cortado"),
+        pytest.param("   ", id="so-espacos"),
+        pytest.param(b"\xff\xfe{", id="bytes-invalidos"),
+    ],
+)
+def test_corpo_200_que_nao_e_json_e_indisponibilidade_temporaria(corpo: str | bytes):
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_200(corpo)))
+
+    with pytest.raises(AvaliadorIndisponivel, match="não é JSON") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida | FalhaInternaDoAvaliador)
+
+
+def envelope_valido() -> dict:
+    return envelope_com_texto(json.dumps({"extracoes": [extracao("adzuna:1")]}))
+
+
+def corpo_json_200(envelope: object) -> Callable[[httpx.Request], httpx.Response]:
+    return lambda requisicao: httpx.Response(200, json=envelope)
+
+
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        pytest.param({"candidates": [{"content": {"parts": [{"text": 5}]}}]}, id="texto-numero"),
+        pytest.param({"candidates": [{"content": {"parts": "x"}}]}, id="partes-texto"),
+        pytest.param({"candidates": [{"content": "x"}]}, id="conteudo-texto"),
+        pytest.param({**envelope_valido(), "usageMetadata": "x"}, id="uso-texto"),
+        pytest.param({"candidates": 5}, id="candidatos-numero"),
+        pytest.param({"candidates": [5]}, id="candidato-numero"),
+        pytest.param(5, id="corpo-numero"),
+        pytest.param(True, id="corpo-booleano"),
+    ],
+)
+def test_envelope_fora_do_formato_da_api_e_indisponibilidade_temporaria(envelope: object):
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_json_200(envelope)))
+
+    with pytest.raises(AvaliadorIndisponivel, match="fora do formato da API") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida | FalhaInternaDoAvaliador)
+
+
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        pytest.param(
+            {"promptFeedback": {"blockReason": "PROHIBITED_CONTENT"}}, id="pedido-barrado"
+        ),
+        pytest.param({"candidates": [{"finishReason": "SAFETY"}]}, id="resposta-barrada"),
+        pytest.param(
+            {"candidates": [{"content": {"role": "model"}, "finishReason": "MAX_TOKENS"}]},
+            id="sem-partes",
+        ),
+        pytest.param({"candidates": []}, id="sem-candidatos"),
+    ],
+)
+def test_envelope_sem_texto_segue_como_erro_do_lote_que_se_divide(envelope: dict):
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_json_200(envelope)))
+
+    with pytest.raises(ErroDeAvaliacao, match="resposta vazia") as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, ErroTemporarioDeAvaliacao)
+
+
+def test_erro_ao_montar_o_pedido_nao_vira_indisponibilidade():
+    cliente = cliente_do_sdk(corpo_json_200(envelope_valido()))
+
+    with pytest.raises(TypeError):
+        gerar_json(cliente, MODELO_DE_TESTE, "prompt", ExtracoesDeVagas, None)
+
+
+def test_erro_de_corpo_que_nao_e_json_mostra_o_inicio_do_corpo():
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(corpo_200(HTML_DE_PROXY)))
+
+    with pytest.raises(AvaliadorIndisponivel, match="502 Bad Gateway"):
+        extrator.extrair([vaga_exemplo()])
+
+
+class RespostasEmSequencia:
+    def __init__(self, *respostas: Callable[[httpx.Request], httpx.Response]) -> None:
+        self._respostas = list(respostas)
+        self.lotes: list[list[str]] = []
+        self.segundos = 0.0
+
+    def __call__(self, requisicao: httpx.Request) -> httpx.Response:
+        self.lotes.append(ids_no_prompt(requisicao))
+        self.segundos += 30
+        responder = self._respostas.pop(0) if len(self._respostas) > 1 else self._respostas[0]
+        return responder(requisicao)
+
+    def esperar(self, segundos: float) -> None:
+        self.segundos += segundos
+
+
+def test_corpo_que_nao_e_json_espera_e_repete_o_mesmo_lote_sem_dividir():
+    respostas = RespostasEmSequencia(corpo_200(HTML_DE_PROXY), extraindo_as_vagas_do_prompt)
+    esperas: list[float] = []
+    em_lotes = ExtratorEmLotes(
+        ExtratorGemini(settings_de_teste(), cliente_do_sdk(respostas)), 10, esperar=esperas.append
+    )
+
+    extraidas = em_lotes.extrair([vaga_exemplo(1), vaga_exemplo(2)])
+
+    assert [item.id_vaga for item in extraidas] == ["adzuna:1", "adzuna:2"]
+    assert respostas.lotes == [["adzuna:1", "adzuna:2"], ["adzuna:1", "adzuna:2"]]
+    assert esperas == [ESPERA_PADRAO_EM_SEGUNDOS + MARGEM_DE_ESPERA_EM_SEGUNDOS]
+
+
+def test_corpo_que_nao_e_json_persistente_para_sem_dividir_nem_furar_o_prazo():
+    respostas = RespostasEmSequencia(extraindo_as_vagas_do_prompt, corpo_200(HTML_DE_PROXY))
+    em_lotes = ExtratorEmLotes(
+        ExtratorGemini(settings_de_teste(), cliente_do_sdk(respostas)),
+        10,
+        esperar=respostas.esperar,
+        prazo_em_segundos=600,
+        timeout_da_chamada_em_segundos=120,
+        relogio=lambda: respostas.segundos,
+    )
+
+    extraidas = em_lotes.extrair([vaga_exemplo(numero) for numero in range(1, 31)])
+
+    assert [item.id_vaga for item in extraidas] == [f"adzuna:{numero}" for numero in range(1, 11)]
+    assert all(len(lote) == 10 for lote in respostas.lotes)
+    assert respostas.segundos <= 600

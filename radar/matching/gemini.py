@@ -1,3 +1,4 @@
+import json
 import re
 
 import httpx
@@ -23,6 +24,7 @@ HTTP_INDISPONIVEL = frozenset({502, 503, 504})
 MILISSEGUNDOS_POR_SEGUNDO = 1000
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
 RACIOCINIO_DO_MODELO = "padrao"
+INICIO_DO_CORPO_NO_ERRO = 200
 
 
 def configuracao_de_raciocinio(raciocinio: str | None) -> types.ThinkingConfig | None:
@@ -63,19 +65,16 @@ def gerar_json[T: BaseModel](
     timeout_segundos: int,
     raciocinio: str | None = None,
 ) -> T:
+    configuracao = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=formato,
+        temperature=TEMPERATURA_DETERMINISTICA,
+        http_options=types.HttpOptions(timeout=timeout_segundos * MILISSEGUNDOS_POR_SEGUNDO),
+        thinking_config=configuracao_de_raciocinio(raciocinio),
+    )
     try:
         resposta = cliente.models.generate_content(
-            model=modelo,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=formato,
-                temperature=TEMPERATURA_DETERMINISTICA,
-                http_options=types.HttpOptions(
-                    timeout=timeout_segundos * MILISSEGUNDOS_POR_SEGUNDO
-                ),
-                thinking_config=configuracao_de_raciocinio(raciocinio),
-            ),
+            model=modelo, contents=prompt, config=configuracao
         )
     except httpx.TimeoutException:
         raise AvaliadorIndisponivel(f"Gemini não respondeu em {timeout_segundos} s") from None
@@ -90,6 +89,14 @@ def gerar_json[T: BaseModel](
         if erro.code in HTTP_INDISPONIVEL:
             raise AvaliadorIndisponivel(mensagem) from None
         raise ErroDeAvaliacao(mensagem) from None
+    except json.JSONDecodeError as erro:
+        raise AvaliadorIndisponivel(
+            f"Gemini devolveu corpo que não é JSON: {erro.doc[:INICIO_DO_CORPO_NO_ERRO]!r}"
+        ) from None
+    except (TypeError, ValidationError) as erro:
+        raise AvaliadorIndisponivel(
+            f"Gemini devolveu resposta fora do formato da API: {erro}"
+        ) from None
     return validar_json(resposta.text, formato)
 
 

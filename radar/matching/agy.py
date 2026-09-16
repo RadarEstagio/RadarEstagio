@@ -84,6 +84,8 @@ def pedir_saida_estruturada[T: BaseModel](
         ) from None
     except OSError as erro:
         raise ErroDeAvaliacao(f"não foi possível executar o AGY: {erro}") from None
+    except UnicodeDecodeError as erro:
+        raise ErroDeAvaliacao(f"AGY devolveu saída inválida: {erro}") from None
 
     if processo.returncode != 0:
         detalhe = processo.stderr.strip() or "processo terminou sem detalhes"
