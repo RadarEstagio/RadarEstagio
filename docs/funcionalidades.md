@@ -31,8 +31,9 @@ Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summ
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
 Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. A
-escolha fica no navegador e vale também para o cadastro e a página da conta; sem escolha salva,
-o site abre no claro. Termos e Privacidade mantêm o próprio visual escuro.
+escolha vale para o cadastro e a página da conta durante a visita; ao abrir o site de novo, o
+tema inicial acompanha o modo claro ou escuro do sistema. Termos e Privacidade mantêm o próprio
+visual escuro.
 
 ### Conta e acesso
 
