@@ -4,6 +4,7 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from radar.domain.areas import AREAS_POR_NOME, SUBAREAS, normalizar
 
@@ -63,6 +64,7 @@ class ExtracaoDaVaga(BaseModel):
     habilidades_desejaveis: list[str] = Field(default_factory=list)
     modalidade: str | None = None
     alerta_pegadinha: str | None = None
+    descricao_completa: SkipJsonSchema[bool | None] = None
 
     @field_validator("area_da_vaga", mode="before")
     @classmethod

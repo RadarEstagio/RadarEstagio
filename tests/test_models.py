@@ -124,3 +124,11 @@ def test_periodo_minimo_plausivel_e_mantido(periodo):
     )
 
     assert extracao.periodo_minimo == periodo
+
+
+def test_extracao_guardada_antes_do_registro_da_descricao_lida_fica_sem_origem():
+    antiga = ExtracaoDaVaga.model_validate({"id_vaga": "1", "area_da_vaga": "computacao"})
+    registrada = antiga.model_copy(update={"descricao_completa": False})
+
+    assert antiga.descricao_completa is None
+    assert ExtracaoDaVaga.model_validate(registrada.model_dump(mode="json")) == registrada

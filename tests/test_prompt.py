@@ -1,6 +1,8 @@
+import json
 from datetime import UTC, datetime
 
 from radar.domain.models import Modalidade, Vaga
+from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.prompt import INSTRUCAO_DE_EXTRACAO, descrever_vaga, montar_prompt
 
 
@@ -75,3 +77,9 @@ def test_versao_da_extracao_acompanha_o_prompt_e_o_formato():
 
     assert len(VERSAO_DA_EXTRACAO) == 8
     assert VERSAO_DA_EXTRACAO.isalnum()
+
+
+def test_descricao_lida_pela_extracao_fica_fora_do_formato_pedido_a_ia():
+    formato = json.dumps(ExtracoesDeVagas.model_json_schema())
+
+    assert "descricao_completa" not in formato
