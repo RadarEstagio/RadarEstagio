@@ -22,6 +22,7 @@ const user = {
   email: "teste@example.com",
 };
 const profile = {
+  user_id: user.id,
   curso: "Computação",
   periodo: 3,
   habilidades: ["Python"],
@@ -575,6 +576,7 @@ Deno.test("login preserva perfil existente mesmo com formulário diferente", asy
 Deno.test("edição após login mostra preferências e salva sem pedir novo aceite", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: { ...profile, telegram_chat_id: "123" },
   });
   try {
@@ -599,7 +601,11 @@ Deno.test("edição após login mostra preferências e salva sem pedir novo acei
 });
 
 Deno.test("preferência de e-mail pode ser revogada e falha preserva o valor anterior", async () => {
-  const a = app({ session: { user }, savedProfile: profile });
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
   try {
     await settle();
     const checkbox = a.w.document.querySelector("#account-emails");
@@ -1594,6 +1600,7 @@ function conferirEnvioRecusado(a: ReturnType<typeof app>, contexto: string) {
   assert.equal(a.calls.some(([nome, alvo]) => nome === "rpc" && alvo === "concluir_meu_cadastro"), false, contexto);
   assert.equal(a.calls.some(([nome]) => nome === "logout" || nome === "signup" || nome === "login"), false, contexto);
   assert.match(a.w.document.querySelector("#form-message").textContent, /Sua sessão mudou/, contexto);
+  assert.equal(visivel(a.w.document.querySelector("#missing-profile-deletion")), false, contexto);
   conferirCadastroVazio(a, contexto);
 }
 
@@ -1787,7 +1794,7 @@ Deno.test("envio duplicado durante a autenticação gera uma única tentativa", 
 });
 
 Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async () => {
-  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" }, url: "https://radarestagio.com/?conta" });
   try {
     await settle();
     const doc = a.w.document;
@@ -2385,6 +2392,208 @@ Deno.test("pausar numa conta excluída em outro lugar mostra a exclusão sem o a
   } finally { a.close(); }
 });
 
+function confirmarNaConta(a: ReturnType<typeof app>, origem: string) {
+  a.w.document.querySelector(origem).click();
+  a.w.document.querySelector("#account-confirm-yes").click();
+}
+
+function conferirAcaoRecusada(a: ReturnType<typeof app>, chamadasAntes: number, contexto: string) {
+  const doc = a.w.document;
+  const chamadasDepois = a.calls.slice(chamadasAntes).filter(([nome]) => ["rpc", "update", "logout"].includes(nome));
+  assert.deepEqual(chamadasDepois, [], contexto);
+  const mensagem = doc.querySelector("#form-message");
+  assert.equal(mensagem.textContent, "Sua sessão mudou. Entre de novo para continuar.", contexto);
+  assert.equal(visivel(mensagem), true, contexto);
+  assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta", contexto);
+  assert.equal(visivel(doc.querySelector("#account-state")), false, contexto);
+  assert.equal(visivel(doc.querySelector("#missing-profile-deletion")), false, contexto);
+  const confirmacao = doc.querySelector("#account-confirm");
+  assert.equal(confirmacao.open, false, contexto);
+  assert.equal(confirmacao.hidden, true, contexto);
+}
+
+const acoesDaContaMostrada: {
+  acao: string;
+  salvo: Profile | null;
+  preparar?: (a: ReturnType<typeof app>) => Promise<void>;
+  agir: (a: ReturnType<typeof app>) => void;
+  conferir?: (a: ReturnType<typeof app>) => void;
+}[] = [
+  {
+    acao: "excluir a conta",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => confirmarNaConta(a, "#delete-account"),
+  },
+  {
+    acao: "desvincular o Telegram",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => confirmarNaConta(a, "#unlink-telegram"),
+  },
+  {
+    acao: "pausar as entregas",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => a.w.document.querySelector("#toggle-deliveries").click(),
+  },
+  {
+    acao: "retomar as entregas",
+    salvo: { ...profile, telegram_chat_id: "123", ativo: false, motivo_pausa: "outro" },
+    agir: (a) => a.w.document.querySelector("#toggle-deliveries").click(),
+  },
+  {
+    acao: "salvar o motivo da pausa",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    preparar: async (a) => {
+      a.w.document.querySelector("#toggle-deliveries").click();
+      await settle();
+      assert.equal(a.w.document.querySelector("#pause-reason").hidden, false);
+    },
+    agir: (a) => {
+      a.w.document.querySelector('input[name="motivo-pausa"][value="outro"]').click();
+      a.w.document.querySelector("#save-pause-reason").click();
+    },
+  },
+  {
+    acao: "mudar a preferência de e-mails",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => {
+      const emails = a.w.document.querySelector("#account-emails");
+      emails.checked = true;
+      emails.dispatchEvent(new a.w.Event("change", { bubbles: true }));
+    },
+  },
+  {
+    acao: "cancelar a exclusão",
+    salvo: { ...profile, excluida_em: "2026-09-10T12:00:00.000Z" } as unknown as Profile,
+    agir: (a) => a.w.document.querySelector("#cancel-deletion").click(),
+  },
+  {
+    acao: "baixar os dados",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => a.w.document.querySelector("#download-data").click(),
+  },
+  {
+    acao: "editar o perfil",
+    salvo: { ...profile, telegram_chat_id: "123" },
+    agir: (a) => a.w.document.querySelector("#edit-profile").click(),
+    conferir: (a) => {
+      const form = a.w.document.querySelector("#signup-form");
+      assert.equal(form.elements.curso.value, "");
+      assert.deepEqual(habilidadesNaTela(a.w), []);
+    },
+  },
+  {
+    acao: "excluir a conta sem perfil",
+    salvo: null,
+    agir: (a) => confirmarNaConta(a, "#delete-account-without-profile"),
+  },
+];
+
+for (const { acao, salvo, preparar, agir, conferir } of acoesDaContaMostrada) {
+  Deno.test(`${acao} na tela de uma conta não age sobre outra que entrou em outra aba`, async () => {
+    const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+    try {
+      await settle();
+      simularConfirmacaoModal(a.w.document);
+      await preparar?.(a);
+      sessaoPassaASer(a, { user: outraPessoa });
+      const chamadasAntes = a.calls.length;
+      agir(a);
+      await settle();
+      conferirAcaoRecusada(a, chamadasAntes, acao);
+      conferir?.(a);
+    } finally { a.close(); }
+  });
+}
+
+Deno.test("a confirmação aberta antes de a sessão mudar é fechada, não só escondida", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const { confirmacao, estado } = simularConfirmacaoModal(doc);
+    doc.querySelector("#delete-account").click();
+    assert.equal(confirmacao.open, true);
+    sessaoPassaASer(a, { user: outraPessoa });
+    doc.querySelector("#account-confirm-yes").click();
+    await settle();
+    assert.equal(estado.fechou, true);
+    conferirAcaoRecusada(a, 0, "confirmação aberta");
+  } finally { a.close(); }
+});
+
+Deno.test("sessão que acaba na tela da conta não é tratada como troca de conta", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    sessaoPassaASer(a, null);
+    doc.querySelector("#toggle-deliveries").click();
+    await settle();
+    assert.equal(a.calls.some(([nome]) => nome === "update"), false);
+    assert.equal(doc.querySelector("#account-message").textContent, "Sua sessão expirou. Feche e entre de novo para continuar.");
+    assert.equal(visivel(doc.querySelector("#account-state")), true);
+    assert.equal(doc.querySelector("#form-message").textContent, "");
+  } finally { a.close(); }
+});
+
+Deno.test("cancelar a exclusão na própria conta chama a RPC e volta ao vínculo do Telegram", async () => {
+  const salvo = { ...profile, excluida_em: "2026-09-10T12:00:00.000Z" } as unknown as Profile & {
+    excluida_em: string | null;
+  };
+  const a = app({ session: { user }, savedProfile: salvo, url: "https://radarestagio.com/?conta" });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#account-delivery-title").textContent, "Exclusão agendada");
+    const rpc = a.client.rpc;
+    a.client.rpc = async (nome: string, args: Payload) => {
+      if (nome === "cancelar_exclusao_da_minha_conta") salvo.excluida_em = null;
+      return rpc(nome, args);
+    };
+    doc.querySelector("#cancel-deletion").click();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["cancelar_exclusao_da_minha_conta"],
+    );
+    assert.equal(visivel(doc.querySelector("#telegram-link")), true);
+    assert.equal(doc.querySelector("#form-message").textContent, "");
+  } finally { a.close(); }
+});
+
+Deno.test("baixar os dados da própria conta chama a RPC e prepara o arquivo", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const arquivos: unknown[] = [];
+    a.w.URL.createObjectURL = (arquivo: unknown) => {
+      arquivos.push(arquivo);
+      return "blob:meus-dados";
+    };
+    a.w.URL.revokeObjectURL = () => {};
+    a.w.document.querySelector("#download-data").click();
+    await settle();
+    assert.deepEqual(
+      a.calls.filter(([nome]) => nome === "rpc").map(([, funcao]) => funcao),
+      ["baixar_meus_dados"],
+    );
+    assert.equal(arquivos.length, 1);
+    assert.match(a.w.document.querySelector("#account-notice").textContent, /preparados para download/);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar em ?conta abre a conta sem passar pelo modal", async () => {
   const a = app({
     session: { user },
@@ -2867,6 +3076,7 @@ Deno.test("formacao e sinonimo no curso digitado ainda montam as areas certas", 
 Deno.test("catalogo indisponivel na edicao preserva as areas salvas em vez de apagar", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: {
       ...profile,
       telegram_chat_id: "123",
@@ -2896,6 +3106,7 @@ Deno.test("catalogo indisponivel na edicao preserva as areas salvas em vez de ap
 Deno.test("trocar o curso na edicao descarta as areas do curso antigo no payload", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: {
       ...profile,
       telegram_chat_id: "123",
@@ -2999,6 +3210,7 @@ Deno.test("resposta assíncrona de curso anterior não substitui o curso atual",
 Deno.test("sair da conta nao deixa as areas de interesse da pessoa anterior no proximo cadastro", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: {
       ...profile,
       telegram_chat_id: "123",
@@ -3148,7 +3360,7 @@ Deno.test("normalizacao de curso do site bate com a do backend", async () => {
 });
 
 Deno.test("editar o perfil preserva o rótulo e o indicador de envio do botão", async () => {
-  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" } });
+  const a = app({ session: { user }, savedProfile: { ...profile, telegram_chat_id: "123" }, url: "https://radarestagio.com/?conta" });
   try {
     await settle();
     const doc = a.w.document;
@@ -3431,6 +3643,7 @@ Deno.test("lista de cidades fora do ar avisa e não bloqueia o cadastro", async 
 Deno.test("perfil antigo sem estado na cidade é corrigido ao salvar a edição", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: { ...profile, cidade: "Rio de Janeiro", telegram_chat_id: "123" },
   });
   try {
@@ -3666,6 +3879,7 @@ Deno.test("edição mostra a resposta sobre deficiência salva e grava a troca",
   for (const [salva, opcao] of casos) {
     const a = app({
       session: { user },
+      url: "https://radarestagio.com/?conta",
       savedProfile: {
         ...profile,
         telegram_chat_id: "123",
@@ -3692,6 +3906,7 @@ Deno.test("edição mostra a resposta sobre deficiência salva e grava a troca",
 Deno.test("sair da conta volta a pergunta sobre deficiência para prefiro não informar", async () => {
   const a = app({
     session: { user },
+    url: "https://radarestagio.com/?conta",
     savedProfile: { ...profile, telegram_chat_id: "123", pessoa_com_deficiencia: true } as unknown as Profile,
   });
   try {

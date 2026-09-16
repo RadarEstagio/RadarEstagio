@@ -280,6 +280,40 @@ o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpan
 mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
 entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
 
+**Navegação da conta no celular (16/09/2026).** A conta mostra um painel por vez
+(`mostrarSecaoDaConta`), e os links de `.account-nav` são o único caminho para Entregas, Dados e
+acesso e Privacidade. A regra que escondia a navegação até 860px vinha de quando as seções apareciam
+juntas; depois da troca para um painel por vez, no celular não havia como pausar, sair, baixar os
+dados, desvincular o Telegram ou excluir a conta. Agora ela é uma barra horizontal abaixo da marca,
+de borda a borda e com rolagem própria, dentro do cabeçalho grudado, que cresce uma linha de 44px.
+A barra lateral vira grade para a barra ocupar a linha inteira, e a navegação leva
+`contain: inline-size`: sem isso a largura dos links entra no cálculo das colunas da marca e do
+"Voltar ao site" e pode quebrar o botão em duas linhas. O JSDOM não avalia media query, então
+`test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes` lê o CSS e recusa regra de
+tela estreita que esconda a navegação ou os links. Limite aceito: quem abre a conta direto numa
+seção pelo endereço (`#account-privacy-panel`) pode ver o item ativo cortado na borda direita até
+rolar a barra; o título da página já diz a seção.
+
+**Ações da conta conferem a conta mostrada (16/09/2026).** As ações de "Minha conta" usavam a sessão
+atual, e o auth-js relê a sessão do armazenamento a cada `getSession`. Com a conta de A na tela e B
+entrando em outra aba, Excluir marcava B e soltava o Telegram dele, Desvincular soltava o de B, pausa,
+motivo e e-mails gravavam na linha de B, Cancelar exclusão e Baixar meus dados agiam sobre B, e a conta
+sem perfil de A apagava B na hora. A página guarda o id da conta desenhada (`contaMostrada`):
+`showAccount` o lê da própria linha, e por isso `COLUNAS_DO_PERFIL` traz `user_id`; a conta sem perfil o
+lê da sessão que a abriu. Toda ação da conta que chama o Supabase (editar, pausar e retomar, motivo,
+e-mails, desvincular, excluir, cancelar a exclusão, baixar os dados e apagar a conta sem perfil) passa
+antes por `recusarSeASessaoMudou`: com outra conta na sessão nada é chamado e `recusarPorTrocaDeSessao`
+leva ao login com "Sua sessão mudou". É a mesma saída do rascunho de outra dona, que passou a usar
+`abrirLogin` e por isso esconde a conta, a confirmação e o "Excluir minha conta" da conta sem perfil.
+Sessão ausente segue como antes. Os `update` filtram por `contaMostrada`, não pelo id lido da sessão, e
+uma troca entre a conferência e a requisição não grava em B, porque o RLS não deixa o token de B
+alcançar a linha de A. As RPCs agem sobre `auth.uid()` e não têm esse fecho: a janela é a de uma
+leitura de sessão. Ficam de fora de propósito o "Minha conta" da ativação e a volta à aba, que releem e
+desenham a conta da sessão atual, e "Sair da conta", que encerra a sessão que estiver no navegador
+(o `signOut` global também revoga as outras sessões dessa conta). Controle novo da conta que chame o
+Supabase precisa da conferência, e teste que clica num controle da conta precisa desenhá-la antes
+(`?conta`), senão a ação é recusada.
+
 ## Regras do projeto (obrigatórias)
 
 - **Nunca usar comentários no código.** Nomes de variáveis/funções/classes devem ser
