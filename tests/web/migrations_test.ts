@@ -13,6 +13,11 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
         email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}',
         confirmation_sent_at timestamptz
       );
+      create table auth.identities (
+        id uuid primary key default gen_random_uuid(), provider_id text not null,
+        user_id uuid not null references auth.users (id) on delete cascade,
+        identity_data jsonb not null, provider text not null default 'email'
+      );
       create function auth.uid() returns uuid language sql stable as
         $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       grant usage on schema public, auth to authenticated, anon;
