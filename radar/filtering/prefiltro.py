@@ -12,6 +12,7 @@ from radar.domain.areas import (
     titulo_e_de_outra_area,
 )
 from radar.domain.models import Modalidade, Perfil, Vaga
+from radar.domain.publico import PublicoDaVaga, publico_da_vaga
 from radar.domain.regioes import Proximidade, proximidade
 
 PADRAO_ESTAGIO = re.compile(r"\bestagi|\bintern(?:ship)?s?\b")
@@ -78,6 +79,12 @@ def exige_ensino_tecnico(vaga: Vaga, perfil: Perfil) -> bool:
     if PADRAO_TITULO_TAMBEM_SUPERIOR.search(titulo):
         return False
     return PADRAO_ENSINO_TECNICO.search(titulo) is not None
+
+
+def vaga_exclusiva_para_pcd(vaga: Vaga, perfil: Perfil) -> bool:
+    if perfil.pessoa_com_deficiencia is not False:
+        return False
+    return publico_da_vaga(vaga) is PublicoDaVaga.EXCLUSIVO_PCD
 
 
 def fora_da_area_do_curso(vaga: Vaga, perfil: Perfil) -> bool:
@@ -160,6 +167,7 @@ MOTIVOS_DE_DESCARTE = (
     ("exige_pos_graduacao", lambda vaga, perfil: exige_pos_graduacao(vaga)),
     ("exige_ensino_medio", lambda vaga, perfil: exige_ensino_medio(vaga)),
     ("exige_ensino_tecnico", exige_ensino_tecnico),
+    ("exclusiva_para_pcd", vaga_exclusiva_para_pcd),
     ("fora_da_area_do_curso", fora_da_area_do_curso),
     ("exige_anos_de_experiencia", lambda vaga, perfil: exige_anos_de_experiencia(vaga)),
     ("localizacao_incompativel", localizacao_incompativel),
