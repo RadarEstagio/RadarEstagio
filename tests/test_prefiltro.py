@@ -134,6 +134,51 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
 
 
 @pytest.mark.parametrize(
+    "descricao",
+    [
+        "Duração: 2 anos. Experiência não necessária.",
+        "Duração: 2 anos\nExperiência não necessária.",
+        "Duração do contrato: 2 anos Experiência: não é necessária.",
+        "Duração do estágio: até 2 anos\nExperiência com Excel é um diferencial.",
+    ],
+)
+def test_duracao_do_estagio_seguida_do_rotulo_de_experiencia_nao_e_exigencia(descricao: str):
+    assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Experiência de 2 anos não é necessária.",
+        "2 anos de experiência não são exigidos.",
+        "Experiência mínima de 3 anos: não exigida para estudantes.",
+        "2 anos de experiência prévia não é necessária.",
+        "2 anos de experiência (não exigida).",
+    ],
+)
+def test_negacao_logo_depois_da_exigencia_de_experiencia_mantem_a_vaga(descricao: str):
+    assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Duração: 6 meses. Requisito: 2 anos de experiência com Python.",
+        "Requisito: 2 anos de experiência com Python. Não é necessário inglês.",
+        "Experiência mínima de 3 anos em vendas e bons conhecimentos. Não exigimos inglês.",
+        "Experiência de 2 anos em atendimento ao cliente, não sendo necessário inglês.",
+        "Experiência de 3 anos, não precisa ter carro.",
+        "2 anos de experiência com vendas; não exigimos inglês.",
+        "Duração: 2 anos. Exigimos 3 anos de experiência na área.",
+    ],
+)
+def test_exigencia_de_experiencia_com_negacao_distante_ou_duracao_continua_descartada(
+    descricao: str,
+):
+    assert exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
     "titulo",
     [
         "Estágio em Técnico em Eletrônica",

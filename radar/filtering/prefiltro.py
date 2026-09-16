@@ -35,7 +35,7 @@ PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
 )
 PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
-    r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
+    r"(\d+)\s*\+?\s*anos?\s+de\s+experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
 )
 PADRAO_QUALQUER_FORMACAO = re.compile(
@@ -51,6 +51,8 @@ PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
 )
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
 PALAVRAS_ANTES_DA_EXIGENCIA = 8
+PALAVRAS_DEPOIS_DA_EXIGENCIA = 4
+PADRAO_FIM_DA_ORACAO = re.compile(r"[.,;](?:\s|$)")
 
 
 def nao_e_estagio(vaga: Vaga) -> bool:
@@ -119,17 +121,22 @@ def exige_anos_de_experiencia(vaga: Vaga) -> bool:
     anos_exigidos = (
         int(grupo)
         for ocorrencia in PADRAO_ANOS_DE_EXPERIENCIA.finditer(texto)
-        if not exigencia_negada(texto, ocorrencia.start())
+        if not exigencia_negada(texto, ocorrencia.start(), ocorrencia.end())
         for grupo in ocorrencia.groups()
         if grupo
     )
     return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_exigidos)
 
 
-def exigencia_negada(texto: str, posicao: int) -> bool:
-    inicio_da_frase = texto.rfind(". ", 0, posicao) + 1
-    anteriores = texto[inicio_da_frase:posicao].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
-    return PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(anteriores)) is not None
+def exigencia_negada(texto: str, inicio: int, fim: int) -> bool:
+    inicio_da_frase = texto.rfind(". ", 0, inicio) + 1
+    fim_da_oracao = PADRAO_FIM_DA_ORACAO.search(texto, fim)
+    anteriores = texto[inicio_da_frase:inicio].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
+    seguintes = texto[fim : fim_da_oracao.start() if fim_da_oracao else len(texto)].split()
+    return any(
+        PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(palavras)) is not None
+        for palavras in (anteriores, seguintes[:PALAVRAS_DEPOIS_DA_EXIGENCIA])
+    )
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
