@@ -1,10 +1,12 @@
 from uuid import UUID
 
+import pytest
+
 from radar.domain.models import AreaDeInteresse
 from radar.storage.postgres import converter_em_usuario
 
 
-def linha(curso: str, areas: list[str]) -> dict:
+def linha(curso: str, areas: list[str], pessoa_com_deficiencia: bool | None = None) -> dict:
     return {
         "id": UUID(int=1),
         "curso": curso,
@@ -16,6 +18,7 @@ def linha(curso: str, areas: list[str]) -> dict:
         "telegram_chat_id": "1",
         "sem_recomendacao_desde": None,
         "silencio_avisado_em": None,
+        "pessoa_com_deficiencia": pessoa_com_deficiencia,
     }
 
 
@@ -40,3 +43,10 @@ def test_curso_sem_area_conhecida_carrega_sem_areas_de_interesse():
     usuario = converter_em_usuario(linha("Agronomia", ["desenvolvimento_web"]))
 
     assert usuario.perfil.areas_de_interesse == []
+
+
+@pytest.mark.parametrize("resposta", [True, False, None])
+def test_resposta_sobre_deficiencia_chega_ao_perfil_como_foi_gravada(resposta):
+    usuario = converter_em_usuario(linha("Direito", [], pessoa_com_deficiencia=resposta))
+
+    assert usuario.perfil.pessoa_com_deficiencia is resposta

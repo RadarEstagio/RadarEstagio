@@ -15,8 +15,11 @@ class DescarteDoPreFiltro:
 def descartes_do_prefiltro(vagas: list[Vaga], usuarios: list[Usuario]) -> list[DescarteDoPreFiltro]:
     descartados = []
     for usuario in usuarios:
+        perfil_sem_dado_sensivel = usuario.perfil.model_copy(
+            update={"pessoa_com_deficiencia": None}
+        )
         for vaga in vagas:
-            motivo = motivo_do_descarte(vaga, usuario.perfil)
+            motivo = motivo_do_descarte(vaga, perfil_sem_dado_sensivel)
             if motivo is not None:
                 descartados.append(DescarteDoPreFiltro(usuario, vaga, motivo))
     return descartados

@@ -36,6 +36,7 @@ AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
     select p.id, p.curso, p.periodo, p.habilidades, p.cidade, p.modalidade, p.telegram_chat_id,
+           p.pessoa_com_deficiencia,
            coalesce(p.areas_de_interesse, '{}'::text[]) as areas_de_interesse,
            coalesce(
              (select max(e.enviada_em) from envios e where e.perfil_id = p.id),
@@ -688,6 +689,7 @@ def converter_em_usuario(linha: dict) -> Usuario:
             cidade=linha["cidade"],
             modalidade=Modalidade(linha["modalidade"]),
             areas_de_interesse=areas_do_campo_do_curso(linha["curso"], linha["areas_de_interesse"]),
+            pessoa_com_deficiencia=linha["pessoa_com_deficiencia"],
         ),
         chat_id=linha["telegram_chat_id"],
         sem_recomendacao_desde=linha["sem_recomendacao_desde"],

@@ -897,3 +897,34 @@ def test_remoto_mantem_vaga_de_outra_cidade_que_admite_remoto_e_qualquer_da_prop
         vaga(localizacao="Brasil", modalidade=Modalidade.REMOTO), remoto
     )
     assert not localizacao_incompativel(vaga(localizacao="Rio de Janeiro, Rio de Janeiro"), remoto)
+
+
+VAGA_EXCLUSIVA_PARA_PCD = "Processo seletivo exclusivo para pessoas com deficiência. Python e SQL."
+
+
+def test_quem_nao_e_pcd_nao_recebe_vaga_exclusiva_para_pcd():
+    exclusiva = vaga(descricao=VAGA_EXCLUSIVA_PARA_PCD)
+    nao_e_pcd = perfil().model_copy(update={"pessoa_com_deficiencia": False})
+
+    assert motivo_do_descarte(exclusiva, nao_e_pcd) == "exclusiva_para_pcd"
+
+
+@pytest.mark.parametrize("resposta", [True, None])
+def test_pcd_e_quem_nao_informou_continuam_recebendo_vaga_exclusiva_para_pcd(resposta):
+    exclusiva = vaga(descricao=VAGA_EXCLUSIVA_PARA_PCD)
+    respondido = perfil().model_copy(update={"pessoa_com_deficiencia": resposta})
+
+    assert motivo_do_descarte(exclusiva, respondido) is None
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Vaga afirmativa para mulheres, pessoas negras e PCD. Python e SQL.",
+        "Pessoas com deficiência são bem-vindas. Python e SQL.",
+    ],
+)
+def test_quem_nao_e_pcd_continua_recebendo_vaga_afirmativa_ou_inclusiva(descricao):
+    nao_e_pcd = perfil().model_copy(update={"pessoa_com_deficiencia": False})
+
+    assert motivo_do_descarte(vaga(descricao=descricao), nao_e_pcd) is None

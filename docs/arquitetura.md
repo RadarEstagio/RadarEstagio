@@ -191,6 +191,12 @@ vê a boa vaga que sumiu aqui. `python -m radar descartes` grava uma amostra do 
 pré-filtro cortou, com o motivo de cada corte, no mesmo formato do gabarito. A amostra cobre
 um motivo diferente por vez antes de repetir, senão o motivo mais frequente tomaria a lista.
 
+O público da vaga (`domain/publico.py`) é regra do mesmo tipo, e o mesmo cuidado com o que a
+menção quer dizer: "PcDs são bem-vindas" é da empresa, "vaga para pessoas com deficiência" é da
+vaga. Só a exclusiva para PCD é cortada aqui, e só para quem respondeu que não é PCD; a
+prioridade para quem é PCD e os avisos de vaga afirmativa ficam em `matching/regras.py`, depois
+da nota, porque dependem de a vaga ter passado na nota mínima.
+
 ### 5. Extração em lotes com tolerância a falhas
 
 O problema: a cota do Gemini varia por modelo e plano. Uma chamada por vaga multiplica custo,

@@ -503,6 +503,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .account-switch button { padding: 0; border: 0; color: var(--accent-text); background: transparent; font-weight: 800; cursor: pointer; }
 .account-switch button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .option-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }.option-grid label { cursor: pointer; }.option-grid input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.option-grid-tres { grid-template-columns: repeat(3, 1fr); }
 .option-grid span { min-height: 46px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 11px; }
 .option-grid input:checked + span { border-color: var(--accent); color: var(--accent-text); background: rgba(62,124,89,.08); box-shadow: inset 0 0 0 1px var(--accent); }.option-grid input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }#previous-step { margin-right: auto; }

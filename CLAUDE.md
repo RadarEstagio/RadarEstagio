@@ -748,6 +748,76 @@ contexto no passo 1.
   só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35) e parênteses dão
   parcial ("Técnico ou Superior (Administração)"); "ADM ou Técnico em ADM" fica igual a ["ADM"],
   35, porque "ADM" não é curso do catálogo e o alias exigiria mudar `normalizar_curso`.
+- **Vagas para PCD** (16/09/2026). A vaga afirmativa da MUDES ("Vaga Afirmativa (Lgbtqiapn, Raça,
+  Gênero, Pcd, 40)") chegou em 1º lugar, com 100, a quem não é PCD e sem indicação nenhuma. O
+  perfil ganhou `pessoa_com_deficiencia` (`0026`): `true`, `false` ou `null`, e `null` é tanto
+  "Prefiro não informar" quanto perfil anterior à pergunta, com o mesmo efeito. Decisões do Ian:
+  - Quem respondeu **não** deixa de receber vaga **exclusiva** para PCD (motivo de descarte
+    `exclusiva_para_pcd`). Vaga **afirmativa** para vários grupos continua chegando, com o aviso
+    "Vaga afirmativa: confira se você faz parte de um destes grupos: <lista do anúncio>" (ou
+    "confira no anúncio a quem ela se destina" sem lista legível): o Radar não sabe raça, gênero,
+    orientação nem idade, e tirá-la esconderia a vaga de quem é dos outros grupos.
+  - Para quem é **PCD**, exclusiva e afirmativa que inclui PCD vão para o **topo da mensagem**
+    (`prioritaria_para_pcd`, primeiro critério de `criterio_de_ranking`, só em memória), com o
+    ponto a favor "Vaga exclusiva para PCD" ou "Vaga afirmativa que inclui PCD". A nota não muda
+    e a prioridade só vale acima de `NOTA_MINIMA`: vaga PCD que não combina com o perfil segue
+    fora. Nenhum peso mudou.
+  - Quem **não informou** segue como antes: recebe tudo, sem prioridade, e a exclusiva ganha o
+    aviso "Vaga exclusiva para pessoas com deficiência (PCD)".
+
+  A classificação é regra em `domain/publico.py`, sem IA e sem mudar a extração. Quase toda
+  menção a PCD é da empresa: das 1.003 vagas do banco em 16/09, 29 citam PCD, deficiência ou ação
+  afirmativa e 25 são "PcDs são bem-vindas", "também extensivas para PCD", "sem distinção de
+  deficiência". O erro que mais custa é marcar como exclusiva uma vaga comum, porque ela some em
+  silêncio para quem respondeu não; a primeira versão fazia isso em 21 casos que a revisão
+  reproduziu, entre eles a reserva legal ("haverá reserva de vagas para pessoas com deficiência,
+  nos termos da lei"), comum em estágio público, e instituição que atende PCD ("Escola exclusiva
+  para pessoas com deficiência visual"), o que tirava vagas de Pedagogia, Psicologia e
+  Fisioterapia. Por isso:
+  - **Exclusiva** exige que o sujeito seja esta vaga, no singular ("vaga", "oportunidade",
+    "processo seletivo", "seleção", "inscrições"), seguido de "para PCD" ou de "exclusiva",
+    "somente", "destinada" etc.; sem outro público logo depois ("e", "ou", "também", "Vaga para
+    PCD: Não") e sem "não", "também", "nossas", "outras", "confira", "programa" ou "reserva"
+    antes. Plural ("vagas para PCD") é cota ou outra vaga e não conta.
+  - **No título**, PCD precisa ser um trecho inteiro ("Estágio - PCD", "(PcD)", "PCD | …") ou vir em
+    "Estágio para PCD". "(PcDs são bem-vindas)", "PcD ou Ampla Concorrência" e "Educação para
+    Pessoas com Deficiência" não contam.
+  - **Afirmativa** exige "vaga afirmativa" ou "ação afirmativa" no singular, porque "ações
+    afirmativas" costuma ser política da empresa; no título, "Afirmativa" sozinha basta. Os grupos
+    vêm só do parêntese logo depois dessa expressão, com vírgula e nome de grupo: "(Barra da
+    Tijuca)" e "políticas afirmativas (PCD, raça)" não viram lista.
+
+  Resultado nas 1.003: 1 exclusiva, 1 afirmativa com PCD (MUDES), 2 afirmativas sem lista, 999
+  gerais, igual à leitura manual das 29, antes e depois da correção.
+
+  É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
+  ao lado para que serve, e a resposta não entra em evento, log, prompt nem export. O juiz monta o
+  perfil campo a campo e não a recebe; a amostra de `descartes`, que leva `perfil_id`, calcula o
+  descarte com o perfil sem a resposta, senão o motivo `exclusiva_para_pcd` diria quem respondeu
+  não. Fechar o diálogo apaga a resposta junto com senha e e-mail, porque numa aba compartilhada
+  a próxima pessoa a veria marcada. A política de privacidade ganhou o dado e a base legal, ainda
+  como rascunho para aprovação. Vaza por dois caminhos aceitos: o ponto a favor "Vaga exclusiva
+  para PCD" é gravado em `avaliacoes` de toda vaga pontuada, enviada ou não, e a mensagem no
+  Telegram mostra que a vaga é para PCD.
+
+  **O cadastro ficava nos metadados do Auth** (`0027`). O `signUp` manda o perfil em
+  `raw_user_meta_data.cadastro_radar`; o gatilho da `0014` o copia para `cadastros_pendentes` e o
+  apaga na confirmação, mas em 16/09 5 das 6 contas confirmadas ainda o tinham, e os metadados vão
+  no token de sessão. A causa provável é o Auth regravar os metadados depois do gatilho. A `0027`
+  põe um gatilho `before update` em `auth.users` que tira a chave de toda gravação depois da
+  inserção (a inserção precisa dela para a cópia, e nada mais a lê) e limpou as contas antigas.
+  Conferir depois do push: `select count(*) from auth.users where raw_user_meta_data ?
+  'cadastro_radar'` deve dar zero.
+
+  Publicação: `db push` da `0026` e da `0027` antes do merge, porque o `rodar` passa a ler a coluna
+  e o site manda a chave, que a validação anterior recusa. Limites: vaga dirigida a outro grupo
+  sem a palavra "afirmativa" ("exclusiva para mulheres") não recebe aviso; "ação afirmativa" no
+  singular dentro do texto institucional gera aviso falso; afirmativa cuja lista não está entre
+  parênteses logo depois da expressão não dá prioridade a PCD; exclusividade dita só no plural,
+  sem sujeito ("Destinada a PCD.") ou só depois dos 500 caracteres da Adzuna escapa ou só é pega
+  no pré-filtro da entrega, depois de a vaga ter sido extraída. Errar para esse lado é
+  intencional: quem não é PCD recebe uma vaga a mais que não serve, em vez de perder em silêncio
+  uma que serve.
 
 ### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 

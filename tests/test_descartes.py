@@ -114,3 +114,15 @@ def test_amostra_com_a_mesma_semente_devolve_os_mesmos_descartes():
     segunda = exportar_descartes(descartes, amostra=5, semente=7)
 
     assert primeira == segunda
+
+
+def test_amostra_de_descartes_nao_revela_quem_respondeu_que_nao_e_pcd():
+    exclusiva = vaga(1, "Estágio em Desenvolvimento - PCD")
+    base = usuario()
+    nao_e_pcd = base.model_copy(
+        update={"perfil": base.perfil.model_copy(update={"pessoa_com_deficiencia": False})}
+    )
+
+    descartes = descartes_do_prefiltro([exclusiva], [nao_e_pcd])
+
+    assert descartes == []
