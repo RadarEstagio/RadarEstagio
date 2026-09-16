@@ -1,5 +1,4 @@
 import json
-import re
 from pathlib import Path
 
 from radar.domain.areas import AREAS, area_do_curso, catalogo_do_site, normalizar_curso
@@ -37,17 +36,10 @@ def test_curso_sugerido_e_escrito_para_leitura_e_nao_normalizado():
     assert any("ç" in curso or "ã" in curso or "é" in curso for curso in sugeridos)
 
 
-def test_as_sugestoes_do_formulario_sao_as_do_catalogo():
+def test_o_formulario_nao_guarda_lista_propria_de_cursos():
     html = (Path(__file__).parent.parent / "web/index.html").read_text()
-    lista = re.search(r'<datalist id="cursos-sugeridos">(.*?)</datalist>', html, re.S)
-    no_formulario = re.findall(r'<option value="([^"]+)"></option>', lista.group(1))
-    do_catalogo = sorted({c for area in AREAS for c in area.cursos_sugeridos}, key=str.casefold)
+    javascript = (Path(__file__).parent.parent / "web/assets/app.js").read_text()
 
-    assert no_formulario == do_catalogo
-
-
-def test_o_formulario_sugere_curso_de_area_fora_da_computacao():
-    html = (Path(__file__).parent.parent / "web/index.html").read_text()
-
-    for curso in ("Direito", "Enfermagem", "Pedagogia", "Engenharia Civil", "Turismo"):
-        assert f'<option value="{curso}"></option>' in html
+    assert "<datalist" not in html
+    assert 'id="lista-de-cursos"' in html
+    assert "area.cursos_sugeridos" in javascript
