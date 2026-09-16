@@ -39,6 +39,10 @@
     "administracao",
     "administracao"
   ],
+  "ADM": [
+    "administracao",
+    "administracao"
+  ],
   "ADS": [
     "analise e desenvolvimento de sistemas",
     "computacao"
@@ -93,6 +97,34 @@
   ],
   "Gestão da TI": [
     "gestao da tecnologia da informacao",
+    "computacao"
+  ],
+  "Tecnologia": [
+    "tecnologia da informacao",
+    "computacao"
+  ],
+  "Tecnologia em Logística": [
+    "logistica",
+    "logistica"
+  ],
+  "Cibersegurança": [
+    "seguranca cibernetica",
+    "computacao"
+  ],
+  "Sistemas para a Internet": [
+    "sistemas para internet",
+    "computacao"
+  ],
+  "Desenvolvimento de Software": [
+    "desenvolvimento de sistemas",
+    "computacao"
+  ],
+  "Rede de Computadores": [
+    "redes de computadores",
+    "computacao"
+  ],
+  "Análise de Sistema": [
+    "analise de sistemas",
     "computacao"
   ],
   "Direito - Bacharelado": [
