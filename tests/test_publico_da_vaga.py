@@ -41,6 +41,8 @@ def test_titulo_que_dirige_a_vaga_a_pcd_e_exclusivo(titulo):
         "Esta oportunidade é destinada a pessoas com deficiência.",
         "Vaga exclusivamente para pessoas com deficiência, com laudo.",
         "Inscrições somente para PCD.",
+        "Vaga para pessoas com deficiência auditiva, com intérprete de Libras.",
+        "Vaga PCD: Sim.",
         "Vaga PCD, com adaptação do posto de trabalho.",
     ],
 )
@@ -137,3 +139,81 @@ def test_acoes_afirmativas_da_empresa_nao_tornam_a_vaga_afirmativa():
     comum = vaga(descricao="A empresa mantém programas de diversidade e ações afirmativas.")
 
     assert publico_da_vaga(comum) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Haverá reserva de vagas para pessoas com deficiência, nos termos da lei.",
+        "10% das vagas são reservadas para pessoas com deficiência.",
+        "Somos uma empresa que oferece oportunidades para pessoas com deficiência.",
+        "Também temos programa de estágio para pessoas com deficiência.",
+        "Confira também nossas vagas PCD no site.",
+        "Vagas para PCD e para ampla concorrência.",
+        "Vagas destinadas a pessoas com deficiência: 2. Ampla concorrência: 18.",
+        "Vaga para pessoas com deficiência e pessoas negras.",
+        "Esta vaga é para PCD e/ou reabilitados do INSS.",
+        "Vaga para PCD: Não. Nível: estágio.",
+        "Vaga PCD? Não",
+        "Esta oportunidade também está aberta para pessoas com deficiência.",
+        "Oportunidade para pessoas com deficiência e sem deficiência.",
+    ],
+)
+def test_cota_programa_ou_outras_vagas_nao_tornam_esta_vaga_exclusiva(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is not PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Estágio em instituição que atende exclusivamente pessoas com deficiência.",
+        "Escola exclusiva para pessoas com deficiência visual.",
+        "Centro de reabilitação com atendimento exclusivo a pessoas com deficiência.",
+    ],
+)
+def test_instituicao_que_atende_pcd_nao_torna_a_vaga_exclusiva(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Marketing (PcDs são bem-vindas)",
+        "Estágio em Vendas - PcD bem-vindo",
+        "Estágio (PCD e não PCD)",
+        "Estágio em Direito - PcD ou Ampla Concorrência",
+        "Estágio Administrativo - PCD e Ampla Concorrência",
+        "Estágio em RH: PCD e Diversidade",
+        "Estágio em Educação Especial / PcD",
+        "Estágio em Educação para Pessoas com Deficiência",
+    ],
+)
+def test_titulo_que_so_cita_pcd_nao_torna_a_vaga_exclusiva(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is not PublicoDaVaga.EXCLUSIVO_PCD
+
+
+def test_titulo_afirmativa_sem_a_palavra_vaga_continua_afirmativa_com_pcd():
+    afirmativa = vaga(titulo="Estágio em TI - Afirmativa (PCD, Mulheres)")
+
+    assert publico_da_vaga(afirmativa) is PublicoDaVaga.AFIRMATIVO_COM_PCD
+    assert grupos_da_vaga_afirmativa(afirmativa) == "PCD, Mulheres"
+
+
+def test_politica_afirmativa_da_empresa_nao_empresta_grupos_a_vaga():
+    afirmativa = vaga(
+        descricao="Vaga afirmativa para mulheres. Nossas políticas afirmativas (PCD, raça) valem."
+    )
+
+    assert publico_da_vaga(afirmativa) is PublicoDaVaga.AFIRMATIVO
+    assert grupos_da_vaga_afirmativa(afirmativa) is None
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Vaga afirmativa para mulheres na unidade (Barra da Tijuca).",
+        "Ação afirmativa: mulheres (cis e trans).",
+    ],
+)
+def test_parentese_que_nao_lista_grupos_nao_vira_lista_de_grupos(descricao):
+    assert grupos_da_vaga_afirmativa(vaga(descricao=descricao)) is None
