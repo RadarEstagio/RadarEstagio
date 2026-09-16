@@ -94,3 +94,18 @@ Deno.test("falha de persistência solicita retry sem fechar nem confirmar", asyn
   assertEquals(resposta.status, 500);
   assertEquals(chamadas, []);
 });
+
+Deno.test("vaga encerrada responde com aviso próprio que diz como desfazer", async () => {
+  const { api, chamadas } = operacoes();
+
+  const encerrada = await processarFeedback({ ...consulta, acao: "motivo_encerrada" }, api);
+  const outraRecusa = await processarFeedback({ ...consulta, acao: "motivo_repetida" }, api);
+
+  assertEquals(chamadas, ["motivo_encerrada", "fechar", "motivo_repetida", "fechar"]);
+  assertEquals(
+    encerrada,
+    "Obrigado. Essa vaga deixa de ser enviada. Tocou por engano? Toque no número dela e escolha outra opção.",
+  );
+  assertEquals(outraRecusa, "Obrigado, isso ajuda a melhorar as próximas.");
+  assertEquals(encerrada.length <= 200, true);
+});

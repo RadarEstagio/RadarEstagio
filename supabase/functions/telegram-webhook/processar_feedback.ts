@@ -5,8 +5,10 @@ import {
   AVISO_DE_CONSULTA_DESCONHECIDA,
   AVISO_DE_RECUSA_REGISTRADA,
   AVISO_DE_TUDO_CERTO,
+  AVISO_DE_VAGA_ENCERRADA,
   type ConsultaDeFeedback,
   eventoDoFeedback,
+  MOTIVO_DE_VAGA_ENCERRADA,
 } from "./feedback.ts";
 
 export interface EnvioDoToken {
@@ -45,7 +47,9 @@ export async function processarFeedback(
   } catch (erro) {
     console.error("feedback gravado, mas pergunta não pôde ser fechada", erro);
   }
-  return AVISO_DE_RECUSA_REGISTRADA;
+  return consulta.acao === MOTIVO_DE_VAGA_ENCERRADA
+    ? AVISO_DE_VAGA_ENCERRADA
+    : AVISO_DE_RECUSA_REGISTRADA;
 }
 
 export async function responderConsultaDeFeedback(
