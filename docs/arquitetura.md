@@ -186,7 +186,10 @@ antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
 Regex não lê negação sozinho: "não exigimos 2 anos de experiência" descartava a vaga pela
 menção. A negação passou a valer dentro da mesma frase, e só dentro dela, para que um "não"
-da frase anterior não libere a exigência seguinte.
+da frase anterior não libere a exigência seguinte. Depois da exigência ela vale nas palavras
+logo seguintes, sem atravessar vírgula ("Experiência de 2 anos não é necessária"), e a exigência
+precisa do "de" ("2 anos de experiência"), porque a quebra de linha some e "Duração: 2 anos"
+colava no rótulo "Experiência" da linha seguinte.
 
 Cortar antes da IA economiza cota e também esconde erro: quem só julga a vaga entregue nunca
 vê a boa vaga que sumiu aqui. `python -m radar descartes` grava uma amostra do que o

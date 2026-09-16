@@ -134,6 +134,51 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
 
 
 @pytest.mark.parametrize(
+    "descricao",
+    [
+        "Duração: 2 anos. Experiência não necessária.",
+        "Duração: 2 anos\nExperiência não necessária.",
+        "Duração do contrato: 2 anos Experiência: não é necessária.",
+        "Duração do estágio: até 2 anos\nExperiência com Excel é um diferencial.",
+    ],
+)
+def test_duracao_do_estagio_seguida_do_rotulo_de_experiencia_nao_e_exigencia(descricao: str):
+    assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Experiência de 2 anos não é necessária.",
+        "2 anos de experiência não são exigidos.",
+        "Experiência mínima de 3 anos: não exigida para estudantes.",
+        "2 anos de experiência prévia não é necessária.",
+        "2 anos de experiência (não exigida).",
+    ],
+)
+def test_negacao_logo_depois_da_exigencia_de_experiencia_mantem_a_vaga(descricao: str):
+    assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Duração: 6 meses. Requisito: 2 anos de experiência com Python.",
+        "Requisito: 2 anos de experiência com Python. Não é necessário inglês.",
+        "Experiência mínima de 3 anos em vendas e bons conhecimentos. Não exigimos inglês.",
+        "Experiência de 2 anos em atendimento ao cliente, não sendo necessário inglês.",
+        "Experiência de 3 anos, não precisa ter carro.",
+        "2 anos de experiência com vendas; não exigimos inglês.",
+        "Duração: 2 anos. Exigimos 3 anos de experiência na área.",
+    ],
+)
+def test_exigencia_de_experiencia_com_negacao_distante_ou_duracao_continua_descartada(
+    descricao: str,
+):
+    assert exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
     "titulo",
     [
         "Estágio em Técnico em Eletrônica",
@@ -359,6 +404,62 @@ def test_titulo_com_sinal_de_computacao_e_mantido_mesmo_citando_outra_area(titul
 )
 def test_sinal_da_propria_area_vence_o_veto_de_outra(curso: str, titulo: str):
     assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo", "descricao"),
+    [
+        (
+            "Comunicação Social",
+            "Estágio em Produção de Vídeo",
+            "Atividades: apoio à equipe de marketing na edição de vídeos para redes sociais.",
+        ),
+        (
+            "Publicidade e Propaganda",
+            "Estagiário de Produção de Vídeos",
+            "Requisitos: Premiere; desejável experiência com redes sociais.",
+        ),
+        ("Cinema e Audiovisual", "Estágio - Produção Vídeo", "Sem detalhes."),
+        (
+            "Direito",
+            "Estágio em Responsabilidade Civil",
+            "Atividades: apoio à equipe do contencioso na elaboração de petições.",
+        ),
+        ("Cinema e Audiovisual", "Estágio em Responsabilidade Civil", "Sem detalhes."),
+    ],
+)
+def test_producao_de_video_e_responsabilidade_civil_nao_sao_vetadas_como_engenharia(
+    curso: str, titulo: str, descricao: str
+):
+    assert not titulo_e_de_outra_area(normalizar(titulo), "marketing")
+    assert not titulo_e_de_outra_area(normalizar(titulo), "direito")
+    assert not fora_da_area_do_curso(vaga(titulo=titulo, descricao=descricao), perfil(curso=curso))
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo"),
+    [
+        ("Comunicação Social", "Estágio em Engenharia de Produção"),
+        ("Comunicação Social", "Estágio em Produção"),
+        ("Comunicação Social", "Estagiário de Produção Industrial"),
+        ("Cinema e Audiovisual", "Estágio em Planejamento e Controle da Produção"),
+        ("Direito", "Estágio em Engenharia Civil"),
+        ("Direito", "Estágio em Construção Civil"),
+        ("Cinema e Audiovisual", "Estágio em Obras - Construção Civil"),
+    ],
+)
+def test_producao_e_civil_de_engenharia_continuam_vetados_para_outras_areas(
+    curso: str, titulo: str
+):
+    assert fora_da_area_do_curso(
+        vaga(titulo=titulo, descricao="Sem detalhes."), perfil(curso=curso)
+    )
+
+
+def test_producao_de_video_nao_e_titulo_de_engenharia_de_producao():
+    producao_de_video = vaga(titulo="Estágio em Produção de Vídeo", descricao="Sem detalhes.")
+
+    assert fora_da_area_do_curso(producao_de_video, perfil(curso="Engenharia de Produção"))
 
 
 @pytest.mark.parametrize(
@@ -743,6 +844,12 @@ def test_hibrido_e_indiferente_mantem_vaga_remota_de_outra_cidade_e_qualquer_vag
         "Estágio de Mestrado em Meteorologia - EPE/RJ",
         "Estágio para doutorandos em Química",
         "Estágio de Pós-Graduação em Direito",
+        "Estágio para Pós-Graduandos em Economia",
+        "Estágio de Mestrado em Tecnologia da Informação",
+        "Estágio de Doutorado - Pós-Graduação em Engenharia",
+        "Estágio de Mestrado no Hospital Universitário",
+        "Estágio de Mestrado em Engenharia - Graduação concluída",
+        "Estágio docente para mestrandos da graduação em Letras",
     ],
 )
 def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
@@ -753,6 +860,24 @@ def test_estagio_restrito_a_pos_graduacao_e_descartado(titulo: str):
 @pytest.mark.parametrize("titulo", ["Estágio em Economia", "Estágio em Direito - Graduação"])
 def test_estagio_de_graduacao_nao_e_confundido_com_pos(titulo: str):
     assert not exige_pos_graduacao(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Economia - Graduação ou Pós-Graduação",
+        "Programa de Estágio - Graduação e Pós-Graduação",
+        "Estágio em Economia (graduação ou pós-graduação)",
+        "Estágio para Graduandos e Mestrandos em Economia",
+        "Estágio para universitários e pós-graduandos",
+        "Estágio de Nível Superior ou Mestrado em Economia",
+    ],
+)
+def test_estagio_que_tambem_aceita_graduacao_nao_e_descartado_como_pos(titulo: str):
+    assert not exige_pos_graduacao(vaga(titulo=titulo))
+    assert motivo_do_descarte(vaga(titulo=titulo), perfil(curso="Economia")) != (
+        "exige_pos_graduacao"
+    )
 
 
 @pytest.mark.parametrize("titulo", ["Estágio: Administrativa", "Estágio Administrativo"])
@@ -961,6 +1086,58 @@ def test_remoto_mantem_vaga_de_outra_cidade_que_admite_remoto_e_qualquer_da_prop
         vaga(localizacao="Brasil", modalidade=Modalidade.REMOTO), remoto
     )
     assert not localizacao_incompativel(vaga(localizacao="Rio de Janeiro, Rio de Janeiro"), remoto)
+
+
+GRAFIAS_DE_TRABALHO_REMOTO = [
+    "Trabalho em home-office.",
+    "Modelo home - office, com encontros mensais na sede.",
+    "Regime de teletrabalho.",
+    "Contrato em tele-trabalho.",
+]
+
+
+@pytest.mark.parametrize(
+    "modalidade", [Modalidade.HIBRIDO, Modalidade.INDIFERENTE, Modalidade.REMOTO]
+)
+@pytest.mark.parametrize("descricao", GRAFIAS_DE_TRABALHO_REMOTO)
+def test_home_office_com_hifen_e_teletrabalho_admitem_remoto_em_outra_cidade(
+    modalidade: Modalidade, descricao: str
+):
+    do_rio = perfil(modalidade=modalidade, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, do_rio) is None
+
+
+@pytest.mark.parametrize("descricao", GRAFIAS_DE_TRABALHO_REMOTO)
+def test_home_office_com_hifen_e_teletrabalho_nao_levam_vaga_distante_a_quem_e_presencial(
+    descricao: str,
+):
+    presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, presencial) == "localizacao_incompativel"
+
+
+def test_presencial_com_dia_de_home_office_com_hifen_nao_e_incompativel_com_perfil_remoto():
+    parcial = vaga(descricao="Presencial na sede, com um dia de home-office por semana.")
+
+    assert not modalidade_incompativel(parcial, perfil(modalidade=Modalidade.REMOTO))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Domínio do pacote Office. Atendimento em home care.",
+        "Conhecimento em Office 365; vaga para a sede.",
+        "Trabalho em equipe e boa comunicação.",
+    ],
+)
+def test_office_ou_home_soltos_nao_admitem_remoto_em_outra_cidade(descricao: str):
+    hibrido = perfil(modalidade=Modalidade.HIBRIDO, cidade="Rio de Janeiro, RJ")
+    em_fortaleza = vaga(localizacao="Fortaleza, Ceará", descricao=descricao)
+
+    assert motivo_do_descarte(em_fortaleza, hibrido) == "localizacao_incompativel"
 
 
 VAGA_EXCLUSIVA_PARA_PCD = "Processo seletivo exclusivo para pessoas com deficiência. Python e SQL."

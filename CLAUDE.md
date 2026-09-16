@@ -808,6 +808,25 @@ Os padrões de descrição são estreitos de propósito ("rotinas administrativa
 "administração"; "área comercial", não "comercial"), porque a citação do curso já é tratada com
 contexto no passo 1.
 
+**Produção de vídeo e responsabilidade civil (16/09/2026).** A exclusão de engenharias toma
+"produção" e "civil" como marca de outra área, então "Estágio em Produção de Vídeo" saía para
+Comunicação e para curso fora do catálogo (Cinema e Audiovisual cai no passo 2), e "Responsabilidade
+Civil" saía para Direito sem a descrição ser lida. "Produção (de) vídeo(s)" entrou nas exceções de
+"produção" (conteúdo, audiovisual, editorial, material, eventos), no veto e no título de
+engenharias, que mantêm a mesma lista; "civil" depois de "responsabilidade" entrou ao lado de
+direito, processo e registro. Sem o veto, o título cai na descrição (passo 4), como "Edição de
+Vídeo" já caía: para Comunicação sem contexto de marketing na descrição, a vaga continua saindo.
+Seguem com o veto de engenharias "Engenharia de Produção", "Produção", "Produção Industrial",
+"Planejamento e Controle da Produção", "Engenharia Civil" e "Construção Civil". Medido: nenhum dos
+763 títulos distintos do banco muda em padrão algum, e nenhum par muda. Num corpus de 25 títulos × 9
+cursos × 4 descrições, 92 pares mudam: 60 deixam de sair (Comunicação e Publicidade com descrição de
+marketing, Cinema e Audiovisual e Agronomia em qualquer descrição) e 32 passam a sair, os de
+Engenharia de Produção e Civil em "Produção de Vídeo", que deixou de ser título de engenharia.
+Custo aceito: curso sem área conhecida (Agronomia) passa a receber esses títulos, como já recebe
+"Estágio em Edição de Vídeo". Limites: "Produção e Edição de Vídeo", "Produção Cultural", "Produção
+de Moda", "Defesa Civil" e "Sociedade Civil" seguem vetados, e "vídeo" não é sinal de marketing no
+título.
+
 ### Qualidade da mensagem e do pré-filtro
 
 - `NOTA_MINIMA` (padrão 40) corta vagas fracas da mensagem. Sem aprovadas, o estudante recebe
@@ -1102,9 +1121,33 @@ sondas executáveis. O que mudou:
   ou híbrida em outra cidade fica limitada a 30 com aviso próprio, como já acontecia com perfil
   remoto. Perfil presencial continua exigindo a própria cidade mesmo para vaga remota — desde
   10/09/2026, a própria cidade ou uma da mesma região imediata do IBGE.
+  **Home-office com hífen e teletrabalho (16/09/2026).** O texto só contava como remoto com
+  "remoto", "remote" ou "home office" com espaço (ou junto), então vaga de outra cidade que dizia
+  "home-office" ou "teletrabalho" saía para híbrido, indiferente e remoto, e o perfil remoto via
+  como presencial a vaga que citava a sede e o home-office. As duas grafias (e "tele-trabalho")
+  entram no mesmo `PADRAO_TRABALHO_REMOTO`; perfil presencial não muda. Medido nas 1.003 vagas
+  do banco com 448 perfis sintéticos (16 cursos, 7 cidades, 4 modalidades), somando a descrição
+  guardada e a cortada em 500 caracteres: 134 pares de 4 vagas passam a ficar, e nenhuma é remota
+  (3 híbridas pela extração, uma delas por "auxílio home-office"; a quarta só pede "disponibilidade
+  para home-office"). É a imprecisão que a grafia com espaço já tinha com "auxílio home office"
+  e "híbrido (home office e presencial)": entre as vagas da Adzuna do banco com remoto no texto e
+  modalidade extraída, 22 são remotas, 16 híbridas e 3 presenciais. Depois da extração a híbrida
+  de outra cidade fica em 30 e não é enviada, então o custo é extração. Limite da medição: `vagas`
+  só guarda o que passou no pré-filtro de algum perfil, e 872 das 1.003 são do Rio, então a vaga
+  de outra cidade que só dizia "home-office" quase nunca foi guardada e o ganho não aparece.
 - **Estágio de mestrado ou doutorado chegava a graduando.** "Estágio de Mestrado em Economia"
   (EPE) foi a um perfil de Direito com nota 55, só com o alerta de pegadinha. Título com
   mestrado, doutorado ou pós-graduação sai no pré-filtro, como já saía "pleno" e "sênior".
+  **Título que também aceita graduação (16/09/2026).** "Graduação ou Pós-Graduação", "Graduandos
+  e Mestrandos" e "universitários e pós-graduandos" saíam como estágio de pós. A exceção vale só
+  quando graduação, graduandos, universitários ou superior vem ligado ao termo da pós por "ou",
+  "e", "/" ou vírgula, nas duas ordens (`PADRAO_GRADUACAO_JUNTO_DA_POS`). Não é a exceção do
+  ensino médio, que aceita qualquer menção a nível superior: ela soltaria "Estágio de Mestrado no
+  Hospital Universitário", "Mestrado em Engenharia - Graduação concluída" e "mestrandos da
+  graduação", que seguem descartados. O banco tem 2 títulos com termo de pós (EPE, mestrado),
+  nenhum muda; num corpus de 32 títulos, 12 deixam de sair, 11 com razão. Limites: "Estágio de
+  Doutorado, graduação concluída" passa pela vírgula; "Graduação em Direito ou Pós-Graduação", com
+  palavras no meio, continua saindo; e "Pós Graduação" com espaço nunca foi descartada.
 - **Estágio de ensino médio chegava a universitário** (09/09, execução real com 12 perfis):
   "Vaga de estágio para estudantes de ensino médio" foi para Pedagogia com nota 60, porque
   "ensino" é sinal de educação no título. Título de ensino médio, nível médio ou jovem aprendiz
@@ -1153,6 +1196,19 @@ O que muda para quem opera:
   banco de teste.
 - **Negação não conta como exigência de experiência**: "não exigimos 2 anos de experiência" era
   descartado antes da IA. A negação vale só dentro da mesma frase.
+  **Duração do estágio e negação depois (16/09/2026).** A Adzuna junta as linhas do anúncio, e
+  "Duração: 2 anos" seguida do rótulo "Experiência" virava "2 anos experiência", que o regex lia
+  como exigência porque o "de" era opcional: a vaga saía com ou sem "Experiência não necessária"
+  depois. A exigência passou a ser "N anos de experiência" ou "experiência de N anos". E a negação
+  só era lida antes, então "Experiência de 2 anos não é necessária" saía: ela vale também nas 4
+  palavras seguintes, sem atravessar ponto, vírgula nem ponto e vírgula, senão "3 anos de
+  experiência, não precisa ter carro" deixaria de sair. O banco não mede a regra: ela não depende
+  do perfil, então `vagas` nunca guarda o que ela corta (zero vagas marcadas antes e depois). Num
+  corpus de 34 frases, 13 deixam de sair: 10 com razão e 3 pioras aceitas, a exigência escrita sem
+  o "de" ("3 anos experiência em vendas", "Mínimo 2 anos experiência", "5+ anos experiência"),
+  gramaticalmente rara e que a nota ainda pesa pela experiência extraída. Seguem saindo, como
+  antes: "não obrigatória" (fora do vocabulário da negação), "Desejável 2 anos de experiência" e o
+  texto institucional "consultoria com 5 anos de experiência no mercado".
 - **Falha de entrega temporária não pausa mais o perfil.** Só HTTP 403 e o 400 que nomeia o
   destinatário (`chat not found`, bot bloqueado) contam para `falhas_de_envio`. Indisponibilidade
   do Telegram e erro de formatação nosso viram aviso do dia. Além disso, resposta de erro sem

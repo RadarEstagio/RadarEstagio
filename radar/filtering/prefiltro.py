@@ -34,15 +34,23 @@ PADRAO_TITULO_TAMBEM_SUPERIOR = re.compile(
 PADRAO_POS_GRADUACAO = re.compile(
     r"\b(?:mestrado|doutorado|mestrand[oa]s?|doutorand[oa]s?|pos-?graduacao|pos-?graduand[oa]s?)\b"
 )
+NIVEL_DE_GRADUACAO = (
+    r"(?<!pos-)(?<!pos )\b(?:graduacao|graduand[oa]s?|universitari[oa]s?|superior)\b"
+)
+LIGACAO_ENTRE_NIVEIS = r"(?:\s*(?:,|/|\bou\b|\be\b)\s*)+"
+PADRAO_GRADUACAO_JUNTO_DA_POS = re.compile(
+    rf"{NIVEL_DE_GRADUACAO}{LIGACAO_ENTRE_NIVEIS}{PADRAO_POS_GRADUACAO.pattern}"
+    rf"|{PADRAO_POS_GRADUACAO.pattern}{LIGACAO_ENTRE_NIVEIS}{NIVEL_DE_GRADUACAO}"
+)
 PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
-    r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
+    r"(\d+)\s*\+?\s*anos?\s+de\s+experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
 )
 PADRAO_QUALQUER_FORMACAO = re.compile(
     r"\b(?:qualquer|todos os|todas as)\s+(?:cursos?|formacao|formacoes|graduacao|graduacoes)"
     r"\b(?!\s+(?:de|da|do|das|dos|em|na|no)\b)"
 )
-PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
+PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home[\s-]*office|tele-?trabalho)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
 PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
     r"\bnao\s+(?:\w+\s+){0,3}?(?:exig\w*|ped\w*|precis\w*|requer\w*|necessari\w*)"
@@ -51,6 +59,8 @@ PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
 )
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
 PALAVRAS_ANTES_DA_EXIGENCIA = 8
+PALAVRAS_DEPOIS_DA_EXIGENCIA = 4
+PADRAO_FIM_DA_ORACAO = re.compile(r"[.,;](?:\s|$)")
 
 
 def nao_e_estagio(vaga: Vaga) -> bool:
@@ -62,7 +72,10 @@ def exige_senioridade(vaga: Vaga) -> bool:
 
 
 def exige_pos_graduacao(vaga: Vaga) -> bool:
-    return PADRAO_POS_GRADUACAO.search(normalizar(vaga.titulo)) is not None
+    titulo = normalizar(vaga.titulo)
+    if PADRAO_GRADUACAO_JUNTO_DA_POS.search(titulo):
+        return False
+    return PADRAO_POS_GRADUACAO.search(titulo) is not None
 
 
 def exige_ensino_medio(vaga: Vaga) -> bool:
@@ -119,17 +132,22 @@ def exige_anos_de_experiencia(vaga: Vaga) -> bool:
     anos_exigidos = (
         int(grupo)
         for ocorrencia in PADRAO_ANOS_DE_EXPERIENCIA.finditer(texto)
-        if not exigencia_negada(texto, ocorrencia.start())
+        if not exigencia_negada(texto, ocorrencia.start(), ocorrencia.end())
         for grupo in ocorrencia.groups()
         if grupo
     )
     return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_exigidos)
 
 
-def exigencia_negada(texto: str, posicao: int) -> bool:
-    inicio_da_frase = texto.rfind(". ", 0, posicao) + 1
-    anteriores = texto[inicio_da_frase:posicao].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
-    return PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(anteriores)) is not None
+def exigencia_negada(texto: str, inicio: int, fim: int) -> bool:
+    inicio_da_frase = texto.rfind(". ", 0, inicio) + 1
+    fim_da_oracao = PADRAO_FIM_DA_ORACAO.search(texto, fim)
+    anteriores = texto[inicio_da_frase:inicio].split()[-PALAVRAS_ANTES_DA_EXIGENCIA:]
+    seguintes = texto[fim : fim_da_oracao.start() if fim_da_oracao else len(texto)].split()
+    return any(
+        PADRAO_EXPERIENCIA_DISPENSADA.search(" ".join(palavras)) is not None
+        for palavras in (anteriores, seguintes[:PALAVRAS_DEPOIS_DA_EXIGENCIA])
+    )
 
 
 def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
