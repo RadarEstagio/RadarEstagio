@@ -313,9 +313,16 @@ async function consultaDoRepositorio(nome: string): Promise<string> {
   const fonte = await Deno.readTextFile(
     new URL("../../radar/storage/postgres.py", import.meta.url),
   );
-  for (const bloco of fonte.matchAll(/^(SQL_\w+) = f?"""\n([\s\S]*?)"""$/gm)) {
-    if (bloco[1] === nome) return bloco[2];
+  const modulo: Record<string, string> = {};
+  for (const constante of fonte.matchAll(/^([A-Z_]+) = (\d+)$/gm)) {
+    modulo[constante[1]] = constante[2];
   }
+  for (const bloco of fonte.matchAll(/^(SQL_\w+) = (f?)"""\n([\s\S]*?)"""$/gm)) {
+    modulo[bloco[1]] = bloco[2]
+      ? bloco[3].replace(/\{(\w+)\}/g, (trecho, nome: string) => modulo[nome] ?? trecho)
+      : bloco[3];
+  }
+  if (modulo[nome]) return modulo[nome];
   throw new Error(`constante ${nome} não encontrada em postgres.py`);
 }
 
