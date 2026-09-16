@@ -231,6 +231,29 @@ def test_empresa_sem_nome_ainda_une_anuncio_curto_repetido_com_o_mesmo_texto():
     assert remover_duplicatas([original, repetida]) == [original]
 
 
+def test_linguagens_que_so_diferem_pelo_simbolo_nao_sao_duplicatas():
+    csharp = vaga("Estágio em Desenvolvimento C#", numero=1)
+    cpp = vaga("Estágio em Desenvolvimento C++", numero=2)
+    c = vaga("Estágio em Desenvolvimento C", numero=3)
+
+    assert remover_duplicatas([csharp, cpp, c]) == [csharp, cpp, c]
+
+
+def test_republicacao_nao_junta_linguagens_que_so_diferem_pelo_simbolo():
+    csharp = vaga("Estágio Desenvolvedor C#", "BuscarVagas", descricao=ANUNCIO, numero=1)
+    cpp = vaga("Estágio Desenvolvedor C++", "Divulga Vagas", descricao=ANUNCIO, numero=2)
+
+    assert remover_duplicatas([csharp, cpp]) == [csharp, cpp]
+    assert remover_republicacoes_de([cpp], [csharp]) == [cpp]
+
+
+def test_simbolo_de_linguagem_ainda_ignora_caixa_acento_e_pontuacao():
+    original = vaga("Estágio - Desenvolvedor C#/.NET", numero=1)
+    variacao = vaga("ESTAGIO DESENVOLVEDOR c# .net", numero=2)
+
+    assert remover_duplicatas([original, variacao]) == [original]
+
+
 def test_mesma_vaga_em_cidades_diferentes_nao_e_duplicata():
     em_sao_paulo = vaga(localizacao="São Paulo", numero=1)
     em_recife = vaga(localizacao="Recife", numero=2)
