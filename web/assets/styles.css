@@ -440,9 +440,9 @@ p, h1, h2, h3 { margin-top: 0; }
 #assistance-form { display: grid; gap: 24px; margin-block: 24px; }
 #captcha-container { margin-top: 20px; }
 
-.signup-dialog { width: min(1050px, calc(100% - 28px)); max-height: min(780px, calc(100dvh - 28px)); padding: 0; overflow: hidden; overscroll-behavior: contain; border: 0; border-radius: var(--radius-lg); background: var(--surface); box-shadow: 0 30px 80px rgba(23, 32, 26, .3); }
+.signup-dialog { --signup-dialog-max-height: min(780px, calc(100dvh - 28px)); width: min(1050px, calc(100% - 28px)); max-height: var(--signup-dialog-max-height); padding: 0; overflow: hidden; overscroll-behavior: contain; border: 0; border-radius: var(--radius-lg); background: var(--surface); box-shadow: 0 30px 80px rgba(23, 32, 26, .3); }
 .signup-dialog::backdrop { background: rgba(16, 24, 20, .6); backdrop-filter: blur(6px); }
-.dialog-shell { position: relative; display: grid; grid-template-columns: .78fr 1.22fr; min-height: 650px; }
+.dialog-shell { position: relative; display: grid; grid-template-columns: .78fr 1.22fr; min-height: min(650px, var(--signup-dialog-max-height)); }
 .dialog-close { position: absolute; right: 16px; top: 14px; z-index: 4; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--surface); font-size: 24px; line-height: 1; cursor: pointer; }
 .dialog-intro { display: flex; flex-direction: column; padding: 54px 42px 38px; color: var(--white); background: var(--accent-deep); }
 .radar-mark-dialog { width: 48px; height: 48px; margin-bottom: 72px; }.radar-mark-dialog::before { width: 24px; height: 24px; }.radar-mark-dialog::after { width: 23px; right: 21px; top: 21px; }
@@ -461,7 +461,8 @@ p, h1, h2, h3 { margin-top: 0; }
 .pause-reason .option-grid { grid-template-columns: repeat(2, 1fr); }
 .pause-reason .form-message { margin: 0; }
 .privacy-note { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: 11px; }.privacy-note span { color: var(--accent-light); }
-.dialog-form-area { overflow-y: auto; padding: 46px 54px 36px; }
+.dialog-form-area { position: relative; overflow-y: auto; padding: 46px 54px 36px; }
+@media (width > 760px) { .signup-dialog .dialog-intro, .signup-dialog .dialog-form-area { max-height: var(--signup-dialog-max-height); overflow-y: auto; } }
 .progress-wrap { margin-bottom: 39px; }.progress-meta { display: flex; justify-content: space-between; margin-bottom: 9px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }.progress-track span { display: block; width: 0; height: 100%; background: var(--accent); transition: width 260ms ease; }
 .form-step { display: none; padding: 0; border: 0; }.form-step.is-active { display: block; animation: step-in 220ms ease; }
