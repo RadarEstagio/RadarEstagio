@@ -973,7 +973,8 @@ título.
   põe um gatilho `before update` em `auth.users` que tira a chave de toda gravação depois da
   inserção (a inserção precisa dela para a cópia, e nada mais a lê) e limpou as contas antigas.
   Conferir depois do push: `select count(*) from auth.users where raw_user_meta_data ?
-  'cadastro_radar'` deve dar zero.
+  'cadastro_radar'` deve dar zero. A identidade do Auth guardava outra cópia, que a `0030` tira
+  (ver "Cadastro que não confirma o e-mail tem prazo").
 
   Publicação: `db push` da `0026` e da `0027` antes do merge, porque o `rodar` passa a ler a coluna
   e o site manda a chave, que a validação anterior recusa. Limites: vaga dirigida a outro grupo
@@ -1501,6 +1502,56 @@ ligação das automações, porque cada uma guardava o dono no nome:
   abrir nesse estado), e encerra a sessão local depois. Publicação: `db push` antes do merge, porque
   o site novo chama a função e o atual não a conhece. Se a `0024` subir antes da `0023`, o push da
   `0023` pede `--include-all`.
+- **Cadastro que não confirma o e-mail tem prazo** (16/09/2026, `0030`). O cadastro ia para
+  `cadastros_pendentes` no `signUp` e só saía na confirmação: quem nunca confirmava deixava ali para
+  sempre curso, cidade, habilidades e a resposta sobre deficiência, e a conta ficava no Auth. Refazer
+  o cadastro não trocava nada: no GoTrue 2.196 (`internal/api/signup.go`), `signUp` com e-mail já
+  cadastrado e não confirmado não regrava metadados nem senha ("do not update the user because we
+  can't be sure of their claimed identity"), só reenvia o link, gravando `confirmation_token` e
+  `confirmation_sent_at`, com 429 se o último envio tem menos de 60 s. O cadastro novo nunca chegava
+  ao banco, a confirmação criava o perfil com o antigo e o `concluir_meu_cadastro` seguinte não o
+  trocava (`on conflict do nothing`). E esse mesmo `signUp`, feito por quem sabe o e-mail de alguém
+  que ainda não confirmou, devolve o usuário real com `identities[].identity_data`, para onde o Auth
+  copia os metadados do `signUp`: a `0027` só limpou `raw_user_meta_data`, e em 16/09 5 das 6
+  identidades ainda tinham `cadastro_radar`, lidas por qualquer um nesse caso. O que mudou:
+  - **Todo link depois do primeiro descarta o pendente** (gatilho `after update of
+    confirmation_sent_at`, com a conta não confirmada e `confirmation_sent_at` já preenchido antes).
+    O banco não distingue a pessoa refazendo o cadastro, o "Reenviar confirmação" e um terceiro com
+    o e-mail dela, porque `auth.resend` grava as mesmas duas colunas. Trocar pelo cadastro novo não
+    dá, porque o Auth não o entrega, e se desse um terceiro trocaria o perfil de outra pessoa;
+    descartando, quem confirma cai em "Complete seu perfil" e preenche de novo, o que percebe. Custo
+    aceito: quem só reenvia o link, por não achar o e-mail, também preenche de novo.
+  - **A identidade não guarda o cadastro**: gatilho `before insert or update` em `auth.identities`,
+    como o da `0027` em `auth.users`, e a migração limpa as antigas. A cópia para
+    `cadastros_pendentes` lê a inserção em `auth.users`, que vem antes da identidade.
+  - **O job apaga o pendente recebido há mais de 2 dias e a conta não confirmada 30 dias depois do
+    último link** (`DIAS_ATE_APAGAR_CADASTRO_PENDENTE` e `DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA`, no
+    `pipeline.py`), com os eventos anônimos das sessões da conta, como na conta excluída; a cascata
+    leva o pendente, a identidade e os eventos da conta. Conta com perfil ou sem link enviado
+    (criada no painel) fica. Dois dias porque o pendente só serve ao primeiro link, que vale 24 h no
+    padrão do GoTrue; trinta porque `metricas` lê a coorte de 30 dias, e apagar antes tiraria do
+    funil quem não confirmou, o abandono que ele deve mostrar. São constantes, não variáveis de
+    ambiente, porque a política de privacidade promete os números e
+    `test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado` os lê delas. Falha ao
+    apagar só avisa no log.
+
+  Medido em 16/09, só leitura: nenhum pendente, nenhuma conta sem confirmar, as 6 contas confirmaram
+  entre 0,02 s e 147 s depois do link e nenhuma pediu outro; o banco não tem `pg_cron`. Os testes
+  repetem em PGlite as escritas do GoTrue (`cadastro_pendente_test.ts`,
+  `metadados_do_cadastro_test.ts` e `prazo_do_cadastro_test.ts`, que lê o SQL do `postgres.py`), e
+  os bancos de teste ganharam `confirmation_sent_at` e `auth.identities`. Limites: o GoTrue mantém a
+  senha do primeiro `signUp`, então quem cadastra antes o e-mail de outra pessoa conhece a senha da
+  conta que ela confirmar; o descarte tira os dados dele do perfil, não a senha, e só o prazo de 30
+  dias, renovado a cada link (que chega ao e-mail da pessoa), fecha a janela. Um aviso no site para
+  usar "Esqueci a senha" ficou de fora. `signUp` repetido em menos de 60 s, ou com o limite de
+  e-mails do Auth esgotado, volta 429 sem gravar nada, e o primeiro link ainda cria o perfil com o
+  cadastro antigo. Reenvio pedido depois de a conta ser apagada responde 200 sem mandar e-mail; quem
+  tenta entrar vê "E-mail ou senha incorretos" e cadastra de novo. Os 2 dias supõem "Email OTP
+  Expiration" de até 24 h no painel, a conferir; se for maior, a confirmação tardia só pede o perfil
+  de novo. Publicação: `db push` da `0030` antes do merge, para o descarte valer quando a política
+  já o descreve; invertida, nada quebra, porque o SQL do job não depende da `0030`. Conferir depois
+  do push: `select count(*) from auth.identities where identity_data ? 'cadastro_radar'` deve dar
+  zero. Se a `0030` subir antes da `0028` ou da `0029`, o push delas pede `--include-all`.
 - **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
   `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem

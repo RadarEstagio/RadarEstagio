@@ -77,7 +77,9 @@ O cadastro do PR #14 conserva a sessão de origem mesmo com confirmação em out
 Visitantes que abandonam antes de criar conta continuam contados. Uma pessoa em aparelhos
 anônimos diferentes pode contar como duas sessões; isso não é identificação individual perfeita.
 As etapas são contagens de alcance, não um funil estrito que descarte quem pulou uma etapa.
-Contas criadas sem perfil ou sem confirmação aparecem em suas respectivas etapas.
+Contas criadas sem perfil ou sem confirmação aparecem em suas respectivas etapas. A conta que não
+confirma o e-mail é apagada 30 dias depois do último link, com os eventos das sessões do cadastro;
+como a coorte é de 30 dias, ela só sai do funil depois de sair da janela.
 
 ### Mapa dos eventos do funil
 
