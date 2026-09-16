@@ -91,7 +91,7 @@ const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
-const COLUNAS_DO_PERFIL = "curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,pessoa_com_deficiencia,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
+const COLUNAS_DO_PERFIL = "user_id,curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,pessoa_com_deficiencia,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-09-05";
 const MAXIMO_DE_HABILIDADES = 50;
@@ -137,6 +137,7 @@ let passosAtivos = [...PASSOS_DO_PERFIL, PASSO_CONTA];
 let passoDoRascunho = PASSO_MOMENTO;
 const VISITANTE = "visitante";
 let donoDoRascunho = VISITANTE;
+let contaMostrada = null;
 let emailDoCadastroEnviado = "";
 const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
 const RESPOSTAS_SOBRE_DEFICIENCIA = { sim: true, nao: false };
@@ -949,11 +950,9 @@ function limparRascunhoDoCadastro() {
   renderSkills();
 }
 
-function recusarRascunhoDeOutraSessao(mensagem) {
-  sairDoModoEdicao();
+function recusarPorTrocaDeSessao(mensagem) {
   limparRascunhoDoCadastro();
-  setAuthMode("login");
-  showStep(PASSO_CONTA);
+  abrirLogin();
   setFormMessage(mensagem);
 }
 
@@ -1185,6 +1184,7 @@ function estadoDasEntregas(profile) {
 }
 
 function showAccount(profile) {
+  contaMostrada = profile.user_id;
   openAccountPage();
   document.querySelector("#auth-assistance").hidden = true;
   document.querySelector("#captcha-container").hidden = true;
@@ -1235,6 +1235,13 @@ function preencherFormularioCom(profile) {
   void montarAreasDoCurso();
 }
 
+async function recusarSeASessaoMudou() {
+  const session = await currentSession();
+  if (!session || session.user.id === contaMostrada) return false;
+  recusarPorTrocaDeSessao(MENSAGEM_SESSAO_MUDOU);
+  return true;
+}
+
 async function perfilAtual() {
   const session = await currentSession();
   if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
@@ -1253,7 +1260,7 @@ async function alternarEntregas(pausar) {
   const { data, error } = await getClient()
     .from("perfis")
     .update(updates)
-    .eq("user_id", session.user.id)
+    .eq("user_id", contaMostrada)
     .eq("ativo", pausar)
     .select(COLUNAS_DO_PERFIL)
     .maybeSingle();
@@ -1284,7 +1291,7 @@ async function salvarMotivoPausa(motivo) {
   const { data, error } = await getClient()
     .from("perfis")
     .update({ motivo_pausa: motivo, atualizado_em: new Date().toISOString() })
-    .eq("user_id", session.user.id)
+    .eq("user_id", contaMostrada)
     .eq("ativo", false)
     .select("user_id,ativo,motivo_pausa")
     .maybeSingle();
@@ -1358,6 +1365,7 @@ async function apagarContaSemPerfil() {
   submitProfile.disabled = true;
   setFormMessage();
   try {
+    if (await recusarSeASessaoMudou()) return;
     const { error } = await getClient().rpc("apagar_minha_conta_sem_perfil");
     if (error) throw error;
     await getClient().auth.signOut({ scope: "local" });
@@ -1530,6 +1538,7 @@ async function resumeConfirmedSignup() {
 }
 
 function prepareMissingProfile(session) {
+  contaMostrada = session.user.id;
   reconhecerDonoDoRascunho(session);
   resetDialogView();
   openAccountPage();
@@ -1606,6 +1615,7 @@ window.addEventListener("popstate", () => {
 
 document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
+    if (await recusarSeASessaoMudou()) return;
     const profile = await perfilAtual();
     preencherFormularioCom(profile);
     esconderConta();
@@ -1625,6 +1635,7 @@ toggleDeliveries.addEventListener("click", async () => {
   setAccountMessage();
   const pausar = toggleDeliveries.dataset.acao === "pausar";
   try {
+    if (await recusarSeASessaoMudou()) return;
     const atualizado = await alternarEntregas(pausar);
     if (atualizado) {
       showAccount(atualizado);
@@ -1652,6 +1663,7 @@ savePauseReason.addEventListener("click", async () => {
   marcarOcupado(savePauseReason, true);
   skipPauseReason.disabled = true;
   try {
+    if (await recusarSeASessaoMudou()) return;
     await salvarMotivoPausa(selected.value);
     const profile = await perfilAtual();
     showAccount(profile);
@@ -1685,6 +1697,7 @@ document.querySelector("#delete-account-without-profile").addEventListener("clic
 document.querySelector("#cancel-deletion").addEventListener("click", async () => {
   setAccountMessage();
   try {
+    if (await recusarSeASessaoMudou()) return;
     const { error } = await getClient().rpc("cancelar_exclusao_da_minha_conta");
     if (error) throw error;
     const profile = await perfilAtual();
@@ -1714,6 +1727,7 @@ document.querySelector("#account-confirm-yes").addEventListener("click", async (
   }
   setAccountMessage();
   try {
+    if (await recusarSeASessaoMudou()) return;
     if (acao === "desvincular") {
       const { error } = await getClient().rpc("desvincular_meu_telegram");
       if (error) throw error;
@@ -1827,7 +1841,7 @@ form.addEventListener("submit", async (event) => {
       return;
     }
     if (authMode !== "login" && donoDoRascunho !== VISITANTE && existingSession?.user.id !== donoDoRascunho) {
-      recusarRascunhoDeOutraSessao(existingSession ? MENSAGEM_SESSAO_MUDOU : MENSAGEM_SEM_SESSAO);
+      recusarPorTrocaDeSessao(existingSession ? MENSAGEM_SESSAO_MUDOU : MENSAGEM_SEM_SESSAO);
       return;
     }
     if (!editandoPerfilExistente && existingSession && existingSession.user.email !== email) {
@@ -1855,7 +1869,7 @@ form.addEventListener("submit", async (event) => {
       return;
     }
     if (donoDoRascunho !== session.user.id) {
-      recusarRascunhoDeOutraSessao(MENSAGEM_SESSAO_MUDOU);
+      recusarPorTrocaDeSessao(MENSAGEM_SESSAO_MUDOU);
       return;
     }
     contaSemPerfil = !existing;
@@ -2065,10 +2079,11 @@ document.querySelector("#account-emails").addEventListener("change", async (even
   const requested = input.checked;
   input.disabled = true;
   try {
+    if (await recusarSeASessaoMudou()) return;
     const session = await currentSession();
     if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
     const { data, error } = await getClient().from("perfis").update({ aceita_emails: requested })
-      .eq("user_id", session.user.id).select("aceita_emails").single();
+      .eq("user_id", contaMostrada).select("aceita_emails").single();
     if (error) throw error;
     input.checked = data.aceita_emails;
     setAccountMessage("Preferência de e-mails atualizada.", "aviso");
@@ -2084,6 +2099,7 @@ document.querySelector("#download-data").addEventListener("click", async (event)
   const button = event.currentTarget;
   marcarOcupado(button, true);
   try {
+    if (await recusarSeASessaoMudou()) return;
     const { data, error } = await getClient().rpc("baixar_meus_dados");
     if (error) throw error;
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));

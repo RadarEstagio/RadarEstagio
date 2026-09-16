@@ -121,7 +121,12 @@ rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa
 e só para a mesma dona, o usuário da sessão ou o visitante. Qualquer troca de dona limpa tudo,
 inclusive login e sessão de outra aba; só o `signUp` feito do rascunho o leva para a conta nova.
 Nenhum envio com o conteúdo do formulário (edição, `concluir_meu_cadastro`) sai se a sessão atual não
-for a dona: o formulário é limpo e o site pede para entrar de novo. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
+for a dona: o formulário é limpo e o site pede para entrar de novo. O mesmo vale para as ações da
+conta: a página guarda o `user_id` da conta desenhada, lido da linha de `perfis` ou, na conta sem
+perfil, da sessão, e antes de editar, pausar, retomar, salvar o motivo, mudar os e-mails, desvincular,
+excluir, cancelar a exclusão, exportar ou apagar a conta sem perfil confere que a sessão atual é dessa
+conta. Com outra conta na sessão nada é chamado e o site pede para entrar de novo; sem sessão, segue
+como antes. Os `update` filtram pelo `user_id` da conta mostrada. Pausa é confirmada antes da pergunta opcional: falha ou omissão da
 resposta não desfaz a pausa; retomar limpa o motivo.
 
 | Operação | Caminho |
