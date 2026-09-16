@@ -111,6 +111,9 @@ Abrir o bot pelo link pessoal e confirmar Start.
 Solicitar uma execução apenas para o perfil recém-vinculado.
 
 **Condições e limites:** Entre 06:23 e 07:23 de Brasília aguarda o diário; depende do dispatch.
+A primeira entrega só conta como feita depois que a mensagem chega: se a coleta falha, a cota
+acaba ou a mensagem é segurada, a pessoa segue pendente e a próxima execução, imediata ou
+diária, a atende.
 
 #### 11. Recomendações diárias
 

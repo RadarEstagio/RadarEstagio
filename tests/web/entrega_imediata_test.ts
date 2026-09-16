@@ -73,16 +73,32 @@ async function webhookReivindica(db: PGlite, perfil: string): Promise<boolean> {
   return reivindicado.rows.length === 1;
 }
 
-async function execucaoImediata(db: PGlite, perfil: string): Promise<string[]> {
-  const atendidos = await db.query<{ id: string }>(
-    await consulta("SQL_REIVINDICAR_ENTREGAS_IMEDIATAS"),
+async function pendentes(db: PGlite, perfil: string): Promise<string[]> {
+  const linhas = await db.query<{ id: string }>(
+    await consulta("SQL_ENTREGAS_IMEDIATAS_PENDENTES"),
     [perfil],
   );
-  return atendidos.rows.map((linha) => linha.id).sort();
+  return linhas.rows.map((linha) => linha.id).sort();
 }
 
-async function diario(db: PGlite, atendidos: string[]) {
+async function marcarAtendidos(db: PGlite, atendidos: string[]) {
   await db.query(await consulta("SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS"), [atendidos]);
+}
+
+async function execucaoImediata(db: PGlite, perfil: string): Promise<string[]> {
+  const atendidos = await pendentes(db, perfil);
+  await marcarAtendidos(db, atendidos);
+  return atendidos;
+}
+
+async function turmaVinculada(db: PGlite, tamanho: number): Promise<string[]> {
+  const turma: string[] = [];
+  for (let i = 0; i < tamanho; i++) {
+    const perfil = await perfilVinculado(db);
+    assert.ok(await webhookReivindica(db, perfil));
+    turma.push(perfil);
+  }
+  return turma;
 }
 
 Deno.test("rajada de vínculos: execução cancelada na espera não deixa ninguém sem entrega", async () => {
@@ -92,16 +108,42 @@ Deno.test("rajada de vínculos: execução cancelada na espera não deixa ningu�
     assert.ok(await webhookReivindica(db, primeiro));
     assert.deepEqual(await execucaoImediata(db, primeiro), [primeiro]);
 
-    const turma: string[] = [];
-    for (let i = 0; i < 9; i++) {
-      const perfil = await perfilVinculado(db);
-      assert.ok(await webhookReivindica(db, perfil));
-      turma.push(perfil);
-    }
+    const turma = await turmaVinculada(db, 9);
     const ultimo = turma[turma.length - 1];
 
     assert.deepEqual(await execucaoImediata(db, ultimo), [...turma].sort());
     assert.deepEqual(await execucaoImediata(db, ultimo), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("execução que falha antes de entregar deixa todos os pendentes para a seguinte", async () => {
+  const db = await banco();
+  try {
+    const turma = await turmaVinculada(db, 4);
+
+    for (const perfil of turma.slice(0, 3)) {
+      assert.deepEqual(await pendentes(db, perfil), [...turma].sort());
+    }
+
+    assert.deepEqual(await execucaoImediata(db, turma[3]), [...turma].sort());
+    assert.deepEqual(await pendentes(db, turma[3]), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("execução que atende só parte dos pendentes deixa os outros para a seguinte", async () => {
+  const db = await banco();
+  try {
+    const [recebeu, ficouSemMensagem] = await turmaVinculada(db, 2);
+
+    assert.deepEqual(await pendentes(db, recebeu), [recebeu, ficouSemMensagem].sort());
+    await marcarAtendidos(db, [recebeu]);
+
+    assert.deepEqual(await pendentes(db, recebeu), [ficouSemMensagem]);
+    assert.deepEqual(await execucaoImediata(db, ficouSemMensagem), [ficouSemMensagem]);
   } finally {
     await db.close();
   }
@@ -129,7 +171,7 @@ Deno.test("o diário marca quem atendeu e a entrega imediata seguinte não repet
     const pendente = await perfilVinculado(db);
     assert.ok(await webhookReivindica(db, pendente));
     const doDiario = await perfilVinculado(db);
-    await diario(db, [pendente, doDiario]);
+    await marcarAtendidos(db, [pendente, doDiario]);
 
     const novo = await perfilVinculado(db);
     assert.ok(await webhookReivindica(db, novo));
@@ -162,7 +204,7 @@ Deno.test("pendente pausado ou desvinculado espera e é atendido ao voltar", asy
   }
 });
 
-Deno.test("perfil que já recebia antes da marca não dispara nem é reivindicado", async () => {
+Deno.test("perfil que já recebia antes da marca não dispara nem fica pendente", async () => {
   let antigo = "";
   const db = await banco(async (antes) => {
     antigo = await perfilVinculado(antes);

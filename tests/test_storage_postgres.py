@@ -1,6 +1,6 @@
 import os
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -610,3 +610,68 @@ def test_extracao_de_outra_fonte_com_o_mesmo_id_externo_nao_se_confunde(
 
     assert guardadas[("adzuna", "teste-1")].area_da_vaga == "computacao"
     assert guardadas[("gupy", "teste-1")].area_da_vaga == "direito"
+
+
+def criar_perfil(conexao: psycopg.Connection, alteracoes: str = "") -> UUID:
+    user_id = uuid4()
+    conexao.execute(
+        "insert into auth.users (id, instance_id, aud, role, email) "
+        "values (%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+        (user_id, f"{user_id}@teste.local"),
+    )
+    perfil_id = conexao.execute(
+        "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
+        "telegram_chat_id) values (%s, 'Direito', 2, '{}', 'Recife, PE', 'remoto', %s) "
+        "returning id",
+        (user_id, str(uuid4().int)[:9]),
+    ).fetchone()[0]
+    if alteracoes:
+        conexao.execute(f"update perfis set {alteracoes} where id = %s", (perfil_id,))
+    return perfil_id
+
+
+def atendida_em(conexao: psycopg.Connection, perfil_id: UUID) -> datetime | None:
+    return conexao.execute(
+        "select entrega_imediata_atendida_em from perfis where id = %s", (perfil_id,)
+    ).fetchone()[0]
+
+
+def test_entregas_imediatas_pendentes_sao_lidas_sem_marcar_ninguem(conexao: psycopg.Connection):
+    pedido = criar_perfil(conexao)
+    disparado = criar_perfil(conexao, "entrega_imediata_disparada_em = now()")
+    atendido = criar_perfil(
+        conexao, "entrega_imediata_disparada_em = now(), entrega_imediata_atendida_em = now()"
+    )
+    pausado = criar_perfil(conexao, "entrega_imediata_disparada_em = now(), ativo = false")
+    sem_chat = criar_perfil(
+        conexao, "entrega_imediata_disparada_em = now(), telegram_chat_id = null"
+    )
+    excluido = criar_perfil(conexao, "entrega_imediata_disparada_em = now(), excluida_em = now()")
+    sem_disparo = criar_perfil(conexao)
+    criados = {pedido, disparado, atendido, pausado, sem_chat, excluido, sem_disparo}
+    repositorio = RepositorioPostgres(conexao)
+
+    pendentes = repositorio.entregas_imediatas_pendentes(pedido)
+
+    assert pendentes & criados == {pedido, disparado}
+    assert repositorio.entregas_imediatas_pendentes(pedido) & criados == {pedido, disparado}
+    assert atendido not in repositorio.entregas_imediatas_pendentes(atendido)
+    assert [perfil for perfil in criados if atendida_em(conexao, perfil)] == [atendido]
+
+
+def test_marcar_atendidas_nao_troca_a_data_de_quem_ja_tinha_sido_atendido(
+    conexao: psycopg.Connection,
+):
+    antigo = criar_perfil(
+        conexao,
+        "entrega_imediata_disparada_em = now(), "
+        "entrega_imediata_atendida_em = '2026-09-01 10:23+00'",
+    )
+    novo = criar_perfil(conexao, "entrega_imediata_disparada_em = now()")
+    repositorio = RepositorioPostgres(conexao)
+
+    repositorio.marcar_entregas_imediatas_atendidas([antigo, novo])
+
+    assert atendida_em(conexao, antigo) == datetime(2026, 9, 1, 10, 23, tzinfo=UTC)
+    assert atendida_em(conexao, novo) is not None
+    assert novo not in repositorio.entregas_imediatas_pendentes(novo)

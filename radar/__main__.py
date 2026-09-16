@@ -41,7 +41,7 @@ from radar.cota import (
 from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
-from radar.entrega_imediata import RepositorioDosAtendidos, usuarios_a_atender
+from radar.entrega_imediata import repositorio_da_execucao, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
@@ -297,7 +297,7 @@ def executar_fluxo(
             ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
             extrator,
             notificador,
-            RepositorioDosAtendidos(repositorio, usuarios_da_coleta),
+            repositorio_da_execucao(repositorio, usuarios_da_coleta, apenas_o_perfil),
             ParametrosDaExecucao(
                 modelo=identidade_da_extracao(settings),
                 quantidade=settings.quantidade_vagas_enviadas,

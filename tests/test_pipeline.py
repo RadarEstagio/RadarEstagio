@@ -1,6 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+import pytest
+
+from radar.collectors.errors import ErroDeColeta
 from radar.domain.models import (
     AreaDeInteresse,
     ChaveDaVaga,
@@ -165,6 +168,10 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.extracoes_guardadas: dict[ChaveDaVaga, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
+        self.atendimentos: list[UUID] = []
+
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        self.atendimentos.extend(perfis)
 
     def extracoes_existentes(
         self, vagas: list[Vaga], modelo: str
@@ -1600,3 +1607,198 @@ def test_falha_ao_ler_as_vagas_encerradas_nao_impede_a_entrega():
     enviadas, _, _ = rodar_com(RepositorioSemLeituraDasEncerradas([usuario()]))
 
     assert enviadas == ["1", "2"]
+
+
+def test_mensagem_com_vagas_registra_o_atendimento_do_perfil():
+    repositorio = RepositorioFalso([usuario()])
+
+    selecionadas, _, _ = rodar([vaga(1)], {"1": 90}, repositorio=repositorio)
+
+    assert len(selecionadas) == 1
+    assert repositorio.atendimentos == [ID_USUARIO]
+
+
+def test_mensagem_sem_vaga_compativel_registra_o_atendimento_do_perfil():
+    repositorio = RepositorioFalso([usuario()])
+
+    _, notificador, _ = rodar([], {}, repositorio=repositorio)
+
+    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+    assert repositorio.atendimentos == [ID_USUARIO]
+
+
+def test_mensagem_segurada_por_falta_de_extracao_nao_registra_o_atendimento():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorFalso()
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorQueNaoDevolveNada({}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert notificador.textos == []
+    assert repositorio.atendimentos == []
+
+
+def test_mensagem_segurada_por_coleta_incompleta_nao_registra_o_atendimento():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorFalso()
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 10}),
+        notificador,
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 10}),
+        coleta_incompleta=coleta_incompleta,
+    )
+
+    assert notificador.textos == []
+    assert repositorio.atendimentos == []
+
+
+@pytest.mark.parametrize(("vagas", "notas"), [([vaga(1)], {"1": 90}), ([], {})])
+def test_falha_temporaria_do_telegram_nao_registra_o_atendimento(
+    vagas: list[Vaga], notas: dict[str, int]
+):
+    repositorio = RepositorioFalso([usuario(chat_id="fora-do-ar")])
+    notificador = NotificadorFalso(chats_com_falha_temporaria={"fora-do-ar"})
+
+    rodar(vagas, notas, repositorio=repositorio, notificador=notificador)
+
+    assert repositorio.atendimentos == []
+
+
+@pytest.mark.parametrize(("vagas", "notas"), [([vaga(1)], {"1": 90}), ([], {})])
+def test_destinatario_que_recusa_a_mensagem_tem_o_atendimento_decidido(
+    vagas: list[Vaga], notas: dict[str, int]
+):
+    repositorio = RepositorioFalso([usuario(chat_id="bloqueado")])
+    notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
+
+    rodar(vagas, notas, repositorio=repositorio, notificador=notificador)
+
+    assert notificador.chats == []
+    assert repositorio.atendimentos == [ID_USUARIO]
+
+
+def test_partes_entregues_antes_da_falha_registram_o_atendimento():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar_com_blocos_grandes(NotificadorQueFalhaNoMeio(partes_entregues=2), repositorio, 7)
+
+    assert repositorio.atendimentos == [ID_USUARIO]
+
+
+def test_nenhuma_parte_entregue_nao_registra_o_atendimento():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar_com_blocos_grandes(NotificadorQueFalhaNoMeio(partes_entregues=0), repositorio, 7)
+
+    assert repositorio.atendimentos == []
+
+
+def test_falha_ao_ler_o_historico_nao_registra_o_atendimento_de_quem_ficou_sem_mensagem():
+    repositorio = RepositorioComHistoricoQuebrado(
+        [usuario(), usuario(id_usuario=ID_OUTRO_USUARIO, chat_id="456")]
+    )
+
+    rodar([vaga(1)], {"1": 90}, repositorio=repositorio)
+
+    assert repositorio.atendimentos == [ID_OUTRO_USUARIO]
+
+
+def test_destinatario_que_sai_durante_a_execucao_nao_tem_o_atendimento_registrado():
+    repositorio = RepositorioFalso([usuario()])
+
+    class ColetorComSaida(ColetorFalso):
+        def coletar(self):
+            repositorio._usuarios.clear()
+            return super().coletar()
+
+    executar(
+        ColetorComSaida([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert repositorio.atendimentos == []
+
+
+class ColetorForaDoAr(ColetorFalso):
+    def coletar(self) -> list[Vaga]:
+        raise ErroDeColeta("Nenhuma fonte respondeu: adzuna: Adzuna respondeu HTTP 503")
+
+
+def test_coleta_que_falha_nao_registra_atendimento_algum():
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, "456")])
+    notificador = NotificadorFalso()
+
+    with pytest.raises(ErroDeColeta):
+        executar(
+            ColetorForaDoAr([]),
+            ExtratorFalso({}),
+            notificador,
+            repositorio,
+            parametros(),
+            AGORA_DE_TESTE,
+        )
+
+    assert notificador.textos == []
+    assert repositorio.atendimentos == []
+
+
+class RepositorioQueNaoRegistraAtendimento(RepositorioFalso):
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        raise ErroDeArmazenamento("banco caiu")
+
+
+def test_falha_ao_registrar_o_atendimento_vira_aviso_e_nao_para_os_demais(
+    caplog: pytest.LogCaptureFixture,
+):
+    repositorio = RepositorioQueNaoRegistraAtendimento(
+        [usuario(), usuario(ID_OUTRO_USUARIO, "456")]
+    )
+    notificador = NotificadorFalso()
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert notificador.chats == ["123", "456"]
+    assert set(resumo.enviadas_por_usuario) == {ID_USUARIO, ID_OUTRO_USUARIO}
+    assert "não foi marcada como atendida" in caplog.text
+
+
+class RepositorioQueRegistraAtendimentoNaOrdem(RepositorioFalso):
+    def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
+        self.travas.extend(("atendido", perfil) for perfil in perfis)
+
+
+def test_atendimento_e_registrado_antes_de_liberar_a_trava_do_perfil():
+    repositorio = RepositorioQueRegistraAtendimentoNaOrdem([usuario()])
+
+    rodar([vaga(1)], {"1": 90}, repositorio=repositorio)
+
+    assert repositorio.travas == [
+        ("travar", ID_USUARIO),
+        ("atendido", ID_USUARIO),
+        ("liberar", ID_USUARIO),
+    ]

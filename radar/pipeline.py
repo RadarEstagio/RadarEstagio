@@ -391,7 +391,10 @@ def atender_usuario_travado(
         )
         return None
     if not selecionadas:
-        avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora, revalidacao)
+        if avisar_que_nao_houve_vaga(
+            notificador, repositorio, usuario, parametros, agora, revalidacao
+        ):
+            registrar_atendimento(repositorio, usuario)
         return None
     if not revalidacao.permite(usuario):
         return None
@@ -412,10 +415,14 @@ def atender_usuario_travado(
         )
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
         if not entregues:
+            if isinstance(erro, DestinatarioRecusouAMensagem):
+                registrar_atendimento(repositorio, usuario)
             return None
         gravar_envios(repositorio, usuario, entregues)
+        registrar_atendimento(repositorio, usuario)
         return entregues
     gravar_envios(repositorio, usuario, selecionadas)
+    registrar_atendimento(repositorio, usuario)
     return selecionadas
 
 
@@ -461,6 +468,15 @@ def gravar_avaliacoes(
         logger.warning("usuário %s: avaliações não foram gravadas: %s", usuario.id, erro)
 
 
+def registrar_atendimento(repositorio: Repositorio, usuario: Usuario) -> None:
+    try:
+        repositorio.marcar_entregas_imediatas_atendidas([usuario.id])
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: entrega imediata não foi marcada como atendida: %s", usuario.id, erro
+        )
+
+
 def avisar_que_nao_houve_vaga(
     notificador: Notificador,
     repositorio: Repositorio,
@@ -468,18 +484,22 @@ def avisar_que_nao_houve_vaga(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     revalidacao: RevalidacaoDeDestinatarios,
-) -> None:
+) -> bool:
     dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
     if not revalidacao.permite(usuario):
-        return
+        return False
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
-        return
-    if dias is None:
-        return
+        return isinstance(erro, DestinatarioRecusouAMensagem)
+    if dias is not None:
+        registrar_silencio_avisado(repositorio, usuario, dias)
+    return True
+
+
+def registrar_silencio_avisado(repositorio: Repositorio, usuario: Usuario, dias: int) -> None:
     logger.info("usuário %s avisado de %d dias sem recomendação", usuario.id, dias)
     try:
         repositorio.registrar_aviso_de_silencio(usuario)
