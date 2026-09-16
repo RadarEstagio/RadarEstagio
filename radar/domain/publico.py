@@ -10,7 +10,17 @@ QUALIFICADOR_DE_PUBLICO = (
     r"(?:exclusiv[ao]|exclusivamente|somente|apenas|unicamente"
     r"|destinad[ao]|voltad[ao]|direcionad[ao]|reservad[ao])"
 )
-SEM_OUTRO_PUBLICO_DEPOIS = r"(?!\s*,?\s*(?:e|ou)\b)(?!\s+tambem\b)(?!\s*[:?]?\s*nao\b)"
+SIGLA_DEPOIS_DO_TERMO = r"(?:\s*\(\s*pcds?\s*\))?"
+NAO_COMO_RESPOSTA_SOLTA = r"nao(?=\s*(?:$|[.;,|)/]|-(?:\s|$)))"
+PALAVRA_DE_OUTRO_PUBLICO = (
+    rf"(?:tambem|ampla|preferencial\w*|n/a|nao\s+(?:se\s+aplica|informad[ao]|{TERMO_PCD})"
+    rf"|{NAO_COMO_RESPOSTA_SOLTA})"
+)
+SEM_OUTRO_PUBLICO_DEPOIS = (
+    rf"(?!{SIGLA_DEPOIS_DO_TERMO}\s*"
+    rf"(?:/|,?\s*(?:e|ou)\b|[-:?,(|\s]*{PALAVRA_DE_OUTRO_PUBLICO}\b))"
+    r"(?![^.]{0,60}\bnao\s+(?:e\s+)?exclusiv)"
+)
 PADRAO_CITA_PCD = re.compile(rf"\b{TERMO_PCD}\b")
 PADRAO_EXCLUSIVA_PARA_PCD = re.compile(
     rf"\b{SUJEITO_DA_VAGA}\s+(?:afirmativa\s+)?(?:de\s+(?:emprego|estagio)\s+)?"
@@ -24,7 +34,7 @@ PADRAO_EXCLUSIVA_PARA_PCD = re.compile(
 )
 PADRAO_PCD_COMO_TRECHO_DO_TITULO = re.compile(
     rf"(?:^|\s[-|]\s*|\()\s*(?:vaga\s+)?(?:exclusiv[ao]\s+(?:para\s+)?)?{TERMO_PCD}"
-    r"\s*(?:$|\)|\s[-|]\s)"
+    rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
     rf"|^\W*estagi\w*\s+(?:exclusivo\s+)?para\s+{TERMO_PCD}\b{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
 PADRAO_CONTEXTO_QUE_ANULA = re.compile(
