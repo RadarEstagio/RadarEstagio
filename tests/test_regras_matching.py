@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Vaga
 from radar.matching.regras import aplicar_regras_objetivas
 
@@ -171,3 +173,104 @@ def test_mantem_nota_de_vaga_remota_ou_da_propria_cidade_para_perfil_hibrido():
 
     assert aplicar_regras_objetivas([remota_longe], hibrido)[0].nota == 88
     assert aplicar_regras_objetivas([presencial_perto], hibrido)[0].nota == 88
+
+
+EXCLUSIVA_PARA_PCD = "Processo seletivo exclusivo para pessoas com deficiência. Python e SQL."
+AFIRMATIVA_COM_GRUPOS = "Vaga afirmativa, indique seu grupo: (LGBTQIAPN+, RAÇA, PCD OU OUTROS)"
+
+
+def vaga_com(descricao: str) -> Vaga:
+    return vaga(None).model_copy(update={"descricao": descricao})
+
+
+def respondido(resposta: bool | None) -> Perfil:
+    return perfil().model_copy(update={"pessoa_com_deficiencia": resposta})
+
+
+def test_vaga_exclusiva_para_pcd_e_prioritaria_para_pcd_sem_mudar_a_nota():
+    original = ResultadoMatch(
+        vaga=vaga_com(EXCLUSIVA_PARA_PCD), nota=55, pontos_a_favor=["Curso compatível"]
+    )
+
+    corrigido = aplicar_regras_objetivas([original], respondido(True))[0]
+
+    assert corrigido.nota == 55
+    assert corrigido.prioritaria_para_pcd is True
+    assert corrigido.pontos_a_favor == ["Vaga exclusiva para PCD", "Curso compatível"]
+    assert corrigido.avisos_objetivos == []
+
+
+def test_vaga_afirmativa_que_inclui_pcd_e_prioritaria_para_pcd():
+    corrigido = aplicar_regras_objetivas(
+        [ResultadoMatch(vaga=vaga_com(AFIRMATIVA_COM_GRUPOS), nota=70)], respondido(True)
+    )[0]
+
+    assert corrigido.prioritaria_para_pcd is True
+    assert corrigido.pontos_a_favor == ["Vaga afirmativa que inclui PCD"]
+    assert corrigido.avisos_objetivos == []
+
+
+def test_quem_nao_informou_recebe_vaga_exclusiva_para_pcd_com_aviso_e_sem_prioridade():
+    corrigido = aplicar_regras_objetivas(
+        [ResultadoMatch(vaga=vaga_com(EXCLUSIVA_PARA_PCD), nota=80)], respondido(None)
+    )[0]
+
+    assert corrigido.prioritaria_para_pcd is False
+    assert corrigido.pontos_a_favor == []
+    assert corrigido.avisos_objetivos == ["Vaga exclusiva para pessoas com deficiência (PCD)"]
+
+
+@pytest.mark.parametrize("resposta", [False, None])
+def test_quem_nao_e_pcd_ou_nao_informou_ve_os_grupos_da_vaga_afirmativa(resposta):
+    corrigido = aplicar_regras_objetivas(
+        [ResultadoMatch(vaga=vaga_com(AFIRMATIVA_COM_GRUPOS), nota=100)], respondido(resposta)
+    )[0]
+
+    assert corrigido.nota == 100
+    assert corrigido.prioritaria_para_pcd is False
+    assert corrigido.avisos_objetivos == [
+        "Vaga afirmativa: confira se você faz parte de um destes grupos: "
+        "LGBTQIAPN+, RAÇA, PCD OU OUTROS"
+    ]
+
+
+def test_vaga_afirmativa_sem_pcd_conhecido_avisa_inclusive_quem_e_pcd():
+    afirmativa = vaga(None).model_copy(
+        update={"titulo": "Estágio em Data Science - Vaga Afirmativa para Públicos"}
+    )
+
+    corrigido = aplicar_regras_objetivas(
+        [ResultadoMatch(vaga=afirmativa, nota=70)], respondido(True)
+    )[0]
+
+    assert corrigido.prioritaria_para_pcd is False
+    assert corrigido.avisos_objetivos == [
+        "Vaga afirmativa: confira no anúncio a quem ela se destina"
+    ]
+
+
+@pytest.mark.parametrize("resposta", [True, False, None])
+def test_vaga_comum_nao_ganha_prioridade_nem_aviso_de_publico(resposta):
+    corrigido = aplicar_regras_objetivas(
+        [ResultadoMatch(vaga=vaga_com("PcDs são bem-vindas. Python e SQL."), nota=70)],
+        respondido(resposta),
+    )[0]
+
+    assert corrigido.prioritaria_para_pcd is False
+    assert corrigido.avisos_objetivos == []
+    assert corrigido.pontos_a_favor == []
+
+
+def test_aplicar_as_regras_duas_vezes_nao_repete_ponto_nem_aviso():
+    exclusiva = ResultadoMatch(vaga=vaga_com(EXCLUSIVA_PARA_PCD), nota=70)
+    afirmativa = ResultadoMatch(vaga=vaga_com(AFIRMATIVA_COM_GRUPOS), nota=70)
+
+    para_pcd = aplicar_regras_objetivas(
+        aplicar_regras_objetivas([exclusiva], respondido(True)), respondido(True)
+    )[0]
+    para_outros = aplicar_regras_objetivas(
+        aplicar_regras_objetivas([afirmativa], respondido(False)), respondido(False)
+    )[0]
+
+    assert para_pcd.pontos_a_favor == ["Vaga exclusiva para PCD"]
+    assert len(para_outros.avisos_objetivos) == 1

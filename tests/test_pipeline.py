@@ -1454,3 +1454,63 @@ def test_sem_registro_dos_dias_sem_extracao_a_falta_segue_segurando_a_mensagem()
     )
 
     assert mensagens == [0, 0, 0]
+
+
+def usuario_que_respondeu(resposta: bool | None) -> Usuario:
+    base = usuario()
+    perfil = base.perfil.model_copy(update={"pessoa_com_deficiencia": resposta})
+    return base.model_copy(update={"perfil": perfil})
+
+
+def vaga_exclusiva_para_pcd(numero: int) -> Vaga:
+    return vaga(numero, titulo="Estágio Python - PCD")
+
+
+def test_vaga_pcd_compativel_vem_primeiro_para_quem_e_pcd_mesmo_com_nota_menor():
+    selecionadas, notificador, _ = rodar(
+        [vaga_exclusiva_para_pcd(1), vaga(2), vaga(3)],
+        {"1": 50, "2": 90, "3": 80},
+        quantidade=2,
+        repositorio=RepositorioFalso([usuario_que_respondeu(True)]),
+    )
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["1", "2"]
+    assert [resultado.nota for resultado in selecionadas] == [50, 90]
+    texto = notificador.textos[0]
+    assert texto.index("Empresa 1") < texto.index("Empresa 2")
+    assert "Vaga exclusiva para PCD" in texto
+    assert "Empresa 3" not in texto
+
+
+def test_vaga_pcd_abaixo_da_nota_minima_fica_fora_mesmo_para_quem_e_pcd():
+    selecionadas, _, _ = rodar(
+        [vaga_exclusiva_para_pcd(1), vaga(2)],
+        {"1": 35, "2": 90},
+        nota_minima=40,
+        repositorio=RepositorioFalso([usuario_que_respondeu(True)]),
+    )
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
+
+
+def test_quem_nao_e_pcd_nao_recebe_vaga_exclusiva_nem_a_pontua():
+    selecionadas, notificador, pontuador = rodar(
+        [vaga_exclusiva_para_pcd(1), vaga(2)],
+        {"1": 95, "2": 60},
+        repositorio=RepositorioFalso([usuario_que_respondeu(False)]),
+    )
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
+    assert "1" not in pontuador.pontuadas
+    assert "Empresa 1" not in notificador.textos[0]
+
+
+def test_quem_nao_informou_recebe_vaga_pcd_na_ordem_da_nota_e_com_aviso():
+    selecionadas, notificador, _ = rodar(
+        [vaga_exclusiva_para_pcd(1), vaga(2)],
+        {"1": 50, "2": 90},
+        repositorio=RepositorioFalso([usuario_que_respondeu(None)]),
+    )
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2", "1"]
+    assert "Vaga exclusiva para pessoas com deficiência (PCD)" in notificador.textos[0]
