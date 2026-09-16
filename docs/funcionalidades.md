@@ -31,8 +31,9 @@ Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summ
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
 Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. A
-escolha fica no navegador e vale também para o cadastro e a página da conta; sem escolha salva,
-o site abre no claro. Termos e Privacidade mantêm o próprio visual escuro.
+escolha vale para o cadastro e a página da conta durante a visita; ao abrir o site de novo, o
+tema inicial acompanha o modo claro ou escuro do sistema. Termos e Privacidade mantêm o próprio
+visual escuro.
 
 ### Conta e acesso
 
@@ -249,12 +250,18 @@ Composto continua com fontes que responderam; falha se nenhuma responder.
 
 Une duplicatas e filtra republicações, incluindo histórico recente do usuário.
 
+**Condições e limites:** Une mesmo título, empresa e cidade com estado; com empresa não informada ou
+confidencial, exige também a mesma descrição. "C#", "C++" e "C" são títulos diferentes. Agência com
+nome que anuncia vagas de clientes com o mesmo título ainda pode juntar vagas distintas.
+
 **Código de referência:** `radar/filtering/duplicatas.py`.
 
 #### 05. Pré-filtro
 
 Regras de estágio, área do curso, localização e elegibilidade reduzem candidatos à IA. Vaga
 exclusiva para PCD sai para quem respondeu que não é PCD; vaga afirmativa para vários grupos fica.
+Vaga de título genérico fica para quem tem o curso citado com contexto de formação na descrição,
+inclusive depois de rótulo como "Cursos aceitos:" ou "Formação acadêmica:".
 
 **Código de referência:** `radar/filtering/prefiltro.py`.
 
