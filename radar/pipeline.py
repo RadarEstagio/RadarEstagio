@@ -368,7 +368,7 @@ def atender_usuario_travado(
     ]
     candidatas = remover_republicacoes_de(
         candidatas,
-        repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_repetidas,
+        repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_que_nao_voltam,
     )
     novas = aplicar_regras_objetivas(
         pontuador(candidatas, extracoes, usuario.perfil), usuario.perfil

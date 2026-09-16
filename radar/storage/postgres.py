@@ -145,14 +145,14 @@ SQL_AREAS_RECUSADAS = f"""
     having count(distinct r.vaga_id) >= %(limiar)s
 """
 
-SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = f"""
+SQL_VAGAS_QUE_NAO_VOLTAM = f"""
     with ultima_resposta as ({SQL_ULTIMA_RESPOSTA_POR_VAGA})
     select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
            v.publicada_em, v.modalidade
     from ultima_resposta r
     join vagas v on v.id = r.vaga_id
     where r.nome = 'vaga_irrelevante'
-      and r.motivo = 'motivo_repetida'
+      and r.motivo in ('motivo_repetida', 'motivo_encerrada')
 """
 
 SQL_VAGAS_ENCERRADAS = """
@@ -472,8 +472,8 @@ class RepositorioPostgres:
                     SQL_AREAS_RECUSADAS,
                     {"perfil_id": usuario.id, "limiar": RECUSAS_POR_AREA_PARA_DESCONTAR},
                 ).fetchall()
-                repetidas = cursor.execute(
-                    SQL_VAGAS_RECUSADAS_COMO_REPETIDAS, {"perfil_id": usuario.id}
+                que_nao_voltam = cursor.execute(
+                    SQL_VAGAS_QUE_NAO_VOLTAM, {"perfil_id": usuario.id}
                 ).fetchall()
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao ler as recusas: {descrever(erro)}") from erro
@@ -483,7 +483,7 @@ class RepositorioPostgres:
                 for linha in areas
                 if linha["area"] in AREAS_CONHECIDAS
             ],
-            vagas_repetidas=[converter_em_vaga_enviada(linha) for linha in repetidas],
+            vagas_que_nao_voltam=[converter_em_vaga_enviada(linha) for linha in que_nao_voltam],
         )
 
     def vagas_encerradas(self) -> list[Vaga]:

@@ -207,7 +207,7 @@ class ResultadoDoJulgamento(BaseModel):
 
 class RecusasDoUsuario(BaseModel):
     areas: list[AreaDeInteresse] = Field(default_factory=list)
-    vagas_repetidas: list[Vaga] = Field(default_factory=list)
+    vagas_que_nao_voltam: list[Vaga] = Field(default_factory=list)
 
 
 class Recomendacao(BaseModel):

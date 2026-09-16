@@ -23,6 +23,9 @@ async function bancoComFeedback(): Promise<PGlite> {
     create table vagas(id int primary key, fonte text, id_externo text, titulo text,
       empresa text, localizacao text, descricao text, url text, publicada_em timestamptz,
       modalidade text, extracao jsonb);
+    create table perfis(id int primary key, ativo boolean not null default true,
+      excluida_em timestamptz, telegram_chat_id text default 'chat');
+    insert into perfis(id) select generate_series(1, 9);
     create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int,
       propriedades jsonb default '{}', ocorrido_em timestamptz);
     insert into vagas values
@@ -103,7 +106,7 @@ Deno.test("'já vi essa' corrigido para positivo volta a permitir a vaga", async
     await elogio(db, 1, "now() - interval '1 hour'");
 
     const linhas = await db.query(
-      await consulta("SQL_VAGAS_RECUSADAS_COMO_REPETIDAS"),
+      await consulta("SQL_VAGAS_QUE_NAO_VOLTAM"),
       [1],
     );
 
@@ -152,7 +155,35 @@ async function encerradas(db: PGlite) {
   const linhas = await db.query<{ fonte: string; id_externo: string; titulo: string }>(
     await consulta("SQL_VAGAS_ENCERRADAS"),
   );
-  return linhas.rows.map((linha) => `${linha.fonte}:${linha.id_externo}:${linha.titulo}`);
+  return linhas.rows.map((linha) => `${linha.fonte}:${linha.id_externo}:${linha.titulo}`).sort();
+}
+
+async function vagasAte(db: PGlite, ultima: number) {
+  await db.query(
+    `insert into vagas
+     select n, 'adzuna', n::text, 'Estágio ' || n, 'Empresa', 'Rio de Janeiro', 'desc',
+            'https://x/' || n, '2026-09-01', 'presencial', '{}'
+     from generate_series(3, $1::int) n`,
+    [ultima],
+  );
+}
+
+async function marcarComoEncerrada(
+  db: PGlite,
+  perfil: number,
+  vaga: number,
+  { abriuAntes = true }: { abriuAntes?: boolean } = {},
+) {
+  if (abriuAntes) {
+    await eventoDaVaga(db, { nome: "vaga_aberta", perfil, vaga, quando: "now() - interval '2 hours'" });
+  }
+  await eventoDaVaga(db, {
+    nome: "vaga_irrelevante",
+    perfil,
+    vaga,
+    quando: "now() - interval '1 hour'",
+    motivo: "motivo_encerrada",
+  });
 }
 
 Deno.test("vaga marcada como encerrada por quem a abriu fica de fora para todos", async () => {
@@ -265,6 +296,29 @@ Deno.test("marcação de vaga encerrada com mais de 30 dias deixa de contar", as
     });
 
     assert.deepEqual(await encerradas(db), []);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("vaga marcada como encerrada não volta para quem marcou, mesmo sem efeito para os outros", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await vagasAte(db, 5);
+    await db.exec("update perfis set ativo = false where id = 1;");
+    for (const vaga of [1, 2, 3, 4]) {
+      await marcarComoEncerrada(db, 1, vaga, { abriuAntes: false });
+    }
+    await recusa(db, 5, "motivo_repetida", "now() - interval '1 hour'");
+    await marcarComoEncerrada(db, 2, 3);
+
+    const linhas = await db.query<{ id_externo: string }>(
+      await consulta("SQL_VAGAS_QUE_NAO_VOLTAM"),
+      [1],
+    );
+
+    assert.deepEqual(linhas.rows.map((linha) => linha.id_externo).sort(), ["1", "2", "3", "4", "5"]);
+    assert.deepEqual(await encerradas(db), ["adzuna:3:Estágio 3"]);
   } finally {
     await db.close();
   }
