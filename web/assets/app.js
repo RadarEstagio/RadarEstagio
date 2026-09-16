@@ -160,6 +160,7 @@ const campoDeCurso = form.elements.curso;
 const botaoDeCursos = document.querySelector("#mostrar-cursos");
 const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
+const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
 
 function ativarSecaoDaConta(linkAtivo) {
@@ -540,11 +541,13 @@ async function montarHabilidadesDoCurso() {
   if (!catalogo) {
     picker.replaceChildren();
     aviso.hidden = false;
+    avisoDeCursoNaoReconhecido.hidden = true;
     renderSkills();
     return;
   }
   aviso.hidden = true;
   const area = areaDoCurso(cursoSolicitado, catalogo);
+  avisarCursoNaoReconhecido(area ? "" : cursoSolicitado.trim());
   const sugeridas = area?.habilidades ?? [];
   picker.replaceChildren(...sugeridas.map((habilidade) => {
     const botao = document.createElement("button");
@@ -555,6 +558,13 @@ async function montarHabilidadesDoCurso() {
     return botao;
   }));
   renderSkills();
+}
+
+function avisarCursoNaoReconhecido(curso) {
+  avisoDeCursoNaoReconhecido.hidden = !curso;
+  avisoDeCursoNaoReconhecido.textContent = curso
+    ? `Não reconhecemos o curso “${curso}”. Sem um curso reconhecido, as vagas ficam menos precisas e não há sugestões de habilidades nem áreas de interesse. Se o seu curso aparece na lista de cursos, volte e escolha o nome de lá. Se não aparece, pode continuar.`
+    : "";
 }
 
 function lembrarAreasEscolhidas() {
@@ -956,6 +966,7 @@ function limparRascunhoDoCadastro() {
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = true;
   document.querySelector("#skills-catalog-notice").hidden = true;
+  avisarCursoNaoReconhecido("");
   renderSkills();
 }
 
