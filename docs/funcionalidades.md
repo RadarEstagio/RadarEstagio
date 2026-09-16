@@ -255,6 +255,8 @@ Une duplicatas e filtra republicações, incluindo histórico recente do usuári
 
 Regras de estágio, área do curso, localização e elegibilidade reduzem candidatos à IA. Vaga
 exclusiva para PCD sai para quem respondeu que não é PCD; vaga afirmativa para vários grupos fica.
+Vaga de título genérico fica para quem tem o curso citado com contexto de formação na descrição,
+inclusive depois de rótulo como "Cursos aceitos:" ou "Formação acadêmica:".
 
 **Código de referência:** `radar/filtering/prefiltro.py`.
 
