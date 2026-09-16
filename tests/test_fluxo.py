@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -356,6 +356,105 @@ def test_resumo_de_operacao_mostra_os_eventos_do_site(httpx_mock: HTTPXMock):
     resumo = mensagens_de_operacao(httpx_mock)[-1]
     assert "Eventos do site nas últimas 24 h: 2.400 de visitantes, 12 de contas" in resumo
     assert "⚠️ Eventos do site chegaram ao teto em 1 hora das últimas 24 h" in resumo
+
+
+URL_DO_GEMINI = re.compile(r"https://generativelanguage\.googleapis\.com/.*")
+CHAT_DA_ESTUDANTE_DE_COMPUTACAO = "777"
+
+
+def estudante_de_computacao_no_rio() -> Usuario:
+    return Usuario(
+        id=UUID(int=2),
+        perfil=Perfil(
+            curso="Ciência da Computação",
+            periodo=4,
+            habilidades=["Python"],
+            cidade="Rio de Janeiro, RJ",
+            modalidade=Modalidade.PRESENCIAL,
+        ),
+        chat_id=CHAT_DA_ESTUDANTE_DE_COMPUTACAO,
+    )
+
+
+def vagas_de_desenvolvimento_no_rio(quantidade: int) -> dict:
+    publicada = (datetime.now(UTC) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {
+        "results": [
+            {
+                "id": str(9100 + numero),
+                "title": f"Estágio em Desenvolvimento de Software {numero}",
+                "company": {"display_name": f"Empresa {numero}"},
+                "location": {
+                    "display_name": "Rio de Janeiro, Rio de Janeiro",
+                    "area": ["Brasil", "Sudeste", "Rio de Janeiro", "Rio de Janeiro"],
+                },
+                "description": "Estágio para estudantes de Ciência da Computação com Python.",
+                "redirect_url": f"https://www.adzuna.com.br/details/{9100 + numero}",
+                "created": publicada,
+            }
+            for numero in range(1, quantidade + 1)
+        ]
+    }
+
+
+class RepositorioQueGuardaExtracoes(RepositorioEmMemoria):
+    def __init__(self, usuarios: list[Usuario]) -> None:
+        super().__init__(usuarios)
+        self.extracoes_guardadas: list[str] = []
+
+    def guardar_extracoes(self, extracoes, modelo: str) -> None:
+        super().guardar_extracoes(extracoes, modelo)
+        self.extracoes_guardadas.extend(vaga.identidade() for vaga, _ in extracoes)
+
+
+def test_corpo_do_gemini_que_nao_e_json_nao_derruba_o_job_nem_perde_o_que_ja_extraiu(
+    httpx_mock: HTTPXMock,
+):
+    chamadas_ao_gemini: list[list[str]] = []
+
+    def gemini(requisicao: httpx.Request) -> httpx.Response:
+        prompt = json.loads(requisicao.content)["contents"][0]["parts"][0]["text"]
+        ids = re.findall(r"Vaga id=(\S+)", prompt)
+        chamadas_ao_gemini.append(ids)
+        if len(chamadas_ao_gemini) > 1:
+            return httpx.Response(200, headers={"content-type": "text/html"}, text="<html>")
+        extracoes = [{"id_vaga": id_vaga, "area_da_vaga": "computacao"} for id_vaga in ids]
+        texto = json.dumps({"extracoes": extracoes})
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": texto}], "role": "model"}}]}
+        )
+
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        json=vagas_de_desenvolvimento_no_rio(4),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioQueGuardaExtracoes([estudante_de_computacao_no_rio()])
+    settings = settings_de_teste().model_copy(
+        update={
+            "gemini_vagas_por_lote": 2,
+            "gemini_timeout_segundos": 1,
+            "prazo_da_extracao_segundos": 60,
+        }
+    )
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings, cliente_http, repositorio)
+
+    assert len(chamadas_ao_gemini) == 2
+    assert repositorio.extracoes_guardadas == chamadas_ao_gemini[0]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    enviadas = {
+        f"adzuna:{9100 + numero}"
+        for numero in range(1, 5)
+        if f"Desenvolvimento de Software {numero}</b>" in mensagem
+    }
+    assert enviadas == set(chamadas_ao_gemini[0])
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Requisições ao avaliador: 2" in resumo
+    assert "⚠️ Vagas sem extração (cota ou avaliador fora): 2" in resumo
 
 
 def test_falha_ao_ler_os_eventos_do_site_so_avisa_no_log(
