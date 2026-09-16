@@ -168,6 +168,8 @@ Controlar futuras entregas. Depois de pausar, uma pergunta opcional oferece cinc
 opção de pular.
 
 **Condições e limites:** Links antigos continuam navegáveis sem registrar eventos enquanto pausado.
+Pausar de novo menos de um dia depois da última pausa registrada muda o estado e o motivo, mas
+não grava outro evento de pausa.
 A resposta é opcional, não bloqueia a pausa e não é pedida para pausa automática por falha de
 envio. O motivo guarda só a pausa atual e é apagado ao retomar.
 
@@ -333,6 +335,9 @@ Valida token/chat/perfil e grava antes de tentar apagar a pergunta.
 
 Token em `ir`, redirecionamento 302 sem cache e evento de abertura.
 
+**Condições e limites:** O banco grava só a primeira abertura de cada envio; as seguintes
+redirecionam normalmente, sem linha nova (`0028`).
+
 **Código de referência:** `HEAD` não registra; exclusão bloqueia navegação.
 
 ### Segurança e operação
@@ -423,9 +428,10 @@ Os passos concretos e as evidências remotas estão no [guia](guia-publicacao-e-
 - Ajustes automáticos de pesos por todo feedback ou garantia de processamento único dos callbacks.
 - Ativação automática do Jooble ou enriquecimento específico de todas as fontes que ele agrega.
 
-As métricas deduplicam respostas, mas eventos brutos podem repetir. Apagamento definitivo
-altera a base histórica, inclusive denominadores de semanas anteriores. Consulte
-[Métricas](metricas.md) antes de comparar períodos ou tratar uma abertura como utilidade.
+As métricas deduplicam respostas, mas eventos brutos podem repetir; só abertura repetida do
+mesmo envio e pausa ou vínculo do mesmo perfil a menos de um dia do anterior não são gravados.
+Apagamento definitivo altera a base histórica, inclusive denominadores de semanas anteriores.
+Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma abertura como utilidade.
 
 ## Estado de disponibilização
 

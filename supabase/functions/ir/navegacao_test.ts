@@ -50,6 +50,21 @@ Deno.test("conta ativa registra GET, mas HEAD só navega", async () => {
   assertEquals(registros, 1);
 });
 
+Deno.test("abertura descartada ou recusada pelo banco não tira a vaga de quem clicou", async () => {
+  const registros = [
+    async () => {},
+    async () => {
+      throw { code: "42501", message: "perfil indisponível para interação" };
+    },
+    async () => {
+      throw new TypeError("fetch failed");
+    },
+  ];
+  for (const registrar of registros) {
+    assertEquals(await destinoDoEnvio(envio, "landing", true, registrar), envio.url);
+  }
+});
+
 Deno.test("endereço fora de http(s) volta para a landing sem registrar abertura", async () => {
   let registrou = false;
   const suspeito: EnvioDaVaga = { ...envio, url: "javascript:alert(1)" };
