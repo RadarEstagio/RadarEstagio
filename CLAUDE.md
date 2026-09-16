@@ -54,7 +54,8 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
-  banco, a mensagem volta a apontar direto para a vaga.
+  banco, a mensagem volta a apontar direto para a vaga. O banco guarda só a primeira abertura de
+  cada envio (ver "Aberturas, pausas e vínculos repetidos").
 - **Feedback individual**: o teclado numerado acompanha a mensagem diária. Cada número abre
   título e empresa com uma opção positiva e seis recusas, incluindo `motivo_nota` e
   `motivo_encerrada` ("Vaga encerrada", ver "Vaga fechada na origem"). A última
@@ -1576,6 +1577,47 @@ ligação das automações, porque cada uma guardava o dono no nome:
   confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
   nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
   dos limites.
+- **Aberturas, pausas e vínculos repetidos** (16/09/2026, migration `0028`). O limite da `0023`
+  só vale para evento `web`, e dois caminhos ainda gravavam sem fim: cada GET no link rastreável
+  grava um `vaga_aberta`, então um script chamando em laço o link de uma mensagem encaminhada
+  enchia `eventos_produto`; e cada volta de pausar e retomar por `update` direto na própria linha
+  de `perfis` gravava um `entregas_pausadas`. Desvincular pela RPC e mandar `/start` de novo
+  gravava um `telegram_vinculado` por volta, pelo mesmo gatilho da `0005`. O gatilho
+  `z_descartar_eventos_repetidos` descarta, sem erro (`return null`), o `vaga_aberta` de um par
+  `(perfil_id, vaga_id)` que já tem um, e o `entregas_pausadas` ou `telegram_vinculado` do mesmo
+  perfil a menos de um dia (por `ocorrido_em`) do anterior. Descarte, e não `PT429` como na
+  `0023`, porque o `update` de pausa não pode falhar por causa do evento e abrir de novo não é
+  erro: o estado do perfil muda sempre, o motivo da pausa fica em `perfis.motivo_pausa` (o evento
+  nunca o levou) e a `ir` redireciona como antes. Sem teto por hora nem aviso no resumo de
+  operação: fica sempre a primeira ocorrência, então abuso não apaga evento legítimo, e o tamanho
+  fica preso ao que o Radar controla, uma abertura por envio (`envios` tem chave
+  `(perfil_id, vaga_id)`) e duas linhas por perfil por dia. Nenhum número muda porque os leitores
+  já tratam repetição: o `metricas.sql` conta pares distintos com abertura depois do envio, a
+  primeira abertura e pessoas distintas por etapa, e `perfis_vinculados` e `SQL_VAGAS_ENCERRADAS`
+  perguntam se o evento existe; a encerrada quer abertura anterior ao voto, e a primeira é a mais
+  antiga. A abertura trava o par com `pg_advisory_xact_lock` antes de conferir, para GETs
+  simultâneos não passarem juntos; pausa e vínculo já são serializados pela trava da linha de
+  `perfis`. O prefixo `z_` faz o gatilho rodar depois de `verificar_perfil_da_interacao`, e
+  abertura de conta pausada segue recusada com `42501`. Medido em 16/09, só leitura: 379 eventos;
+  41 `vaga_aberta` em 31 pares (24 com uma, 6 com duas, 1 com cinco), repetições de 1 s a 37 min,
+  no máximo 7 aberturas por perfil numa hora e 7 no banco inteiro; 2 `entregas_pausadas`, do mesmo
+  perfil, a 5 dias uma da outra; 4 `telegram_vinculado`, um por perfil. Aplicada a esse histórico,
+  a regra descartaria as 10 aberturas repetidas, e o funil de 7, 30 e 365 dias e as vagas
+  encerradas saem iguais. `tests/web/eventos_repetidos_test.ts` monta o mesmo histórico com e sem
+  o gatilho (repetições, feedback corrigido, voto de encerrada antes e depois da abertura, pausas e
+  revínculos em laço) e exige as mesmas métricas. Limites: a segunda pausa e o revínculo do mesmo
+  dia e as reaberturas somem do histórico bruto, e um leitor futuro de "última abertura" ou de
+  pausas por dia não os terá; GET em laço ainda executa a `ir` com duas consultas, o que não cresce
+  o banco mas gasta invocações de Edge Function, que têm cota própria no plano; a corrida entre
+  GETs simultâneos não é testada, porque o PGlite tem uma conexão só, e o descarte não foi
+  exercitado pelo PostgREST publicado (a `ir` não pede a linha de volta, e o esperado é 201 com
+  zero linhas; se vier erro, o `catch` da `ir` já segue para a vaga); e o feedback (`vaga_util`,
+  `vaga_irrelevante`) segue sem limite, porque a utilidade semanal lê a última resposta de cada
+  semana e descartar resposta igual à anterior mudaria a semana seguinte; tocar os botões em laço
+  exige automatizar uma conta do Telegram, e é o próximo caminho a fechar se aparecer.
+  Publicação: `db push` da `0028` antes ou depois do merge, tanto faz, porque nada no código
+  depende dela; a `ir` não muda e não precisa de deploy. Se a `0029` ou a `0030` subirem antes, o
+  push da `0028` pede `--include-all`.
 - **Textos do perfil têm teto no banco** (13/09/2026, migration `0025`). Uma conta comum gravava
   210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
   `cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
