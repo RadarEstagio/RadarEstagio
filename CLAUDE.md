@@ -81,14 +81,38 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
   execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
   passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
-  sem atendimento, reivindicados num único `update … returning`, e o diário marca como atendidos
-  todos os que atende. Disparo recusado pelo GitHub deixa a pessoa pendente para a próxima
-  execução, imediata ou diária. `rodar --perfil` de perfil já atendido não faz nada: para testar
-  com conta da equipe, zerar `entrega_imediata_atendida_em` antes. O backfill marcou as duas
+  sem atendimento, e o diário também marca como atendidos os que atende. Disparo recusado pelo
+  GitHub deixa a pessoa pendente para a próxima execução, imediata ou diária. `rodar --perfil` de
+  perfil já atendido não faz nada: para testar com conta da equipe, zerar
+  `entrega_imediata_atendida_em` antes. O backfill marcou as duas
   colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
   `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
   execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
   começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
+  **A marca só vem depois da mensagem (16/09/2026).** Até aqui `rodar --perfil` reivindicava os
+  pendentes num `update … returning` e o diário marcava todos os ativos, os dois antes de coletar.
+  Adzuna fora do ar, cota do dia sem saldo, mensagem segurada (vaga sem extração, coleta
+  incompleta), exceção ou kill deixavam a pessoa sem a primeira mensagem até o diário, e
+  `rodar --perfil` de novo respondia "sem entrega a fazer". Num dia de divulgação, esgotada a cota
+  do dia, cada imediata falhava sem requisição alguma e marcava todos os pendentes. Agora a
+  seleção só lê (`entregas_imediatas_pendentes`) e o pipeline grava `entrega_imediata_atendida_em`
+  de cada perfil logo depois de atendê-lo, ainda com a trava do perfil. Conta como atendido quem
+  recebeu a mensagem das vagas (inteira ou só parte), a de nenhuma vaga compatível ou a recusa
+  definitiva do Telegram (403, bot bloqueado, chat inexistente): repetir na mesma hora não muda a
+  resposta, e o diário segue tentando e pausa depois de `FALHAS_DE_ENVIO_ATE_PAUSAR`. Falha
+  temporária do Telegram, mensagem segurada, falha ao ler o histórico, destinatário que não se
+  revalida, erro de coleta, exceção e kill deixam a pessoa pendente para a próxima execução,
+  imediata ou diária, e o histórico de envios impede repetir vaga. Falha ao marcar vira aviso no
+  log. A reivindicação saiu, e não entrou coluna nova: as execuções do workflow já são seriais pela
+  `concurrency`, e uma reivindicação que sobrevivesse a kill precisaria de prazo gravado. O que
+  ela ainda protegia era o `rodar --perfil` manual contra o banco de produção junto com uma
+  imediata do workflow; isso ficou com a revalidação do destinatário, que na entrega imediata
+  (`RepositorioDaEntregaImediata`) confere, dentro da trava do perfil, se ele continua pendente.
+  Limites: o diário não faz essa conferência, então um `rodar` manual durante o diário pode mandar
+  uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava pendente, o que
+  antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
+  falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
+  sem ordem; a `telegram-webhook` não muda.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
