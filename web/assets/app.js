@@ -154,7 +154,6 @@ const listaDeCidades = document.querySelector("#lista-de-cidades");
 const avisoDeCidades = document.querySelector("#cities-catalog-notice");
 let catalogoDeCidades = null;
 let carregamentoDeCidades = null;
-let cidadeDestacada = -1;
 
 function ativarSecaoDaConta(linkAtivo) {
   accountNavLinks.forEach((link) => {
@@ -290,84 +289,137 @@ function mensagemDaCidade() {
   return "Escolha sua cidade na lista, como Rio de Janeiro, RJ.";
 }
 
-function cidadesParecidas(texto) {
+function opcoesParecidas(catalogo, texto, limite) {
   const busca = textoDeBusca(texto);
-  if (!busca) return catalogoDeCidades.slice(0, MAXIMO_DE_CIDADES_SUGERIDAS);
+  if (!busca) return catalogo.slice(0, limite);
   const noComeco = [];
   const emOutraPalavra = [];
-  for (const cidade of catalogoDeCidades) {
-    if (cidade.busca.startsWith(busca)) noComeco.push(cidade);
-    else if (cidade.busca.includes(` ${busca}`)) emOutraPalavra.push(cidade);
-    if (noComeco.length === MAXIMO_DE_CIDADES_SUGERIDAS) break;
+  for (const item of catalogo) {
+    if (item.busca.startsWith(busca)) noComeco.push(item);
+    else if (item.busca.includes(` ${busca}`)) emOutraPalavra.push(item);
+    if (noComeco.length === limite) break;
   }
-  return [...noComeco, ...emOutraPalavra].slice(0, MAXIMO_DE_CIDADES_SUGERIDAS);
+  return [...noComeco, ...emOutraPalavra].slice(0, limite);
 }
 
-function opcaoDeCidade(cidade, posicao) {
+function conteudoDaOpcaoDeCidade(cidade) {
   const separador = cidade.nome.lastIndexOf(", ");
   const nome = document.createElement("span");
   nome.textContent = cidade.nome.slice(0, separador);
   const uf = document.createElement("span");
   uf.textContent = cidade.nome.slice(separador + 2);
-  const opcao = document.createElement("li");
-  opcao.id = `cidade-sugerida-${posicao}`;
-  opcao.setAttribute("role", "option");
-  opcao.setAttribute("aria-selected", "false");
-  opcao.dataset.cidade = cidade.nome;
-  opcao.append(nome, uf);
-  return opcao;
+  return [nome, uf];
 }
 
-function semCidadeEncontrada() {
-  const aviso = document.createElement("li");
-  aviso.setAttribute("role", "option");
-  aviso.setAttribute("aria-disabled", "true");
-  aviso.textContent = "Nenhuma cidade encontrada. Confira a grafia.";
-  return aviso;
-}
+function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaLista, conteudoDaOpcao, semResultado }) {
+  let destacada = -1;
 
-function mostrarCidades(texto) {
-  if (!catalogoDeCidades) return;
-  const parecidas = cidadesParecidas(texto);
-  listaDeCidades.replaceChildren(
-    ...(parecidas.length > 0 ? parecidas.map(opcaoDeCidade) : [semCidadeEncontrada()]),
-  );
-  cidadeDestacada = -1;
-  campoDeCidade.removeAttribute("aria-activedescendant");
-  listaDeCidades.hidden = false;
-  campoDeCidade.setAttribute("aria-expanded", "true");
-  botaoDeCidades.setAttribute("aria-expanded", "true");
-}
+  function opcoes() {
+    return [...lista.querySelectorAll("[data-opcao]")];
+  }
 
-async function abrirCidades() {
-  await carregarCidades();
-  const digitada = campoDeCidade.value.trim();
-  mostrarCidades(cidadeDaLista(digitada) === digitada ? "" : digitada);
-}
+  function criarOpcao(item, posicao) {
+    const opcao = document.createElement("li");
+    opcao.id = `${lista.id}-${posicao}`;
+    opcao.setAttribute("role", "option");
+    opcao.setAttribute("aria-selected", "false");
+    opcao.dataset.opcao = item.nome;
+    opcao.append(...conteudoDaOpcao(item));
+    return opcao;
+  }
 
-function fecharCidades() {
-  listaDeCidades.hidden = true;
-  cidadeDestacada = -1;
-  campoDeCidade.removeAttribute("aria-activedescendant");
-  campoDeCidade.setAttribute("aria-expanded", "false");
-  botaoDeCidades.setAttribute("aria-expanded", "false");
-}
+  function criarAvisoSemResultado() {
+    const aviso = document.createElement("li");
+    aviso.setAttribute("role", "option");
+    aviso.setAttribute("aria-disabled", "true");
+    aviso.textContent = semResultado;
+    return aviso;
+  }
 
-function destacarCidade(posicao) {
-  const opcoes = [...listaDeCidades.querySelectorAll("[data-cidade]")];
-  if (opcoes.length === 0) return;
-  cidadeDestacada = (posicao + opcoes.length) % opcoes.length;
-  opcoes.forEach((opcao, indice) => {
-    opcao.setAttribute("aria-selected", String(indice === cidadeDestacada));
+  function mostrar(texto) {
+    const encontradas = sugestoes(texto);
+    lista.replaceChildren(
+      ...(encontradas.length > 0 ? encontradas.map(criarOpcao) : [criarAvisoSemResultado()]),
+    );
+    destacada = -1;
+    campo.removeAttribute("aria-activedescendant");
+    lista.hidden = false;
+    campo.setAttribute("aria-expanded", "true");
+    botao.setAttribute("aria-expanded", "true");
+  }
+
+  async function abrir() {
+    if (!(await carregar())) return;
+    const digitado = campo.value.trim();
+    mostrar(valorDaLista(digitado) === digitado ? "" : digitado);
+  }
+
+  function fechar() {
+    lista.hidden = true;
+    destacada = -1;
+    campo.removeAttribute("aria-activedescendant");
+    campo.setAttribute("aria-expanded", "false");
+    botao.setAttribute("aria-expanded", "false");
+  }
+
+  function destacar(posicao) {
+    const disponiveis = opcoes();
+    if (disponiveis.length === 0) return;
+    destacada = (posicao + disponiveis.length) % disponiveis.length;
+    disponiveis.forEach((opcao, indice) => {
+      opcao.setAttribute("aria-selected", String(indice === destacada));
+    });
+    campo.setAttribute("aria-activedescendant", disponiveis[destacada].id);
+    disponiveis[destacada].scrollIntoView?.({ block: "nearest" });
+  }
+
+  function escolher(valor) {
+    campo.value = valor;
+    fechar();
+    campo.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  campo.addEventListener("focus", () => {
+    void carregar();
   });
-  campoDeCidade.setAttribute("aria-activedescendant", opcoes[cidadeDestacada].id);
-  opcoes[cidadeDestacada].scrollIntoView?.({ block: "nearest" });
-}
 
-function escolherCidade(nome) {
-  campoDeCidade.value = nome;
-  fecharCidades();
-  campoDeCidade.dispatchEvent(new Event("change", { bubbles: true }));
+  campo.addEventListener("input", async () => {
+    if (!(await carregar())) return;
+    if (document.activeElement === campo) mostrar(campo.value);
+  });
+
+  campo.addEventListener("keydown", (event) => {
+    const aberta = !lista.hidden;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!aberta) void abrir();
+      else destacar(event.key === "ArrowDown" ? destacada + 1 : Math.max(destacada, 0) - 1);
+    } else if (event.key === "Enter" && aberta && destacada >= 0) {
+      event.preventDefault();
+      escolher(opcoes()[destacada].dataset.opcao);
+    } else if (event.key === "Escape" && aberta) {
+      event.preventDefault();
+      fechar();
+    }
+  });
+
+  campo.addEventListener("blur", fechar);
+
+  botao.addEventListener("mousedown", (event) => event.preventDefault());
+  botao.addEventListener("click", () => {
+    if (!lista.hidden) {
+      fechar();
+      return;
+    }
+    campo.focus();
+    void abrir();
+  });
+
+  lista.addEventListener("mousedown", (event) => event.preventDefault());
+  lista.addEventListener("click", (event) => {
+    const opcao = event.target.closest("[data-opcao]");
+    if (opcao) escolher(opcao.dataset.opcao);
+  });
 }
 
 function normalizarCurso(curso, catalogo) {
@@ -1693,50 +1745,20 @@ toggleAuthMode.addEventListener("click", () => {
 form.addEventListener("input", limparErroSeCorrigido);
 form.addEventListener("change", limparErroSeCorrigido);
 
-campoDeCidade.addEventListener("focus", () => {
-  void carregarCidades();
-});
-
-campoDeCidade.addEventListener("input", async () => {
-  await carregarCidades();
-  if (document.activeElement === campoDeCidade) mostrarCidades(campoDeCidade.value);
-});
-
-campoDeCidade.addEventListener("keydown", (event) => {
-  const aberta = !listaDeCidades.hidden;
-  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    event.preventDefault();
-    if (!aberta) void abrirCidades();
-    else destacarCidade(event.key === "ArrowDown" ? cidadeDestacada + 1 : Math.max(cidadeDestacada, 0) - 1);
-  } else if (event.key === "Enter" && aberta && cidadeDestacada >= 0) {
-    event.preventDefault();
-    escolherCidade(listaDeCidades.querySelectorAll("[data-cidade]")[cidadeDestacada].dataset.cidade);
-  } else if (event.key === "Escape" && aberta) {
-    event.preventDefault();
-    fecharCidades();
-  }
+ligarListaDeOpcoes({
+  campo: campoDeCidade,
+  botao: botaoDeCidades,
+  lista: listaDeCidades,
+  carregar: carregarCidades,
+  sugestoes: (texto) => opcoesParecidas(catalogoDeCidades, texto, MAXIMO_DE_CIDADES_SUGERIDAS),
+  valorDaLista: cidadeDaLista,
+  conteudoDaOpcao: conteudoDaOpcaoDeCidade,
+  semResultado: "Nenhuma cidade encontrada. Confira a grafia.",
 });
 
 campoDeCidade.addEventListener("blur", () => {
-  fecharCidades();
   const cidade = cidadeDaLista(campoDeCidade.value);
   if (cidade) campoDeCidade.value = cidade;
-});
-
-botaoDeCidades.addEventListener("mousedown", (event) => event.preventDefault());
-botaoDeCidades.addEventListener("click", () => {
-  if (!listaDeCidades.hidden) {
-    fecharCidades();
-    return;
-  }
-  campoDeCidade.focus();
-  void abrirCidades();
-});
-
-listaDeCidades.addEventListener("mousedown", (event) => event.preventDefault());
-listaDeCidades.addEventListener("click", (event) => {
-  const opcao = event.target.closest("[data-cidade]");
-  if (opcao) escolherCidade(opcao.dataset.cidade);
 });
 
 form.addEventListener("submit", async (event) => {

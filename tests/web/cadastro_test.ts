@@ -3241,8 +3241,8 @@ async function digitarCidade(a: ReturnType<typeof app>, texto: string) {
   campo.value = texto;
   campo.dispatchEvent(new a.w.Event("input", { bubbles: true }));
   await settle();
-  return [...a.w.document.querySelectorAll("#lista-de-cidades [data-cidade]")].map(
-    (opcao) => opcao.dataset.cidade,
+  return [...a.w.document.querySelectorAll("#lista-de-cidades [data-opcao]")].map(
+    (opcao) => opcao.dataset.opcao,
   );
 }
 
@@ -3294,7 +3294,7 @@ Deno.test("clicar numa sugestão preenche a cidade e fecha a lista", async () =>
   try {
     const form = await abrirPreferencias(a);
     await digitarCidade(a, "curit");
-    a.w.document.querySelector('#lista-de-cidades [data-cidade="Curitiba, PR"]').click();
+    a.w.document.querySelector('#lista-de-cidades [data-opcao="Curitiba, PR"]').click();
     assert.equal(form.elements.cidade.value, "Curitiba, PR");
     assert.equal(a.w.document.querySelector("#lista-de-cidades").hidden, true);
     assert.equal(form.elements.cidade.getAttribute("aria-expanded"), "false");
@@ -3311,9 +3311,9 @@ Deno.test("setinha abre as maiores cidades com o campo vazio e fecha no segundo 
     const setinha = a.w.document.querySelector("#mostrar-cidades");
     setinha.click();
     await settle();
-    const opcoes = [...a.w.document.querySelectorAll("#lista-de-cidades [data-cidade]")];
+    const opcoes = [...a.w.document.querySelectorAll("#lista-de-cidades [data-opcao]")];
     assert.deepEqual(
-      opcoes.slice(0, 3).map((opcao) => opcao.dataset.cidade),
+      opcoes.slice(0, 3).map((opcao) => opcao.dataset.opcao),
       ["São Paulo, SP", "Rio de Janeiro, RJ", "Brasília, DF"],
     );
     assert.equal(setinha.getAttribute("aria-expanded"), "true");
@@ -3334,7 +3334,7 @@ Deno.test("setas escolhem a sugestão e Enter confirma sem avançar o passo", as
     teclar(a, "ArrowDown");
     teclar(a, "ArrowUp");
     const destacada = a.w.document.querySelector('#lista-de-cidades [aria-selected="true"]');
-    assert.equal(destacada.dataset.cidade, "Rio de Janeiro, RJ");
+    assert.equal(destacada.dataset.opcao, "Rio de Janeiro, RJ");
     assert.equal(form.elements.cidade.getAttribute("aria-activedescendant"), destacada.id);
     teclar(a, "Enter");
     assert.equal(form.elements.cidade.value, "Rio de Janeiro, RJ");
