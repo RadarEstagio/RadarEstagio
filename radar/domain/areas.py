@@ -792,6 +792,12 @@ SINONIMOS_DE_CURSO = {
     "gestao da ti": "gestao da tecnologia da informacao",
     "gestao de ti": "gestao da tecnologia da informacao",
     "gestao de rh": "recursos humanos",
+    "tecnologia": "tecnologia da informacao",
+    "ciberseguranca": "seguranca cibernetica",
+    "sistemas para a internet": "sistemas para internet",
+    "desenvolvimento de software": "desenvolvimento de sistemas",
+    "rede de computadores": "redes de computadores",
+    "analise de sistema": "analise de sistemas",
 }
 CURSOS_CONHECIDOS = frozenset(nome for area in AREAS for nome in area.cursos)
 _UM_PREFIXO_DE_FORMACAO = re.compile(
