@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from uuid import uuid4
 
@@ -164,3 +165,95 @@ def test_extracao_so_leu_menos_se_foi_feita_sobre_a_cortada_e_hoje_ha_a_completa
     )
 
     assert extracao.leu_menos_que(vaga) is leu_menos
+
+
+NUL = "\x00"
+PRIMEIRA_METADE_DO_EMOJI = chr(0xD83D)
+SEGUNDA_METADE_DO_EMOJI = chr(0xDE00)
+
+
+def vaga_com(**campos: str) -> Vaga:
+    return Vaga(**(vaga_exemplo().model_dump() | campos))
+
+
+def test_vaga_recebida_perde_nul_e_metade_solta_de_emoji_em_todos_os_textos():
+    vaga = vaga_com(
+        id_externo=f"123{NUL}",
+        titulo=f"Estágio{NUL} em Dados",
+        empresa=f"Empresa {SEGUNDA_METADE_DO_EMOJI}Exemplo",
+        localizacao=f"Rio de Janeiro, RJ{NUL}",
+        descricao=f"Descrição cortada no emoji {PRIMEIRA_METADE_DO_EMOJI}",
+        url=f"https://exemplo.com/vaga/123{NUL}",
+    )
+
+    assert vaga.id_externo == "123"
+    assert vaga.titulo == "Estágio em Dados"
+    assert vaga.empresa == "Empresa Exemplo"
+    assert vaga.localizacao == "Rio de Janeiro, RJ"
+    assert vaga.descricao == "Descrição cortada no emoji "
+    assert vaga.url == "https://exemplo.com/vaga/123"
+
+
+def test_limpeza_da_vaga_nao_mexe_em_emoji_acento_travessao_nem_html():
+    texto = "Estágio – Dados — IA & <b>remoto</b> 😀 ação ’ � \t\n fim"
+    vaga = vaga_com(titulo=texto, empresa=texto, localizacao=texto, descricao=texto)
+
+    assert (vaga.titulo, vaga.empresa, vaga.localizacao, vaga.descricao) == (texto,) * 4
+    assert vaga.chave() == vaga_exemplo().chave() == ("adzuna", "123")
+    assert vaga.identidade() == "adzuna:123"
+
+
+def test_as_duas_metades_de_um_emoji_viram_o_emoji_inteiro():
+    vaga = vaga_com(descricao=f"Vaga {PRIMEIRA_METADE_DO_EMOJI}{SEGUNDA_METADE_DO_EMOJI} aberta")
+
+    assert vaga.descricao == "Vaga 😀 aberta"
+
+
+def test_extracao_da_ia_perde_nul_e_metade_solta_de_emoji_em_todos_os_textos():
+    extracao = ExtracaoDaVaga.model_validate(
+        {
+            "id_vaga": f"adzuna:1{NUL}",
+            "area_da_vaga": "computacao",
+            "areas_da_vaga": [f"dados_ia{NUL}"],
+            "cursos_aceitos": [f"Ciência da Computação{PRIMEIRA_METADE_DO_EMOJI}"],
+            "habilidades_obrigatorias": [f"Python{NUL}", "SQL"],
+            "habilidades_principais": [f"Excel {SEGUNDA_METADE_DO_EMOJI}avançado"],
+            "habilidades_desejaveis": [f"Inglês{NUL} fluente"],
+            "modalidade": f"remoto{NUL}",
+            "alerta_pegadinha": f"Exige experiência {PRIMEIRA_METADE_DO_EMOJI}",
+        }
+    )
+
+    assert extracao.id_vaga == "adzuna:1"
+    assert extracao.areas_da_vaga == ["dados_ia"]
+    assert extracao.cursos_aceitos == ["Ciência da Computação"]
+    assert extracao.habilidades_obrigatorias == ["Python", "SQL"]
+    assert extracao.habilidades_principais == ["Excel avançado"]
+    assert extracao.habilidades_desejaveis == ["Inglês fluente"]
+    assert extracao.modalidade == "remoto"
+    assert extracao.alerta_pegadinha == "Exige experiência "
+
+
+def test_nul_escapado_no_json_da_ia_nao_chega_a_extracao():
+    resposta = json.dumps(
+        {"id_vaga": "adzuna:1", "area_da_vaga": None, "habilidades_obrigatorias": [f"C#{NUL}"]}
+    )
+
+    extracao = ExtracaoDaVaga.model_validate_json(resposta)
+
+    assert extracao.habilidades_obrigatorias == ["C#"]
+
+
+def test_limpeza_da_extracao_nao_mexe_em_emoji_acento_nem_simbolo():
+    textos = ["C# & .NET", "Inglês — avançado", "Comunicação 😀", "<Excel> ’ �"]
+    extracao = ExtracaoDaVaga(
+        id_vaga="adzuna:1",
+        area_da_vaga=None,
+        cursos_aceitos=textos,
+        habilidades_obrigatorias=textos,
+        alerta_pegadinha=textos[1],
+    )
+
+    assert extracao.cursos_aceitos == textos
+    assert extracao.habilidades_obrigatorias == textos
+    assert extracao.alerta_pegadinha == textos[1]

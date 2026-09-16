@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 RECUSAS_POR_AREA_PARA_DESCONTAR = 2
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
+FALHAS_AO_GRAVAR_TEXTO = (psycopg.Error, UnicodeEncodeError)
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
@@ -430,7 +431,7 @@ class RepositorioPostgres:
                             "modelo": modelo,
                         },
                     )
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
 
     def registrar_vagas_sem_extracao(
@@ -447,7 +448,7 @@ class RepositorioPostgres:
                         SQL_REGISTRAR_VAGA_SEM_EXTRACAO, {"vaga_id": vaga_id, "dia": dia}
                     ).fetchone()
                     dias[vaga.chave()] = linha[0]
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao registrar as vagas sem extração: {descrever(erro)}"
             ) from erro
@@ -532,7 +533,7 @@ class RepositorioPostgres:
                 for resultado in avaliadas:
                     vaga_id = guardar_vaga(cursor, resultado.vaga)
                     guardar_avaliacao(cursor, usuario.id, vaga_id, resultado, modelo)
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar avaliações: {descrever(erro)}") from erro
 
     def registrar_envios(self, usuario: Usuario, enviadas: list[Recomendacao]) -> None:
@@ -545,7 +546,7 @@ class RepositorioPostgres:
                     guardar_envio(cursor, usuario.id, vaga_id, recomendacao.token)
                 ativado_agora = registrar_ativacao(cursor, usuario.id)
                 cursor.execute(SQL_ZERAR_FALHAS_DE_ENVIO, {"perfil_id": usuario.id})
-        except psycopg.Error as erro:
+        except FALHAS_AO_GRAVAR_TEXTO as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar envios: {descrever(erro)}") from erro
         if ativado_agora:
             logger.info("Perfil %s ativado pela primeira entrega relevante", usuario.id)
@@ -780,5 +781,5 @@ def converter_em_usuario(linha: dict) -> Usuario:
     )
 
 
-def descrever(erro: psycopg.Error) -> str:
+def descrever(erro: Exception) -> str:
     return type(erro).__name__

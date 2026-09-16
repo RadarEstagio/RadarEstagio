@@ -481,3 +481,18 @@ def test_cota_zerada_antes_da_primeira_busca_vira_erro_de_coleta(httpx_mock: HTT
         ).coletar()
 
     assert httpx_mock.get_requests() == []
+
+
+def test_resumo_cortado_no_meio_do_emoji_e_nul_nao_chegam_a_vaga(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    anuncio = item(1)
+    anuncio["title"] = "Estágio em TI" + chr(0)
+    anuncio["description"] = "Apoio ao time de dados. ".ljust(499, "x") + chr(0xD83D)
+    httpx_mock.add_response(content=json.dumps({"results": [anuncio]}).encode())
+
+    vaga = coletor.coletar()[0]
+
+    assert vaga.titulo == "Estágio em TI"
+    assert vaga.descricao == "Apoio ao time de dados. ".ljust(499, "x")
+    assert not vaga.descricao_completa

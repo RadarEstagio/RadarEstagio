@@ -98,7 +98,7 @@ são os marcos autoritativos quando o navegador pode fechar ou perder a conexão
 | E-mail confirmado | `email_confirmado`, confirmação observada pelo Auth | trigger do banco | `user_id` | marco autoritativo | `etapas` por identidade | não prova vínculo do Telegram ou entrega |
 | Perfil salvo | `perfil_salvo`, insert confirmado pelo banco; o navegador mantém um espelho autenticado para ligar sessão | trigger do banco + navegador após persistência | banco: `user_id`/`perfil_id`; web: sessão/usuário | podem existir duas linhas para o mesmo marco; SQL conta identidade distinta | `etapas` por identidade; `0014` liga a sessão de origem nos eventos de banco | não distingue criação de edição; não atribui sucesso antes do retorno do backend |
 | Abertura do Telegram | `telegram_aberto`, clique no CTA de vínculo | navegador | sessão ou usuário | cada clique pode repetir | `etapas` por identidade | não confirma vínculo; retorno/abertura externa não é prova de entrega |
-| Telegram vinculado | `telegram_vinculado`, mudança confirmada de `telegram_chat_id` | trigger do banco após webhook | `user_id`/`perfil_id` | histórico pode ter revínculos | `etapas` e `perfis_vinculados` | não prova que o job rodou ou que havia vaga compatível |
+| Telegram vinculado | `telegram_vinculado`, mudança confirmada de `telegram_chat_id` | trigger do banco após webhook | `user_id`/`perfil_id` | histórico pode ter revínculos; desde 16/09/2026 só um por perfil a cada 24 h (`0028`) | `etapas` e `perfis_vinculados` | não prova que o job rodou ou que havia vaga compatível |
 | Primeira recomendação | `primeira_recomendacao_enviada`, `ativado_em` preenchido | trigger do banco após ativação do perfil | `user_id`/`perfil_id` | somente a transição inicial | `etapas` e coorte de perfis | prova primeira entrega operacional, não abertura nem utilidade |
 
 Login, recuperação, edição de perfil, CAPTCHA, erro de rede e abandono não têm eventos próprios.
@@ -113,7 +113,9 @@ as recomendações entregues a esses perfis e interações posteriores às entre
 Vínculo histórico não desaparece porque alguém desvinculou o Telegram depois.
 
 Uma recomendação é o par `(perfil_id, vaga_id)`. Três cliques na mesma vaga contam como uma
-abertura. Para feedback, vale a última resposta do par por instante e, em empate, ID do evento.
+abertura. Desde 16/09/2026 (`0028`) o banco só grava a primeira abertura de cada envio, o que
+não muda o número: a contagem já era por par e a primeira abertura é a que fica. Para feedback,
+vale a última resposta do par por instante e, em empate, ID do evento.
 Uma resposta negativa corrigida para positiva deixa de contar como recusa, e vice-versa.
 
 "Vaga encerrada" é gravada como `vaga_irrelevante` e, por ser a última resposta, conta em

@@ -228,14 +228,15 @@ conseguiu casar por id. Não sabe o que é "tentar de novo".
 | Situação | O que faz |
 |---|---|
 | 14 vagas, lote de 10 | 2 chamadas |
-| lote de 10 falha (JSON quebrado, erro 500) | divide em 5 + 5, tenta cada; repete até isolar a vaga com problema |
+| lote de 10 falha (texto do modelo fora do JSON pedido, resposta vazia, erro 4xx) | divide em 5 + 5, tenta cada; repete até isolar a vaga com problema |
+| falha interna do avaliador (HTTP 500) | espera 10 s e repete o lote uma vez; se voltar, divide como acima |
 | modelo esqueceu de responder 1 vaga | extrai só ela |
 | modelo devolveu parte do lote, só com ids do lote, e faltaram 2 ou mais | pede as que faltaram juntas, uma vez; o que ainda faltar vai uma a uma |
 | voltou vazio, ou com id fora do lote ou repetido | pede as que faltaram uma a uma |
 | a repetição falhou com erro não temporário, ou voltou com id fora do que faltou ou repetido | descarta a repetição e pede uma a uma |
 | esqueceu mesmo sozinha | ignora e registra |
 | cota excedida (HTTP 429) | espera o "retry in Ns" e repete o mesmo lote; acima de 120 s desiste e envia o que já tem |
-| avaliador fora do ar (502, 503, 504) | espera e repete o **mesmo** lote, sem dividir |
+| avaliador fora do ar (502, 503, 504, timeout, rede, HTTP 200 com corpo que não é JSON ou fora do formato da API) | espera e repete o **mesmo** lote, sem dividir; se persistir, para a extração com o que já tem |
 
 Por que separar: a estratégia de resiliência não tem nada a ver com o mecanismo de IA.
 `ExtratorEmLotes` embrulha os dois adapters sem conhecer Gemini API ou AGY.
@@ -320,6 +321,12 @@ Regras para não afetar quem já usa:
   transação implícita, os blocos virariam savepoints dentro dela e nada ficaria visível para
   outra conexão até o processo fechar: a mensagem chegaria ao estudante antes de o token do
   envio existir para o webhook, e a trava do perfil seria liberada antes da confirmação.
+- **Texto que o banco recusa não chega a ele.** Como a transação é por operação, uma vaga com
+  NUL (recusado em `text` e `jsonb`) fazia todas as extrações do run ou todos os envios do
+  usuário ficarem sem gravar, e um surrogate solto (metade de emoji) fazia o psycopg levantar
+  `UnicodeEncodeError` e derrubar o job. `Vaga` e `ExtracaoDaVaga` limpam esses dois caracteres
+  ao serem validadas (`domain/texto.py`), o que vale para toda fonte, toda IA e o prompt, e as
+  gravações tratam o `UnicodeEncodeError` que ainda escapar como falha do banco.
 - **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
   contrato com o site: ninguém altera tabela pelo painel.
 - **RLS** em todas as tabelas. `perfis` e `eventos_produto` têm policy: cada usuário lê e
