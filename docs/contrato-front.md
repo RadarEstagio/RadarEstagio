@@ -11,7 +11,7 @@ O cadastro coleta o perfil antes de `signUp`. Envia em `options.data.cadastro_ra
 
 | Campo | Conteúdo |
 |---|---|
-| `perfil` | `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse` |
+| `perfil` | `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse`, `pessoa_com_deficiencia` (opcional) |
 | `aceitou_termos` | `true` obrigatório |
 | `aceita_emails` | Booleano independente, desmarcado por padrão |
 | `versao_dos_termos` | Versão aceita em formato de data válida; manter coerente com os documentos |
@@ -43,7 +43,7 @@ o token do Turnstile é passado nas operações suportadas e descartado após a 
 | Campos | Responsabilidade |
 |---|---|
 | `id`, `user_id`, `criado_em` | Criação pelo banco; identidade não editável pelo formulário |
-| `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse` | Dados validados no cadastro e editáveis pelo dono |
+| `curso`, `periodo`, `habilidades`, `cidade`, `modalidade`, `areas_de_interesse`, `pessoa_com_deficiencia` | Dados validados no cadastro e editáveis pelo dono |
 | `ativo` | Pausar/retomar pelo painel; sistema também pode pausar por falhas de entrega |
 | `motivo_pausa` | Motivo opcional da pausa atual; fica nulo ao retomar e não é histórico |
 | `aceita_emails` | Preferência reversível pelo dono |
@@ -57,6 +57,13 @@ o token do Turnstile é passado nas operações suportadas e descartado após a 
 Há uma cidade e uma modalidade por perfil. Modalidades aceitas: `remoto`, `presencial`,
 `hibrido`, `indiferente`. O catálogo de áreas está no domínio e na validação da `0014`.
 Editar perfil e preferências usa `update` na própria linha, limitado por grants e RLS.
+
+`pessoa_com_deficiencia` é `true`, `false` ou `null`. O formulário oferece Sim, Não e Prefiro não
+informar, esta marcada por padrão, e manda `null` para ela; perfil anterior à pergunta também tem
+`null`, com o mesmo efeito. No cadastro a chave é opcional, e qualquer tipo além de booleano e
+`null` é recusado (`0026`). É dado sensível: não vai para propriedade de evento, log nem prompt, e
+o texto ao lado da pergunta diz para que ela serve. Com `true`, vaga para PCD compatível vem
+primeiro; com `false`, vaga exclusiva para PCD não é enviada.
 Não usar `upsert` como substituto do fluxo de criação.
 
 Tetos de texto (`0025`), iguais aos que `validar_cadastro_radar` cobra desde a `0014` e medidos no

@@ -746,6 +746,45 @@ contexto no passo 1.
   só técnico; hífen não separa ("Técnico - Superior em Administração" segue 35) e parênteses dão
   parcial ("Técnico ou Superior (Administração)"); "ADM ou Técnico em ADM" fica igual a ["ADM"],
   35, porque "ADM" não é curso do catálogo e o alias exigiria mudar `normalizar_curso`.
+- **Vagas para PCD** (16/09/2026). A vaga afirmativa da MUDES ("Vaga Afirmativa (Lgbtqiapn, Raça,
+  Gênero, Pcd, 40)") chegou em 1º lugar, com 100, a quem não é PCD e sem indicação nenhuma. O
+  perfil ganhou `pessoa_com_deficiencia` (`0026`): `true`, `false` ou `null`, e `null` é tanto
+  "Prefiro não informar" quanto perfil anterior à pergunta, com o mesmo efeito. Decisões do Ian:
+  - Quem respondeu **não** deixa de receber vaga **exclusiva** para PCD (motivo de descarte
+    `exclusiva_para_pcd`). Vaga **afirmativa** para vários grupos continua chegando, com o aviso
+    "Vaga afirmativa: confira se você faz parte de um destes grupos: <lista do anúncio>" (ou
+    "confira no anúncio a quem ela se destina" sem lista legível): o Radar não sabe raça, gênero,
+    orientação nem idade, e tirá-la esconderia a vaga de quem é dos outros grupos.
+  - Para quem é **PCD**, exclusiva e afirmativa que inclui PCD vão para o **topo da mensagem**
+    (`prioritaria_para_pcd`, primeiro critério de `criterio_de_ranking`, só em memória), com o
+    ponto a favor "Vaga exclusiva para PCD" ou "Vaga afirmativa que inclui PCD". A nota não muda
+    e a prioridade só vale acima de `NOTA_MINIMA`: vaga PCD que não combina com o perfil segue
+    fora. Nenhum peso mudou.
+  - Quem **não informou** segue como antes: recebe tudo, sem prioridade, e a exclusiva ganha o
+    aviso "Vaga exclusiva para pessoas com deficiência (PCD)".
+
+  A classificação é regra em `domain/publico.py`, sem IA e sem mudar a extração. Quase toda
+  menção a PCD é da empresa: das 1.003 vagas do banco em 16/09, 29 citam PCD, deficiência ou ação
+  afirmativa e 25 são "PcDs são bem-vindas", "também extensivas para PCD", "sem distinção de
+  deficiência". Exclusiva exige a vaga dirigida a PCD ("vaga para pessoas com deficiência",
+  "exclusiva para PCD", "somente PCD", PCD como trecho do título depois de hífen, barra ou
+  parêntese) e recusa negação, "também" e "ampla concorrência"; título sobre o tema ("Inclusão de
+  Pessoas com Deficiência") não conta. Afirmativa exige "vaga afirmativa" ou "ação afirmativa" no
+  singular, porque "ações afirmativas" costuma ser política da empresa; os grupos vêm da lista
+  entre parênteses depois de "afirmativa". Resultado nas 1.003: 1 exclusiva, 1 afirmativa com
+  PCD (MUDES), 2 afirmativas sem lista, 999 gerais, igual à leitura manual das 29.
+
+  É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
+  ao lado para que serve, e a resposta não entra em evento, log nem prompt; o juiz monta o perfil
+  campo a campo e não a recebe. A política de privacidade ganhou o dado e a base legal, ainda como
+  rascunho para aprovação. Vaza por dois caminhos aceitos: o ponto a favor "Vaga exclusiva para
+  PCD" é gravado em `avaliacoes`, e a mensagem no Telegram mostra que a vaga é para PCD.
+  Publicação: `db push` da `0026` antes do merge, porque o `rodar` passa a ler a coluna e o site
+  manda a chave, que a validação anterior recusa. Limites: vaga dirigida a outro grupo sem a
+  palavra "afirmativa" ("exclusiva para mulheres") não recebe aviso; "ação afirmativa" no
+  singular dentro do texto institucional gera aviso falso; afirmativa cuja lista não está entre
+  parênteses não dá prioridade a PCD; exclusividade escrita depois dos 500 caracteres da Adzuna
+  só é pega no pré-filtro da entrega, depois de a vaga ter sido extraída.
 
 ### Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 

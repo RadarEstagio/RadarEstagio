@@ -49,7 +49,9 @@ passo, nunca ao avançar entre etapas; interface pública depende da hospedagem.
 
 Selecionar uma cidade da lista de municípios do IBGE, sugerida conforme a digitação, e uma
 modalidade; várias habilidades e áreas. As áreas oferecidas são as do curso informado, e "Ainda não
-quero informar habilidades" segue sem nenhuma.
+quero informar habilidades" segue sem nenhuma. Responder, se quiser, se é pessoa com deficiência
+(PCD): com sim, vagas para PCD que combinam com o perfil vêm primeiro; com não, vagas exclusivas
+para PCD deixam de chegar; "Prefiro não informar", o padrão, mantém a entrega como antes.
 
 **Condições e limites:** Modalidades: remoto, presencial, híbrido ou indiferente. Até 50
 habilidades de até 100 caracteres. Lista vazia significa habilidade não informada, não incapacidade:
@@ -118,7 +120,8 @@ Receber as melhores vagas novas compatíveis encontradas.
 #### 12. Explicação da recomendação
 
 Ver nota, requisitos atendidos, requisitos a conferir, diferenciais que a vaga cita e o
-perfil não tem, pontos e alertas disponíveis.
+perfil não tem, pontos e alertas disponíveis. Vaga afirmativa avisa a quais grupos se destina, e
+vaga para PCD enviada a quem é PCD diz isso nos pontos a favor.
 
 **Condições e limites:** Desejáveis ausentes não são cobrados; listas longas mostram até oito itens e “e mais N”.
 
@@ -243,7 +246,8 @@ Une duplicatas e filtra republicações, incluindo histórico recente do usuári
 
 #### 05. Pré-filtro
 
-Regras de estágio, área do curso, localização e elegibilidade reduzem candidatos à IA.
+Regras de estágio, área do curso, localização e elegibilidade reduzem candidatos à IA. Vaga
+exclusiva para PCD sai para quem respondeu que não é PCD; vaga afirmativa para vários grupos fica.
 
 **Código de referência:** `radar/filtering/prefiltro.py`.
 
