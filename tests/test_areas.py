@@ -245,6 +245,47 @@ def test_formas_comuns_do_nome_do_curso_sao_reconhecidas(curso: str, esperada: s
     assert area_do_curso(curso) == esperada
 
 
+@pytest.mark.parametrize(
+    ("curso", "esperado", "area"),
+    [
+        ("Ciência da Computação.", "ciencia da computacao", COMPUTACAO),
+        ("Direito, UERJ", "direito", "direito"),
+        ("Letras, 5º período", "letras", "educacao"),
+        ("Psicologia (UFRJ) - noturno", "psicologia", "pessoas"),
+        ("Administração (noturno).", "administracao", "administracao"),
+        ('"Pedagogia".', "pedagogia", "educacao"),
+        ("- Enfermagem", "enfermagem", "saude"),
+        ("T.I.", "tecnologia da informacao", COMPUTACAO),
+        ("Eng. de Software", "engenharia de software", COMPUTACAO),
+        ("Eng Civil", "engenharia civil", "engenharias"),
+        ("Graduação em Eng. Elétrica", "engenharia eletrica", "engenharias"),
+        ("Adm. Pública", "administracao publica", "administracao"),
+        ("C. Contábeis", "contabilidade", "financas"),
+        ("Ciênc. Econômicas", "economia", "financas"),
+        ("Ciên. da Computação", "ciencia da computacao", COMPUTACAO),
+    ],
+)
+def test_curso_com_pontuacao_complemento_ou_abreviacao_chega_ao_nome_do_catalogo(
+    curso: str, esperado: str, area: str
+):
+    assert normalizar_curso(curso) == esperado
+    assert area_do_curso(curso) == area
+
+
+@pytest.mark.parametrize(
+    ("curso", "esperado"),
+    [
+        ("Eng.", "eng"),
+        ("Engenharia, UFRJ", "engenharia"),
+        ("Medicina Veterinária, UFF", "medicina veterinaria"),
+        ("Cursando Eng", "eng"),
+    ],
+)
+def test_pontuacao_e_abreviacao_nao_inventam_curso(curso: str, esperado: str):
+    assert normalizar_curso(curso) == esperado
+    assert area_do_curso(curso) is None
+
+
 def test_toda_area_sugere_habilidades_proprias_e_computacao_mantem_as_de_sempre():
     from radar.domain.areas import AREAS, AREAS_POR_NOME, HABILIDADES_GERAIS, catalogo_do_site
 

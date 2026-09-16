@@ -445,17 +445,26 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
 function normalizarCurso(curso, catalogo) {
   const sufixo = new RegExp(`(?:\\s*[-–|:]\\s*|\\s+)(?:${catalogo.sufixos.join("|")})$`);
   let texto = normalizarTexto(curso)
-    .replace(/\s+/g, " ")
-    .replace(/\s*(?:\(.*\)|[-–|/].*)$/, "")
+    .replace(/^[^a-z0-9]+/, "")
+    .replace(/\s*(?:\(|[-–|/,]).*$/, "")
+    .replace(/[^a-z0-9]+$/, "")
     .replace(sufixo, "");
   const conhecidos = new Set(catalogo.areas.flatMap((area) => area.cursos));
   const prefixo = new RegExp(
     `^(?:${catalogo.prefixos.join("|")})(?: (?:${catalogo.conectores.join("|")}))?\\s+`,
   );
+  const abreviacao = new RegExp(
+    `^(${Object.keys(catalogo.abreviacoes).join("|")})(?:\\.\\s*|\\s+)(?=[a-z])`,
+  );
   for (;;) {
     if (catalogo.genericos.includes(texto)) return "";
     if (Object.hasOwn(catalogo.sinonimos, texto)) return catalogo.sinonimos[texto];
     if (conhecidos.has(texto)) return texto;
+    const abreviada = texto.match(abreviacao);
+    if (abreviada) {
+      texto = `${catalogo.abreviacoes[abreviada[1]]} ${texto.slice(abreviada[0].length)}`;
+      continue;
+    }
     const encontrado = texto.match(prefixo);
     if (!encontrado) return texto;
     texto = texto.slice(encontrado[0].length);

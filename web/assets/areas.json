@@ -680,5 +680,12 @@
     "gestao da ti": "gestao da tecnologia da informacao",
     "gestao de ti": "gestao da tecnologia da informacao",
     "gestao de rh": "recursos humanos"
+  },
+  "abreviacoes": {
+    "eng": "engenharia",
+    "adm": "administracao",
+    "cienc": "ciencias",
+    "cien": "ciencias",
+    "c": "ciencias"
   }
 }
