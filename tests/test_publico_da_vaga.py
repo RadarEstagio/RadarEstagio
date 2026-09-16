@@ -193,10 +193,37 @@ def test_cota_programa_ou_outras_vagas_nao_tornam_esta_vaga_exclusiva(descricao)
         "Vaga para pessoas com deficiência (PCD) e pessoas negras.",
         "Vaga para PCD, preferencialmente.",
         "Vaga PCD: N/A",
+        "Vaga para PCD - Não",
+        "Vaga PCD: Não.",
+        "Vaga PCD? Não | Bolsa: R$ 1.200",
+        "Vaga para PCD - Não - Bolsa: R$ 1.200",
+        "Vaga PCD: Não; Nível: estágio",
+        "Vaga PCD: Não, nível estágio",
+        "Vaga para PCD (Não)",
+        "Vaga PCD: Não se aplica",
+        "Vaga PCD: Não informado",
+        "Vaga para PCD - Não PCD",
     ],
 )
 def test_vaga_que_diz_nao_ser_so_de_pcd_nao_e_exclusiva(descricao):
     assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    ("titulo", "descricao"),
+    [
+        ("Estágio em Dados", "Vaga exclusiva para PCD, não exigimos experiência."),
+        (
+            "Estágio em Dados",
+            "Vaga exclusiva para pessoas com deficiência, não exigimos experiência.",
+        ),
+        ("Estágio em Dados", "Vaga para PCD - Não requer experiência."),
+        ("Estágio em Dados", "Vaga PCD: não é necessário experiência."),
+        ("Estágio em RH - PCD - Não requer experiência", "Apoio às rotinas da área."),
+    ],
+)
+def test_nao_de_outra_oracao_depois_do_termo_nao_tira_a_exclusividade(titulo, descricao):
+    assert publico_da_vaga(vaga(titulo=titulo, descricao=descricao)) is PublicoDaVaga.EXCLUSIVO_PCD
 
 
 @pytest.mark.parametrize(

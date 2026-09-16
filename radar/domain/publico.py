@@ -11,7 +11,11 @@ QUALIFICADOR_DE_PUBLICO = (
     r"|destinad[ao]|voltad[ao]|direcionad[ao]|reservad[ao])"
 )
 SIGLA_DEPOIS_DO_TERMO = r"(?:\s*\(\s*pcds?\s*\))?"
-PALAVRA_DE_OUTRO_PUBLICO = r"(?:nao|tambem|ampla|preferencial\w*|n/a)"
+NAO_COMO_RESPOSTA_SOLTA = r"nao(?=\s*(?:$|[.;,|)/]|-(?:\s|$)))"
+PALAVRA_DE_OUTRO_PUBLICO = (
+    rf"(?:tambem|ampla|preferencial\w*|n/a|nao\s+(?:se\s+aplica|informad[ao]|{TERMO_PCD})"
+    rf"|{NAO_COMO_RESPOSTA_SOLTA})"
+)
 SEM_OUTRO_PUBLICO_DEPOIS = (
     rf"(?!{SIGLA_DEPOIS_DO_TERMO}\s*"
     rf"(?:/|,?\s*(?:e|ou)\b|[-:?,(|\s]*{PALAVRA_DE_OUTRO_PUBLICO}\b))"
