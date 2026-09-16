@@ -961,6 +961,7 @@ function closeSignup() {
   }
   limparSenhas();
   form.elements.email.value = "";
+  form.elements.pessoa_com_deficiencia.value = "";
   fecharConfirmacao(false);
   leaveAccountPage();
   if (dialog.open && typeof dialog.close === "function") dialog.close();

@@ -3538,6 +3538,29 @@ Deno.test("sair da conta volta a pergunta sobre deficiência para prefiro não i
   }
 });
 
+Deno.test("fechar o cadastro apaga a resposta sobre deficiência, mantendo o resto do rascunho", async () => {
+  for (const como of ["esc", "x", "voltar"]) {
+    const a = app();
+    try {
+      await settle();
+      await reabrirCadastro(a.w);
+      const form = fill(a.w);
+      for (let passo = 0; passo < 2; passo += 1) a.w.document.querySelector("#next-step").click();
+      await settle();
+      form.querySelector('input[name="pessoa_com_deficiencia"][value="sim"]').click();
+      assert.equal(respostaSobreDeficiencia(form), "sim", como);
+
+      fecharCadastro(a.w, como);
+      await reabrirCadastro(a.w);
+
+      assert.equal(respostaSobreDeficiencia(form), "", como);
+      assert.equal(form.elements.curso.value, "Computação", como);
+    } finally {
+      a.close();
+    }
+  }
+});
+
 function captchaComToken(a: ReturnType<typeof app>, token: string) {
   let widget: { callback: (valor: string) => void } | undefined;
   a.w.turnstile = {
