@@ -192,3 +192,28 @@ def test_nao_entrega_segredos_do_radar_ao_processo_agy(monkeypatch: pytest.Monke
     ambiente = executor.opcoes["env"]
     assert isinstance(ambiente, dict)
     assert "TELEGRAM_BOT_TOKEN" not in ambiente
+
+
+def test_saida_do_agy_com_nul_e_metade_solta_de_emoji_chega_limpa():
+    envelope = {
+        "status": "SUCCESS",
+        "structured_output": {
+            "extracoes": [
+                {
+                    "id_vaga": "adzuna:vaga-1",
+                    "area_da_vaga": "computacao",
+                    "habilidades_obrigatorias": ["Python" + chr(0), "SQL" + chr(0xD83D)],
+                    "alerta_pegadinha": "Sem remuneração" + chr(0xDE00),
+                }
+            ]
+        },
+    }
+    extrator = ExtratorAgy(
+        settings_de_teste(),
+        executor=ExecutorFalso(ProcessoFalso(0, json.dumps(envelope))),
+    )
+
+    extracao = extrator.extrair([vaga_exemplo()])[0]
+
+    assert extracao.habilidades_obrigatorias == ["Python", "SQL"]
+    assert extracao.alerta_pegadinha == "Sem remuneração"

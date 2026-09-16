@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from uuid import uuid4
 
@@ -206,3 +207,53 @@ def test_as_duas_metades_de_um_emoji_viram_o_emoji_inteiro():
     vaga = vaga_com(descricao=f"Vaga {PRIMEIRA_METADE_DO_EMOJI}{SEGUNDA_METADE_DO_EMOJI} aberta")
 
     assert vaga.descricao == "Vaga 😀 aberta"
+
+
+def test_extracao_da_ia_perde_nul_e_metade_solta_de_emoji_em_todos_os_textos():
+    extracao = ExtracaoDaVaga.model_validate(
+        {
+            "id_vaga": f"adzuna:1{NUL}",
+            "area_da_vaga": "computacao",
+            "areas_da_vaga": [f"dados_ia{NUL}"],
+            "cursos_aceitos": [f"Ciência da Computação{PRIMEIRA_METADE_DO_EMOJI}"],
+            "habilidades_obrigatorias": [f"Python{NUL}", "SQL"],
+            "habilidades_principais": [f"Excel {SEGUNDA_METADE_DO_EMOJI}avançado"],
+            "habilidades_desejaveis": [f"Inglês{NUL} fluente"],
+            "modalidade": f"remoto{NUL}",
+            "alerta_pegadinha": f"Exige experiência {PRIMEIRA_METADE_DO_EMOJI}",
+        }
+    )
+
+    assert extracao.id_vaga == "adzuna:1"
+    assert extracao.areas_da_vaga == ["dados_ia"]
+    assert extracao.cursos_aceitos == ["Ciência da Computação"]
+    assert extracao.habilidades_obrigatorias == ["Python", "SQL"]
+    assert extracao.habilidades_principais == ["Excel avançado"]
+    assert extracao.habilidades_desejaveis == ["Inglês fluente"]
+    assert extracao.modalidade == "remoto"
+    assert extracao.alerta_pegadinha == "Exige experiência "
+
+
+def test_nul_escapado_no_json_da_ia_nao_chega_a_extracao():
+    resposta = json.dumps(
+        {"id_vaga": "adzuna:1", "area_da_vaga": None, "habilidades_obrigatorias": [f"C#{NUL}"]}
+    )
+
+    extracao = ExtracaoDaVaga.model_validate_json(resposta)
+
+    assert extracao.habilidades_obrigatorias == ["C#"]
+
+
+def test_limpeza_da_extracao_nao_mexe_em_emoji_acento_nem_simbolo():
+    textos = ["C# & .NET", "Inglês — avançado", "Comunicação 😀", "<Excel> ’ �"]
+    extracao = ExtracaoDaVaga(
+        id_vaga="adzuna:1",
+        area_da_vaga=None,
+        cursos_aceitos=textos,
+        habilidades_obrigatorias=textos,
+        alerta_pegadinha=textos[1],
+    )
+
+    assert extracao.cursos_aceitos == textos
+    assert extracao.habilidades_obrigatorias == textos
+    assert extracao.alerta_pegadinha == textos[1]
