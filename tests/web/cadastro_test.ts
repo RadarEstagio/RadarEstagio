@@ -3600,6 +3600,27 @@ Deno.test("lista de cursos fora do ar avisa e não bloqueia o cadastro", async (
   }
 });
 
+Deno.test("catálogo de áreas já carregado não some quando um pedido anterior falha depois", async () => {
+  const a = app();
+  try {
+    await settle();
+    const pedidos: { resolve: (valor: unknown) => void; reject: (erro: Error) => void }[] = [];
+    a.w.fetch = () => new Promise((resolve, reject) => pedidos.push({ resolve, reject }));
+    const anterior = a.w.carregarAreas();
+    const seguinte = a.w.carregarAreas();
+    pedidos[1].resolve({ ok: true, json: async () => areasJson });
+    assert.ok(await seguinte);
+    pedidos[0].reject(new Error("rede caiu"));
+    await anterior;
+    a.w.fetch = async () => {
+      throw new Error("offline");
+    };
+    assert.ok(await a.w.carregarAreas(), "o catálogo carregado virou nulo");
+  } finally {
+    a.close();
+  }
+});
+
 function captchaComToken(a: ReturnType<typeof app>, token: string) {
   let widget: { callback: (valor: string) => void } | undefined;
   a.w.turnstile = {

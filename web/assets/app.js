@@ -234,10 +234,8 @@ async function carregarAreas() {
   if (catalogoDeAreas) return catalogoDeAreas;
   try {
     const resposta = await fetch("assets/areas.json");
-    catalogoDeAreas = resposta.ok ? await resposta.json() : null;
-  } catch {
-    catalogoDeAreas = null;
-  }
+    if (resposta.ok) catalogoDeAreas = await resposta.json();
+  } catch {}
   return catalogoDeAreas;
 }
 
