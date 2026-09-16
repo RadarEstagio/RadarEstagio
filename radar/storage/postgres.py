@@ -180,7 +180,7 @@ SQL_VAGAS_ENCERRADAS = f"""
         from marcadas m
         join perfis p on p.id = m.perfil_id
         where m.marcadas_pelo_perfil <= {MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS}
-          and p.ativo and p.excluida_em is null and p.telegram_chat_id is not null
+          and p.excluida_em is null
           and exists (
               select 1
               from eventos_produto a

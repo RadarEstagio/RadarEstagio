@@ -303,20 +303,39 @@ Deno.test("marcação de vaga encerrada com mais de 30 dias deixa de contar", as
   }
 });
 
-Deno.test("marcação de conta excluída, pausada, sem Telegram ou já apagada não tira a vaga dos outros", async () => {
+Deno.test("marcação de conta excluída ou já apagada não tira a vaga dos outros", async () => {
   const db = await bancoComFeedback();
   try {
-    await db.exec(`
-      update perfis set excluida_em = now() where id = 2;
-      update perfis set ativo = false where id = 3;
-      update perfis set telegram_chat_id = null where id = 4;
-    `);
-    for (const perfil of [2, 3, 4, 99]) {
+    await db.exec("update perfis set excluida_em = now() where id = 2;");
+    for (const perfil of [2, 99]) {
       await marcarComoEncerrada(db, perfil, 1);
     }
     await marcarComoEncerrada(db, 5, 2);
 
     assert.deepEqual(await encerradas(db), ["adzuna:2:Estágio B"]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("marcação de conta pausada ou sem Telegram continua tirando a vaga dos outros", async () => {
+  const db = await bancoComFeedback();
+  try {
+    await vagasAte(db, 3);
+    await db.exec(`
+      update perfis set ativo = false where id = 3;
+      update perfis set telegram_chat_id = null where id = 4;
+      update perfis set ativo = false, telegram_chat_id = null where id = 5;
+    `);
+    await marcarComoEncerrada(db, 3, 1);
+    await marcarComoEncerrada(db, 4, 2);
+    await marcarComoEncerrada(db, 5, 3);
+
+    assert.deepEqual(await encerradas(db), [
+      "adzuna:1:Estágio A",
+      "adzuna:2:Estágio B",
+      "adzuna:3:Estágio 3",
+    ]);
   } finally {
     await db.close();
   }
