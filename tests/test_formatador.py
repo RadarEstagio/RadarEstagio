@@ -151,6 +151,15 @@ def test_dominio_do_link_ignora_o_www():
     assert "Ver vaga em gupy.io" in texto
 
 
+def test_url_que_o_urlsplit_recusa_cai_no_nome_da_fonte_sem_derrubar_a_mensagem():
+    sem_dominio_legivel = vaga().model_copy(update={"url": "https://[oops/vaga/9"})
+
+    texto = mensagem([resultado(85).model_copy(update={"vaga": sem_dominio_legivel})])
+
+    assert "Ver vaga em adzuna" in texto
+    assert 'href="https://[oops/vaga/9"' in texto
+
+
 def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
     texto = mensagem(
         [
@@ -374,9 +383,19 @@ def test_resumo_avisa_vagas_sem_extracao_e_extracoes_nao_gravadas():
 
 
 def test_resumo_avisa_os_perfis_ilegiveis_deixados_de_fora():
-    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, 0, 0, 0, 0, 3)
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, 0, 0, 0, 0, perfis_ilegiveis=3
+    )
 
     assert "⚠️ Perfis com dados inválidos, fora da execução: 3" in texto
+
+
+def test_resumo_avisa_usuarios_sem_entrega_por_erro_inesperado():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 3, 21, 830, 7, 0, 0, 0, 0, sem_entrega_por_erro_inesperado=1
+    )
+
+    assert "⚠️ Sem entrega por erro inesperado: 1 (veja o traceback no log)" in texto
 
 
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():

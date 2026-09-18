@@ -83,6 +83,7 @@ class ResumoDaExecucao(BaseModel):
     usuarios: int
     usuarios_com_falha_de_revalidacao: int = 0
     usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
+    usuarios_sem_entrega_por_erro_inesperado: int = 0
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -130,20 +131,26 @@ def executar(
     )
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
+    erros_inesperados: set[UUID] = set()
     for usuario in usuarios:
-        selecionadas = atender_usuario(
-            usuario,
-            unicas,
-            extracoes,
-            dias_sem_extracao,
-            notificador,
-            repositorio,
-            parametros,
-            agora,
-            pontuador,
-            revalidacao,
-            incompleta,
-        )
+        try:
+            selecionadas = atender_usuario(
+                usuario,
+                unicas,
+                extracoes,
+                dias_sem_extracao,
+                notificador,
+                repositorio,
+                parametros,
+                agora,
+                pontuador,
+                revalidacao,
+                incompleta,
+            )
+        except Exception:
+            erros_inesperados.add(usuario.id)
+            logger.exception("usuário %s ficou sem mensagem por erro inesperado", usuario.id)
+            continue
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
     return ResumoDaExecucao(
@@ -152,6 +159,7 @@ def executar(
         usuarios_sem_entrega_por_falha_de_revalidacao=len(
             revalidacao.falhas - enviadas_por_usuario.keys()
         ),
+        usuarios_sem_entrega_por_erro_inesperado=len(erros_inesperados),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),

@@ -178,6 +178,12 @@ def test_exigencia_de_experiencia_com_negacao_distante_ou_duracao_continua_desca
     assert exige_anos_de_experiencia(vaga(descricao=descricao))
 
 
+def test_numero_de_anos_maior_que_o_limite_de_digitos_do_python_nao_derruba_o_filtro():
+    descricao = f"Exigimos {'9' * 4301} anos de experiência na área."
+
+    assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
 @pytest.mark.parametrize(
     "titulo",
     [

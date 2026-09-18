@@ -75,9 +75,12 @@ class NotificadorTelegram:
 
 def descricao_do_erro(resposta: httpx.Response) -> str:
     try:
-        return str(resposta.json().get("description", ""))
+        corpo = resposta.json()
     except ValueError:
-        return resposta.text[:LIMITE_DA_DESCRICAO_DO_ERRO].strip()
+        corpo = None
+    if isinstance(corpo, dict):
+        return str(corpo.get("description", ""))
+    return resposta.text[:LIMITE_DA_DESCRICAO_DO_ERRO].strip()
 
 
 def destinatario_recusou(status: int, descricao: str) -> bool:

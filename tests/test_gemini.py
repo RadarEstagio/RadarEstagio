@@ -457,6 +457,59 @@ def test_envelope_sem_texto_segue_como_erro_do_lote_que_se_divide(envelope: dict
     assert not isinstance(capturado.value, ErroTemporarioDeAvaliacao)
 
 
+def gzip_corrompido(requisicao: httpx.Request) -> httpx.Response:
+    return httpx.Response(
+        200,
+        headers={"content-encoding": "gzip", "content-type": "application/json"},
+        content=b"isto nao e gzip",
+    )
+
+
+def redirect_sem_fim(requisicao: httpx.Request) -> httpx.Response:
+    return httpx.Response(302, headers={"location": "https://exemplo.invalido/de-novo"})
+
+
+def cliente_que_segue_redirect(responder: Callable[[httpx.Request], httpx.Response]):
+    return genai.Client(
+        api_key="gemini-de-teste",
+        http_options=types.HttpOptions(
+            httpx_client=httpx.Client(
+                transport=httpx.MockTransport(responder), follow_redirects=True
+            )
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("cliente", "trecho"),
+    [
+        pytest.param(
+            lambda: cliente_do_sdk(gzip_corrompido), "Falha de rede", id="gzip-corrompido"
+        ),
+        pytest.param(
+            lambda: cliente_que_segue_redirect(redirect_sem_fim),
+            "Falha de rede",
+            id="redirect-sem-fim",
+        ),
+        pytest.param(
+            lambda: cliente_do_sdk(
+                corpo_json_200({"candidates": [{"content": {"parts": {"text": "oi"}}}]})
+            ),
+            "fora do formato da API",
+            id="partes-objeto",
+        ),
+    ],
+)
+def test_resposta_que_o_sdk_nao_consegue_ler_e_indisponibilidade_temporaria(
+    cliente: Callable[[], genai.Client], trecho: str
+):
+    extrator = ExtratorGemini(settings_de_teste(), cliente())
+
+    with pytest.raises(AvaliadorIndisponivel, match=trecho) as capturado:
+        extrator.extrair([vaga_exemplo()])
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida | FalhaInternaDoAvaliador)
+
+
 def test_erro_ao_montar_o_pedido_nao_vira_indisponibilidade():
     cliente = cliente_do_sdk(corpo_json_200(envelope_valido()))
 

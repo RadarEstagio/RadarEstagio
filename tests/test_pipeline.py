@@ -23,6 +23,7 @@ from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import (
     ParametrosDaExecucao,
+    ResumoDaExecucao,
     candidatas_de_algum_perfil,
     executar,
     manter_descricoes_como_estao,
@@ -1117,6 +1118,53 @@ def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():
     assert resumo.usuarios_sem_entrega_por_falha_de_revalidacao == 1
     assert resumo.atendidos() == 1
     assert ID_OUTRO_USUARIO in resumo.enviadas_por_usuario
+
+
+class RepositorioComErroInesperado(RepositorioFalso):
+    def __init__(self, usuarios: list[Usuario], erro: BaseException) -> None:
+        super().__init__(usuarios)
+        self._erro = erro
+
+    def recusas_do_usuario(self, destinatario: Usuario) -> RecusasDoUsuario:
+        if destinatario.id == ID_USUARIO:
+            raise self._erro
+        return super().recusas_do_usuario(destinatario)
+
+
+def executar_com_erro_inesperado(repositorio: RepositorioFalso) -> ResumoDaExecucao:
+    return executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+
+def test_erro_inesperado_de_um_usuario_nao_tira_a_mensagem_dos_demais(
+    caplog: pytest.LogCaptureFixture,
+):
+    repositorio = RepositorioComErroInesperado(
+        [usuario(), usuario(ID_OUTRO_USUARIO, "456")],
+        AttributeError("'str' object has no attribute 'get'"),
+    )
+
+    resumo = executar_com_erro_inesperado(repositorio)
+
+    assert ID_USUARIO not in resumo.enviadas_por_usuario
+    assert resumo.enviadas_por_usuario[ID_OUTRO_USUARIO][0].resultado.nota == 90
+    assert resumo.usuarios_sem_entrega_por_erro_inesperado == 1
+    assert ("liberar", ID_USUARIO) in repositorio.travas
+    assert "AttributeError" in caplog.text
+
+
+def test_interrupcao_do_usuario_continua_derrubando_a_execucao():
+    repositorio = RepositorioComErroInesperado([usuario()], KeyboardInterrupt())
+
+    with pytest.raises(KeyboardInterrupt):
+        executar_com_erro_inesperado(repositorio)
 
 
 def test_feedback_chega_na_propria_mensagem_das_vagas():

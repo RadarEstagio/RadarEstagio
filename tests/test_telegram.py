@@ -106,6 +106,23 @@ def test_erro_sem_corpo_json_vira_erro_de_notificacao_e_nao_derruba_a_execucao(
         notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
 
 
+@pytest.mark.parametrize(
+    ("corpo", "trecho"),
+    [
+        pytest.param("Bad Gateway", "Bad Gateway", id="texto"),
+        pytest.param(["Bad Gateway"], "Bad Gateway", id="lista"),
+        pytest.param(502, "502", id="numero"),
+    ],
+)
+def test_erro_com_corpo_json_que_nao_e_objeto_vira_erro_de_notificacao(
+    httpx_mock: HTTPXMock, notificador: NotificadorTelegram, corpo: object, trecho: str
+):
+    httpx_mock.add_response(status_code=502, json=corpo)
+
+    with pytest.raises(ErroDeNotificacao, match=f"502.*{trecho}"):
+        notificador.enviar(CHAT_ID_DE_TESTE, "Radar OK")
+
+
 def test_bot_bloqueado_pelo_usuario_e_recusa_do_destinatario(
     httpx_mock: HTTPXMock, notificador: NotificadorTelegram
 ):
