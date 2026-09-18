@@ -373,6 +373,12 @@ def test_resumo_avisa_vagas_sem_extracao_e_extracoes_nao_gravadas():
     assert "Vagas sem extração" not in com_falha_de_gravacao
 
 
+def test_resumo_avisa_os_perfis_ilegiveis_deixados_de_fora():
+    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, 0, 0, 0, 0, 3)
+
+    assert "⚠️ Perfis com dados inválidos, fora da execução: 3" in texto
+
+
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 
