@@ -346,8 +346,14 @@ def executar_fluxo(
             adzuna_esgotada=cota.esgotada,
             coletas_incompletas=coletor.incompletas,
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
+            usuarios_sem_mensagem_por_falha=resumo.usuarios_sem_mensagem_por_falha,
         ),
     )
+    if resumo.ninguem_foi_atendido_por_falha():
+        raise ErroDeExecucao(
+            f"Nenhum dos {resumo.usuarios} usuários recebeu mensagem: "
+            f"{resumo.usuarios_sem_mensagem_por_falha} ficaram sem entrega por falha"
+        )
     if not resumo_entregue:
         raise ErroDeExecucao(
             "O resumo desta execução não chegou ao chat de operação; ela não pode passar por verde"

@@ -83,10 +83,24 @@ class RevalidacaoDeDestinatarios:
             return False
 
 
+class RegistroDasEntregas:
+    def __init__(self) -> None:
+        self.com_mensagem: set[UUID] = set()
+        self.sem_mensagem_por_falha: set[UUID] = set()
+
+    def mensagem_entregue(self, usuario: Usuario) -> None:
+        self.com_mensagem.add(usuario.id)
+
+    def mensagem_perdida(self, usuario: Usuario) -> None:
+        self.sem_mensagem_por_falha.add(usuario.id)
+
+
 class ResumoDaExecucao(BaseModel):
     usuarios: int
     usuarios_com_falha_de_revalidacao: int = 0
     usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
+    usuarios_com_mensagem: int = 0
+    usuarios_sem_mensagem_por_falha: int = 0
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -100,6 +114,13 @@ class ResumoDaExecucao(BaseModel):
 
     def vagas_enviadas(self) -> int:
         return sum(len(selecionadas) for selecionadas in self.enviadas_por_usuario.values())
+
+    def ninguem_foi_atendido_por_falha(self) -> bool:
+        return (
+            self.usuarios > 0
+            and self.usuarios_com_mensagem == 0
+            and self.usuarios_sem_mensagem_por_falha > 0
+        )
 
 
 def executar(
@@ -134,6 +155,7 @@ def executar(
     )
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
+    registro = RegistroDasEntregas()
     for usuario in usuarios:
         selecionadas = atender_usuario(
             usuario,
@@ -146,6 +168,7 @@ def executar(
             agora,
             pontuador,
             revalidacao,
+            registro,
             incompleta,
         )
         if selecionadas is not None:
@@ -155,6 +178,10 @@ def executar(
         usuarios_com_falha_de_revalidacao=len(revalidacao.falhas),
         usuarios_sem_entrega_por_falha_de_revalidacao=len(
             revalidacao.falhas - enviadas_por_usuario.keys()
+        ),
+        usuarios_com_mensagem=len(registro.com_mensagem),
+        usuarios_sem_mensagem_por_falha=len(
+            (registro.sem_mensagem_por_falha | revalidacao.falhas) - registro.com_mensagem
         ),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
@@ -347,12 +374,14 @@ def atender_usuario(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
     coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     try:
         repositorio.travar_atendimento(usuario)
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        registro.mensagem_perdida(usuario)
         return None
     try:
         return atender_usuario_travado(
@@ -366,10 +395,12 @@ def atender_usuario(
             agora,
             pontuador,
             revalidacao,
+            registro,
             coleta_incompleta,
         )
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        registro.mensagem_perdida(usuario)
         return None
     finally:
         repositorio.liberar_atendimento(usuario)
@@ -386,6 +417,7 @@ def atender_usuario_travado(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
     coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
@@ -422,15 +454,17 @@ def atender_usuario_travado(
             sem_extracao,
             len(candidatas),
         )
+        registro.mensagem_perdida(usuario)
         return None
     if not selecionadas and coleta_incompleta:
         logger.warning(
             "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta", usuario.id
         )
+        registro.mensagem_perdida(usuario)
         return None
     if not selecionadas:
         if avisar_que_nao_houve_vaga(
-            notificador, repositorio, usuario, parametros, agora, revalidacao
+            notificador, repositorio, usuario, parametros, agora, revalidacao, registro
         ):
             registrar_atendimento(repositorio, usuario)
         return None
@@ -455,12 +489,16 @@ def atender_usuario_travado(
         if not entregues:
             if isinstance(erro, DestinatarioRecusouAMensagem):
                 registrar_atendimento(repositorio, usuario)
+            else:
+                registro.mensagem_perdida(usuario)
             return None
         gravar_envios(repositorio, usuario, entregues)
         registrar_atendimento(repositorio, usuario)
+        registro.mensagem_entregue(usuario)
         return entregues
     gravar_envios(repositorio, usuario, selecionadas)
     registrar_atendimento(repositorio, usuario)
+    registro.mensagem_entregue(usuario)
     return selecionadas
 
 
@@ -522,6 +560,7 @@ def avisar_que_nao_houve_vaga(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
 ) -> bool:
     dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
     if not revalidacao.permite(usuario):
@@ -531,7 +570,11 @@ def avisar_que_nao_houve_vaga(
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
-        return isinstance(erro, DestinatarioRecusouAMensagem)
+        if not isinstance(erro, DestinatarioRecusouAMensagem):
+            registro.mensagem_perdida(usuario)
+            return False
+        return True
+    registro.mensagem_entregue(usuario)
     if dias is not None:
         registrar_silencio_avisado(repositorio, usuario, dias)
     return True

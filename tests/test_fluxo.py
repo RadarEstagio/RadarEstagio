@@ -16,7 +16,7 @@ from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
 from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
-from radar.pipeline import ResumoDaExecucao, executar
+from radar.pipeline import ErroDeExecucao, ResumoDaExecucao, executar
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -78,9 +78,9 @@ def codigo_de_saida_do_rodar(
     return 0
 
 
-def recusar_o_chat_de_operacao(httpx_mock: HTTPXMock) -> None:
+def recusar_os_chats(httpx_mock: HTTPXMock, chats: set[str]) -> None:
     def telegram(requisicao: httpx.Request) -> httpx.Response:
-        if json.loads(requisicao.content)["chat_id"] == CHAT_DE_OPERACAO:
+        if json.loads(requisicao.content)["chat_id"] in chats:
             return httpx.Response(500, text="Bad Gateway")
         return httpx.Response(200, json={"ok": True, "result": {"message_id": 1}})
 
@@ -178,6 +178,7 @@ def test_perfil_sem_entrega_a_fazer_retorna_sem_coletar_nem_avisar(httpx_mock: H
 
 
 CHAT_DO_ESTUDANTE = "555"
+OUTRO_CHAT_DO_ESTUDANTE = "556"
 
 
 def estudante_de_direito_no_rio() -> Usuario:
@@ -215,7 +216,7 @@ def test_coleta_que_para_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock
     httpx_mock.add_callback(adzuna, url=re.compile(re.escape(URL_BUSCA)), is_reusable=True)
     aceitar_mensagens_do_telegram(httpx_mock)
 
-    with httpx.Client() as cliente_http:
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeExecucao):
         executar_fluxo(
             settings_de_teste(), cliente_http, RepositorioEmMemoria([estudante_de_direito_no_rio()])
         )
@@ -232,7 +233,7 @@ def test_cota_que_acaba_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock:
     httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia())
     aceitar_mensagens_do_telegram(httpx_mock)
 
-    with httpx.Client() as cliente_http:
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeExecucao):
         executar_fluxo(settings_de_teste(), cliente_http, repositorio)
 
     assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
@@ -505,7 +506,7 @@ def test_resumo_que_nao_chega_ao_chat_de_operacao_termina_com_codigo_de_erro(
     httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
 ):
     httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
-    recusar_o_chat_de_operacao(httpx_mock)
+    recusar_os_chats(httpx_mock, {CHAT_DE_OPERACAO})
 
     codigo = codigo_de_saida_do_rodar(monkeypatch, RepositorioEmMemoria([]))
 
@@ -522,3 +523,55 @@ def test_execucao_relatada_sem_usuarios_ativos_termina_com_codigo_zero(
 
     assert codigo == 0
     assert "Usuários ativos: 0" in mensagens_de_operacao(httpx_mock)[-1]
+
+
+def responder_com_vagas_de_ti(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+
+
+def test_execucao_em_que_ninguem_recebe_mensagem_por_falha_termina_com_codigo_de_erro(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_com_vagas_de_ti(httpx_mock)
+    recusar_os_chats(httpx_mock, {CHAT_DO_ESTUDANTE})
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 1
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Usuários sem mensagem por falha: 1" in resumo
+
+
+def test_dia_em_que_todos_recebem_nenhuma_vaga_compativel_termina_com_codigo_zero(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_com_vagas_de_ti(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert "Nenhuma vaga nova compatível" in mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE)[0]
+    assert "sem mensagem por falha" not in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+
+
+def test_falha_de_um_usuario_nao_derruba_o_codigo_de_saida_dos_outros(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    outra = estudante_de_direito_no_rio().model_copy(
+        update={"id": UUID(int=3), "chat_id": OUTRO_CHAT_DO_ESTUDANTE}
+    )
+    responder_com_vagas_de_ti(httpx_mock)
+    recusar_os_chats(httpx_mock, {CHAT_DO_ESTUDANTE})
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio(), outra])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert mensagens_para(httpx_mock, OUTRO_CHAT_DO_ESTUDANTE) != []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Usuários sem mensagem por falha: 1" in resumo

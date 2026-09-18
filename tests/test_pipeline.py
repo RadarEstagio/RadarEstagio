@@ -24,6 +24,7 @@ from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNoti
 from radar.pipeline import (
     ParametrosDaExecucao,
     candidatas_de_algum_perfil,
+    coleta_completa,
     executar,
     manter_descricoes_como_estao,
 )
@@ -1117,6 +1118,99 @@ def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():
     assert resumo.usuarios_sem_entrega_por_falha_de_revalidacao == 1
     assert resumo.atendidos() == 1
     assert ID_OUTRO_USUARIO in resumo.enviadas_por_usuario
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def executar_para(
+    repositorio: RepositorioFalso,
+    notificador,
+    notas: dict[str, int] | None = None,
+    coleta_incompleta=coleta_completa,
+):
+    notas = {"1": 90} if notas is None else notas
+    return executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso(notas),
+        notificador,
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso(notas),
+        coleta_incompleta=coleta_incompleta,
+    )
+
+
+def test_resumo_separa_quem_recebeu_mensagem_de_quem_ficou_sem_por_falha():
+    repositorio = RepositorioFalso([usuario(chat_id="fora do ar"), usuario(ID_OUTRO_USUARIO)])
+    notificador = NotificadorFalso(chats_com_falha_temporaria={"fora do ar"})
+
+    resumo = executar_para(repositorio, notificador)
+
+    assert resumo.usuarios_com_mensagem == 1
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_telegram_que_recusa_todo_envio_deixa_a_execucao_sem_ninguem_atendido():
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")])
+    notificador = NotificadorFalso(chats_com_falha_temporaria={"123", "456"})
+
+    resumo = executar_para(repositorio, notificador)
+
+    assert resumo.usuarios_com_mensagem == 0
+    assert resumo.usuarios_sem_mensagem_por_falha == 2
+    assert resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_dia_sem_vaga_compativel_para_todos_nao_e_falha_da_execucao():
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar_para(repositorio, NotificadorFalso(), notas={"1": 10})
+
+    assert resumo.atendidos() == 0
+    assert resumo.usuarios_com_mensagem == 1
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_execucao_sem_usuarios_ativos_nao_e_falha():
+    resumo = executar_para(RepositorioFalso([]), NotificadorFalso())
+
+    assert resumo.usuarios == 0
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_destinatario_que_bloqueou_o_bot_nao_faz_a_execucao_falhar():
+    repositorio = RepositorioFalso([usuario(chat_id="bloqueado")])
+    notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
+
+    resumo = executar_para(repositorio, notificador)
+
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_por_falha():
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar_para(
+        repositorio, NotificadorFalso(), notas={"1": 10}, coleta_incompleta=coleta_incompleta
+    )
+
+    assert resumo.usuarios_com_mensagem == 0
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_falha_ao_travar_o_atendimento_deixa_o_usuario_sem_mensagem_por_falha():
+    class RepositorioQueNaoTrava(RepositorioFalso):
+        def travar_atendimento(self, destinatario: Usuario) -> None:
+            raise ErroDeArmazenamento("banco caiu")
+
+    resumo = executar_para(RepositorioQueNaoTrava([usuario()]), NotificadorFalso())
+
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert resumo.ninguem_foi_atendido_por_falha()
 
 
 def test_feedback_chega_na_propria_mensagem_das_vagas():

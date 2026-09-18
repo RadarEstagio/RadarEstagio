@@ -140,6 +140,7 @@ def formatar_resumo_da_execucao(
     adzuna_esgotada: bool = False,
     coletas_incompletas: dict[str, str] | None = None,
     eventos_do_site: EventosDoSite | None = None,
+    usuarios_sem_mensagem_por_falha: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -151,6 +152,8 @@ def formatar_resumo_da_execucao(
         f"Usuários com falha de revalidação: {falhas_de_revalidacao}",
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
     ]
+    if usuarios_sem_mensagem_por_falha:
+        linhas.append(f"⚠️ Usuários sem mensagem por falha: {usuarios_sem_mensagem_por_falha}")
     if vagas_sem_extracao:
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:
