@@ -74,10 +74,15 @@ def test_linha_ilegivel_e_pulada_e_os_demais_usuarios_seguem(ilegivel):
     assert [usuario.id for usuario in usuarios] == [valida["id"]]
 
 
-def test_linha_ilegivel_nao_leva_os_dados_do_perfil_para_o_log(caplog):
+def test_linha_ilegivel_nao_leva_os_dados_nem_o_id_inteiro_do_perfil_para_o_log(caplog):
+    perfil_id = uuid4()
+
     with caplog.at_level(logging.WARNING):
-        usuarios_das_linhas([linha("Direito", [["direito_contencioso"]])])
+        usuarios_das_linhas([linha("Direito", [["direito_contencioso"]]) | {"id": perfil_id}])
 
     assert "TypeError" in caplog.text
     assert "Direito" not in caplog.text
     assert "direito_contencioso" not in caplog.text
+    assert str(perfil_id) not in caplog.text
+    assert perfil_id.hex not in caplog.text
+    assert f"...{str(perfil_id)[:8]}..." in caplog.text

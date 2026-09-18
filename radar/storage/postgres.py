@@ -35,6 +35,7 @@ MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS = 3
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
 FALHAS_AO_GRAVAR_TEXTO = (psycopg.Error, UnicodeEncodeError)
 FALHAS_AO_LER_O_PERFIL = (TypeError, ValueError)
+CARACTERES_DO_TRECHO_DO_ID = 8
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
@@ -785,9 +786,15 @@ def usuarios_das_linhas(linhas: list[dict]) -> list[Usuario]:
             usuarios.append(converter_em_usuario(linha))
         except FALHAS_AO_LER_O_PERFIL as erro:
             logger.warning(
-                "perfil %s ficou de fora por dados inválidos: %s", linha["id"], descrever(erro)
+                "perfil ...%s... ficou de fora por dados inválidos: %s",
+                trecho_do_id(linha["id"]),
+                descrever(erro),
             )
     return usuarios
+
+
+def trecho_do_id(perfil_id: UUID) -> str:
+    return str(perfil_id)[:CARACTERES_DO_TRECHO_DO_ID]
 
 
 def converter_em_usuario(linha: dict) -> Usuario:
