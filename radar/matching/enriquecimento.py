@@ -68,15 +68,22 @@ def descricao_parece_truncada(vaga: Vaga) -> bool:
 
 
 def aponta_para_anuncio_land_ad(url: str) -> bool:
-    caminho = BARRAS_REPETIDAS.sub("/", urlsplit(url).path).casefold()
-    return caminho.startswith(CAMINHO_DO_ANUNCIO_LAND_AD)
+    return caminho_da_url(url).startswith(CAMINHO_DO_ANUNCIO_LAND_AD)
+
+
+def caminho_da_url(url: str) -> str:
+    try:
+        caminho = urlsplit(url).path
+    except ValueError:
+        return ""
+    return BARRAS_REPETIDAS.sub("/", caminho).casefold()
 
 
 def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
     try:
         resposta = cliente_http.get(vaga.url, follow_redirects=True)
         resposta.raise_for_status()
-    except httpx.HTTPError as erro:
+    except (httpx.HTTPError, httpx.InvalidURL) as erro:
         logger.warning(
             "Não foi possível completar a descrição da vaga %s da Adzuna: %s",
             vaga.id_externo,
