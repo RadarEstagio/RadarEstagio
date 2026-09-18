@@ -134,6 +134,7 @@ def formatar_resumo_da_execucao(
     sem_entrega_por_revalidacao: int = 0,
     vagas_sem_extracao: int = 0,
     extracoes_nao_gravadas: int = 0,
+    sem_entrega_por_erro_inesperado: int = 0,
     adzuna_hoje: int | None = None,
     adzuna_no_mes: int | None = None,
     adzuna_limite: int | None = None,
@@ -155,6 +156,11 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:
         linhas.append(f"⚠️ Extrações não gravadas no banco: {extracoes_nao_gravadas}")
+    if sem_entrega_por_erro_inesperado:
+        linhas.append(
+            f"⚠️ Sem entrega por erro inesperado: {sem_entrega_por_erro_inesperado} "
+            "(veja o traceback no log)"
+        )
     if adzuna_hoje is not None and adzuna_no_mes is not None and adzuna_limite:
         linhas.append(
             f"Requisições à Adzuna: {formatar_milhar(adzuna_hoje)} hoje, "

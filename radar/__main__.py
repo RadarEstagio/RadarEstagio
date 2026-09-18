@@ -324,6 +324,7 @@ def executar_fluxo(
         f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha; "
         f"{resumo.vagas_sem_extracao} vagas sem extração, "
         f"{resumo.extracoes_nao_gravadas} extrações não gravadas; "
+        f"{resumo.usuarios_sem_entrega_por_erro_inesperado} sem entrega por erro inesperado; "
         f"{cota.requisicoes} requisições à Adzuna"
     )
     avisar_operacao(
@@ -340,6 +341,7 @@ def executar_fluxo(
             resumo.usuarios_sem_entrega_por_falha_de_revalidacao,
             resumo.vagas_sem_extracao,
             resumo.extracoes_nao_gravadas,
+            resumo.usuarios_sem_entrega_por_erro_inesperado,
             adzuna_hoje=uso[0] if uso else None,
             adzuna_no_mes=uso[1] if uso else None,
             adzuna_limite=LIMITE_POR_MES,

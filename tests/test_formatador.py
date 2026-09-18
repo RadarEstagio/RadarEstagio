@@ -373,6 +373,12 @@ def test_resumo_avisa_vagas_sem_extracao_e_extracoes_nao_gravadas():
     assert "Vagas sem extração" not in com_falha_de_gravacao
 
 
+def test_resumo_avisa_usuarios_sem_entrega_por_erro_inesperado():
+    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 3, 21, 830, 7, 0, 0, 0, 0, 1)
+
+    assert "⚠️ Sem entrega por erro inesperado: 1 (veja o traceback no log)" in texto
+
+
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 
