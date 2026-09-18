@@ -1807,8 +1807,11 @@ ligação das automações, porque cada uma guardava o dono no nome:
   - **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
     vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
     pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
-    log leva só o id do perfil e o tipo da exceção, porque o `ValidationError` repete o valor do
-    campo e o log do Actions é público. `perfis_ilegiveis` conta as puladas e o resumo de operação
+    log leva só o tipo da exceção e os 8 primeiros caracteres do id, entre reticências
+    (`trecho_do_id`), porque o `ValidationError` repete o valor do campo e o log do Actions é
+    público, e a auditoria de 17/09 já aponta como grave o `perfil_id` inteiro que o diário
+    imprime — o trecho acha a linha para quem tem o banco e não identifica ninguém sozinho.
+    `perfis_ilegiveis` conta as puladas e o resumo de operação
     mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
     do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
     incompletas.
