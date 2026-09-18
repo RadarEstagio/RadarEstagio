@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 from radar.pipeline import DIAS_ATE_APAGAR_CADASTRO_PENDENTE, DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA
+from radar.settings import Settings
 
 RAIZ = Path(__file__).parent.parent
 
@@ -356,3 +357,12 @@ def test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado():
             f"é apagada {DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA} dias depois do último link enviado"
             in texto
         ), arquivo
+
+
+def test_politica_de_privacidade_diz_a_carencia_da_conta_excluida():
+    carencia = Settings.model_fields["dias_ate_apagar_conta_excluida"].default
+
+    for arquivo in ("docs/politica-de-privacidade.md", "web/privacidade.html"):
+        texto = " ".join((RAIZ / arquivo).read_text().split())
+
+        assert f"O prazo de {carencia} dias permite cancelar o pedido" in texto, arquivo

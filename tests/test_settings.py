@@ -110,6 +110,19 @@ def test_nota_minima_fora_de_0_a_100_e_rejeitada(nota: str):
         Settings(_env_file=None, **configuracao_base(avaliador="agy", nota_minima=nota))
 
 
+def test_conta_excluida_e_apagada_60_dias_depois_do_pedido():
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
+
+    assert settings.dias_ate_apagar_conta_excluida == 60
+
+
+def test_carencia_de_zero_dia_para_apagar_a_conta_e_rejeitada():
+    with pytest.raises(ValidationError):
+        Settings(
+            _env_file=None, **configuracao_base(avaliador="agy", dias_ate_apagar_conta_excluida="0")
+        )
+
+
 def test_raciocinio_da_extracao_e_baixo_por_padrao():
     settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
 
