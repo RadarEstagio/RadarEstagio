@@ -89,6 +89,7 @@ class RegistroDasEntregas:
         self.sem_mensagem_por_falha: set[UUID] = set()
         self.seguradas_por_falta_de_extracao: set[UUID] = set()
         self.seguradas_pela_coleta_incompleta: set[UUID] = set()
+        self.com_envio_nao_gravado: set[UUID] = set()
 
     def mensagem_entregue(self, usuario: Usuario) -> None:
         self.com_mensagem.add(usuario.id)
@@ -104,6 +105,9 @@ class RegistroDasEntregas:
         self.seguradas_pela_coleta_incompleta.add(usuario.id)
         self.mensagem_perdida(usuario)
 
+    def envio_nao_gravado(self, usuario: Usuario) -> None:
+        self.com_envio_nao_gravado.add(usuario.id)
+
 
 class ResumoDaExecucao(BaseModel):
     usuarios: int
@@ -113,6 +117,7 @@ class ResumoDaExecucao(BaseModel):
     usuarios_sem_mensagem_por_falha: int = 0
     mensagens_seguradas_por_falta_de_extracao: int = 0
     mensagens_seguradas_pela_coleta_incompleta: int = 0
+    usuarios_com_envio_nao_gravado: int = 0
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -197,6 +202,7 @@ def executar(
         ),
         mensagens_seguradas_por_falta_de_extracao=len(registro.seguradas_por_falta_de_extracao),
         mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
+        usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
@@ -506,11 +512,11 @@ def atender_usuario_travado(
             else:
                 registro.mensagem_perdida(usuario)
             return None
-        gravar_envios(repositorio, usuario, entregues)
+        gravar_envios(repositorio, usuario, entregues, registro)
         registrar_atendimento(repositorio, usuario)
         registro.mensagem_entregue(usuario)
         return entregues
-    gravar_envios(repositorio, usuario, selecionadas)
+    gravar_envios(repositorio, usuario, selecionadas, registro)
     registrar_atendimento(repositorio, usuario)
     registro.mensagem_entregue(usuario)
     return selecionadas
@@ -539,11 +545,15 @@ def recomendacoes_entregues(
 
 
 def gravar_envios(
-    repositorio: Repositorio, usuario: Usuario, entregues: list[Recomendacao]
+    repositorio: Repositorio,
+    usuario: Usuario,
+    entregues: list[Recomendacao],
+    registro: RegistroDasEntregas,
 ) -> None:
     try:
         repositorio.registrar_envios(usuario, entregues)
     except ErroDeArmazenamento as erro:
+        registro.envio_nao_gravado(usuario)
         logger.warning(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )

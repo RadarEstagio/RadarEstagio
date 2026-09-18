@@ -395,6 +395,17 @@ def test_resumo_sem_mensagem_segurada_nao_mostra_a_linha():
     assert "Mensagens seguradas" not in texto
 
 
+def test_resumo_avisa_os_envios_que_o_banco_nao_gravou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 20, 830, 7, usuarios_com_envio_nao_gravado=3
+    )
+
+    assert "⚠️ Usuários com envio não gravado: 3" in texto
+    assert "Usuários com envio não gravado" not in formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7
+    )
+
+
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 

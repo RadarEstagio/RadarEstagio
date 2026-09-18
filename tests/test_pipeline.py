@@ -1204,6 +1204,16 @@ def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_p
     assert resumo.ninguem_foi_atendido_por_falha()
 
 
+def test_resumo_conta_os_envios_que_nao_foram_gravados_mas_a_mensagem_chegou():
+    repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
+
+    resumo = executar_para(repositorio, NotificadorFalso())
+
+    assert resumo.usuarios_com_envio_nao_gravado == 1
+    assert resumo.usuarios_com_mensagem == 1
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
 def test_resumo_conta_as_mensagens_seguradas_por_falta_de_extracao():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
 

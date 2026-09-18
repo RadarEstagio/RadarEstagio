@@ -143,6 +143,7 @@ def formatar_resumo_da_execucao(
     usuarios_sem_mensagem_por_falha: int = 0,
     mensagens_seguradas_por_falta_de_extracao: int = 0,
     mensagens_seguradas_pela_coleta_incompleta: int = 0,
+    usuarios_com_envio_nao_gravado: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -170,6 +171,8 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:
         linhas.append(f"⚠️ Extrações não gravadas no banco: {extracoes_nao_gravadas}")
+    if usuarios_com_envio_nao_gravado:
+        linhas.append(f"⚠️ Usuários com envio não gravado: {usuarios_com_envio_nao_gravado}")
     if adzuna_hoje is not None and adzuna_no_mes is not None and adzuna_limite:
         linhas.append(
             f"Requisições à Adzuna: {formatar_milhar(adzuna_hoje)} hoje, "
