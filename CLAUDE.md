@@ -1564,6 +1564,25 @@ ligação das automações, porque cada uma guardava o dono no nome:
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
+  **O apagamento tem teste que roda o SQL (18/09/2026).** Até aqui nada executava as três
+  consultas de `apagar_contas_excluidas` no CI: quem as cobria era `tests/test_storage_postgres.py`,
+  que pede `DATABASE_URL_TESTE` e fica de fora. A auditoria de 17/09 inverteu o sinal do prazo numa
+  cópia do repositório e as suítes passaram verdes, o que na produção apagaria quem acabou de pedir
+  exclusão. `tests/web/apagamento_de_contas_test.ts` aplica as migrations no PGlite e roda as
+  consultas lidas do `postgres.py`, na ordem do repositório (sessões, eventos sem dono, contas):
+  conta marcada há menos que a carência fica, marcada há mais sai com perfil, avaliações, envios e
+  eventos, conta ativa e pausada não são tocadas, e a sessão dividida com outra conta perde só os
+  eventos sem dono. Os 60 dias são decisão de produto e ficaram presos por dois testes: o padrão de
+  `dias_ate_apagar_conta_excluida` em `tests/test_settings.py` e a política de privacidade, que lê o
+  número do próprio campo em `tests/test_product_copy.py`. Mutações que passavam e agora quebram:
+  inverter o sinal no `delete` (as quatro do arquivo novo), invertê-lo na consulta das sessões
+  (três delas), neutralizar a condição do prazo (a da carência e a do navegador dividido) e trocar
+  60 por 7 (os dois testes do prazo). O prazo do cadastro pendente e o da conta não confirmada da
+  `0030` já estavam cobertos por `tests/web/prazo_do_cadastro_test.ts`, conferido pelas mesmas
+  mutações. Limites: o teste roda as consultas na ordem do repositório, não o método em Python, e
+  o PGlite tem uma conexão só, então a transação e a corrida entre execuções seguem sem teste; e o
+  `auth.users` do PGlite é o mínimo que as migrations exigem, então a cascata das outras tabelas do
+  Auth do Supabase (sessões, tokens) não é exercitada.
 - **Conta confirmada sem perfil é apagada na hora** (13/09/2026, `0024`). Quem confirmava o e-mail
   e não salvava o perfil ficava com e-mail e senha no Auth sem saída: a exclusão marca
   `perfis.excluida_em` e o job só apaga a partir de `perfis`. `apagar_minha_conta_sem_perfil()` é
