@@ -987,6 +987,47 @@ título.
   sem regra: "Vaga para PCD - aberta a todos", "PCD: Opcional", "( ) Sim (X) Não" e "não
   exclusiva" depois de ponto ou a mais de 60 caracteres.
 
+  **Frase comum que virava vaga exclusiva** (18/09/2026, auditoria). O sujeito no singular era
+  cobrado, mas não a posição dele na frase, e o trecho do título aceitava o termo por extenso. Duas
+  famílias de frase, nenhuma delas vaga de PCD, tiravam a vaga de quem respondeu "não":
+  - **PCD como objeto de uma atividade ou de texto institucional.** "Apoio ao recrutamento e
+    seleção para pessoas com deficiência" é tarefa de RH, "igualdade de oportunidade para pessoas
+    com deficiência" é discurso da empresa, e "divulgação de vaga para PCD" é a atividade do
+    estágio. Agora o sujeito precisa **abrir a frase**: início do texto, ponto, dois-pontos, ponto
+    e vírgula, exclamação, interrogação, barra vertical, parêntese, colchete, aspas, asterisco de
+    markdown ou hífen de lista, com artigo ou demonstrativo opcional antes
+    (`PADRAO_ABERTURA_DE_FRASE`, conferido em `a_vaga_e_o_sujeito`). Os separadores são os que os
+    anúncios reais usam: a única exclusiva do banco vem de "- Requisitos solicitados pela empresa:
+    Vaga de Emprego para Pessoas com Deficiência (PCD)", e a Adzuna junta as linhas, então o rótulo
+    com dois-pontos e o marcador de lista são o que sobra da quebra. Deny-list de palavra antes,
+    como a `PADRAO_CONTEXTO_QUE_ANULA`, não fecharia: o que precede é verbo ("garantimos", "mapear",
+    "faz"), e verbo não tem lista.
+  - **PCD por extenso como trecho do título.** "Estágio em Psicologia - Pessoas com Deficiência" é
+    o público que o trabalho atende, e o mesmo título aparece em Pedagogia, Fisioterapia,
+    Fonoaudiologia, Terapia Ocupacional, Serviço Social e Educação Física. O trecho solto conta
+    agora só com a **sigla** ("Estágio - PCD", "(PcD)", "PCD | …"), que é a marca de vaga dos sites
+    de emprego; por extenso só quando o título diz que é a vaga ("- Vaga Pessoas com Deficiência",
+    "- Exclusiva para Pessoas com Deficiência"). "Estágio para Pessoas com Deficiência" não mudou,
+    porque ali o "para" já dirige a vaga.
+
+  Medido nas 1.095 vagas guardadas em 18/09: **nenhuma muda** (1 exclusiva, 1 afirmativa com PCD,
+  3 afirmativas, 1.090 gerais, como no `main`), e as 36 que citam PCD, deficiência, necessidades
+  especiais ou ação afirmativa foram lidas à mão e conferem. O defeito só aparece em corpus
+  adversarial porque `vagas` guarda o que passou no pré-filtro de algum perfil, quase tudo de
+  computação do Rio, e a vaga de Psicologia ou de RH que ele escondia não chega lá. Num corpus de
+  18 contextos de atividade × 4 sujeitos × 3 grafias do termo, as 216 frases eram exclusivas e
+  agora nenhuma é; nos títulos, 8 áreas × 3 separadores × 3 grafias, 72 eram exclusivos e sobram os
+  24 da sigla. As guardas com as exclusivas legítimas (descrição e título) continuam passando.
+  Limites aceitos: "Estágio em Psicologia - PCD" segue exclusiva, porque a sigla solta é a marca do
+  site de emprego e distinguir os dois casos exigiria saber a área da vaga antes da extração;
+  rótulo seguido de dois-pontos abre frase, então "Projeto de inclusão: seleção para pessoas com
+  deficiência atendidas" segue exclusiva; e "Estágio para Pessoas com Deficiência Auditiva no CAPS"
+  também, pela mesma forma da legítima. Para o outro lado, perde a exclusividade a frase que a diz
+  no meio de outra ("Estágio em Marketing, vaga exclusiva para PCD" depois da vírgula, "Nesta
+  seleção para PCD") e o título sem separador ("Estagiário de TI Vaga para PCD"); nenhum caso nos
+  dados. Nada mudou no prompt, na nota, na prioridade nem nos avisos, e `VERSAO_DA_EXTRACAO` segue
+  `7efdbc95`. Publicação: só o `radar/`, sem migration e sem deploy.
+
   É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
   ao lado para que serve, e a resposta não entra em evento, log, prompt nem export. O juiz monta o
   perfil campo a campo e não a recebe; a amostra de `descartes`, que leva `perfil_id`, calcula o
