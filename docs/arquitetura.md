@@ -202,7 +202,11 @@ um motivo diferente por vez antes de repetir, senão o motivo mais frequente tom
 
 O público da vaga (`domain/publico.py`) é regra do mesmo tipo, e o mesmo cuidado com o que a
 menção quer dizer: "PcDs são bem-vindas" é da empresa, "vaga para pessoas com deficiência" é da
-vaga. Só a exclusiva para PCD é cortada aqui, e só para quem respondeu que não é PCD; a
+vaga. A mesma frase muda de dono conforme a posição, então a exclusividade só conta quando o
+sujeito abre a frase: "recrutamento e seleção para pessoas com deficiência" é a tarefa do
+estágio, e no título só a sigla ("Estágio - PCD") é marca de vaga, porque o termo por extenso
+costuma nomear o público que o trabalho atende.
+Só a exclusiva para PCD é cortada aqui, e só para quem respondeu que não é PCD; a
 prioridade para quem é PCD e os avisos de vaga afirmativa ficam em `matching/regras.py`, depois
 da nota, porque dependem de a vaga ter passado na nota mínima.
 
