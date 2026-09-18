@@ -87,12 +87,22 @@ class RegistroDasEntregas:
     def __init__(self) -> None:
         self.com_mensagem: set[UUID] = set()
         self.sem_mensagem_por_falha: set[UUID] = set()
+        self.seguradas_por_falta_de_extracao: set[UUID] = set()
+        self.seguradas_pela_coleta_incompleta: set[UUID] = set()
 
     def mensagem_entregue(self, usuario: Usuario) -> None:
         self.com_mensagem.add(usuario.id)
 
     def mensagem_perdida(self, usuario: Usuario) -> None:
         self.sem_mensagem_por_falha.add(usuario.id)
+
+    def mensagem_segurada_por_falta_de_extracao(self, usuario: Usuario) -> None:
+        self.seguradas_por_falta_de_extracao.add(usuario.id)
+        self.mensagem_perdida(usuario)
+
+    def mensagem_segurada_pela_coleta_incompleta(self, usuario: Usuario) -> None:
+        self.seguradas_pela_coleta_incompleta.add(usuario.id)
+        self.mensagem_perdida(usuario)
 
 
 class ResumoDaExecucao(BaseModel):
@@ -101,6 +111,8 @@ class ResumoDaExecucao(BaseModel):
     usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
     usuarios_com_mensagem: int = 0
     usuarios_sem_mensagem_por_falha: int = 0
+    mensagens_seguradas_por_falta_de_extracao: int = 0
+    mensagens_seguradas_pela_coleta_incompleta: int = 0
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -183,6 +195,8 @@ def executar(
         usuarios_sem_mensagem_por_falha=len(
             (registro.sem_mensagem_por_falha | revalidacao.falhas) - registro.com_mensagem
         ),
+        mensagens_seguradas_por_falta_de_extracao=len(registro.seguradas_por_falta_de_extracao),
+        mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
@@ -454,13 +468,13 @@ def atender_usuario_travado(
             sem_extracao,
             len(candidatas),
         )
-        registro.mensagem_perdida(usuario)
+        registro.mensagem_segurada_por_falta_de_extracao(usuario)
         return None
     if not selecionadas and coleta_incompleta:
         logger.warning(
             "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta", usuario.id
         )
-        registro.mensagem_perdida(usuario)
+        registro.mensagem_segurada_pela_coleta_incompleta(usuario)
         return None
     if not selecionadas:
         if avisar_que_nao_houve_vaga(

@@ -347,6 +347,12 @@ def executar_fluxo(
             coletas_incompletas=coletor.incompletas,
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
             usuarios_sem_mensagem_por_falha=resumo.usuarios_sem_mensagem_por_falha,
+            mensagens_seguradas_por_falta_de_extracao=(
+                resumo.mensagens_seguradas_por_falta_de_extracao
+            ),
+            mensagens_seguradas_pela_coleta_incompleta=(
+                resumo.mensagens_seguradas_pela_coleta_incompleta
+            ),
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():

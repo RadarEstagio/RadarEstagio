@@ -141,6 +141,8 @@ def formatar_resumo_da_execucao(
     coletas_incompletas: dict[str, str] | None = None,
     eventos_do_site: EventosDoSite | None = None,
     usuarios_sem_mensagem_por_falha: int = 0,
+    mensagens_seguradas_por_falta_de_extracao: int = 0,
+    mensagens_seguradas_pela_coleta_incompleta: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -154,6 +156,16 @@ def formatar_resumo_da_execucao(
     ]
     if usuarios_sem_mensagem_por_falha:
         linhas.append(f"⚠️ Usuários sem mensagem por falha: {usuarios_sem_mensagem_por_falha}")
+    if mensagens_seguradas_por_falta_de_extracao:
+        linhas.append(
+            "⚠️ Mensagens seguradas por vaga sem extração: "
+            f"{mensagens_seguradas_por_falta_de_extracao}"
+        )
+    if mensagens_seguradas_pela_coleta_incompleta:
+        linhas.append(
+            "⚠️ Mensagens seguradas pela coleta incompleta: "
+            f"{mensagens_seguradas_pela_coleta_incompleta}"
+        )
     if vagas_sem_extracao:
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:

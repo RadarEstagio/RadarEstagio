@@ -373,6 +373,28 @@ def test_resumo_avisa_vagas_sem_extracao_e_extracoes_nao_gravadas():
     assert "Vagas sem extração" not in com_falha_de_gravacao
 
 
+def test_resumo_avisa_as_mensagens_seguradas_com_o_motivo():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        1,
+        7,
+        830,
+        7,
+        mensagens_seguradas_por_falta_de_extracao=2,
+        mensagens_seguradas_pela_coleta_incompleta=1,
+    )
+
+    assert "⚠️ Mensagens seguradas por vaga sem extração: 2" in texto
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in texto
+
+
+def test_resumo_sem_mensagem_segurada_nao_mostra_a_linha():
+    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
+
+    assert "Mensagens seguradas" not in texto
+
+
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 

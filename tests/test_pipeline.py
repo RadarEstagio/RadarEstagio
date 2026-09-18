@@ -1199,7 +1199,18 @@ def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_p
 
     assert resumo.usuarios_com_mensagem == 0
     assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+    assert resumo.mensagens_seguradas_por_falta_de_extracao == 0
     assert resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_resumo_conta_as_mensagens_seguradas_por_falta_de_extracao():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
+
+    resumo = rodar_com_vaga_que_nunca_e_extraida(repositorio, NotificadorFalso(), AGORA_DE_TESTE)
+
+    assert resumo.mensagens_seguradas_por_falta_de_extracao == 1
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
 
 
 def test_falha_ao_travar_o_atendimento_deixa_o_usuario_sem_mensagem_por_falha():

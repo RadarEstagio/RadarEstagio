@@ -222,7 +222,9 @@ def test_coleta_que_para_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock
         )
 
     assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
-    assert "⚠️ Coleta da Adzuna incompleta" in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Coleta da Adzuna incompleta" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
 
 
 def test_cota_que_acaba_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock: HTTPXMock):
