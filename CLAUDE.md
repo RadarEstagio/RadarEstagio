@@ -1708,6 +1708,34 @@ ligação das automações, porque cada uma guardava o dono no nome:
   cancelled()` do workflow. O passo do radar tem timeout próprio (28 min, abaixo dos 30 do job)
   para o estouro contar como falha do passo: o GitHub trata o estouro do job como cancelamento,
   e a documentação não diz se `failure()` vale nesse caso.
+  **Código de saída honesto e resumo que denuncia (18/09/2026).** Com o token do bot revogado o
+  Telegram recusa tudo: ninguém recebia mensagem, o resumo também falhava, o processo terminava
+  em zero e o Actions ficava verde. Agora `rodar` e `testar-local` levantam `ErroDeExecucao`
+  (`pipeline.py`) e saem com código 1 em dois casos, cada um com teste próprio:
+  - **o resumo não chegou ao chat de operação**: execução que não se relata não pode ser lida
+    como verde, e é o caso do token revogado. Sem `TELEGRAM_CHAT_ID` não há resumo e o critério
+    não vale.
+  - **ninguém foi atendido por falha**: havia usuários na execução, nenhum recebeu mensagem
+    alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por falha —
+    revalidação indisponível, banco fora do ar, mensagem segurada, envio recusado pelo Telegram.
+
+  Não são falha, de propósito: o dia legítimo em que todos recebem "nenhuma vaga compatível"; a
+  execução sem usuários ativos, inclusive `rodar --perfil` sem entrega a fazer; a execução em que
+  parte falhou mas ao menos um recebeu, porque a falha de um usuário não derruba os outros e o
+  resumo já mostra o número; e o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
+  nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`.
+  O `ErroDeExecucao` é levantado no `__main__`, depois de gravar o uso da Adzuna e de mandar o
+  resumo, então a execução vermelha não desfaz o que entregou nem perde a linha `adzuna:diario`.
+  O resumo ganhou, no estilo dos avisos que já tinha, o que só existia no log: "⚠️ Usuários sem
+  mensagem por falha", "⚠️ Mensagens seguradas por vaga sem extração", "⚠️ Mensagens seguradas
+  pela coleta incompleta", "⚠️ Usuários com envio não gravado" (a mensagem chegou e a linha de
+  `envios` não: a pessoa recebe as mesmas vagas amanhã) e "⚠️ Limpeza de contas falhou:
+  <motivo>", uma linha por motivo entre conta excluída e cadastro não confirmado. Limites
+  aceitos: a entrega imediata também fica vermelha quando a mensagem da pessoa é segurada, que é
+  justamente o dia em que ela não recebeu nada; quando o resumo não sai, o aviso do passo
+  `if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal; e
+  segue passando por verde o dia em que um recebeu e vinte falharam, que só o número no resumo
+  denuncia.
 - **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
   mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
   órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
