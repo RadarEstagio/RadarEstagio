@@ -260,6 +260,14 @@ chat de operação ou quando ninguém recebeu mensagem por falha (`ninguem_foi_a
 em `ResumoDaExecucao`). Sem ela, a execução com o token do bot revogado — Telegram recusando
 tudo, ninguém atendido, resumo perdido — terminava em zero e o passo do Actions ficava verde.
 
+Falha aqui é falha de verdade: revalidação indisponível, banco fora do ar, envio recusado pelo
+Telegram por erro nosso ou indisponibilidade dele. A **mensagem segurada** por vaga sem extração
+ou coleta incompleta não entra, porque segurar é o comportamento certo — a pessoa fica pendente
+para a execução seguinte — e o resumo já a mostra em linha própria. O limite disso é conhecido:
+um dia inteiro de Gemini fora deixa todos sem mensagem e a execução termina verde, com o aviso
+no resumo. O contrário custava mais: toda entrega imediata cujo candidato ainda não foi extraído
+ficaria vermelha, e alarme que toca sozinho todo dia deixa de ser lido.
+
 ### 8. Configuração só por variável de ambiente
 
 `Settings` (pydantic-settings) lê do `.env` local ou do ambiente do CI — o código não sabe a

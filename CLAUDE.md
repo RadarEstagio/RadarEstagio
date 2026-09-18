@@ -1716,14 +1716,21 @@ ligação das automações, porque cada uma guardava o dono no nome:
     como verde, e é o caso do token revogado. Sem `TELEGRAM_CHAT_ID` não há resumo e o critério
     não vale.
   - **ninguém foi atendido por falha**: havia usuários na execução, nenhum recebeu mensagem
-    alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por falha —
-    revalidação indisponível, banco fora do ar, mensagem segurada, envio recusado pelo Telegram.
+    alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por **falha
+    de verdade** — revalidação indisponível, banco fora do ar, envio recusado pelo Telegram por
+    erro nosso ou indisponibilidade dele.
 
   Não são falha, de propósito: o dia legítimo em que todos recebem "nenhuma vaga compatível"; a
   execução sem usuários ativos, inclusive `rodar --perfil` sem entrega a fazer; a execução em que
   parte falhou mas ao menos um recebeu, porque a falha de um usuário não derruba os outros e o
-  resumo já mostra o número; e o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
-  nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`.
+  resumo já mostra o número; o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
+  nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`;
+  e a **mensagem segurada** por vaga sem extração ou coleta incompleta, que é comportamento
+  deliberado (ver "Falha parcial virava 'nenhuma vaga compatível'" e "Coleta resiliente"): a
+  pessoa fica pendente para a execução seguinte e o resumo tem linha própria para o caso. Pintar
+  isso de vermelho deixava toda entrega imediata cujo candidato ainda não foi extraído terminar
+  em vermelho, e alarme que toca sozinho todo dia deixa de ser lido. Falha de verdade ao lado de
+  uma mensagem segurada continua derrubando a execução.
   O `ErroDeExecucao` é levantado no `__main__`, depois de gravar o uso da Adzuna e de mandar o
   resumo, então a execução vermelha não desfaz o que entregou nem perde a linha `adzuna:diario`.
   O resumo ganhou, no estilo dos avisos que já tinha, o que só existia no log: "⚠️ Usuários sem
@@ -1731,9 +1738,11 @@ ligação das automações, porque cada uma guardava o dono no nome:
   pela coleta incompleta", "⚠️ Usuários com envio não gravado" (a mensagem chegou e a linha de
   `envios` não: a pessoa recebe as mesmas vagas amanhã) e "⚠️ Limpeza de contas falhou:
   <motivo>", uma linha por motivo entre conta excluída e cadastro não confirmado. Limites
-  aceitos: a entrega imediata também fica vermelha quando a mensagem da pessoa é segurada, que é
-  justamente o dia em que ela não recebeu nada; quando o resumo não sai, o aviso do passo
-  `if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal; e
+  aceitos: **um dia inteiro de Gemini fora deixa todos sem mensagem e a execução segue verde**,
+  com "⚠️ Vagas sem extração" e "⚠️ Mensagens seguradas por vaga sem extração" no resumo — quem
+  opera precisa ler o resumo, o código de saída não conta essa história; o mesmo vale para a
+  Adzuna que não responde depois da primeira vaga. Quando o resumo não sai, o aviso do passo
+  `if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal. E
   segue passando por verde o dia em que um recebeu e vinte falharam, que só o número no resumo
   denuncia.
 - **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
