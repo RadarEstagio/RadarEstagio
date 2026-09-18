@@ -1248,6 +1248,36 @@ def test_vaga_ja_entregue_a_todos_os_interessados_nao_vai_para_a_ia():
     assert extrator.extraidas == []
 
 
+class ExtratorQueMarcaUmaVagaComOIdDaOutra(ExtratorFalso):
+    def __init__(self) -> None:
+        super().__init__({})
+
+    def extrair(self, vagas_pedidas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(item.id_externo for item in vagas_pedidas)
+        if len(vagas_pedidas) == 1:
+            return [extracao_de_vaga_de_python(vagas_pedidas[0].identidade())]
+        return [
+            ExtracaoDaVaga(id_vaga="adzuna:2", area_da_vaga="direito"),
+            extracao_de_vaga_de_python("adzuna:2"),
+        ]
+
+
+def test_extracao_com_id_de_outra_vaga_nao_substitui_a_verdadeira_no_cache():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorEmLotes(ExtratorQueMarcaUmaVagaComOIdDaOutra(), 10),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert set(repositorio.extracoes_guardadas) == {("adzuna", "1"), ("adzuna", "2")}
+    assert repositorio.extracoes_guardadas[("adzuna", "2")].area_da_vaga == "computacao"
+
+
 class RepositorioComHistoricoQuebrado(RepositorioFalso):
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         if usuario.id == ID_USUARIO:
