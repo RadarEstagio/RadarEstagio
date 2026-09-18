@@ -34,6 +34,8 @@ class Notificador(Protocol):
 
 
 class RepositorioDeUsuarios(Protocol):
+    perfis_ilegiveis: int
+
     def listar_ativos(self) -> list[Usuario]: ...
 
     def pode_entregar(self, usuario: Usuario) -> bool: ...
