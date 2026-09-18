@@ -1791,6 +1791,39 @@ ligação das automações, porque cada uma guardava o dono no nome:
   cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
   digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
   `raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
+- **Listas do perfil em uma dimensão** (18/09/2026, migration `0031`). Qualquer conta cadastrada
+  derrubava o diário de todo mundo: um `update` direto gravava `perfis.areas_de_interesse` como
+  lista de listas, porque o `<@` da `0017` e o `cardinality` da `0025` achatam a dimensão e só
+  olham o conteúdo, e o Python quebrava com `TypeError` ao converter os perfis, antes da coleta.
+  Ninguém recebia mensagem, o resumo de operação não saía e o dia seguinte repetia. Em
+  `habilidades` o valor já era recusado, mas por acidente: o `array_position(valor, null)` da
+  `0018` levanta `0A000` ("searching for elements in multidimensional arrays is not supported"),
+  que some se aquela função for reescrita. A correção é nas duas camadas:
+  - **No banco**, `coalesce(array_ndims(coluna), 1) = 1` nas duas colunas. Os checks são
+    **validados**, pelo mesmo motivo da `0025`: `perfis` é atualizado todo dia pelo job e pelo
+    webhook, e um check `not valid` deixaria uma linha antiga derrubar esses updates longe da
+    migration. Lista vazia e `areas_de_interesse` nula continuam aceitas, porque `array_ndims`
+    devolve nulo nas duas.
+  - **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
+    vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
+    pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
+    log leva só o id do perfil e o tipo da exceção, porque o `ValidationError` repete o valor do
+    campo e o log do Actions é público. `perfis_ilegiveis` conta as puladas e o resumo de operação
+    mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
+    do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
+    incompletas.
+
+  Medido em 18/09, só leitura: dos 6 perfis, nenhum é multidimensional (4 com uma dimensão em
+  `areas_de_interesse`, 2 com a lista vazia, 6 com uma dimensão em `habilidades`), então a
+  migration aplica sem corrigir linha alguma. O cadastro (`concluir_meu_cadastro`) já recusava
+  lista de listas com "lista inválida", porque cobra `jsonb_typeof(item) = 'string'`; o buraco
+  era só o `update` direto, que o `grant` da `0002` e da `0006` permite. Limites: o Python pula a
+  linha ilegível por qualquer causa, então um defeito nosso de conversão passa a esconder a pessoa
+  em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julgar` e do
+  `gabarito`, continua sem essa proteção, o que não alcança linha nova agora que o banco cobra a
+  dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
+  não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
+  antes de outra pendente, o push dela pede `--include-all`.
 
 
 ### Correções da revisão de expansão (08/09/2026)
