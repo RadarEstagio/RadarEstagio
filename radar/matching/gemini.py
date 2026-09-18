@@ -78,8 +78,10 @@ def gerar_json[T: BaseModel](
         )
     except httpx.TimeoutException:
         raise AvaliadorIndisponivel(f"Gemini não respondeu em {timeout_segundos} s") from None
-    except httpx.TransportError as erro:
-        raise AvaliadorIndisponivel(f"Falha de rede ao falar com o Gemini: {erro}") from None
+    except httpx.RequestError as erro:
+        raise AvaliadorIndisponivel(
+            f"Falha de rede ao falar com o Gemini ({type(erro).__name__}): {erro}"
+        ) from None
     except errors.APIError as erro:
         mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
         if erro.code == HTTP_COTA_EXCEDIDA:
@@ -93,7 +95,7 @@ def gerar_json[T: BaseModel](
         raise AvaliadorIndisponivel(
             f"Gemini devolveu corpo que não é JSON: {erro.doc[:INICIO_DO_CORPO_NO_ERRO]!r}"
         ) from None
-    except (TypeError, ValidationError) as erro:
+    except (AttributeError, TypeError, ValidationError) as erro:
         raise AvaliadorIndisponivel(
             f"Gemini devolveu resposta fora do formato da API: {erro}"
         ) from None
