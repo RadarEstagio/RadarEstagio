@@ -1,5 +1,7 @@
 import json
 import re
+import sys
+from contextlib import nullcontext
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -8,7 +10,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from radar.__main__ import executar_fluxo
+from radar.__main__ import executar_fluxo, main
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
@@ -56,6 +58,33 @@ def mensagens_de_operacao(httpx_mock: HTTPXMock) -> list[str]:
         json.loads(requisicao.content)["text"]
         for requisicao in httpx_mock.get_requests(url=URL_DO_TELEGRAM)
     ]
+
+
+def codigo_de_saida_do_rodar(
+    monkeypatch: pytest.MonkeyPatch,
+    repositorio: RepositorioEmMemoria,
+    settings: Settings | None = None,
+) -> int:
+    escolhidas = settings or settings_de_teste()
+    monkeypatch.setattr("radar.__main__.carregar_settings", lambda: escolhidas)
+    monkeypatch.setattr(
+        "radar.__main__.abrir_repositorio", lambda _settings: nullcontext(repositorio)
+    )
+    monkeypatch.setattr(sys, "argv", ["radar", "rodar"])
+    try:
+        main()
+    except SystemExit as saida:
+        return int(saida.code or 0)
+    return 0
+
+
+def recusar_o_chat_de_operacao(httpx_mock: HTTPXMock) -> None:
+    def telegram(requisicao: httpx.Request) -> httpx.Response:
+        if json.loads(requisicao.content)["chat_id"] == CHAT_DE_OPERACAO:
+            return httpx.Response(500, text="Bad Gateway")
+        return httpx.Response(200, json={"ok": True, "result": {"message_id": 1}})
+
+    httpx_mock.add_callback(telegram, url=URL_DO_TELEGRAM, is_reusable=True)
 
 
 def test_resumo_de_operacao_avisa_que_a_coleta_da_adzuna_parou_no_meio(httpx_mock: HTTPXMock):
@@ -470,3 +499,26 @@ def test_falha_ao_ler_os_eventos_do_site_so_avisa_no_log(
     assert "Vagas coletadas: 3" in resumo
     assert "Eventos do site" not in resumo
     assert "eventos_do_site_por_hora" in caplog.text
+
+
+def test_resumo_que_nao_chega_ao_chat_de_operacao_termina_com_codigo_de_erro(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    recusar_o_chat_de_operacao(httpx_mock)
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, RepositorioEmMemoria([]))
+
+    assert codigo == 1
+
+
+def test_execucao_relatada_sem_usuarios_ativos_termina_com_codigo_zero(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, RepositorioEmMemoria([]))
+
+    assert codigo == 0
+    assert "Usuários ativos: 0" in mensagens_de_operacao(httpx_mock)[-1]

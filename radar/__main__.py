@@ -54,7 +54,7 @@ from radar.notification.formatador import (
     formatar_resumo_da_execucao,
 )
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
-from radar.pipeline import ParametrosDaExecucao, executar
+from radar.pipeline import ErroDeExecucao, ParametrosDaExecucao, executar
 from radar.reporting.funil import formatar_funil
 from radar.reporting.julgamento import formatar_julgamento
 from radar.settings import Settings
@@ -326,7 +326,7 @@ def executar_fluxo(
         f"{resumo.extracoes_nao_gravadas} extrações não gravadas; "
         f"{cota.requisicoes} requisições à Adzuna"
     )
-    avisar_operacao(
+    resumo_entregue = avisar_operacao(
         settings,
         notificador,
         formatar_resumo_da_execucao(
@@ -348,6 +348,10 @@ def executar_fluxo(
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
         ),
     )
+    if not resumo_entregue:
+        raise ErroDeExecucao(
+            "O resumo desta execução não chegou ao chat de operação; ela não pode passar por verde"
+        )
 
 
 def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | None:
@@ -358,13 +362,15 @@ def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | N
         return None
 
 
-def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> None:
+def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> bool:
     if not settings.telegram_chat_id.strip():
-        return
+        return True
     try:
         notificador.enviar(settings.telegram_chat_id, texto)
     except ErroDeNotificacao as erro:
         print(f"Resumo da execução não foi entregue: {erro}", file=sys.stderr)
+        return False
+    return True
 
 
 def rodar(settings: Settings, apenas_o_perfil: UUID | None = None) -> None:
@@ -487,7 +493,13 @@ def main() -> None:
             )
         else:
             COMANDOS[nome_do_comando](settings)
-    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
+    except (
+        ErroDeColeta,
+        ErroDeAvaliacao,
+        ErroDeNotificacao,
+        ErroDeArmazenamento,
+        ErroDeExecucao,
+    ) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
 

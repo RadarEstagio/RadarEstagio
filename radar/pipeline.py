@@ -47,6 +47,10 @@ DIAS_ATE_APAGAR_CADASTRO_PENDENTE = 2
 DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA = 30
 
 
+class ErroDeExecucao(Exception):
+    pass
+
+
 def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
     return vagas
 
