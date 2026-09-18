@@ -354,6 +354,7 @@ def executar_fluxo(
                 resumo.mensagens_seguradas_pela_coleta_incompleta
             ),
             usuarios_com_envio_nao_gravado=resumo.usuarios_com_envio_nao_gravado,
+            falhas_de_limpeza=resumo.falhas_de_limpeza,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():

@@ -1204,6 +1204,22 @@ def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_p
     assert resumo.ninguem_foi_atendido_por_falha()
 
 
+def test_resumo_diz_qual_limpeza_de_contas_falhou():
+    class RepositorioQueNaoApaga(RepositorioFalso):
+        def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
+            raise ErroDeArmazenamento("banco caiu na carência")
+
+        def apagar_cadastros_pendentes(self, dias_de_prazo: int) -> int:
+            raise ErroDeArmazenamento("banco caiu no cadastro pendente")
+
+    resumo = executar_para(RepositorioQueNaoApaga([usuario()]), NotificadorFalso())
+
+    assert resumo.falhas_de_limpeza == [
+        "contas excluídas: banco caiu na carência",
+        "cadastros não confirmados: banco caiu no cadastro pendente",
+    ]
+
+
 def test_resumo_conta_os_envios_que_nao_foram_gravados_mas_a_mensagem_chegou():
     repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
 

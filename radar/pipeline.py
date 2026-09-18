@@ -118,6 +118,7 @@ class ResumoDaExecucao(BaseModel):
     mensagens_seguradas_por_falta_de_extracao: int = 0
     mensagens_seguradas_pela_coleta_incompleta: int = 0
     usuarios_com_envio_nao_gravado: int = 0
+    falhas_de_limpeza: list[str] = []
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -152,8 +153,14 @@ def executar(
     apenas_o_perfil: UUID | None = None,
     coleta_incompleta: Callable[[], bool] = coleta_completa,
 ) -> ResumoDaExecucao:
-    apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
-    apagar_cadastros_nao_confirmados(repositorio)
+    falhas_de_limpeza = [
+        falha
+        for falha in (
+            apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida),
+            apagar_cadastros_nao_confirmados(repositorio),
+        )
+        if falha is not None
+    ]
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
@@ -203,6 +210,7 @@ def executar(
         mensagens_seguradas_por_falta_de_extracao=len(registro.seguradas_por_falta_de_extracao),
         mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
         usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
+        falhas_de_limpeza=falhas_de_limpeza,
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
@@ -235,29 +243,31 @@ def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[
     return [por_chave.get(vaga.chave(), vaga) for vaga in unicas]
 
 
-def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> None:
+def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> str | None:
     try:
         apagadas = repositorio.apagar_contas_excluidas(dias_de_carencia)
     except ErroDeArmazenamento as erro:
         logger.warning("contas excluídas não foram apagadas: %s", erro)
-        return
+        return f"contas excluídas: {erro}"
     if apagadas:
         logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
+    return None
 
 
-def apagar_cadastros_nao_confirmados(repositorio: Repositorio) -> None:
+def apagar_cadastros_nao_confirmados(repositorio: Repositorio) -> str | None:
     try:
         cadastros = repositorio.apagar_cadastros_pendentes(DIAS_ATE_APAGAR_CADASTRO_PENDENTE)
         contas = repositorio.apagar_contas_nao_confirmadas(DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA)
     except ErroDeArmazenamento as erro:
         logger.warning("cadastros não confirmados não foram apagados: %s", erro)
-        return
+        return f"cadastros não confirmados: {erro}"
     if cadastros or contas:
         logger.info(
             "%d cadastros pendentes e %d contas sem e-mail confirmado apagados no prazo",
             cadastros,
             contas,
         )
+    return None
 
 
 def com_areas_recusadas(usuario: Usuario, recusas: RecusasDoUsuario) -> Usuario:
