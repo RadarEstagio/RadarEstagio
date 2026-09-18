@@ -83,8 +83,9 @@ class ExtratorEmLotes:
         except ErroDeAvaliacao as erro:
             self._dividir_e_tentar_de_novo(lote, erro, resultados)
             return
-        resultados.extend(extraidas)
-        faltantes = vagas_sem_resultado(lote, extraidas)
+        aproveitadas = extracoes_do_lote(lote, extraidas)
+        resultados.extend(aproveitadas)
+        faltantes = vagas_sem_resultado(lote, aproveitadas)
         if not faltantes:
             return
         if len(lote) == 1:
@@ -204,6 +205,25 @@ def ids_repetidos(extraidas: list[ExtracaoDaVaga]) -> list[str]:
 
 def ids_confiaveis(lote: list[Vaga], extraidas: list[ExtracaoDaVaga]) -> bool:
     return not ids_sem_vaga(lote, extraidas) and not ids_repetidos(extraidas)
+
+
+def extracoes_do_lote(lote: list[Vaga], extraidas: list[ExtracaoDaVaga]) -> list[ExtracaoDaVaga]:
+    pedidos = {vaga.identidade() for vaga in lote}
+    repetidos = set(ids_repetidos(extraidas))
+    aproveitadas = [
+        extracao
+        for extracao in extraidas
+        if extracao.id_vaga in pedidos and extracao.id_vaga not in repetidos
+    ]
+    if len(aproveitadas) < len(extraidas):
+        logger.warning(
+            "%d extrações descartadas por id que não identifica uma vaga do lote; "
+            "ids devolvidos %s; lote pedido %s",
+            len(extraidas) - len(aproveitadas),
+            [extracao.id_vaga for extracao in extraidas],
+            sorted(pedidos),
+        )
+    return aproveitadas
 
 
 def registrar_resposta_incompleta(

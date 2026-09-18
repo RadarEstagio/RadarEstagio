@@ -34,6 +34,8 @@ RECUSAS_POR_AREA_PARA_DESCONTAR = 2
 MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS = 3
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
 FALHAS_AO_GRAVAR_TEXTO = (psycopg.Error, UnicodeEncodeError)
+FALHAS_AO_LER_O_PERFIL = (TypeError, ValueError)
+CARACTERES_DO_TRECHO_DO_ID = 8
 AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
@@ -365,6 +367,7 @@ SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 class RepositorioPostgres:
     def __init__(self, conexao: psycopg.Connection) -> None:
         self._conexao = conexao
+        self.perfis_ilegiveis = 0
 
     def listar_ativos(self) -> list[Usuario]:
         try:
@@ -375,7 +378,9 @@ class RepositorioPostgres:
             raise ErroDeArmazenamento(f"Falha ao ler os perfis: {descrever(erro)}") from erro
         if sem_vinculo:
             logger.info("%d perfis ativos ainda sem Telegram vinculado", sem_vinculo)
-        return [converter_em_usuario(linha) for linha in linhas]
+        usuarios = usuarios_das_linhas(linhas)
+        self.perfis_ilegiveis = len(linhas) - len(usuarios)
+        return usuarios
 
     def pode_entregar(self, usuario: Usuario) -> bool:
         try:
@@ -772,6 +777,24 @@ def converter_em_vaga_enviada(linha: dict) -> Vaga:
 def areas_do_campo_do_curso(curso: str, areas: list[str]) -> list[AreaDeInteresse]:
     permitidas = {valor for valor, _ in subareas_do_curso(curso)}
     return [AreaDeInteresse(area) for area in areas if area in permitidas]
+
+
+def usuarios_das_linhas(linhas: list[dict]) -> list[Usuario]:
+    usuarios = []
+    for linha in linhas:
+        try:
+            usuarios.append(converter_em_usuario(linha))
+        except FALHAS_AO_LER_O_PERFIL as erro:
+            logger.warning(
+                "perfil ...%s... ficou de fora por dados inválidos: %s",
+                trecho_do_id(linha["id"]),
+                descrever(erro),
+            )
+    return usuarios
+
+
+def trecho_do_id(perfil_id: UUID) -> str:
+    return str(perfil_id)[:CARACTERES_DO_TRECHO_DO_ID]
 
 
 def converter_em_usuario(linha: dict) -> Usuario:

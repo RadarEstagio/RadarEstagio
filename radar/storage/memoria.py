@@ -18,6 +18,7 @@ class RepositorioEmMemoria:
         self._usuarios = usuarios
         self._uso: dict[tuple[str, date], int] = {}
         self._dias_sem_extracao: dict[ChaveDaVaga, tuple[date, int]] = {}
+        self.perfis_ilegiveis = 0
 
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)

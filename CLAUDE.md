@@ -537,6 +537,39 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
   extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
   os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+- **Só entra extração com o id de uma vaga do lote pedido** (18/09/2026, grave 3 da auditoria de
+  17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
+  `id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
+  com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
+  forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
+  nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
+  compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
+  está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
+  que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
+  mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
+  qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
+  regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
+  esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
+  quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
+  lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
+  as sem extração.
+  **A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
+  `INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
+  cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
+  conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
+  reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
+  nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
+  enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
+  apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
+  nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
+  atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
+  observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
+  cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
+  conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
+  dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
+  já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
+  devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
+  migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 - **Resposta malformada do avaliador não derruba o job** (16/09/2026, item 14 da auditoria). Só
   erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
   (página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
@@ -986,6 +1019,47 @@ título.
   PCD - E-commerce"), e a barra trata sinônimo ("PCD/PNE") como outro público. Seguem exclusivas,
   sem regra: "Vaga para PCD - aberta a todos", "PCD: Opcional", "( ) Sim (X) Não" e "não
   exclusiva" depois de ponto ou a mais de 60 caracteres.
+
+  **Frase comum que virava vaga exclusiva** (18/09/2026, auditoria). O sujeito no singular era
+  cobrado, mas não a posição dele na frase, e o trecho do título aceitava o termo por extenso. Duas
+  famílias de frase, nenhuma delas vaga de PCD, tiravam a vaga de quem respondeu "não":
+  - **PCD como objeto de uma atividade ou de texto institucional.** "Apoio ao recrutamento e
+    seleção para pessoas com deficiência" é tarefa de RH, "igualdade de oportunidade para pessoas
+    com deficiência" é discurso da empresa, e "divulgação de vaga para PCD" é a atividade do
+    estágio. Agora o sujeito precisa **abrir a frase**: início do texto, ponto, dois-pontos, ponto
+    e vírgula, exclamação, interrogação, barra vertical, parêntese, colchete, aspas, asterisco de
+    markdown ou hífen de lista, com artigo ou demonstrativo opcional antes
+    (`PADRAO_ABERTURA_DE_FRASE`, conferido em `a_vaga_e_o_sujeito`). Os separadores são os que os
+    anúncios reais usam: a única exclusiva do banco vem de "- Requisitos solicitados pela empresa:
+    Vaga de Emprego para Pessoas com Deficiência (PCD)", e a Adzuna junta as linhas, então o rótulo
+    com dois-pontos e o marcador de lista são o que sobra da quebra. Deny-list de palavra antes,
+    como a `PADRAO_CONTEXTO_QUE_ANULA`, não fecharia: o que precede é verbo ("garantimos", "mapear",
+    "faz"), e verbo não tem lista.
+  - **PCD por extenso como trecho do título.** "Estágio em Psicologia - Pessoas com Deficiência" é
+    o público que o trabalho atende, e o mesmo título aparece em Pedagogia, Fisioterapia,
+    Fonoaudiologia, Terapia Ocupacional, Serviço Social e Educação Física. O trecho solto conta
+    agora só com a **sigla** ("Estágio - PCD", "(PcD)", "PCD | …"), que é a marca de vaga dos sites
+    de emprego; por extenso só quando o título diz que é a vaga ("- Vaga Pessoas com Deficiência",
+    "- Exclusiva para Pessoas com Deficiência"). "Estágio para Pessoas com Deficiência" não mudou,
+    porque ali o "para" já dirige a vaga.
+
+  Medido nas 1.095 vagas guardadas em 18/09: **nenhuma muda** (1 exclusiva, 1 afirmativa com PCD,
+  3 afirmativas, 1.090 gerais, como no `main`), e as 36 que citam PCD, deficiência, necessidades
+  especiais ou ação afirmativa foram lidas à mão e conferem. O defeito só aparece em corpus
+  adversarial porque `vagas` guarda o que passou no pré-filtro de algum perfil, quase tudo de
+  computação do Rio, e a vaga de Psicologia ou de RH que ele escondia não chega lá. Num corpus de
+  18 contextos de atividade × 4 sujeitos × 3 grafias do termo, as 216 frases eram exclusivas e
+  agora nenhuma é; nos títulos, 8 áreas × 3 separadores × 3 grafias, 72 eram exclusivos e sobram os
+  24 da sigla. As guardas com as exclusivas legítimas (descrição e título) continuam passando.
+  Limites aceitos: "Estágio em Psicologia - PCD" segue exclusiva, porque a sigla solta é a marca do
+  site de emprego e distinguir os dois casos exigiria saber a área da vaga antes da extração;
+  rótulo seguido de dois-pontos abre frase, então "Projeto de inclusão: seleção para pessoas com
+  deficiência atendidas" segue exclusiva; e "Estágio para Pessoas com Deficiência Auditiva no CAPS"
+  também, pela mesma forma da legítima. Para o outro lado, perde a exclusividade a frase que a diz
+  no meio de outra ("Estágio em Marketing, vaga exclusiva para PCD" depois da vírgula, "Nesta
+  seleção para PCD") e o título sem separador ("Estagiário de TI Vaga para PCD"); nenhum caso nos
+  dados. Nada mudou no prompt, na nota, na prioridade nem nos avisos, e `VERSAO_DA_EXTRACAO` segue
+  `7efdbc95`. Publicação: só o `radar/`, sem migration e sem deploy.
 
   É dado sensível (LGPD, art. 11, I): a pergunta é opcional, começa em "Prefiro não informar", diz
   ao lado para que serve, e a resposta não entra em evento, log, prompt nem export. O juiz monta o
@@ -1619,6 +1693,25 @@ ligação das automações, porque cada uma guardava o dono no nome:
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
+  **O apagamento tem teste que roda o SQL (18/09/2026).** Até aqui nada executava as três
+  consultas de `apagar_contas_excluidas` no CI: quem as cobria era `tests/test_storage_postgres.py`,
+  que pede `DATABASE_URL_TESTE` e fica de fora. A auditoria de 17/09 inverteu o sinal do prazo numa
+  cópia do repositório e as suítes passaram verdes, o que na produção apagaria quem acabou de pedir
+  exclusão. `tests/web/apagamento_de_contas_test.ts` aplica as migrations no PGlite e roda as
+  consultas lidas do `postgres.py`, na ordem do repositório (sessões, eventos sem dono, contas):
+  conta marcada há menos que a carência fica, marcada há mais sai com perfil, avaliações, envios e
+  eventos, conta ativa e pausada não são tocadas, e a sessão dividida com outra conta perde só os
+  eventos sem dono. Os 60 dias são decisão de produto e ficaram presos por dois testes: o padrão de
+  `dias_ate_apagar_conta_excluida` em `tests/test_settings.py` e a política de privacidade, que lê o
+  número do próprio campo em `tests/test_product_copy.py`. Mutações que passavam e agora quebram:
+  inverter o sinal no `delete` (as quatro do arquivo novo), invertê-lo na consulta das sessões
+  (três delas), neutralizar a condição do prazo (a da carência e a do navegador dividido) e trocar
+  60 por 7 (os dois testes do prazo). O prazo do cadastro pendente e o da conta não confirmada da
+  `0030` já estavam cobertos por `tests/web/prazo_do_cadastro_test.ts`, conferido pelas mesmas
+  mutações. Limites: o teste roda as consultas na ordem do repositório, não o método em Python, e
+  o PGlite tem uma conexão só, então a transação e a corrida entre execuções seguem sem teste; e o
+  `auth.users` do PGlite é o mínimo que as migrations exigem, então a cascata das outras tabelas do
+  Auth do Supabase (sessões, tokens) não é exercitada.
 - **Conta confirmada sem perfil é apagada na hora** (13/09/2026, `0024`). Quem confirmava o e-mail
   e não salvava o perfil ficava com e-mail e senha no Auth sem saída: a exclusão marca
   `perfis.excluida_em` e o job só apaga a partir de `perfis`. `apagar_minha_conta_sem_perfil()` é
@@ -1846,6 +1939,42 @@ ligação das automações, porque cada uma guardava o dono no nome:
   cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
   digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
   `raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
+- **Listas do perfil em uma dimensão** (18/09/2026, migration `0031`). Qualquer conta cadastrada
+  derrubava o diário de todo mundo: um `update` direto gravava `perfis.areas_de_interesse` como
+  lista de listas, porque o `<@` da `0017` e o `cardinality` da `0025` achatam a dimensão e só
+  olham o conteúdo, e o Python quebrava com `TypeError` ao converter os perfis, antes da coleta.
+  Ninguém recebia mensagem, o resumo de operação não saía e o dia seguinte repetia. Em
+  `habilidades` o valor já era recusado, mas por acidente: o `array_position(valor, null)` da
+  `0018` levanta `0A000` ("searching for elements in multidimensional arrays is not supported"),
+  que some se aquela função for reescrita. A correção é nas duas camadas:
+  - **No banco**, `coalesce(array_ndims(coluna), 1) = 1` nas duas colunas. Os checks são
+    **validados**, pelo mesmo motivo da `0025`: `perfis` é atualizado todo dia pelo job e pelo
+    webhook, e um check `not valid` deixaria uma linha antiga derrubar esses updates longe da
+    migration. Lista vazia e `areas_de_interesse` nula continuam aceitas, porque `array_ndims`
+    devolve nulo nas duas.
+  - **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
+    vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
+    pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
+    log leva só o tipo da exceção e os 8 primeiros caracteres do id, entre reticências
+    (`trecho_do_id`), porque o `ValidationError` repete o valor do campo e o log do Actions é
+    público, e a auditoria de 17/09 já aponta como grave o `perfil_id` inteiro que o diário
+    imprime — o trecho acha a linha para quem tem o banco e não identifica ninguém sozinho.
+    `perfis_ilegiveis` conta as puladas e o resumo de operação
+    mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
+    do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
+    incompletas.
+
+  Medido em 18/09, só leitura: dos 6 perfis, nenhum é multidimensional (4 com uma dimensão em
+  `areas_de_interesse`, 2 com a lista vazia, 6 com uma dimensão em `habilidades`), então a
+  migration aplica sem corrigir linha alguma. O cadastro (`concluir_meu_cadastro`) já recusava
+  lista de listas com "lista inválida", porque cobra `jsonb_typeof(item) = 'string'`; o buraco
+  era só o `update` direto, que o `grant` da `0002` e da `0006` permite. Limites: o Python pula a
+  linha ilegível por qualquer causa, então um defeito nosso de conversão passa a esconder a pessoa
+  em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julgar` e do
+  `gabarito`, continua sem essa proteção, o que não alcança linha nova agora que o banco cobra a
+  dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
+  não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
+  antes de outra pendente, o push dela pede `--include-all`.
 
 
 ### Correções da revisão de expansão (08/09/2026)

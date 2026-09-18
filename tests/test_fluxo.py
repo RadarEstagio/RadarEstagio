@@ -374,6 +374,23 @@ class BancoSemATabelaDosEventosDoSite(RepositorioEmMemoria):
         raise ErroDeArmazenamento("relation eventos_do_site_por_hora does not exist")
 
 
+class BancoComUmPerfilIlegivel(RepositorioEmMemoria):
+    def listar_ativos(self) -> list[Usuario]:
+        self.perfis_ilegiveis = 1
+        return super().listar_ativos()
+
+
+def test_resumo_de_operacao_avisa_os_perfis_que_ficaram_de_fora(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoComUmPerfilIlegivel([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "⚠️ Perfis com dados inválidos, fora da execução: 1" in resumo
+
+
 def test_resumo_de_operacao_mostra_os_eventos_do_site(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
     aceitar_mensagens_do_telegram(httpx_mock)
