@@ -291,6 +291,10 @@ def obter_extracoes(
     for extracao in novas:
         vaga = vagas_por_identidade.pop(extracao.id_vaga, None)
         if vaga is None:
+            logger.warning(
+                "extração descartada: o id %s não é de nenhuma vaga ainda pendente",
+                extracao.id_vaga,
+            )
             continue
         extracao = extracao.model_copy(update={"descricao_completa": vaga.descricao_completa})
         extracoes[vaga.chave()] = extracao

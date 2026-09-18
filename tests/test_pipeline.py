@@ -1278,6 +1278,36 @@ def test_extracao_com_id_de_outra_vaga_nao_substitui_a_verdadeira_no_cache():
     assert repositorio.extracoes_guardadas[("adzuna", "2")].area_da_vaga == "computacao"
 
 
+class ExtratorQueDevolveDuasExtracoesParaAMesmaVaga(ExtratorFalso):
+    def __init__(self) -> None:
+        super().__init__({})
+
+    def extrair(self, vagas_pedidas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(item.id_externo for item in vagas_pedidas)
+        return [
+            extracao_de_vaga_de_python("adzuna:1"),
+            ExtracaoDaVaga(id_vaga="adzuna:1", area_da_vaga="direito"),
+        ]
+
+
+def test_extracao_que_nao_casa_com_vaga_pendente_e_registrada(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("WARNING")
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorQueDevolveDuasExtracoesParaAMesmaVaga(),
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert "adzuna:1" in caplog.text
+    assert "descartada" in caplog.text
+
+
 class RepositorioComHistoricoQuebrado(RepositorioFalso):
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         if usuario.id == ID_USUARIO:
