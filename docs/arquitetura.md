@@ -303,6 +303,13 @@ Regras para não afetar quem já usa:
 
 - **Ler usuários é a única falha fatal.** Erro ao enviar para um usuário ou ao gravar depois
   do envio vira `warning` e o job segue para o próximo. Enviar é o produto; gravar é otimização.
+- **Erro inesperado de um usuário também é aviso dele.** O laço de `executar` envolve
+  `atender_usuario`: uma `Exception` que não seja dos quatro erros de domínio vira
+  `logger.exception` com traceback, o perfil fica sem entrega e o resumo de operação diz quantos
+  ficaram assim. Sem isso, um `AttributeError` vindo de um corpo de erro do Telegram ou um
+  `ValueError` de uma URL torta tirava a mensagem de todos. `BaseException` continua subindo, e
+  exceção fora do laço (coleta, enriquecimento, extração) segue derrubando a execução, com aviso
+  de falha no chat de operação.
 - **Avaliação gravada antes do envio.** `guardar_avaliacoes` roda antes de chamar o Telegram e
   `registrar_envios` roda depois: uma falha de entrega não descarta o que a IA já custou, e o
   dia seguinte não reavalia as mesmas vagas.
@@ -336,8 +343,9 @@ Regras para não afetar quem já usa:
 - **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
 - **Toda execução se reporta.** Ao terminar, o job manda ao chat de operação
   (`TELEGRAM_CHAT_ID`) quantos usuários estavam ativos, quantos receberam recomendação, quantas
-  vagas saíram e quantas requisições o extrator consumiu. Um erro conhecido vira aviso de falha
-  antes de derrubar o processo; um kill por timeout, que o Python não consegue reportar, é
+  vagas saíram e quantas requisições o extrator consumiu. Qualquer `Exception` vira aviso de falha
+  antes de derrubar o processo, com o nome do tipo na frente quando não é um erro conhecido; um
+  kill por timeout, que o Python não consegue reportar, é
   coberto pelo passo `if: failure()` do workflow, que manda o link do run. O disparo é externo
   (cron-job.org): sem esse retorno, dois dias parados passam despercebidos, como já aconteceu.
 

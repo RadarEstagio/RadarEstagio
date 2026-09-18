@@ -1358,6 +1358,61 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   `radar/`, sem migration e sem deploy de função; o aviso do bot ("Essa vaga deixa de ser enviada")
   segue verdadeiro para quem marcou.
 
+### Erro inesperado não derruba os outros usuários (18/09/2026)
+
+Auditoria dos médios "o run inteiro cai por causa de um único dado". `atender_usuario` e
+`executar_fluxo` só tratavam os quatro erros de domínio (`ErroDeColeta`, `ErroDeAvaliacao`,
+`ErroDeNotificacao`, `ErroDeArmazenamento`), então qualquer outra exceção vinda de um perfil ou de
+uma vaga deixava sem mensagem todo mundo da fila, inclusive quem já tinha sido atendido, cujo
+retorno se perdia, e sem aviso de operação. A rede de segurança tem dois níveis:
+
+- **Por usuário.** O laço de `executar` envolve `atender_usuario`: `Exception` vira
+  `logger.exception` com o traceback e o usuário fica sem entrega, como já era o erro de envio e o
+  de gravação. O resumo de operação ganhou "⚠️ Sem entrega por erro inesperado: N (veja o traceback
+  no log)" e o `stdout` traz o mesmo número; o campo é
+  `ResumoDaExecucao.usuarios_sem_entrega_por_erro_inesperado`.
+- **Da execução.** Qualquer `Exception` que suba do pipeline vira o mesmo aviso de falha que os
+  quatro erros conhecidos, com o nome do tipo na frente da mensagem, e segue subindo. Sem isso o
+  dono só descobria a queda olhando o log do Actions.
+
+`KeyboardInterrupt`, `SystemExit` e as demais `BaseException` continuam subindo sem virar aviso,
+porque interrupção não é defeito de dado; por isso a `ExecucaoInterrompida` dos testes de entrega
+imediata, que imita um kill, passou a herdar de `BaseException`.
+
+Os quatro casos reproduzidos pela auditoria foram corrigidos também na origem, cada um com o teste
+que falhava antes:
+
+- **Telegram com corpo de erro que não é objeto JSON.** `descricao_do_erro` chamava `.get` no que
+  `resposta.json()` devolvesse; um proxy respondendo `"Bad Gateway"`, uma lista ou um número dava
+  `AttributeError` de dentro do `except` do `HTTPStatusError`. Corpo que não é objeto cai agora no
+  mesmo texto cru que já servia ao corpo que nem é JSON.
+- **URL malformada de uma vaga.** `urlsplit` levanta `ValueError` com colchete de IPv6 aberto
+  (`https://[oops/vaga/1`), o que derrubava a formatação da mensagem (`dominio_da_vaga`) e o
+  enriquecimento (`aponta_para_anuncio_land_ad`); e `httpx.InvalidURL`, que não é `HTTPError`,
+  escapava do `except` do enriquecimento (porta inválida, caractere não imprimível, URL longa
+  demais). Domínio ilegível volta a cair no nome da fonte, caminho ilegível vale como caminho
+  vazio e a URL que o httpx recusa entra no aviso das páginas que falham: a vaga segue com os 500
+  caracteres da API. O link continua apontando para a URL como veio.
+- **Gemini com resposta que o SDK não lê.** O tratamento de 16/09 cobria corpo que não é JSON e
+  envelope fora do formato, mas gzip corrompido (`httpx.DecodingError`) e excesso de redirect
+  (`httpx.TooManyRedirects`) são `RequestError` e não `TransportError`, e `parts` como objeto no
+  lugar de lista vira `AttributeError` dentro do pydantic do SDK. Os três viram
+  `AvaliadorIndisponivel`, o tratamento do 503: espera e repete o mesmo lote dentro do prazo. A
+  mensagem da falha de rede passa a nomear o tipo. `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+- **Número gigante no pré-filtro.** `int()` recusa texto com mais de 4.300 dígitos desde o Python
+  3.11, e o padrão de anos de experiência captura `\d+` sobre a descrição inteira. Número com mais
+  de 4 dígitos passa a ser ignorado em vez de convertido; nenhum descarte muda, porque a faixa que
+  descarta é de 2 a 9 anos.
+
+O que a rede **não** cobre: exceção fora do laço por usuário (coleta, deduplicação,
+enriquecimento, extração, leitura dos ativos, apagamento de contas) segue derrubando a execução
+inteira, agora com aviso de operação — é o preço de essas etapas serem uma só para todos. Exceção
+depois do pipeline (registro do uso da Adzuna, leitura dos eventos do site, formatação e envio do
+resumo) fica fora do `try` e não vira aviso. Se `liberar_atendimento` falhar depois de a mensagem
+sair, o retorno se perde e a pessoa é contada como sem entrega, embora tenha recebido. E o aviso é
+enviado pelo próprio notificador: se ele também quebrar, o run morre com o traceback dos dois
+erros encadeados, sem mensagem no Telegram. O código de saída do processo não mudou.
+
 ### Cidades vizinhas: região imediata do IBGE (10/09/2026)
 
 Quem mora em Niterói trabalha no Rio, mas a cidade era comparada pelo nome exato. Nos 30 dias
