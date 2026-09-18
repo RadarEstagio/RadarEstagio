@@ -314,6 +314,12 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
+    except Exception as erro:
+        logger.exception("A execução falhou por erro inesperado")
+        avisar_operacao(
+            settings, notificador, formatar_falha_da_execucao(agora, descricao_do_erro(erro))
+        )
+        raise
     if apenas_o_perfil is None:
         registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
@@ -350,6 +356,10 @@ def executar_fluxo(
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
         ),
     )
+
+
+def descricao_do_erro(erro: Exception) -> str:
+    return f"{type(erro).__name__}: {erro}"
 
 
 def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | None:
