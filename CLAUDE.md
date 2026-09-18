@@ -537,6 +537,39 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
   extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
   os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+- **Só entra extração com o id de uma vaga do lote pedido** (18/09/2026, grave 3 da auditoria de
+  17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
+  `id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
+  com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
+  forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
+  nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
+  compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
+  está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
+  que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
+  mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
+  qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
+  regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
+  esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
+  quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
+  lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
+  as sem extração.
+  **A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
+  `INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
+  cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
+  conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
+  reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
+  nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
+  enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
+  apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
+  nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
+  atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
+  observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
+  cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
+  conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
+  dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
+  já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
+  devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
+  migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 - **Resposta malformada do avaliador não derruba o job** (16/09/2026, item 14 da auditoria). Só
   erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
   (página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar

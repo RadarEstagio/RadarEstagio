@@ -220,8 +220,9 @@ ExtratorEmLotes  (matching/lotes.py)   — sabe dividir, tentar de novo, desisti
 ExtratorGemini/ExtratorAgy             — sabem falar com seu mecanismo. Só isso.
 ```
 
-O adapter selecionado recebe uma lista de vagas, faz **uma** chamada, devolve os resultados que
-conseguiu casar por id. Não sabe o que é "tentar de novo".
+O adapter selecionado recebe uma lista de vagas, faz **uma** chamada e devolve o que o modelo
+respondeu. Não sabe o que é "tentar de novo" nem confere id: quem só aceita extração com o id de
+uma vaga do lote é o `ExtratorEmLotes`.
 
 `ExtratorEmLotes` embrulha qualquer extrator e aplica a estratégia:
 
@@ -232,7 +233,8 @@ conseguiu casar por id. Não sabe o que é "tentar de novo".
 | falha interna do avaliador (HTTP 500) | espera 10 s e repete o lote uma vez; se voltar, divide como acima |
 | modelo esqueceu de responder 1 vaga | extrai só ela |
 | modelo devolveu parte do lote, só com ids do lote, e faltaram 2 ou mais | pede as que faltaram juntas, uma vez; o que ainda faltar vai uma a uma |
-| voltou vazio, ou com id fora do lote ou repetido | pede as que faltaram uma a uma |
+| voltou vazio | pede as vagas uma a uma |
+| devolveu id fora do lote, ou o mesmo id duas vezes | descarta esses itens (as duas cópias do id repetido) com log e pede uma a uma as vagas que ficaram sem extração |
 | a repetição falhou com erro não temporário, ou voltou com id fora do que faltou ou repetido | descarta a repetição e pede uma a uma |
 | esqueceu mesmo sozinha | ignora e registra |
 | cota excedida (HTTP 429) | espera o "retry in Ns" e repete o mesmo lote; acima de 120 s desiste e envia o que já tem |
