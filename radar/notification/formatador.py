@@ -134,6 +134,7 @@ def formatar_resumo_da_execucao(
     sem_entrega_por_revalidacao: int = 0,
     vagas_sem_extracao: int = 0,
     extracoes_nao_gravadas: int = 0,
+    perfis_ilegiveis: int = 0,
     adzuna_hoje: int | None = None,
     adzuna_no_mes: int | None = None,
     adzuna_limite: int | None = None,
@@ -151,6 +152,8 @@ def formatar_resumo_da_execucao(
         f"Usuários com falha de revalidação: {falhas_de_revalidacao}",
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
     ]
+    if perfis_ilegiveis:
+        linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if vagas_sem_extracao:
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:

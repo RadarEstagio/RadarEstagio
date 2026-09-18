@@ -1,17 +1,23 @@
-from uuid import UUID
+import logging
+from uuid import UUID, uuid4
 
 import pytest
 
 from radar.domain.models import AreaDeInteresse
-from radar.storage.postgres import converter_em_usuario
+from radar.storage.postgres import converter_em_usuario, usuarios_das_linhas
 
 
-def linha(curso: str, areas: list[str], pessoa_com_deficiencia: bool | None = None) -> dict:
+def linha(
+    curso: str,
+    areas: list,
+    pessoa_com_deficiencia: bool | None = None,
+    habilidades: list | None = None,
+) -> dict:
     return {
         "id": UUID(int=1),
         "curso": curso,
         "periodo": 3,
-        "habilidades": ["Excel"],
+        "habilidades": ["Excel"] if habilidades is None else habilidades,
         "cidade": "Rio de Janeiro, RJ",
         "modalidade": "remoto",
         "areas_de_interesse": areas,
@@ -50,3 +56,33 @@ def test_resposta_sobre_deficiencia_chega_ao_perfil_como_foi_gravada(resposta):
     usuario = converter_em_usuario(linha("Direito", [], pessoa_com_deficiencia=resposta))
 
     assert usuario.perfil.pessoa_com_deficiencia is resposta
+
+
+@pytest.mark.parametrize(
+    "ilegivel",
+    [
+        linha("Direito", [["direito_contencioso"], ["compliance"]]),
+        linha("Direito", ["compliance"], habilidades=[["Excel", "Word"]]),
+        linha("Direito", ["compliance"]) | {"modalidade": "hibrida"},
+    ],
+)
+def test_linha_ilegivel_e_pulada_e_os_demais_usuarios_seguem(ilegivel):
+    valida = linha("Direito", ["compliance"]) | {"id": uuid4()}
+
+    usuarios = usuarios_das_linhas([ilegivel, valida])
+
+    assert [usuario.id for usuario in usuarios] == [valida["id"]]
+
+
+def test_linha_ilegivel_nao_leva_os_dados_nem_o_id_inteiro_do_perfil_para_o_log(caplog):
+    perfil_id = uuid4()
+
+    with caplog.at_level(logging.WARNING):
+        usuarios_das_linhas([linha("Direito", [["direito_contencioso"]]) | {"id": perfil_id}])
+
+    assert "TypeError" in caplog.text
+    assert "Direito" not in caplog.text
+    assert "direito_contencioso" not in caplog.text
+    assert str(perfil_id) not in caplog.text
+    assert perfil_id.hex not in caplog.text
+    assert f"...{str(perfil_id)[:8]}..." in caplog.text
