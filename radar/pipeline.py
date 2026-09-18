@@ -47,6 +47,10 @@ DIAS_ATE_APAGAR_CADASTRO_PENDENTE = 2
 DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA = 30
 
 
+class ErroDeExecucao(Exception):
+    pass
+
+
 def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
     return vagas
 
@@ -79,11 +83,41 @@ class RevalidacaoDeDestinatarios:
             return False
 
 
+class RegistroDasEntregas:
+    def __init__(self) -> None:
+        self.com_mensagem: set[UUID] = set()
+        self.sem_mensagem_por_falha: set[UUID] = set()
+        self.seguradas_por_falta_de_extracao: set[UUID] = set()
+        self.seguradas_pela_coleta_incompleta: set[UUID] = set()
+        self.com_envio_nao_gravado: set[UUID] = set()
+
+    def mensagem_entregue(self, usuario: Usuario) -> None:
+        self.com_mensagem.add(usuario.id)
+
+    def mensagem_perdida(self, usuario: Usuario) -> None:
+        self.sem_mensagem_por_falha.add(usuario.id)
+
+    def mensagem_segurada_por_falta_de_extracao(self, usuario: Usuario) -> None:
+        self.seguradas_por_falta_de_extracao.add(usuario.id)
+
+    def mensagem_segurada_pela_coleta_incompleta(self, usuario: Usuario) -> None:
+        self.seguradas_pela_coleta_incompleta.add(usuario.id)
+
+    def envio_nao_gravado(self, usuario: Usuario) -> None:
+        self.com_envio_nao_gravado.add(usuario.id)
+
+
 class ResumoDaExecucao(BaseModel):
     usuarios: int
     usuarios_com_falha_de_revalidacao: int = 0
     usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
     usuarios_sem_entrega_por_erro_inesperado: int = 0
+    usuarios_com_mensagem: int = 0
+    usuarios_sem_mensagem_por_falha: int = 0
+    mensagens_seguradas_por_falta_de_extracao: int = 0
+    mensagens_seguradas_pela_coleta_incompleta: int = 0
+    usuarios_com_envio_nao_gravado: int = 0
+    falhas_de_limpeza: list[str] = []
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -98,6 +132,13 @@ class ResumoDaExecucao(BaseModel):
     def vagas_enviadas(self) -> int:
         return sum(len(selecionadas) for selecionadas in self.enviadas_por_usuario.values())
 
+    def ninguem_foi_atendido_por_falha(self) -> bool:
+        return (
+            self.usuarios > 0
+            and self.usuarios_com_mensagem == 0
+            and self.usuarios_sem_mensagem_por_falha > 0
+        )
+
 
 def executar(
     coletor: ColetorDeVagas,
@@ -111,8 +152,14 @@ def executar(
     apenas_o_perfil: UUID | None = None,
     coleta_incompleta: Callable[[], bool] = coleta_completa,
 ) -> ResumoDaExecucao:
-    apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
-    apagar_cadastros_nao_confirmados(repositorio)
+    falhas_de_limpeza = [
+        falha
+        for falha in (
+            apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida),
+            apagar_cadastros_nao_confirmados(repositorio),
+        )
+        if falha is not None
+    ]
     usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
@@ -132,6 +179,7 @@ def executar(
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
     erros_inesperados: set[UUID] = set()
+    registro = RegistroDasEntregas()
     for usuario in usuarios:
         try:
             selecionadas = atender_usuario(
@@ -145,10 +193,12 @@ def executar(
                 agora,
                 pontuador,
                 revalidacao,
+                registro,
                 incompleta,
             )
         except Exception:
             erros_inesperados.add(usuario.id)
+            registro.mensagem_perdida(usuario)
             logger.exception("usuário %s ficou sem mensagem por erro inesperado", usuario.id)
             continue
         if selecionadas is not None:
@@ -160,6 +210,14 @@ def executar(
             revalidacao.falhas - enviadas_por_usuario.keys()
         ),
         usuarios_sem_entrega_por_erro_inesperado=len(erros_inesperados),
+        usuarios_com_mensagem=len(registro.com_mensagem),
+        usuarios_sem_mensagem_por_falha=len(
+            (registro.sem_mensagem_por_falha | revalidacao.falhas) - registro.com_mensagem
+        ),
+        mensagens_seguradas_por_falta_de_extracao=len(registro.seguradas_por_falta_de_extracao),
+        mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
+        usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
+        falhas_de_limpeza=falhas_de_limpeza,
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
@@ -192,29 +250,31 @@ def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[
     return [por_chave.get(vaga.chave(), vaga) for vaga in unicas]
 
 
-def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> None:
+def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> str | None:
     try:
         apagadas = repositorio.apagar_contas_excluidas(dias_de_carencia)
     except ErroDeArmazenamento as erro:
         logger.warning("contas excluídas não foram apagadas: %s", erro)
-        return
+        return f"contas excluídas: {erro}"
     if apagadas:
         logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
+    return None
 
 
-def apagar_cadastros_nao_confirmados(repositorio: Repositorio) -> None:
+def apagar_cadastros_nao_confirmados(repositorio: Repositorio) -> str | None:
     try:
         cadastros = repositorio.apagar_cadastros_pendentes(DIAS_ATE_APAGAR_CADASTRO_PENDENTE)
         contas = repositorio.apagar_contas_nao_confirmadas(DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA)
     except ErroDeArmazenamento as erro:
         logger.warning("cadastros não confirmados não foram apagados: %s", erro)
-        return
+        return f"cadastros não confirmados: {erro}"
     if cadastros or contas:
         logger.info(
             "%d cadastros pendentes e %d contas sem e-mail confirmado apagados no prazo",
             cadastros,
             contas,
         )
+    return None
 
 
 def com_areas_recusadas(usuario: Usuario, recusas: RecusasDoUsuario) -> Usuario:
@@ -355,12 +415,14 @@ def atender_usuario(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
     coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     try:
         repositorio.travar_atendimento(usuario)
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        registro.mensagem_perdida(usuario)
         return None
     try:
         return atender_usuario_travado(
@@ -374,10 +436,12 @@ def atender_usuario(
             agora,
             pontuador,
             revalidacao,
+            registro,
             coleta_incompleta,
         )
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        registro.mensagem_perdida(usuario)
         return None
     finally:
         repositorio.liberar_atendimento(usuario)
@@ -394,6 +458,7 @@ def atender_usuario_travado(
     agora: datetime,
     pontuador: Pontuador,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
     coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
@@ -430,15 +495,17 @@ def atender_usuario_travado(
             sem_extracao,
             len(candidatas),
         )
+        registro.mensagem_segurada_por_falta_de_extracao(usuario)
         return None
     if not selecionadas and coleta_incompleta:
         logger.warning(
             "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta", usuario.id
         )
+        registro.mensagem_segurada_pela_coleta_incompleta(usuario)
         return None
     if not selecionadas:
         if avisar_que_nao_houve_vaga(
-            notificador, repositorio, usuario, parametros, agora, revalidacao
+            notificador, repositorio, usuario, parametros, agora, revalidacao, registro
         ):
             registrar_atendimento(repositorio, usuario)
         return None
@@ -463,12 +530,16 @@ def atender_usuario_travado(
         if not entregues:
             if isinstance(erro, DestinatarioRecusouAMensagem):
                 registrar_atendimento(repositorio, usuario)
+            else:
+                registro.mensagem_perdida(usuario)
             return None
-        gravar_envios(repositorio, usuario, entregues)
+        gravar_envios(repositorio, usuario, entregues, registro)
         registrar_atendimento(repositorio, usuario)
+        registro.mensagem_entregue(usuario)
         return entregues
-    gravar_envios(repositorio, usuario, selecionadas)
+    gravar_envios(repositorio, usuario, selecionadas, registro)
     registrar_atendimento(repositorio, usuario)
+    registro.mensagem_entregue(usuario)
     return selecionadas
 
 
@@ -495,11 +566,15 @@ def recomendacoes_entregues(
 
 
 def gravar_envios(
-    repositorio: Repositorio, usuario: Usuario, entregues: list[Recomendacao]
+    repositorio: Repositorio,
+    usuario: Usuario,
+    entregues: list[Recomendacao],
+    registro: RegistroDasEntregas,
 ) -> None:
     try:
         repositorio.registrar_envios(usuario, entregues)
     except ErroDeArmazenamento as erro:
+        registro.envio_nao_gravado(usuario)
         logger.warning(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )
@@ -530,6 +605,7 @@ def avisar_que_nao_houve_vaga(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     revalidacao: RevalidacaoDeDestinatarios,
+    registro: RegistroDasEntregas,
 ) -> bool:
     dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
     if not revalidacao.permite(usuario):
@@ -539,7 +615,11 @@ def avisar_que_nao_houve_vaga(
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
-        return isinstance(erro, DestinatarioRecusouAMensagem)
+        if not isinstance(erro, DestinatarioRecusouAMensagem):
+            registro.mensagem_perdida(usuario)
+            return False
+        return True
+    registro.mensagem_entregue(usuario)
     if dias is not None:
         registrar_silencio_avisado(repositorio, usuario, dias)
     return True

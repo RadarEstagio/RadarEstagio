@@ -398,6 +398,56 @@ def test_resumo_avisa_usuarios_sem_entrega_por_erro_inesperado():
     assert "⚠️ Sem entrega por erro inesperado: 1 (veja o traceback no log)" in texto
 
 
+def test_resumo_avisa_as_mensagens_seguradas_com_o_motivo():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        1,
+        7,
+        830,
+        7,
+        mensagens_seguradas_por_falta_de_extracao=2,
+        mensagens_seguradas_pela_coleta_incompleta=1,
+    )
+
+    assert "⚠️ Mensagens seguradas por vaga sem extração: 2" in texto
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in texto
+
+
+def test_resumo_sem_mensagem_segurada_nao_mostra_a_linha():
+    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
+
+    assert "Mensagens seguradas" not in texto
+
+
+def test_resumo_avisa_a_limpeza_de_contas_que_falhou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        falhas_de_limpeza=["contas excluídas: banco <fora> do ar"],
+    )
+
+    assert "⚠️ Limpeza de contas falhou: contas excluídas: banco &lt;fora&gt; do ar" in texto
+    assert "Limpeza de contas" not in formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7
+    )
+
+
+def test_resumo_avisa_os_envios_que_o_banco_nao_gravou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 20, 830, 7, usuarios_com_envio_nao_gravado=3
+    )
+
+    assert "⚠️ Usuários com envio não gravado: 3" in texto
+    assert "Usuários com envio não gravado" not in formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7
+    )
+
+
 def test_resumo_sem_problemas_de_extracao_nao_mostra_avisos():
     texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 

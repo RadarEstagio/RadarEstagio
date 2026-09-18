@@ -54,7 +54,7 @@ from radar.notification.formatador import (
     formatar_resumo_da_execucao,
 )
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
-from radar.pipeline import ParametrosDaExecucao, executar
+from radar.pipeline import ErroDeExecucao, ParametrosDaExecucao, executar
 from radar.reporting.funil import formatar_funil
 from radar.reporting.julgamento import formatar_julgamento
 from radar.settings import Settings
@@ -334,7 +334,7 @@ def executar_fluxo(
         f"{resumo.usuarios_sem_entrega_por_erro_inesperado} sem entrega por erro inesperado; "
         f"{cota.requisicoes} requisições à Adzuna"
     )
-    avisar_operacao(
+    resumo_entregue = avisar_operacao(
         settings,
         notificador,
         formatar_resumo_da_execucao(
@@ -356,8 +356,26 @@ def executar_fluxo(
             adzuna_esgotada=cota.esgotada,
             coletas_incompletas=coletor.incompletas,
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
+            usuarios_sem_mensagem_por_falha=resumo.usuarios_sem_mensagem_por_falha,
+            mensagens_seguradas_por_falta_de_extracao=(
+                resumo.mensagens_seguradas_por_falta_de_extracao
+            ),
+            mensagens_seguradas_pela_coleta_incompleta=(
+                resumo.mensagens_seguradas_pela_coleta_incompleta
+            ),
+            usuarios_com_envio_nao_gravado=resumo.usuarios_com_envio_nao_gravado,
+            falhas_de_limpeza=resumo.falhas_de_limpeza,
         ),
     )
+    if resumo.ninguem_foi_atendido_por_falha():
+        raise ErroDeExecucao(
+            f"Nenhum dos {resumo.usuarios} usuários recebeu mensagem: "
+            f"{resumo.usuarios_sem_mensagem_por_falha} ficaram sem entrega por falha"
+        )
+    if not resumo_entregue:
+        raise ErroDeExecucao(
+            "O resumo desta execução não chegou ao chat de operação; ela não pode passar por verde"
+        )
 
 
 def descricao_do_erro(erro: Exception) -> str:
@@ -372,13 +390,15 @@ def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | N
         return None
 
 
-def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> None:
+def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> bool:
     if not settings.telegram_chat_id.strip():
-        return
+        return True
     try:
         notificador.enviar(settings.telegram_chat_id, texto)
     except ErroDeNotificacao as erro:
         print(f"Resumo da execução não foi entregue: {erro}", file=sys.stderr)
+        return False
+    return True
 
 
 def rodar(settings: Settings, apenas_o_perfil: UUID | None = None) -> None:
@@ -501,7 +521,13 @@ def main() -> None:
             )
         else:
             COMANDOS[nome_do_comando](settings)
-    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
+    except (
+        ErroDeColeta,
+        ErroDeAvaliacao,
+        ErroDeNotificacao,
+        ErroDeArmazenamento,
+        ErroDeExecucao,
+    ) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
 

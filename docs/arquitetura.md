@@ -259,6 +259,21 @@ Cada camada tem sua exceção: `ErroDeColeta`, `ErroDeAvaliacao` (e a filha
 chave de API** no traceback (`raise ... from None`). O `__main__` captura as três e sai
 com código 1 — o GitHub Actions fica vermelho e mostra o motivo em uma linha.
 
+A quarta é `ErroDeExecucao`, e não vem de uma camada: é o `__main__` dizendo que a execução
+inteira não cumpriu o que promete, mesmo sem nenhuma etapa ter levantado erro. Ela é levantada
+no fim, depois de gravar o uso da Adzuna e de mandar o resumo, quando o resumo não chegou ao
+chat de operação ou quando ninguém recebeu mensagem por falha (`ninguem_foi_atendido_por_falha`
+em `ResumoDaExecucao`). Sem ela, a execução com o token do bot revogado — Telegram recusando
+tudo, ninguém atendido, resumo perdido — terminava em zero e o passo do Actions ficava verde.
+
+Falha aqui é falha de verdade: revalidação indisponível, banco fora do ar, envio recusado pelo
+Telegram por erro nosso ou indisponibilidade dele. A **mensagem segurada** por vaga sem extração
+ou coleta incompleta não entra, porque segurar é o comportamento certo — a pessoa fica pendente
+para a execução seguinte — e o resumo já a mostra em linha própria. O limite disso é conhecido:
+um dia inteiro de Gemini fora deixa todos sem mensagem e a execução termina verde, com o aviso
+no resumo. O contrário custava mais: toda entrega imediata cujo candidato ainda não foi extraído
+ficaria vermelha, e alarme que toca sozinho todo dia deixa de ser lido.
+
 ### 8. Configuração só por variável de ambiente
 
 `Settings` (pydantic-settings) lê do `.env` local ou do ambiente do CI — o código não sabe a
@@ -354,6 +369,14 @@ Regras para não afetar quem já usa:
   kill por timeout, que o Python não consegue reportar, é
   coberto pelo passo `if: failure()` do workflow, que manda o link do run. O disparo é externo
   (cron-job.org): sem esse retorno, dois dias parados passam despercebidos, como já aconteceu.
+- **O que dá errado dentro da execução aparece no resumo.** Quem ficou sem mensagem por falha,
+  as mensagens seguradas por vaga sem extração e por coleta incompleta, os envios que o banco
+  não gravou e a limpeza de contas que falhou viram linhas com número e motivo, ao lado das que
+  já existiam (vagas sem extração, extrações não gravadas, cota e coleta da Adzuna). O pipeline
+  conta isso em `RegistroDasEntregas` enquanto atende cada usuário e devolve os números no
+  `ResumoDaExecucao`; a decisão de falhar a execução fica no `__main__`, não no pipeline, porque
+  depende também de o resumo ter sido entregue. Antes esses casos só existiam no log, que
+  ninguém lê num run verde.
 
 ### 11. Eventos de produto com fonte autoritativa
 

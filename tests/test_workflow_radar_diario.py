@@ -12,3 +12,11 @@ def test_execucoes_do_radar_esperam_a_anterior_em_vez_de_rodar_juntas():
         "  cancel-in-progress: false",
     ]
     assert inicio < linhas.index("jobs:")
+
+
+def test_codigo_de_saida_do_radar_derruba_o_passo_e_dispara_o_aviso():
+    conteudo = WORKFLOW.read_text()
+
+    assert "continue-on-error" not in conteudo
+    assert "|| true" not in conteudo
+    assert "if: failure() || cancelled()" in conteudo
