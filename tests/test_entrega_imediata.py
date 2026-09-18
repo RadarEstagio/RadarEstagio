@@ -19,7 +19,6 @@ from radar.entrega_imediata import (
     repositorio_da_execucao,
     usuarios_a_atender,
 )
-from radar.pipeline import ErroDeExecucao
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -335,8 +334,7 @@ def test_mensagem_segurada_por_falta_de_extracao_deixa_a_entrega_imediata_penden
     aceitar_o_telegram(httpx_mock)
     usar_o_extrator(monkeypatch, ExtratorForaDoAr())
 
-    with pytest.raises(ErroDeExecucao):
-        rodar(repositorio, EM_SALVADOR.id)
+    rodar(repositorio, EM_SALVADOR.id)
 
     assert mensagens_para(httpx_mock, EM_SALVADOR) == []
     assert repositorio.atendidos == set()
@@ -364,8 +362,7 @@ def test_mensagem_segurada_por_coleta_incompleta_deixa_a_entrega_imediata_penden
     httpx_mock.add_callback(adzuna, url=URL_DA_ADZUNA, is_reusable=True)
     aceitar_o_telegram(httpx_mock)
 
-    with pytest.raises(ErroDeExecucao):
-        rodar(repositorio, VINCULADO.id)
+    rodar(repositorio, VINCULADO.id)
 
     assert mensagens_para(httpx_mock, VINCULADO) == []
     assert mensagens_para(httpx_mock, PENDENTE) == []

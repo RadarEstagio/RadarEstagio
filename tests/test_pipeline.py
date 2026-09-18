@@ -1190,7 +1190,7 @@ def test_destinatario_que_bloqueou_o_bot_nao_faz_a_execucao_falhar():
     assert not resumo.ninguem_foi_atendido_por_falha()
 
 
-def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_por_falha():
+def test_mensagem_segurada_pela_coleta_incompleta_nao_e_falha_da_execucao():
     repositorio = RepositorioFalso([usuario()])
 
     resumo = executar_para(
@@ -1198,9 +1198,26 @@ def test_mensagem_segurada_pela_coleta_incompleta_deixa_o_usuario_sem_mensagem_p
     )
 
     assert resumo.usuarios_com_mensagem == 0
-    assert resumo.usuarios_sem_mensagem_por_falha == 1
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
     assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
     assert resumo.mensagens_seguradas_por_falta_de_extracao == 0
+    assert not resumo.ninguem_foi_atendido_por_falha()
+
+
+def test_falha_de_verdade_ao_lado_de_mensagem_segurada_ainda_e_falha_da_execucao():
+    class RepositorioQueNaoLibera(RepositorioFalso):
+        def travar_atendimento(self, destinatario: Usuario) -> None:
+            if destinatario.id == ID_OUTRO_USUARIO:
+                raise ErroDeArmazenamento("banco caiu")
+
+    repositorio = RepositorioQueNaoLibera([usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")])
+
+    resumo = executar_para(
+        repositorio, NotificadorFalso(), notas={"1": 10}, coleta_incompleta=coleta_incompleta
+    )
+
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
     assert resumo.ninguem_foi_atendido_por_falha()
 
 
@@ -1230,13 +1247,15 @@ def test_resumo_conta_os_envios_que_nao_foram_gravados_mas_a_mensagem_chegou():
     assert not resumo.ninguem_foi_atendido_por_falha()
 
 
-def test_resumo_conta_as_mensagens_seguradas_por_falta_de_extracao():
+def test_mensagem_segurada_por_falta_de_extracao_nao_e_falha_da_execucao():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
 
     resumo = rodar_com_vaga_que_nunca_e_extraida(repositorio, NotificadorFalso(), AGORA_DE_TESTE)
 
     assert resumo.mensagens_seguradas_por_falta_de_extracao == 1
     assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+    assert not resumo.ninguem_foi_atendido_por_falha()
 
 
 def test_falha_ao_travar_o_atendimento_deixa_o_usuario_sem_mensagem_por_falha():

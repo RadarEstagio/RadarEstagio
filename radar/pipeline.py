@@ -99,11 +99,9 @@ class RegistroDasEntregas:
 
     def mensagem_segurada_por_falta_de_extracao(self, usuario: Usuario) -> None:
         self.seguradas_por_falta_de_extracao.add(usuario.id)
-        self.mensagem_perdida(usuario)
 
     def mensagem_segurada_pela_coleta_incompleta(self, usuario: Usuario) -> None:
         self.seguradas_pela_coleta_incompleta.add(usuario.id)
-        self.mensagem_perdida(usuario)
 
     def envio_nao_gravado(self, usuario: Usuario) -> None:
         self.com_envio_nao_gravado.add(usuario.id)

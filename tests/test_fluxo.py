@@ -16,7 +16,7 @@ from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
 from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
-from radar.pipeline import ErroDeExecucao, ResumoDaExecucao, executar
+from radar.pipeline import ResumoDaExecucao, executar
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -216,7 +216,7 @@ def test_coleta_que_para_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock
     httpx_mock.add_callback(adzuna, url=re.compile(re.escape(URL_BUSCA)), is_reusable=True)
     aceitar_mensagens_do_telegram(httpx_mock)
 
-    with httpx.Client() as cliente_http, pytest.raises(ErroDeExecucao):
+    with httpx.Client() as cliente_http:
         executar_fluxo(
             settings_de_teste(), cliente_http, RepositorioEmMemoria([estudante_de_direito_no_rio()])
         )
@@ -235,11 +235,13 @@ def test_cota_que_acaba_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(httpx_mock:
     httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia())
     aceitar_mensagens_do_telegram(httpx_mock)
 
-    with httpx.Client() as cliente_http, pytest.raises(ErroDeExecucao):
+    with httpx.Client() as cliente_http:
         executar_fluxo(settings_de_teste(), cliente_http, repositorio)
 
     assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
-    assert "⚠️ Cota da Adzuna esgotada" in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Cota da Adzuna esgotada" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
 
 
 def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_mock: HTTPXMock):
@@ -545,6 +547,28 @@ def test_execucao_em_que_ninguem_recebe_mensagem_por_falha_termina_com_codigo_de
     assert codigo == 1
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
     assert "⚠️ Usuários sem mensagem por falha: 1" in resumo
+
+
+def test_execucao_com_todas_as_mensagens_seguradas_termina_com_codigo_zero(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    def adzuna(requisicao: httpx.Request) -> httpx.Response:
+        if requisicao.url.params.get("where"):
+            return httpx.Response(200, json=pagina_de_ti(10))
+        return httpx.Response(400, text="pedido inválido")
+
+    httpx_mock.add_callback(adzuna, url=re.compile(re.escape(URL_BUSCA)), is_reusable=True)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Receberam recomendação: 0" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+    assert "Usuários sem mensagem por falha" not in resumo
 
 
 def test_token_do_bot_revogado_nao_termina_em_verde(
