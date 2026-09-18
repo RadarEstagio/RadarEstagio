@@ -74,7 +74,7 @@ class RepositorioAtendidoPorOutraExecucao(RepositorioComMarcas):
             self.atendidos.add(PENDENTE.id)
 
 
-class ExecucaoInterrompida(Exception):
+class ExecucaoInterrompida(BaseException):
     pass
 
 

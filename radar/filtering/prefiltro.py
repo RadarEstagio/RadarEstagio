@@ -58,6 +58,7 @@ PADRAO_EXPERIENCIA_DISPENSADA = re.compile(
     r"|\bdispensa\w*\b"
 )
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
+DIGITOS_DE_UM_NUMERO_DE_ANOS = 4
 PALAVRAS_ANTES_DA_EXIGENCIA = 8
 PALAVRAS_DEPOIS_DA_EXIGENCIA = 4
 PADRAO_FIM_DA_ORACAO = re.compile(r"[.,;](?:\s|$)")
@@ -134,7 +135,7 @@ def exige_anos_de_experiencia(vaga: Vaga) -> bool:
         for ocorrencia in PADRAO_ANOS_DE_EXPERIENCIA.finditer(texto)
         if not exigencia_negada(texto, ocorrencia.start(), ocorrencia.end())
         for grupo in ocorrencia.groups()
-        if grupo
+        if grupo and len(grupo) <= DIGITOS_DE_UM_NUMERO_DE_ANOS
     )
     return any(anos in ANOS_DE_EXPERIENCIA_QUE_DESCARTAM for anos in anos_exigidos)
 

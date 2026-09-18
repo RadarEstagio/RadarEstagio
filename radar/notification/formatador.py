@@ -134,6 +134,8 @@ def formatar_resumo_da_execucao(
     sem_entrega_por_revalidacao: int = 0,
     vagas_sem_extracao: int = 0,
     extracoes_nao_gravadas: int = 0,
+    perfis_ilegiveis: int = 0,
+    sem_entrega_por_erro_inesperado: int = 0,
     adzuna_hoje: int | None = None,
     adzuna_no_mes: int | None = None,
     adzuna_limite: int | None = None,
@@ -156,6 +158,8 @@ def formatar_resumo_da_execucao(
         f"Usuários com falha de revalidação: {falhas_de_revalidacao}",
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
     ]
+    if perfis_ilegiveis:
+        linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:
         linhas.append(f"⚠️ Usuários sem mensagem por falha: {usuarios_sem_mensagem_por_falha}")
     if mensagens_seguradas_por_falta_de_extracao:
@@ -172,6 +176,11 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Vagas sem extração (cota ou avaliador fora): {vagas_sem_extracao}")
     if extracoes_nao_gravadas:
         linhas.append(f"⚠️ Extrações não gravadas no banco: {extracoes_nao_gravadas}")
+    if sem_entrega_por_erro_inesperado:
+        linhas.append(
+            f"⚠️ Sem entrega por erro inesperado: {sem_entrega_por_erro_inesperado} "
+            "(veja o traceback no log)"
+        )
     if usuarios_com_envio_nao_gravado:
         linhas.append(f"⚠️ Usuários com envio não gravado: {usuarios_com_envio_nao_gravado}")
     for falha in falhas_de_limpeza or []:
@@ -261,8 +270,15 @@ def url_de_abertura(recomendacao: Recomendacao, url_de_rastreio: str) -> str:
 
 
 def dominio_da_vaga(vaga: Vaga) -> str:
-    dominio = urlsplit(vaga.url).hostname or vaga.fonte
+    dominio = hostname_da_url(vaga.url) or vaga.fonte
     return dominio.removeprefix(PREFIXO_DE_SUBDOMINIO_IGNORADO)
+
+
+def hostname_da_url(url: str) -> str:
+    try:
+        return urlsplit(url).hostname or ""
+    except ValueError:
+        return ""
 
 
 def rotulo_modalidade(vaga: Vaga) -> str:

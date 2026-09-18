@@ -331,3 +331,78 @@ def test_politica_afirmativa_da_empresa_nao_empresta_grupos_a_vaga():
 )
 def test_parentese_que_nao_lista_grupos_nao_vira_lista_de_grupos(descricao):
     assert grupos_da_vaga_afirmativa(vaga(descricao=descricao)) is None
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Apoio ao recrutamento e seleção para pessoas com deficiência.",
+        "Auxiliar nos processos de seleção para PCD.",
+        "Participar da seleção para pessoas com deficiência junto ao RH.",
+        "Atuar no processo seletivo para pessoas com deficiência.",
+        "Acompanhar o processo seletivo para PCD da empresa.",
+        "Triagem e seleção para pessoas com deficiência no projeto social.",
+        "Curso de capacitação e seleção para pessoas com deficiência.",
+    ],
+)
+def test_atividade_que_seleciona_pcd_nao_torna_a_vaga_exclusiva(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "A empresa promove igualdade de oportunidade para pessoas com deficiência.",
+        "Temos compromisso com a igualdade de oportunidade para PCD.",
+        "Garantimos oportunidade para pessoas com deficiência em todas as etapas.",
+        "Trabalhamos pela inclusão e oportunidade para pessoas com deficiência.",
+        "Política de igualdade de oportunidade para pessoas com deficiência.",
+        "Divulgação de vaga para pessoas com deficiência junto aos parceiros.",
+        "Mapear oportunidade para pessoas com deficiência no mercado.",
+    ],
+)
+def test_oportunidade_a_pcd_no_meio_da_frase_nao_torna_a_vaga_exclusiva(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Bolsa: R$ 1.200. Vaga exclusiva para pessoas com deficiência.",
+        "- Requisitos da empresa: vaga de emprego para PCD.",
+        "A vaga é para pessoas com deficiência.",
+        "Esta seleção é destinada a pessoas com deficiência.",
+        "**Vaga para PCD** com laudo médico.",
+        "Sobre a empresa. Esta oportunidade é destinada a PCD.",
+    ],
+)
+def test_sujeito_que_abre_a_frase_segue_exclusivo(descricao):
+    assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Psicologia - Pessoas com Deficiência",
+        "Estágio em Pedagogia | Pessoas com Deficiência",
+        "Estágio em Fisioterapia (Pessoas com Deficiência)",
+        "Estágio em Fonoaudiologia - Pessoas Portadoras de Deficiência",
+        "Pessoas com Deficiência | Estágio em Psicopedagogia",
+        "Estágio em Educação Física - Pessoas com Deficiência - Rio de Janeiro",
+    ],
+)
+def test_titulo_que_nomeia_pcd_por_extenso_nao_torna_a_vaga_exclusiva(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em TI - Vaga Pessoas com Deficiência",
+        "Estágio em TI - Vaga Exclusiva Pessoas com Deficiência",
+        "Estágio em TI - Exclusiva para Pessoas com Deficiência",
+        "Estágio em TI (Vaga para Pessoas com Deficiência)",
+    ],
+)
+def test_titulo_que_diz_ser_a_vaga_segue_exclusivo_com_o_termo_por_extenso(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.EXCLUSIVO_PCD

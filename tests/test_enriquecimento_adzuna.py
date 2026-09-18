@@ -147,6 +147,29 @@ def test_mantem_descricao_marcada_como_incompleta_quando_pagina_falha(
     assert not enriquecidas[0].descricao_completa
 
 
+def test_url_que_o_urlsplit_recusa_nao_derruba_o_enriquecimento(httpx_mock: HTTPXMock):
+    sem_caminho_legivel = vaga_truncada().model_copy(update={"url": "https://[oops/details/1"})
+    httpx_mock.add_response(text="<html></html>")
+
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([sem_caminho_legivel])
+
+    assert not enriquecidas[0].descricao_completa
+
+
+def test_url_que_o_httpx_recusa_mantem_a_descricao_da_api(httpx_mock: HTTPXMock, caplog):
+    sem_porta_valida = vaga_truncada().model_copy(
+        update={"url": "https://www.adzuna.com.br:porta/details/1"}
+    )
+
+    with httpx.Client() as cliente, caplog.at_level(logging.WARNING):
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([sem_porta_valida])
+
+    assert httpx_mock.get_requests() == []
+    assert not enriquecidas[0].descricao_completa
+    assert "InvalidURL" in caplog.text
+
+
 def test_descricao_lida_da_pagina_chega_sem_nul(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         url="https://www.adzuna.com.br/details/5862521726",

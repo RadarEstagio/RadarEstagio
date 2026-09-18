@@ -97,6 +97,11 @@ texto cru. O site limita a digitação com o mesmo `maxlength`, e um teste lê o
 
 Perfil antigo acima de um teto faz a `0025` falhar no `db push`, sem aplicar nada.
 
+`habilidades` e `areas_de_interesse` são listas de **uma dimensão** (`0031`): lista de listas
+passava nos checks de conteúdo, que achatam a dimensão, e derrubava a leitura dos perfis no
+pipeline. Lista vazia e `areas_de_interesse` nula continuam aceitas, e perfil antigo
+multidimensional faria a `0031` falhar no `db push` como um teto estourado.
+
 `cidade` é um município do IBGE no formato `Nome, UF` (`Rio de Janeiro, RJ`), escolhido na lista
 de `web/assets/cidades.json`, que sugere as cidades conforme a pessoa digita, sem exigir acento.
 O site recusa texto fora da lista e grava a forma da lista quando a pessoa digita sem acento ou

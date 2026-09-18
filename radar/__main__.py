@@ -314,6 +314,12 @@ def executar_fluxo(
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
         raise
+    except Exception as erro:
+        logger.exception("A execução falhou por erro inesperado")
+        avisar_operacao(
+            settings, notificador, formatar_falha_da_execucao(agora, descricao_do_erro(erro))
+        )
+        raise
     if apenas_o_perfil is None:
         registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
@@ -324,6 +330,8 @@ def executar_fluxo(
         f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha; "
         f"{resumo.vagas_sem_extracao} vagas sem extração, "
         f"{resumo.extracoes_nao_gravadas} extrações não gravadas; "
+        f"{repositorio.perfis_ilegiveis} perfis com dados inválidos; "
+        f"{resumo.usuarios_sem_entrega_por_erro_inesperado} sem entrega por erro inesperado; "
         f"{cota.requisicoes} requisições à Adzuna"
     )
     resumo_entregue = avisar_operacao(
@@ -340,6 +348,8 @@ def executar_fluxo(
             resumo.usuarios_sem_entrega_por_falha_de_revalidacao,
             resumo.vagas_sem_extracao,
             resumo.extracoes_nao_gravadas,
+            perfis_ilegiveis=repositorio.perfis_ilegiveis,
+            sem_entrega_por_erro_inesperado=resumo.usuarios_sem_entrega_por_erro_inesperado,
             adzuna_hoje=uso[0] if uso else None,
             adzuna_no_mes=uso[1] if uso else None,
             adzuna_limite=LIMITE_POR_MES,
@@ -366,6 +376,10 @@ def executar_fluxo(
         raise ErroDeExecucao(
             "O resumo desta execução não chegou ao chat de operação; ela não pode passar por verde"
         )
+
+
+def descricao_do_erro(erro: Exception) -> str:
+    return f"{type(erro).__name__}: {erro}"
 
 
 def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | None:

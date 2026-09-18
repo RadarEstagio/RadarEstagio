@@ -32,13 +32,20 @@ PADRAO_EXCLUSIVA_PARA_PCD = re.compile(
     rf"(?:exclusivas|exclusivamente|somente|apenas|unicamente)\s+(?:para|de)\s+{TERMO_PCD}\b"
     rf"{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
+SIGLA_PCD = r"pcds?"
+DIZ_QUE_E_A_VAGA = r"(?:vaga\s+(?:exclusiv[ao]\s+(?:para\s+)?)?|exclusiv[ao]\s+(?:para\s+)?)"
+ABERTURA_DO_TRECHO_DO_TITULO = r"(?:^|\s[-|]\s*|\()\s*"
+FIM_DO_TRECHO_DO_TITULO = rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
 PADRAO_PCD_COMO_TRECHO_DO_TITULO = re.compile(
-    rf"(?:^|\s[-|]\s*|\()\s*(?:vaga\s+)?(?:exclusiv[ao]\s+(?:para\s+)?)?{TERMO_PCD}"
-    rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
+    rf"{ABERTURA_DO_TRECHO_DO_TITULO}{SIGLA_PCD}{FIM_DO_TRECHO_DO_TITULO}"
+    rf"|{ABERTURA_DO_TRECHO_DO_TITULO}{DIZ_QUE_E_A_VAGA}{TERMO_PCD}{FIM_DO_TRECHO_DO_TITULO}"
     rf"|^\W*estagi\w*\s+(?:exclusivo\s+)?para\s+{TERMO_PCD}\b{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
 PADRAO_CONTEXTO_QUE_ANULA = re.compile(
     r"\b(?:nao|tambem|nossas?|outras?|confira|conheca|programas?|reservas?)\s+(?:[\w-]+\s+){0,3}$"
+)
+PADRAO_ABERTURA_DE_FRASE = re.compile(
+    r"(?:^|[.;:!?|()\[\]*\"]|(?:^|\s)-)\s*(?:(?:[ao]s?|est[ae]s?|ess[ae]s?)\s+)?$"
 )
 PADRAO_VAGA_AFIRMATIVA = re.compile(
     r"\b(?:vaga|acao|processo seletivo|oportunidade|estagio|programa|selecao)"
@@ -89,17 +96,27 @@ def exclusiva_para_pcd(titulo: str, descricao: str) -> bool:
         titulo, PADRAO_PCD_COMO_TRECHO_DO_TITULO
     ):
         return True
-    return afirma_publico(titulo, PADRAO_EXCLUSIVA_PARA_PCD) or afirma_publico(
-        descricao, PADRAO_EXCLUSIVA_PARA_PCD
-    )
+    return a_vaga_e_o_sujeito(titulo) or a_vaga_e_o_sujeito(descricao)
 
 
 def afirma_publico(texto: str, padrao: re.Pattern[str]) -> bool:
     return any(
-        not PADRAO_CONTEXTO_QUE_ANULA.search(
-            texto[max(0, ocorrencia.start() - CARACTERES_ANTES_DO_CONTEXTO) : ocorrencia.start()]
-        )
+        contexto_anterior_permite(texto, ocorrencia.start())
         for ocorrencia in padrao.finditer(texto)
+    )
+
+
+def a_vaga_e_o_sujeito(texto: str) -> bool:
+    return any(
+        contexto_anterior_permite(texto, ocorrencia.start())
+        and PADRAO_ABERTURA_DE_FRASE.search(texto[: ocorrencia.start()]) is not None
+        for ocorrencia in PADRAO_EXCLUSIVA_PARA_PCD.finditer(texto)
+    )
+
+
+def contexto_anterior_permite(texto: str, inicio: int) -> bool:
+    return not PADRAO_CONTEXTO_QUE_ANULA.search(
+        texto[max(0, inicio - CARACTERES_ANTES_DO_CONTEXTO) : inicio]
     )
 
 

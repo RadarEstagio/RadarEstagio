@@ -23,6 +23,7 @@ from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import (
     ParametrosDaExecucao,
+    ResumoDaExecucao,
     candidatas_de_algum_perfil,
     coleta_completa,
     executar,
@@ -1269,6 +1270,53 @@ def test_falha_ao_travar_o_atendimento_deixa_o_usuario_sem_mensagem_por_falha():
     assert resumo.ninguem_foi_atendido_por_falha()
 
 
+class RepositorioComErroInesperado(RepositorioFalso):
+    def __init__(self, usuarios: list[Usuario], erro: BaseException) -> None:
+        super().__init__(usuarios)
+        self._erro = erro
+
+    def recusas_do_usuario(self, destinatario: Usuario) -> RecusasDoUsuario:
+        if destinatario.id == ID_USUARIO:
+            raise self._erro
+        return super().recusas_do_usuario(destinatario)
+
+
+def executar_com_erro_inesperado(repositorio: RepositorioFalso) -> ResumoDaExecucao:
+    return executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+
+def test_erro_inesperado_de_um_usuario_nao_tira_a_mensagem_dos_demais(
+    caplog: pytest.LogCaptureFixture,
+):
+    repositorio = RepositorioComErroInesperado(
+        [usuario(), usuario(ID_OUTRO_USUARIO, "456")],
+        AttributeError("'str' object has no attribute 'get'"),
+    )
+
+    resumo = executar_com_erro_inesperado(repositorio)
+
+    assert ID_USUARIO not in resumo.enviadas_por_usuario
+    assert resumo.enviadas_por_usuario[ID_OUTRO_USUARIO][0].resultado.nota == 90
+    assert resumo.usuarios_sem_entrega_por_erro_inesperado == 1
+    assert ("liberar", ID_USUARIO) in repositorio.travas
+    assert "AttributeError" in caplog.text
+
+
+def test_interrupcao_do_usuario_continua_derrubando_a_execucao():
+    repositorio = RepositorioComErroInesperado([usuario()], KeyboardInterrupt())
+
+    with pytest.raises(KeyboardInterrupt):
+        executar_com_erro_inesperado(repositorio)
+
+
 def test_feedback_chega_na_propria_mensagem_das_vagas():
     _, notificador, _ = rodar([vaga(1)], {"1": 90})
     assert len(notificador.textos) == 1
@@ -1396,6 +1444,66 @@ def test_vaga_ja_entregue_a_todos_os_interessados_nao_vai_para_a_ia():
     )
 
     assert extrator.extraidas == []
+
+
+class ExtratorQueMarcaUmaVagaComOIdDaOutra(ExtratorFalso):
+    def __init__(self) -> None:
+        super().__init__({})
+
+    def extrair(self, vagas_pedidas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(item.id_externo for item in vagas_pedidas)
+        if len(vagas_pedidas) == 1:
+            return [extracao_de_vaga_de_python(vagas_pedidas[0].identidade())]
+        return [
+            ExtracaoDaVaga(id_vaga="adzuna:2", area_da_vaga="direito"),
+            extracao_de_vaga_de_python("adzuna:2"),
+        ]
+
+
+def test_extracao_com_id_de_outra_vaga_nao_substitui_a_verdadeira_no_cache():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorEmLotes(ExtratorQueMarcaUmaVagaComOIdDaOutra(), 10),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert set(repositorio.extracoes_guardadas) == {("adzuna", "1"), ("adzuna", "2")}
+    assert repositorio.extracoes_guardadas[("adzuna", "2")].area_da_vaga == "computacao"
+
+
+class ExtratorQueDevolveDuasExtracoesParaAMesmaVaga(ExtratorFalso):
+    def __init__(self) -> None:
+        super().__init__({})
+
+    def extrair(self, vagas_pedidas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(item.id_externo for item in vagas_pedidas)
+        return [
+            extracao_de_vaga_de_python("adzuna:1"),
+            ExtracaoDaVaga(id_vaga="adzuna:1", area_da_vaga="direito"),
+        ]
+
+
+def test_extracao_que_nao_casa_com_vaga_pendente_e_registrada(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("WARNING")
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorQueDevolveDuasExtracoesParaAMesmaVaga(),
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+    )
+
+    assert "adzuna:1" in caplog.text
+    assert "descartada" in caplog.text
 
 
 class RepositorioComHistoricoQuebrado(RepositorioFalso):

@@ -165,6 +165,34 @@ def test_falha_ao_ler_os_usuarios_avisa_a_operacao(httpx_mock: HTTPXMock):
     assert "connection reset" in aviso
 
 
+class BancoComErroInesperado(RepositorioEmMemoria):
+    def listar_ativos(self) -> list[Usuario]:
+        raise AttributeError("'str' object has no attribute 'get'")
+
+
+def test_erro_inesperado_da_execucao_avisa_a_operacao(httpx_mock: HTTPXMock):
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http, pytest.raises(AttributeError):
+        executar_fluxo(settings_de_teste(), cliente_http, BancoComErroInesperado([]))
+
+    [aviso] = mensagens_de_operacao(httpx_mock)
+    assert "falhou" in aviso
+    assert "AttributeError" in aviso
+    assert "object has no attribute" in aviso
+
+
+def test_interrupcao_da_execucao_nao_vira_aviso_de_operacao(httpx_mock: HTTPXMock):
+    class BancoInterrompido(RepositorioEmMemoria):
+        def listar_ativos(self) -> list[Usuario]:
+            raise KeyboardInterrupt
+
+    with httpx.Client() as cliente_http, pytest.raises(KeyboardInterrupt):
+        executar_fluxo(settings_de_teste(), cliente_http, BancoInterrompido([]))
+
+    assert mensagens_de_operacao(httpx_mock) == []
+
+
 def test_perfil_sem_entrega_a_fazer_retorna_sem_coletar_nem_avisar(httpx_mock: HTTPXMock):
     with httpx.Client() as cliente_http:
         executar_fluxo(
@@ -378,6 +406,23 @@ class BancoComEventosDoSite(RepositorioEmMemoria):
 class BancoSemATabelaDosEventosDoSite(RepositorioEmMemoria):
     def eventos_do_site_nas_ultimas_24_horas(self) -> EventosDoSite:
         raise ErroDeArmazenamento("relation eventos_do_site_por_hora does not exist")
+
+
+class BancoComUmPerfilIlegivel(RepositorioEmMemoria):
+    def listar_ativos(self) -> list[Usuario]:
+        self.perfis_ilegiveis = 1
+        return super().listar_ativos()
+
+
+def test_resumo_de_operacao_avisa_os_perfis_que_ficaram_de_fora(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoComUmPerfilIlegivel([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "⚠️ Perfis com dados inválidos, fora da execução: 1" in resumo
 
 
 def test_resumo_de_operacao_mostra_os_eventos_do_site(httpx_mock: HTTPXMock):

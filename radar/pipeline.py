@@ -111,6 +111,7 @@ class ResumoDaExecucao(BaseModel):
     usuarios: int
     usuarios_com_falha_de_revalidacao: int = 0
     usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
+    usuarios_sem_entrega_por_erro_inesperado: int = 0
     usuarios_com_mensagem: int = 0
     usuarios_sem_mensagem_por_falha: int = 0
     mensagens_seguradas_por_falta_de_extracao: int = 0
@@ -177,22 +178,29 @@ def executar(
     )
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     revalidacao = RevalidacaoDeDestinatarios(repositorio)
+    erros_inesperados: set[UUID] = set()
     registro = RegistroDasEntregas()
     for usuario in usuarios:
-        selecionadas = atender_usuario(
-            usuario,
-            unicas,
-            extracoes,
-            dias_sem_extracao,
-            notificador,
-            repositorio,
-            parametros,
-            agora,
-            pontuador,
-            revalidacao,
-            registro,
-            incompleta,
-        )
+        try:
+            selecionadas = atender_usuario(
+                usuario,
+                unicas,
+                extracoes,
+                dias_sem_extracao,
+                notificador,
+                repositorio,
+                parametros,
+                agora,
+                pontuador,
+                revalidacao,
+                registro,
+                incompleta,
+            )
+        except Exception:
+            erros_inesperados.add(usuario.id)
+            registro.mensagem_perdida(usuario)
+            logger.exception("usuário %s ficou sem mensagem por erro inesperado", usuario.id)
+            continue
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
     return ResumoDaExecucao(
@@ -201,6 +209,7 @@ def executar(
         usuarios_sem_entrega_por_falha_de_revalidacao=len(
             revalidacao.falhas - enviadas_por_usuario.keys()
         ),
+        usuarios_sem_entrega_por_erro_inesperado=len(erros_inesperados),
         usuarios_com_mensagem=len(registro.com_mensagem),
         usuarios_sem_mensagem_por_falha=len(
             (registro.sem_mensagem_por_falha | revalidacao.falhas) - registro.com_mensagem
@@ -350,6 +359,10 @@ def obter_extracoes(
     for extracao in novas:
         vaga = vagas_por_identidade.pop(extracao.id_vaga, None)
         if vaga is None:
+            logger.warning(
+                "extração descartada: o id %s não é de nenhuma vaga ainda pendente",
+                extracao.id_vaga,
+            )
             continue
         extracao = extracao.model_copy(update={"descricao_completa": vaga.descricao_completa})
         extracoes[vaga.chave()] = extracao
