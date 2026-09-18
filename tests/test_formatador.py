@@ -151,6 +151,15 @@ def test_dominio_do_link_ignora_o_www():
     assert "Ver vaga em gupy.io" in texto
 
 
+def test_url_que_o_urlsplit_recusa_cai_no_nome_da_fonte_sem_derrubar_a_mensagem():
+    sem_dominio_legivel = vaga().model_copy(update={"url": "https://[oops/vaga/9"})
+
+    texto = mensagem([resultado(85).model_copy(update={"vaga": sem_dominio_legivel})])
+
+    assert "Ver vaga em adzuna" in texto
+    assert 'href="https://[oops/vaga/9"' in texto
+
+
 def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
     texto = mensagem(
         [

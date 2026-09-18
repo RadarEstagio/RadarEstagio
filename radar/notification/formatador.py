@@ -246,8 +246,15 @@ def url_de_abertura(recomendacao: Recomendacao, url_de_rastreio: str) -> str:
 
 
 def dominio_da_vaga(vaga: Vaga) -> str:
-    dominio = urlsplit(vaga.url).hostname or vaga.fonte
+    dominio = hostname_da_url(vaga.url) or vaga.fonte
     return dominio.removeprefix(PREFIXO_DE_SUBDOMINIO_IGNORADO)
+
+
+def hostname_da_url(url: str) -> str:
+    try:
+        return urlsplit(url).hostname or ""
+    except ValueError:
+        return ""
 
 
 def rotulo_modalidade(vaga: Vaga) -> str:
