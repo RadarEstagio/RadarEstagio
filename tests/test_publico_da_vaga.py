@@ -378,3 +378,31 @@ def test_oportunidade_a_pcd_no_meio_da_frase_nao_torna_a_vaga_exclusiva(descrica
 )
 def test_sujeito_que_abre_a_frase_segue_exclusivo(descricao):
     assert publico_da_vaga(vaga(descricao=descricao)) is PublicoDaVaga.EXCLUSIVO_PCD
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Psicologia - Pessoas com Deficiência",
+        "Estágio em Pedagogia | Pessoas com Deficiência",
+        "Estágio em Fisioterapia (Pessoas com Deficiência)",
+        "Estágio em Fonoaudiologia - Pessoas Portadoras de Deficiência",
+        "Pessoas com Deficiência | Estágio em Psicopedagogia",
+        "Estágio em Educação Física - Pessoas com Deficiência - Rio de Janeiro",
+    ],
+)
+def test_titulo_que_nomeia_pcd_por_extenso_nao_torna_a_vaga_exclusiva(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.GERAL
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em TI - Vaga Pessoas com Deficiência",
+        "Estágio em TI - Vaga Exclusiva Pessoas com Deficiência",
+        "Estágio em TI - Exclusiva para Pessoas com Deficiência",
+        "Estágio em TI (Vaga para Pessoas com Deficiência)",
+    ],
+)
+def test_titulo_que_diz_ser_a_vaga_segue_exclusivo_com_o_termo_por_extenso(titulo):
+    assert publico_da_vaga(vaga(titulo=titulo)) is PublicoDaVaga.EXCLUSIVO_PCD

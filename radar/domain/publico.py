@@ -32,9 +32,13 @@ PADRAO_EXCLUSIVA_PARA_PCD = re.compile(
     rf"(?:exclusivas|exclusivamente|somente|apenas|unicamente)\s+(?:para|de)\s+{TERMO_PCD}\b"
     rf"{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
+SIGLA_PCD = r"pcds?"
+DIZ_QUE_E_A_VAGA = r"(?:vaga\s+(?:exclusiv[ao]\s+(?:para\s+)?)?|exclusiv[ao]\s+(?:para\s+)?)"
+ABERTURA_DO_TRECHO_DO_TITULO = r"(?:^|\s[-|]\s*|\()\s*"
+FIM_DO_TRECHO_DO_TITULO = rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
 PADRAO_PCD_COMO_TRECHO_DO_TITULO = re.compile(
-    rf"(?:^|\s[-|]\s*|\()\s*(?:vaga\s+)?(?:exclusiv[ao]\s+(?:para\s+)?)?{TERMO_PCD}"
-    rf"\s*(?:$|\)|\s[-|]\s){SEM_OUTRO_PUBLICO_DEPOIS}"
+    rf"{ABERTURA_DO_TRECHO_DO_TITULO}{SIGLA_PCD}{FIM_DO_TRECHO_DO_TITULO}"
+    rf"|{ABERTURA_DO_TRECHO_DO_TITULO}{DIZ_QUE_E_A_VAGA}{TERMO_PCD}{FIM_DO_TRECHO_DO_TITULO}"
     rf"|^\W*estagi\w*\s+(?:exclusivo\s+)?para\s+{TERMO_PCD}\b{SEM_OUTRO_PUBLICO_DEPOIS}"
 )
 PADRAO_CONTEXTO_QUE_ANULA = re.compile(
