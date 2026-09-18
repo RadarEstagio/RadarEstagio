@@ -547,6 +547,23 @@ def test_execucao_em_que_ninguem_recebe_mensagem_por_falha_termina_com_codigo_de
     assert "⚠️ Usuários sem mensagem por falha: 1" in resumo
 
 
+def test_token_do_bot_revogado_nao_termina_em_verde(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_com_vagas_de_ti(httpx_mock)
+    httpx_mock.add_response(
+        url=URL_DO_TELEGRAM,
+        status_code=401,
+        json={"ok": False, "description": "Unauthorized"},
+        is_reusable=True,
+    )
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 1
+
+
 def test_dia_em_que_todos_recebem_nenhuma_vaga_compativel_termina_com_codigo_zero(
     httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
 ):
