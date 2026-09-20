@@ -36,15 +36,9 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Fontes ativas** vêm de `FONTES` (padrão `adzuna`) e são somadas por `ColetorComposto`,
   que ignora uma fonte fora do ar e só falha se nenhuma responder. Fonte nova só entra se a
   validação comprovar cobertura insuficiente.
-- **Jooble**: coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
-  `br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
-  InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
-  33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
-  ~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
-  vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
-  parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
-  várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
-  (40% das vagas dela) destrava a descrição completa.
+- **Jooble**: coletor pronto e **desligado por padrão**. A chave gratuita tem 500 requisições
+  no total, não por mês, então não ligar em produção sem parceria; a sondagem que mediu
+  +35% de cobertura está em `docs/decisoes-do-motor.md`.
 - **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
   para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
   padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele.
@@ -66,54 +60,11 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   quebra das recusas por motivo e o custo de extração por usuário ativado. As definições estão em
   `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql` e o agrupamento por área,
   que é regra de domínio, em `radar/domain/metricas.py`. Mediana é tempo observado, nunca prazo.
-- **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
-  dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
-  (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
-  espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
-  (`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
-  conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
-  compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
-  segue normal e a primeira busca fica para o diário.
-  **Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
-  workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
-  `0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
-  atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
-  e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
-  `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
-  execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
-  passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
-  sem atendimento, e o diário também marca como atendidos os que atende. Disparo recusado pelo
-  GitHub deixa a pessoa pendente para a próxima execução, imediata ou diária. `rodar --perfil` de
-  perfil já atendido não faz nada: para testar com conta da equipe, zerar
-  `entrega_imediata_atendida_em` antes. O backfill marcou as duas
-  colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
-  `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
-  execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
-  começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
-  **A marca só vem depois da mensagem (16/09/2026).** Até aqui `rodar --perfil` reivindicava os
-  pendentes num `update … returning` e o diário marcava todos os ativos, os dois antes de coletar.
-  Adzuna fora do ar, cota do dia sem saldo, mensagem segurada (vaga sem extração, coleta
-  incompleta), exceção ou kill deixavam a pessoa sem a primeira mensagem até o diário, e
-  `rodar --perfil` de novo respondia "sem entrega a fazer". Num dia de divulgação, esgotada a cota
-  do dia, cada imediata falhava sem requisição alguma e marcava todos os pendentes. Agora a
-  seleção só lê (`entregas_imediatas_pendentes`) e o pipeline grava `entrega_imediata_atendida_em`
-  de cada perfil logo depois de atendê-lo, ainda com a trava do perfil. Conta como atendido quem
-  recebeu a mensagem das vagas (inteira ou só parte), a de nenhuma vaga compatível ou a recusa
-  definitiva do Telegram (403, bot bloqueado, chat inexistente): repetir na mesma hora não muda a
-  resposta, e o diário segue tentando e pausa depois de `FALHAS_DE_ENVIO_ATE_PAUSAR`. Falha
-  temporária do Telegram, mensagem segurada, falha ao ler o histórico, destinatário que não se
-  revalida, erro de coleta, exceção e kill deixam a pessoa pendente para a próxima execução,
-  imediata ou diária, e o histórico de envios impede repetir vaga. Falha ao marcar vira aviso no
-  log. A reivindicação saiu, e não entrou coluna nova: as execuções do workflow já são seriais pela
-  `concurrency`, e uma reivindicação que sobrevivesse a kill precisaria de prazo gravado. O que
-  ela ainda protegia era o `rodar --perfil` manual contra o banco de produção junto com uma
-  imediata do workflow; isso ficou com a revalidação do destinatário, que na entrega imediata
-  (`RepositorioDaEntregaImediata`) confere, dentro da trava do perfil, se ele continua pendente.
-  Limites: o diário não faz essa conferência, então um `rodar` manual durante o diário pode mandar
-  uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava pendente, o que
-  antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
-  falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
-  sem ordem; a `telegram-webhook` não muda.
+- **Entrega imediata**: ao gravar o `chat_id`, a `telegram-webhook` dispara o workflow com o
+  input `perfil` e o pipeline atende só quem está pendente (`rodar --perfil <id>`). Vínculo
+  entre 06:23 e 07:23 de Brasília espera o diário, `/start` repetido não dispara de novo
+  (`0021`) e a marca de atendido só é gravada depois da mensagem. O porquê está em
+  `docs/decisoes-do-banco.md`.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -148,34 +99,10 @@ prematuras nem código para casos hipotéticos futuros.
 
 ### Banco de dados: PostgreSQL, não SQLite
 
-A proposta original previa SQLite. Foi descartado por incompatibilidade com o modelo de
-execução escolhido: o GitHub Actions provisiona uma máquina nova a cada execução e a
-destrói ao terminar. SQLite é um arquivo em disco e não teria onde persistir entre as
-execuções diárias.
-
-As alternativas para contornar isso foram avaliadas e rejeitadas:
-
-- Versionar o arquivo `.db` no repositório exigiria permissão de escrita para o job,
-  incharia o histórico com blobs binários e — como o repositório é público — exporia
-  perfis e `chat_id` de Telegram dos usuários a partir da Fase 2.
-- `actions/cache` não é armazenamento durável: sofre evicção, e perder o histórico
-  significa reenviar vagas já vistas.
-
-A escolha é PostgreSQL gerenciado no **Supabase**, que a própria proposta já previa para
-a fase do painel web — adotá-lo na Fase 2 evita duas migrações. `JSONB` acomoda o payload
-cru das vagas e a saída estruturada da IA sem exigir mudança de schema a cada alteração
-das fontes.
-
-MySQL foi considerado e não oferece vantagem neste caso: suporte a JSON mais limitado e
-opções gerenciadas gratuitas piores que as de PostgreSQL.
-
-A Fase 1 não usava banco. O Passo 9 (Fase 2) adicionou o Supabase como opcional: tabelas
-`perfis`, `vagas`, `avaliacoes`, `envios` e `eventos_produto`, todas com RLS; `perfis` limita
-o usuário à própria linha e `eventos_produto` limita o navegador ao catálogo web permitido.
-O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
-erros ao enviar ou gravar de um usuário viram aviso. Revalidação indisponível bloqueia a mensagem daquele destinatário por
-privacidade e aparece no resumo de operação; os demais usuários continuam. Nunca alterar tabela pelo painel — só
-por migration em `supabase/migrations/`.
+SQLite não sobrevive ao GitHub Actions, que destrói a máquina a cada execução, e versionar o
+`.db` exporia `chat_id` num repositório público. A escolha é PostgreSQL gerenciado no Supabase,
+com `JSONB` para o payload das vagas. As alternativas avaliadas e o porquê de cada recusa estão
+na [arquitetura](docs/arquitetura.md).
 
 ### Bibliotecas
 
@@ -208,112 +135,20 @@ o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.
 
-**Conta no site: volta à aba e botão de pausa (13/09/2026).** Voltar à aba (`focus`) só consulta
-o banco com a tela de ativação à mostra e o link do Telegram visível
-(`aguardandoVinculoDoTelegram`), e a condição é conferida de novo quando a consulta termina, com
-sucesso ou erro. Antes, depois da ativação, toda volta à aba redesenhava a conta: descartava a
-edição em andamento, sumia com a pergunta do motivo da pausa e escondia a confirmação sem
-fechá-la. Um `<dialog>` aberto com `showModal` e escondido continua modal e trava a página, e no
-celular não há Esc; por isso esconder a conta é sempre `esconderConta()`, que passa por
-`fecharConfirmacao`, nunca `hidden = true`. O botão de pausa guarda a ação que mostrou
-(`data-acao`), e o update leva `.eq("ativo", ...)` e devolve a linha (`select(COLUNAS_DO_PERFIL)`),
-que desenha a conta sem leitura extra. Zero linhas significa que a conta mudou em outro lugar
-(outro aparelho, pausa automática, exclusão): nada é invertido, o perfil é relido e a pessoa é
-avisada. Antes, "Pausar entregas" com a conta já pausada retomava as entregas e apagava o
-motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `open`, `hidden` e se
-`close()` foi chamado. O card de preços fala só da Adzuna, e
-`test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
+Os pós-mortems do site — volta à aba, armazenamento bloqueado, rascunho por dona, navegação no
+celular e ações que conferem a conta mostrada — estão em `docs/contrato-front.md`. As regras que
+valem ao mexer no `app.js`:
 
-**Armazenamento bloqueado e conta que não carrega (13/09/2026).** Com o armazenamento bloqueado
-(modo privado, bloqueador), `eventSessionId` e `clearPendingProfile` lançavam exceção e o `signUp`
-nunca era chamado. Toda leitura e escrita de `localStorage`/`sessionStorage` do site fica em `try`,
-e a sessão de eventos vira um UUID em memória na página, o mesmo no cadastro e nos eventos. O
-cliente do Supabase não precisa de armazenamento: o auth-js testa o `localStorage` com `try` e, se
-falha, guarda a sessão em memória (conferido no código do 2.112.4 e do 2.114.0, iguais nesse
-ponto; o 2.116.0 não pôde ser baixado). Custo aceito: a sessão some ao recarregar, o tema não é
-lembrado e `landing_visualizada` conta toda carga. Falha ao ler sessão ou perfil deixou de virar
-"Sua conta foi criada, mas o perfil ainda não foi salvo", que quem tinha perfil via com a sessão
-velha ou sem rede: agora abre o login com "Não conseguimos carregar sua conta", e o aviso de perfil
-pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A visita comum à landing
-não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
-`#success-message`, porque o formulário fica escondido nessa tela.
-
-**Segunda auditoria da conta (13/09/2026).** Propriedades de evento cabem em 256 bytes: a `0023`
-(branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
-caminho inteiro da URL. `propriedadesDoEvento` corta cada texto em 40 pontos de código, porque o
-pior caractere escapado no JSON tem 6 bytes (40 × 6 mais `{"pagina": ""}` dá 254); o corte é por
-ponto de código para não partir emoji, que o `jsonb` recusaria. Evento novo com dois textos exige
-refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registerEvent`.
-`closeSignup` fecha a confirmação antes de sair da conta, porque voltar no histórico deixava o
-`<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
-exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
-tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
-
-**Perfil, habilidades e rascunho (13/09/2026).** Os textos que o navegador grava no perfil têm teto
-no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. São os tetos que
-`validar_cadastro_radar` já cobrava desde a `0014`, agora também no `update` direto e sobre o texto
-cru (espaços nas pontas furavam o `btrim`); mantê-los evita que um cadastro pendente, validado antes,
-falhe na confirmação do e-mail. A folga vem dos catálogos: o maior curso sugerido tem 37 caracteres,
-84 com o maior prefixo e sufixo que a normalização conhece, e a maior cidade do IBGE tem 36. O site
-limita a digitação com o mesmo `maxlength` e cobra na etapa o mínimo de 2 no curso, porque o
-navegador só marca texto curto que a pessoa digitou. O teste de coerência compara com o site os
-checks, os dois números de cada texto em `validar_cadastro_radar` e o limite das listas da `0018`, e
-exige que perfil e cadastro aceitem todas as subáreas de um curso; lendo só os checks, mudar a
-validação do cadastro passava. Habilidade digitada nunca é separada por vírgula: cada item na tela é
-um item no banco. O envio partia o campo oculto por vírgula, então "Pacote Office (Word, Excel)"
-virava dois pedaços e 50 itens na tela viravam mais de 50 no banco, que recusava. Separar ao adicionar
-exigiria copiar no site as regras com que o Python já parte a habilidade composta (parênteses, " e ",
-nível da última parte). O corte de 100 é por ponto de código, como em `propriedadesDoEvento`: o
-`slice` partia emoji e o Postgres recusava o JSON. O limite de 50 vale também para a sugerida e para
-Continuar, que antes passavam sem aviso. Fechar o diálogo (Esc, X, clique fora, voltar) não apaga o
-rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas sem senha nem
-e-mail e só para a mesma dona. Senha e e-mail saem porque identificam a pessoa, e quem reabre já
-refaz a etapa da conta por causa da senha. O rascunho guarda a dona (`donoDoRascunho`): o id do
-usuário da sessão, ou visitante. Qualquer troca de dona limpa tudo: ao reabrir, na volta do link, ao
-completar o perfil, ao ler a conta e depois de um login. Só o `signUp` feito do rascunho o adota,
-porque é a mesma pessoa se cadastrando; se ele espera a confirmação do e-mail, a sessão que chega com
-esse e-mail também o mantém (`emailDoCadastroEnviado`). Login pelo diálogo e sessão vinda de outra aba
-nunca adotam. Sessão que falha ao renovar limpa o rascunho de conta, porque não se sabe quem é a dona.
-E nada do formulário é gravado numa conta que não é a dona: antes da edição, do `concluir_meu_cadastro`
-e da troca de conta, a sessão atual precisa ser a dona, senão o formulário é limpo e aparece "Sua
-sessão mudou". Em duas abas, a edição de A aberta aqui era gravada na conta de B que entrou na outra;
-o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito: na
-mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
-entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
-
-**Navegação da conta no celular (16/09/2026).** A conta mostra um painel por vez
-(`mostrarSecaoDaConta`), e os links de `.account-nav` são o único caminho para Entregas, Dados e
-acesso e Privacidade. A regra que escondia a navegação até 860px vinha de quando as seções apareciam
-juntas; depois da troca para um painel por vez, no celular não havia como pausar, sair, baixar os
-dados, desvincular o Telegram ou excluir a conta. Agora ela é uma barra horizontal abaixo da marca,
-de borda a borda e com rolagem própria, dentro do cabeçalho grudado, que cresce uma linha de 44px.
-A barra lateral vira grade para a barra ocupar a linha inteira, e a navegação leva
-`contain: inline-size`: sem isso a largura dos links entra no cálculo das colunas da marca e do
-"Voltar ao site" e pode quebrar o botão em duas linhas. O JSDOM não avalia media query, então
-`test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes` lê o CSS e recusa regra de
-tela estreita que esconda a navegação ou os links. Limite aceito: quem abre a conta direto numa
-seção pelo endereço (`#account-privacy-panel`) pode ver o item ativo cortado na borda direita até
-rolar a barra; o título da página já diz a seção.
-
-**Ações da conta conferem a conta mostrada (16/09/2026).** As ações de "Minha conta" usavam a sessão
-atual, e o auth-js relê a sessão do armazenamento a cada `getSession`. Com a conta de A na tela e B
-entrando em outra aba, Excluir marcava B e soltava o Telegram dele, Desvincular soltava o de B, pausa,
-motivo e e-mails gravavam na linha de B, Cancelar exclusão e Baixar meus dados agiam sobre B, e a conta
-sem perfil de A apagava B na hora. A página guarda o id da conta desenhada (`contaMostrada`):
-`showAccount` o lê da própria linha, e por isso `COLUNAS_DO_PERFIL` traz `user_id`; a conta sem perfil o
-lê da sessão que a abriu. Toda ação da conta que chama o Supabase (editar, pausar e retomar, motivo,
-e-mails, desvincular, excluir, cancelar a exclusão, baixar os dados e apagar a conta sem perfil) passa
-antes por `recusarSeASessaoMudou`: com outra conta na sessão nada é chamado e `recusarPorTrocaDeSessao`
-leva ao login com "Sua sessão mudou". É a mesma saída do rascunho de outra dona, que passou a usar
-`abrirLogin` e por isso esconde a conta, a confirmação e o "Excluir minha conta" da conta sem perfil.
-Sessão ausente segue como antes. Os `update` filtram por `contaMostrada`, não pelo id lido da sessão, e
-uma troca entre a conferência e a requisição não grava em B, porque o RLS não deixa o token de B
-alcançar a linha de A. As RPCs agem sobre `auth.uid()` e não têm esse fecho: a janela é a de uma
-leitura de sessão. Ficam de fora de propósito o "Minha conta" da ativação e a volta à aba, que releem e
-desenham a conta da sessão atual, e "Sair da conta", que encerra a sessão que estiver no navegador
-(o `signOut` global também revoga as outras sessões dessa conta). Controle novo da conta que chame o
-Supabase precisa da conferência, e teste que clica num controle da conta precisa desenhá-la antes
-(`?conta`), senão a ação é recusada.
+- **Toda leitura e escrita de `localStorage`/`sessionStorage` fica em `try`**, e a sessão de
+  eventos cai para um UUID em memória quando o armazenamento está bloqueado.
+- **Esconder a conta é sempre `esconderConta()`**, nunca `hidden = true`: um `<dialog>` aberto com
+  `showModal` e escondido trava a página, e no celular não há Esc.
+- **Ação da conta que chama o Supabase passa por `recusarSeASessaoMudou`** e filtra pelo
+  `contaMostrada`, porque a sessão pode ter trocado em outra aba.
+- **O rascunho do cadastro só reabre para a mesma dona**, sem senha nem e-mail, e qualquer troca
+  de dona limpa tudo.
+- **Curso, cidade e habilidade têm o mesmo teto do banco no `maxlength`**, e habilidade digitada
+  nunca é separada por vírgula.
 
 ## Regras do projeto (obrigatórias)
 
@@ -347,6 +182,12 @@ Supabase precisa da conferência, e teste que clica num controle da conta precis
     `BREAKING CHANGE: <explicação>`.
 - **`.gitignore` sempre atualizado**: nunca commitar segredos (`.env`), bancos locais,
   ambientes virtuais ou artefatos de build.
+- **Decisão nova é registrada no documento dono**, nunca aqui: motor e extração em
+  `docs/decisoes-do-motor.md`, banco e funções em `docs/decisoes-do-banco.md`, site em
+  `docs/contrato-front.md`, publicação no guia, pendência no plano geral. O `CLAUDE.md` só
+  recebe o que um agente precisa **seguir**, em até cinco linhas, com link para o registro.
+  Sem essa regra o arquivo volta a crescer: passou de 618 linhas em 13/09 para 2.126 em 18/09,
+  sempre por relato de correção.
 
 ## Estado do projeto
 
@@ -355,7 +196,8 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
 
 ### Termos de uso das fontes (12/09/2026)
 
-Leitura dos termos no texto original, depois do alerta do Igor. O que vale para o Radar:
+Leitura dos termos no texto original. As medições da cota, da coleta resiliente e do
+enriquecimento estão em `docs/decisoes-do-motor.md`. O que obriga:
 
 - **Adzuna, uso 1.** Os termos permitem "Publishing Adzuna ad listings" sem prazo. O teste de
   14 dias e a proibição de agregação ("vacancy counts, average salaries") estão no parágrafo de
@@ -366,96 +208,13 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   os dois links, porque mensagem de texto não tem imagem (aprovação pedida no e-mail). No site
   vai o selo com `web/assets/adzuna-logo.png`, o logo oficial servido pelo site de
   desenvolvedores da Adzuna; no tema escuro ele ganha fundo branco, sem mudar as cores.
-- **Limites**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
-  `CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
-  acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
-  `uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
-  sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
-  12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
-  mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
-  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
-  (`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
-  10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
-  Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
-  zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
-  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
-  roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
-  imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
-  `uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
-  essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
-  amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
-  falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
-  o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
-  Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
-  Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
-  valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
-  falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
-  07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
-  regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
-- **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
-  da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
-  coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
-  aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
-  uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
-  inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
-  sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
-  não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
-  fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
-  sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
-  e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
-  cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
-  só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
-  nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
-  remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
-  de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
+- **Limites da Adzuna**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por
+  mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
+  quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
+  vira erro de coleta, nunca "nenhuma vaga".
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
-- **Pendente, a descrição completa.** O enriquecimento lê a página do anúncio no site da Adzuna
-  (`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
-  site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
-  12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
-  sai e a extração passa a ler só os 500 caracteres da API.
-  **Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
-  `/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
-  28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
-  (19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
-  quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
-  nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
-  a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
-  presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
-  atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
-  mérito, porque 81 antes da trava vence 60.
-  **A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
-  técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
-  extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
-  num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
-  ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
-  falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
-  com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
-  modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
-  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
-  a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
-  antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
-  Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
-  registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
-  texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
-  não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
-  histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
-  sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
-  cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
-  têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
-  no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
-  descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
-  só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
-  reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
-  texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
-  do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
-  a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
-  feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
-  e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
-  completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
-  medição acima) pode ver outro texto que o lido pela IA.
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
   envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
@@ -469,137 +228,25 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
 
 ### Cota e modelo do Gemini
 
+As medições que sustentam lote, prazo, raciocínio e tratamento de erro estão em
+`docs/decisoes-do-motor.md`. O que vale saber para operar:
+
 - Padrão `gemini-3.6-flash` (`GEMINI_MODELO`). O `gemini-2.5-flash` foi recusado pela API como
   indisponível para contas novas.
 - O projeto está no plano pago desde 10/09/2026. Na cota gratuita, o `gemini-3.6-flash` tinha 20
   requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
   padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
   120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
-- **A extração tem prazo** (11/09/2026, G01 e G07 da auditoria do agendamento). Ela roda antes
-  de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
-  mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
-  `PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
-  de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
-  extração". A conferência **reserva o tempo da própria chamada**, então uma requisição só começa
-  se couber inteira no prazo: sem isso, três repetições de 120 s mais as esperas furavam os 600 s
-  e o run podia terminar com zero extrações. Cada chamada leva `GEMINI_TIMEOUT_SEGUNDOS`
-  (padrão 120, extrator e juiz), e tanto o timeout quanto falha de rede (`httpx.TransportError`,
-  que cobre conexão recusada e queda no meio da resposta) viram indisponibilidade, tratada como o
-  504: espera e repete o mesmo lote dentro do prazo. Antes só o timeout era tratado, e um
-  `ConnectError` derrubava a execução inteira sem resumo de operação. As candidatas vão para a
-  extração intercaladas por usuário, para o corte não cair sempre em quem entrou por último. O job
-  tem 30 minutos e o passo do radar 28. Números que sustentam os valores, medidos no diário de
-  11/09: ~27 s por requisição (93 vagas em 11 requisições) e ~21 s por usuário na entrega, o que
-  acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é por operação de
-  socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
-  enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
-  ainda pode levar o job ao kill.
-- **Raciocínio da extração em `low`** (11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
-  pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
-  4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
-  US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
-  gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
-  `low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
-  padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
-  um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
-  cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
-  ~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
-  11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
-  41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
-  comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
-  trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
-- **A extração não é repetida por usuário** (03/09/2026, formulação revista em 10/09). Isso não
-  é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
-  mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
-  gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
-  O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
-  modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
-  6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
-  15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
-  `criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
-  `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
-- **Lote incompleto pede junto o que faltou** (10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
-  1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
-  de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
-  mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
-  uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
-  com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
-  com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
-  ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
-  Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
-  que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
-  conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
-  tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
-  acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
-  temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
-  troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
-  como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
-  na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
-  extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
-  os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
-- **Só entra extração com o id de uma vaga do lote pedido** (18/09/2026, grave 3 da auditoria de
-  17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
-  `id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
-  com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
-  forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
-  nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
-  compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
-  está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
-  que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
-  mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
-  qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
-  regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
-  esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
-  quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
-  lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
-  as sem extração.
-  **A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
-  `INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
-  cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
-  conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
-  reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
-  nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
-  enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
-  apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
-  nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
-  atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
-  observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
-  cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
-  conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
-  dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
-  já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
-  devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
-  migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
-- **Resposta malformada do avaliador não derruba o job** (16/09/2026, item 14 da auditoria). Só
-  erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
-  (página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
-  `json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
-  `usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
-  `TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
-  qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
-  terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
-  do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
-  e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
-  é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
-  lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
-  formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
-  mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
-  configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
-  aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
-  barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
-  candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
-  modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
-  julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
-  `UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
-  o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
-  mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
-  `candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
-  lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
-  recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
-  do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
-  ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
-  minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
-  `7efdbc95`.
+- **A extração cabe num prazo** (`PRAZO_DA_EXTRACAO_SEGUNDOS`, 600) e cada chamada num
+  timeout (`GEMINI_TIMEOUT_SEGUNDOS`, 120). Esgotado o prazo, ela para e devolve o que tem, e
+  o resumo mostra "vagas sem extração"; o job tem 30 minutos e o passo do radar, 28.
+- **A extração não se repete por usuário:** o prompt não tem perfil, então cada vaga é
+  extraída uma vez, guardada em `vagas.extracao` com a versão do prompt, e serve todos.
+- **`GEMINI_RACIOCINIO=low` é o padrão da extração** (R$ 0,066 por lote de 10, ~12 s); o juiz
+  segue no modo padrão. Trocar o nível não invalida o cache.
+- **Erro do avaliador tem regra por tipo:** 429 espera a cota, 502/503/504 e resposta que o
+  SDK não lê repetem o mesmo lote, 500 repete uma vez e depois divide, e só entra extração
+  com id de uma vaga do lote pedido.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
 
 ### Motor de recomendação: regras que não podem quebrar
@@ -669,119 +316,45 @@ ligação das automações, porque cada uma guardava o dono no nome:
 
 ### Supabase e Telegram: fatos operacionais
 
+O porquê de cada decisão de schema, migration e webhook, com as medições, está em
+`docs/decisoes-do-banco.md`. Abaixo só o que se usa sem ler a história.
+
 - Projeto ativo: **`xrhvjwemmylwbqgluebc` (`sa-east-1`)**. A `DATABASE_URL` do Actions já usa
   esse banco.
 - O projeto **`bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.**
   Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
+- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` marca
+  `excluida_em` e solta o chat do Telegram; o job apaga depois de
+  `DIAS_ATE_APAGAR_CONTA_EXCLUIDA` (60 dias). A sessão não é encerrada ao pedir: sem ela a pessoa
+  não voltaria para cancelar. Conta confirmada **sem perfil** usa
+  `apagar_minha_conta_sem_perfil()` (`0024`) e é apagada na hora.
+- **Cadastro que não confirma o e-mail tem prazo** (`0030`): todo link novo descarta o cadastro
+  pendente, e o job apaga o pendente com 2 dias e a conta não confirmada com 30.
+- **Conferir `supabase migration list --linked` depois de aplicar e antes do próximo push.** SQL
+  rodado fora do CLI não entra no histórico e quebra o push seguinte no primeiro `add column`.
+- **NUL e surrogate solto saem na entrada**, nos modelos (`domain/texto.py`): o Postgres recusa
+  os dois, e eles derrubavam gravação e envio.
+- **Evento web tem teto** (`0023`): 256 bytes de propriedades, 60 por sessão e por conta na
+  última hora e teto por hora de 2.400 para visitantes e 900 para contas; acima disso o insert
+  falha com `PT429`. Abertura, pausa e vínculo repetidos são descartados pelo gatilho da `0028`,
+  ficando a primeira ocorrência.
+- **Os textos e as listas do perfil têm teto no banco** (`0025`), validados: curso 200, cidade
+  120, cada habilidade 100 e listas de 50 itens, em uma dimensão só (`0031`). Perfil fora do teto
+  faz o `db push` falhar inteiro.
+- **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco é o chat de operação, e o
+  resumo traz os avisos do dia. `rodar` sai com código 1 quando o resumo não chega ao chat ou
+  quando ninguém foi atendido por falha de verdade; dia legítimo sem vaga e mensagem segurada
+  seguem verdes.
 - **Controle do próprio perfil** (04/09/2026): editar, pausar e retomar são `update` em `perfis`
   pelas colunas já liberadas no `grant`. Desvincular o Telegram e excluir a conta não cabem em
   `grant` — `telegram_chat_id` é do webhook e `auth.users` o cliente não apaga — então são funções
   `security definer` filtrando por `auth.uid()`, na migration `0013`. Desvincular rotaciona o
   `token_vinculo` junto, senão o link antigo continuaria valendo.
-- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` marca `excluida_em`
-  e solta o chat do Telegram, porque a coluna é `unique` e segurá-la reservaria o chat por 60 dias
-  contra uma conta nova da própria pessoa. Quem para a entrega é o `excluida_em is null` na consulta
-  dos perfis, e a policy de update recusa escrita em perfil marcado. O apagamento
-  definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
-  anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
-  encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
-  **O apagamento tem teste que roda o SQL (18/09/2026).** Até aqui nada executava as três
-  consultas de `apagar_contas_excluidas` no CI: quem as cobria era `tests/test_storage_postgres.py`,
-  que pede `DATABASE_URL_TESTE` e fica de fora. A auditoria de 17/09 inverteu o sinal do prazo numa
-  cópia do repositório e as suítes passaram verdes, o que na produção apagaria quem acabou de pedir
-  exclusão. `tests/web/apagamento_de_contas_test.ts` aplica as migrations no PGlite e roda as
-  consultas lidas do `postgres.py`, na ordem do repositório (sessões, eventos sem dono, contas):
-  conta marcada há menos que a carência fica, marcada há mais sai com perfil, avaliações, envios e
-  eventos, conta ativa e pausada não são tocadas, e a sessão dividida com outra conta perde só os
-  eventos sem dono. Os 60 dias são decisão de produto e ficaram presos por dois testes: o padrão de
-  `dias_ate_apagar_conta_excluida` em `tests/test_settings.py` e a política de privacidade, que lê o
-  número do próprio campo em `tests/test_product_copy.py`. Mutações que passavam e agora quebram:
-  inverter o sinal no `delete` (as quatro do arquivo novo), invertê-lo na consulta das sessões
-  (três delas), neutralizar a condição do prazo (a da carência e a do navegador dividido) e trocar
-  60 por 7 (os dois testes do prazo). O prazo do cadastro pendente e o da conta não confirmada da
-  `0030` já estavam cobertos por `tests/web/prazo_do_cadastro_test.ts`, conferido pelas mesmas
-  mutações. Limites: o teste roda as consultas na ordem do repositório, não o método em Python, e
-  o PGlite tem uma conexão só, então a transação e a corrida entre execuções seguem sem teste; e o
-  `auth.users` do PGlite é o mínimo que as migrations exigem, então a cascata das outras tabelas do
-  Auth do Supabase (sessões, tokens) não é exercitada.
-- **Conta confirmada sem perfil é apagada na hora** (13/09/2026, `0024`). Quem confirmava o e-mail
-  e não salvava o perfil ficava com e-mail e senha no Auth sem saída: a exclusão marca
-  `perfis.excluida_em` e o job só apaga a partir de `perfis`. `apagar_minha_conta_sem_perfil()` é
-  `security definer`, sem argumento, filtrada por `auth.uid()` e executável só por
-  `authenticated`; recusa conta com perfil, que segue as duas etapas, e trava a linha do Auth antes
-  de conferir, para não correr com um perfil sendo criado. Apaga o que o job apagaria: os eventos
-  anônimos das sessões da conta e o usuário do Auth, que leva o resto por cascata. Sem prazo porque
-  os 60 dias existem para cancelar sem perder perfil e histórico, e sem perfil não há o que
-  preservar; reter o e-mail sem finalidade vai contra a LGPD. Um registro para o job apagar
-  exigiria tabela nova e mudança no `radar/`. O site oferece "Excluir minha conta" sob o formulário
-  de completar o perfil, com a confirmação de sempre (que saiu de dentro de `#account-state` para
-  abrir nesse estado), e encerra a sessão local depois. Publicação: `db push` antes do merge, porque
-  o site novo chama a função e o atual não a conhece. Se a `0024` subir antes da `0023`, o push da
-  `0023` pede `--include-all`.
-- **Cadastro que não confirma o e-mail tem prazo** (16/09/2026, `0030`). O cadastro ia para
-  `cadastros_pendentes` no `signUp` e só saía na confirmação: quem nunca confirmava deixava ali para
-  sempre curso, cidade, habilidades e a resposta sobre deficiência, e a conta ficava no Auth. Refazer
-  o cadastro não trocava nada: no GoTrue 2.196 (`internal/api/signup.go`), `signUp` com e-mail já
-  cadastrado e não confirmado não regrava metadados nem senha ("do not update the user because we
-  can't be sure of their claimed identity"), só reenvia o link, gravando `confirmation_token` e
-  `confirmation_sent_at`, com 429 se o último envio tem menos de 60 s. O cadastro novo nunca chegava
-  ao banco, a confirmação criava o perfil com o antigo e o `concluir_meu_cadastro` seguinte não o
-  trocava (`on conflict do nothing`). E esse mesmo `signUp`, feito por quem sabe o e-mail de alguém
-  que ainda não confirmou, devolve o usuário real com `identities[].identity_data`, para onde o Auth
-  copia os metadados do `signUp`: a `0027` só limpou `raw_user_meta_data`, e em 16/09 5 das 6
-  identidades ainda tinham `cadastro_radar`, lidas por qualquer um nesse caso. O que mudou:
-  - **Todo link depois do primeiro descarta o pendente** (gatilho `after update of
-    confirmation_sent_at`, com a conta não confirmada e `confirmation_sent_at` já preenchido antes).
-    O banco não distingue a pessoa refazendo o cadastro, o "Reenviar confirmação" e um terceiro com
-    o e-mail dela, porque `auth.resend` grava as mesmas duas colunas. Trocar pelo cadastro novo não
-    dá, porque o Auth não o entrega, e se desse um terceiro trocaria o perfil de outra pessoa;
-    descartando, quem confirma cai em "Complete seu perfil" e preenche de novo, o que percebe. Custo
-    aceito: quem só reenvia o link, por não achar o e-mail, também preenche de novo.
-  - **A identidade não guarda o cadastro**: gatilho `before insert or update` em `auth.identities`,
-    como o da `0027` em `auth.users`, e a migração limpa as antigas. A cópia para
-    `cadastros_pendentes` lê a inserção em `auth.users`, que vem antes da identidade.
-  - **O job apaga o pendente recebido há mais de 2 dias e a conta não confirmada 30 dias depois do
-    último link** (`DIAS_ATE_APAGAR_CADASTRO_PENDENTE` e `DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA`, no
-    `pipeline.py`), com os eventos anônimos das sessões da conta, como na conta excluída; a cascata
-    leva o pendente, a identidade e os eventos da conta. Conta com perfil ou sem link enviado
-    (criada no painel) fica. Dois dias porque o pendente só serve ao primeiro link, que vale 24 h no
-    padrão do GoTrue; trinta porque `metricas` lê a coorte de 30 dias, e apagar antes tiraria do
-    funil quem não confirmou, o abandono que ele deve mostrar. São constantes, não variáveis de
-    ambiente, porque a política de privacidade promete os números e
-    `test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado` os lê delas. Falha ao
-    apagar só avisa no log.
-
-  Medido em 16/09, só leitura: nenhum pendente, nenhuma conta sem confirmar, as 6 contas confirmaram
-  entre 0,02 s e 147 s depois do link e nenhuma pediu outro; o banco não tem `pg_cron`. Os testes
-  repetem em PGlite as escritas do GoTrue (`cadastro_pendente_test.ts`,
-  `metadados_do_cadastro_test.ts` e `prazo_do_cadastro_test.ts`, que lê o SQL do `postgres.py`), e
-  os bancos de teste ganharam `confirmation_sent_at` e `auth.identities`. Limites: o GoTrue mantém a
-  senha do primeiro `signUp`, então quem cadastra antes o e-mail de outra pessoa conhece a senha da
-  conta que ela confirmar; o descarte tira os dados dele do perfil, não a senha, e só o prazo de 30
-  dias, renovado a cada link (que chega ao e-mail da pessoa), fecha a janela. Um aviso no site para
-  usar "Esqueci a senha" ficou de fora. `signUp` repetido em menos de 60 s, ou com o limite de
-  e-mails do Auth esgotado, volta 429 sem gravar nada, e o primeiro link ainda cria o perfil com o
-  cadastro antigo. Reenvio pedido depois de a conta ser apagada responde 200 sem mandar e-mail; quem
-  tenta entrar vê "E-mail ou senha incorretos" e cadastra de novo. Os 2 dias supõem "Email OTP
-  Expiration" de até 24 h no painel, a conferir; se for maior, a confirmação tardia só pede o perfil
-  de novo. Publicação: `db push` da `0030` antes do merge, para o descarte valer quando a política
-  já o descreve; invertida, nada quebra, porque o SQL do job não depende da `0030`. Conferir depois
-  do push: `select count(*) from auth.identities where identity_data ? 'cadastro_radar'` deve dar
-  zero. Se a `0030` subir antes da `0028` ou da `0029`, o push delas pede `--include-all`.
 - **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
   `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
   como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
   tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
-- **SQL aplicado fora do CLI não entra no histórico de migrations** (06/09/2026): as `0014`–`0016`
-  tinham todos os objetos no banco e nenhuma linha em `supabase_migrations.schema_migrations`.
-  Como o `db push` grava o registro na mesma transação em que aplica, três aplicadas e nenhuma
-  registrada denunciam SQL rodado direto — pelo painel, por `db query` ou por psql. O efeito só
-  aparece depois: com a coluna `remote` vazia, o push seguinte tenta reaplicá-las e quebra no
-  primeiro `add column` de coluna existente, deixando a migration nova pela metade. Foi
-  reconciliado com `supabase migration repair --status applied 0014 0015 0016`, que só grava o
-  registro e não reexecuta SQL. **Conferir `supabase migration list --linked` depois de aplicar e
-  antes do próximo push** — é o que torna visível a regra de nunca aplicar pelo painel.
 - **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
   tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade. Desde 10/09/2026
@@ -809,82 +382,6 @@ ligação das automações, porque cada uma guardava o dono no nome:
 - **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
   que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
   `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
-- **Texto que o Postgres recusa sai na entrada** (16/09/2026). Dois caracteres vindos da fonte ou
-  da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo de 500 caracteres
-  da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
-  levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
-  antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
-  (a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
-  levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
-  extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
-  vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a
-  retenção da `0022` não contar o dia e o envio não ser gravado, e a mesma mensagem voltava todo
-  dia. As duas falhas foram reproduzidas num Postgres local com todas as migrations, rodando o
-  pipeline com o coletor da Adzuna, o agy e o Telegram atrás de `httpx.MockTransport`. A limpeza é
-  feita uma vez, nos modelos: `Vaga` e `ExtracaoDaVaga` passam todo texto por
-  `sem_caracteres_invalidos` (`domain/texto.py`), que tira NUL e surrogate solto e junta as duas
-  metades de um emoji que chegam separadas; nenhum outro caractere muda (acento, travessão, `<`,
-  `&`, emoji inteiro, `�`). O validador da `Vaga` cobre os três coletores, e o da extração cobre
-  a resposta do Gemini, a do agy e a leitura do cache; o enriquecimento limpa a descrição da
-  página por conta própria, porque o `model_copy` não valida. A identidade das vagas guardadas não
-  muda, porque o banco nunca aceitou esses caracteres, e o schema da extração é o mesmo:
-  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Como defesa, `guardar_extracoes`,
-  `registrar_vagas_sem_extracao`, `guardar_avaliacoes` e `registrar_envios` tratam o
-  `UnicodeEncodeError` como falha do banco (`FALHAS_AO_GRAVAR_TEXTO`): aviso do dia, não queda.
-  Medido em 16/09, só leitura: nenhuma das 1.003 vagas nem das 790 extrações tem `�` ou NUL
-  escapado, e nenhuma das 966 vagas da Adzuna tem emoji ou outro caractere fora do plano básico;
-  as 18 com emoji são da Gupy, com a descrição inteira. Não se sabe se a Adzuna manda esses
-  caracteres, e a correção é para não depender disso. Limites: gravar cada extração em separado,
-  para uma ruim não levar as outras, ficou de fora, porque depois da limpeza nenhum texto da
-  extração é recusado e o que sobra para falhar é o banco inteiro; o `model_validate_json` recusa
-  a resposta do Gemini inteira se ela trouxer um surrogate solto escapado (erro de avaliação, o
-  lote se divide até isolar a vaga), o que só acontece se o modelo o inventar, já que o prompt sai
-  limpo; corpo da Adzuna com byte UTF-8 inválido continua sendo corpo que não é JSON (ver "Coleta
-  resiliente"); e os testes do storage são de integração, fora do CI. Publicação: sem migration
-  nem deploy.
-- **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
-  operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
-  por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
-  cancelled()` do workflow. O passo do radar tem timeout próprio (28 min, abaixo dos 30 do job)
-  para o estouro contar como falha do passo: o GitHub trata o estouro do job como cancelamento,
-  e a documentação não diz se `failure()` vale nesse caso.
-  **Código de saída honesto e resumo que denuncia (18/09/2026).** Com o token do bot revogado o
-  Telegram recusa tudo: ninguém recebia mensagem, o resumo também falhava, o processo terminava
-  em zero e o Actions ficava verde. Agora `rodar` e `testar-local` levantam `ErroDeExecucao`
-  (`pipeline.py`) e saem com código 1 em dois casos, cada um com teste próprio:
-  - **o resumo não chegou ao chat de operação**: execução que não se relata não pode ser lida
-    como verde, e é o caso do token revogado. Sem `TELEGRAM_CHAT_ID` não há resumo e o critério
-    não vale.
-  - **ninguém foi atendido por falha**: havia usuários na execução, nenhum recebeu mensagem
-    alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por **falha
-    de verdade** — revalidação indisponível, banco fora do ar, envio recusado pelo Telegram por
-    erro nosso ou indisponibilidade dele.
-
-  Não são falha, de propósito: o dia legítimo em que todos recebem "nenhuma vaga compatível"; a
-  execução sem usuários ativos, inclusive `rodar --perfil` sem entrega a fazer; a execução em que
-  parte falhou mas ao menos um recebeu, porque a falha de um usuário não derruba os outros e o
-  resumo já mostra o número; o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
-  nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`;
-  e a **mensagem segurada** por vaga sem extração ou coleta incompleta, que é comportamento
-  deliberado (ver "Falha parcial virava 'nenhuma vaga compatível'" e "Coleta resiliente"): a
-  pessoa fica pendente para a execução seguinte e o resumo tem linha própria para o caso. Pintar
-  isso de vermelho deixava toda entrega imediata cujo candidato ainda não foi extraído terminar
-  em vermelho, e alarme que toca sozinho todo dia deixa de ser lido. Falha de verdade ao lado de
-  uma mensagem segurada continua derrubando a execução.
-  O `ErroDeExecucao` é levantado no `__main__`, depois de gravar o uso da Adzuna e de mandar o
-  resumo, então a execução vermelha não desfaz o que entregou nem perde a linha `adzuna:diario`.
-  O resumo ganhou, no estilo dos avisos que já tinha, o que só existia no log: "⚠️ Usuários sem
-  mensagem por falha", "⚠️ Mensagens seguradas por vaga sem extração", "⚠️ Mensagens seguradas
-  pela coleta incompleta", "⚠️ Usuários com envio não gravado" (a mensagem chegou e a linha de
-  `envios` não: a pessoa recebe as mesmas vagas amanhã) e "⚠️ Limpeza de contas falhou:
-  <motivo>", uma linha por motivo entre conta excluída e cadastro não confirmado. Limites
-  aceitos: **um dia inteiro de Gemini fora deixa todos sem mensagem e a execução segue verde**,
-  com "⚠️ Vagas sem extração" e "⚠️ Mensagens seguradas por vaga sem extração" no resumo — quem
-  opera precisa ler o resumo, o código de saída não conta essa história; o mesmo vale para a
-  Adzuna que não responde depois da primeira vaga. Quando o resumo não sai, o aviso do passo
-  `if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal. E
-  segue passando por verde o dia em que um recebeu e vinte falharam, que só o número no resumo
-  denuncia.
 - **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
   mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
   órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
@@ -893,114 +390,3 @@ ligação das automações, porque cada uma guardava o dono no nome:
   separa esse marco da ativação de produto.
 - `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
   `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
-- **Eventos do site têm limite no banco** (13/09/2026, migration `0023`). A chave pública deixava
-  inserir em `eventos_produto` sem fim, trocando de `sessao_id` a cada requisição e com 4 KB de
-  propriedades, e banco cheio no plano gratuito fica só leitura, o que para cadastro, vínculo e
-  diário. Evento `web` agora tem propriedades de até 256 bytes, no máximo 60 por sessão e 60 por
-  conta na última hora e um teto por hora de 2.400 para visitantes e 900 para contas
-  (`teto_de_eventos_do_site_por_hora`, contados em `eventos_do_site_por_hora`); acima disso o
-  insert falha com `PT429` (HTTP 429 no PostgREST) e o site só avisa no console. O teto é o que
-  limita o tamanho, porque limite só por sessão se fura trocando de sessão. Ele comporta um dia de
-  divulgação: 150 cadastros numa hora, cada um com ~10 eventos anônimos (funil com idas e voltas)
-  e 6 de conta, mais 3 curiosos por cadastro com landing e CTA; o primeiro teto, 600, perdia
-  metade dos eventos anônimos de uma turma de 150. Pior caso sob abuso contínuo: 79.200 linhas por
-  dia, de 440 a 490 bytes cada com índices, ~35 MB por dia, o que enche 500 MB em ~2 semanas. Por
-  isso o resumo de operação mostra os eventos do site das últimas 24 h e avisa quando algum teto
-  foi atingido; banco sem a tabela ou leitura que falha só gera aviso no log. Eventos do banco e do
-  Telegram não passam pelo gatilho. Custo aceito: sob abuso, os eventos anônimos legítimos daquela
-  hora se perdem e o funil conta visitantes falsos até o teto. Deduplicar marcos por sessão ficou
-  de fora, porque o funil já conta pessoas distintas. O check de 256 bytes é `not valid`: não
-  confere as linhas antigas, mas barra `update` futuro de linha web antiga maior que isso; hoje
-  nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
-  dos limites.
-- **Aberturas, pausas e vínculos repetidos** (16/09/2026, migration `0028`). O limite da `0023`
-  só vale para evento `web`, e dois caminhos ainda gravavam sem fim: cada GET no link rastreável
-  grava um `vaga_aberta`, então um script chamando em laço o link de uma mensagem encaminhada
-  enchia `eventos_produto`; e cada volta de pausar e retomar por `update` direto na própria linha
-  de `perfis` gravava um `entregas_pausadas`. Desvincular pela RPC e mandar `/start` de novo
-  gravava um `telegram_vinculado` por volta, pelo mesmo gatilho da `0005`. O gatilho
-  `z_descartar_eventos_repetidos` descarta, sem erro (`return null`), o `vaga_aberta` de um par
-  `(perfil_id, vaga_id)` que já tem um, e o `entregas_pausadas` ou `telegram_vinculado` do mesmo
-  perfil a menos de um dia (por `ocorrido_em`) do anterior. Descarte, e não `PT429` como na
-  `0023`, porque o `update` de pausa não pode falhar por causa do evento e abrir de novo não é
-  erro: o estado do perfil muda sempre, o motivo da pausa fica em `perfis.motivo_pausa` (o evento
-  nunca o levou) e a `ir` redireciona como antes. Sem teto por hora nem aviso no resumo de
-  operação: fica sempre a primeira ocorrência, então abuso não apaga evento legítimo, e o tamanho
-  fica preso ao que o Radar controla, uma abertura por envio (`envios` tem chave
-  `(perfil_id, vaga_id)`) e duas linhas por perfil por dia. Nenhum número muda porque os leitores
-  já tratam repetição: o `metricas.sql` conta pares distintos com abertura depois do envio, a
-  primeira abertura e pessoas distintas por etapa, e `perfis_vinculados` e `SQL_VAGAS_ENCERRADAS`
-  perguntam se o evento existe; a encerrada quer abertura anterior ao voto, e a primeira é a mais
-  antiga. A abertura trava o par com `pg_advisory_xact_lock` antes de conferir, para GETs
-  simultâneos não passarem juntos; pausa e vínculo já são serializados pela trava da linha de
-  `perfis`. O prefixo `z_` faz o gatilho rodar depois de `verificar_perfil_da_interacao`, e
-  abertura de conta pausada segue recusada com `42501`. Medido em 16/09, só leitura: 379 eventos;
-  41 `vaga_aberta` em 31 pares (24 com uma, 6 com duas, 1 com cinco), repetições de 1 s a 37 min,
-  no máximo 7 aberturas por perfil numa hora e 7 no banco inteiro; 2 `entregas_pausadas`, do mesmo
-  perfil, a 5 dias uma da outra; 4 `telegram_vinculado`, um por perfil. Aplicada a esse histórico,
-  a regra descartaria as 10 aberturas repetidas, e o funil de 7, 30 e 365 dias e as vagas
-  encerradas saem iguais. `tests/web/eventos_repetidos_test.ts` monta o mesmo histórico com e sem
-  o gatilho (repetições, feedback corrigido, voto de encerrada antes e depois da abertura, pausas e
-  revínculos em laço) e exige as mesmas métricas. Limites: a segunda pausa e o revínculo do mesmo
-  dia e as reaberturas somem do histórico bruto, e um leitor futuro de "última abertura" ou de
-  pausas por dia não os terá; GET em laço ainda executa a `ir` com duas consultas, o que não cresce
-  o banco mas gasta invocações de Edge Function, que têm cota própria no plano; a corrida entre
-  GETs simultâneos não é testada, porque o PGlite tem uma conexão só, e o descarte não foi
-  exercitado pelo PostgREST publicado (a `ir` não pede a linha de volta, e o esperado é 201 com
-  zero linhas; se vier erro, o `catch` da `ir` já segue para a vaga); e o feedback (`vaga_util`,
-  `vaga_irrelevante`) segue sem limite, porque a utilidade semanal lê a última resposta de cada
-  semana e descartar resposta igual à anterior mudaria a semana seguinte; tocar os botões em laço
-  exige automatizar uma conta do Telegram, e é o próximo caminho a fechar se aparecer.
-  Publicação: `db push` da `0028` antes ou depois do merge, tanto faz, porque nada no código
-  depende dela; a `ir` não muda e não precisa de deploy. Se a `0029` ou a `0030` subirem antes, o
-  push da `0028` pede `--include-all`.
-- **Textos do perfil têm teto no banco** (13/09/2026, migration `0025`). Uma conta comum gravava
-  210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
-  `cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
-  `not valid` como o da `0023`: `perfis` é atualizado todo dia pelo job e pelo webhook, às vezes em
-  lote, e um check `not valid` deixaria uma linha antiga acima do teto derrubar esses updates longe
-  da migration. Validado, um perfil acima do teto faz o `db push` falhar inteiro, sem aplicar nada,
-  e o erro nomeia a constraint: corrigir a linha e repetir. `validar_cadastro_radar` passou a
-  recusar chave desconhecida no cadastro e no perfil; todas as versões do site mandaram só as
-  conhecidas. Grants e policies não mudam; a função nova do check fica com o grant padrão, como a
-  `habilidades_do_perfil_validas` da `0018`, e precisa dele: o check roda com o papel de quem grava,
-  e sem `execute` o update do próprio dono falha. Pode ir ao banco antes do merge: o site atual já limita
-  cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
-  digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
-  `raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
-- **Listas do perfil em uma dimensão** (18/09/2026, migration `0031`). Qualquer conta cadastrada
-  derrubava o diário de todo mundo: um `update` direto gravava `perfis.areas_de_interesse` como
-  lista de listas, porque o `<@` da `0017` e o `cardinality` da `0025` achatam a dimensão e só
-  olham o conteúdo, e o Python quebrava com `TypeError` ao converter os perfis, antes da coleta.
-  Ninguém recebia mensagem, o resumo de operação não saía e o dia seguinte repetia. Em
-  `habilidades` o valor já era recusado, mas por acidente: o `array_position(valor, null)` da
-  `0018` levanta `0A000` ("searching for elements in multidimensional arrays is not supported"),
-  que some se aquela função for reescrita. A correção é nas duas camadas:
-  - **No banco**, `coalesce(array_ndims(coluna), 1) = 1` nas duas colunas. Os checks são
-    **validados**, pelo mesmo motivo da `0025`: `perfis` é atualizado todo dia pelo job e pelo
-    webhook, e um check `not valid` deixaria uma linha antiga derrubar esses updates longe da
-    migration. Lista vazia e `areas_de_interesse` nula continuam aceitas, porque `array_ndims`
-    devolve nulo nas duas.
-  - **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
-    vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
-    pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
-    log leva só o tipo da exceção e os 8 primeiros caracteres do id, entre reticências
-    (`trecho_do_id`), porque o `ValidationError` repete o valor do campo e o log do Actions é
-    público, e a auditoria de 17/09 já aponta como grave o `perfil_id` inteiro que o diário
-    imprime — o trecho acha a linha para quem tem o banco e não identifica ninguém sozinho.
-    `perfis_ilegiveis` conta as puladas e o resumo de operação
-    mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
-    do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
-    incompletas.
-
-  Medido em 18/09, só leitura: dos 6 perfis, nenhum é multidimensional (4 com uma dimensão em
-  `areas_de_interesse`, 2 com a lista vazia, 6 com uma dimensão em `habilidades`), então a
-  migration aplica sem corrigir linha alguma. O cadastro (`concluir_meu_cadastro`) já recusava
-  lista de listas com "lista inválida", porque cobra `jsonb_typeof(item) = 'string'`; o buraco
-  era só o `update` direto, que o `grant` da `0002` e da `0006` permite. Limites: o Python pula a
-  linha ilegível por qualquer causa, então um defeito nosso de conversão passa a esconder a pessoa
-  em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julgar` e do
-  `gabarito`, continua sem essa proteção, o que não alcança linha nova agora que o banco cobra a
-  dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
-  não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
-  antes de outra pendente, o push dela pede `--include-all`.
