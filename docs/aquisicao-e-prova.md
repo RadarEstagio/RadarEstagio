@@ -22,7 +22,7 @@ divulgação e não autoriza envio automático.
 Mensagem para revisão:
 
 > Está procurando estágio? O Radar compara seu curso, cidade, modalidade e interesses com
-> oportunidades de fontes diferentes e envia até sete recomendações explicadas no Telegram.
+> as vagas de estágio da Adzuna e envia até sete recomendações explicadas no Telegram.
 > Durante o piloto, é gratuito. Você se candidata na fonte da vaga. Veja o exemplo e cadastre
 > seu perfil: https://radarestagio.pages.dev
 

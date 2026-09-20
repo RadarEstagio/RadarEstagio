@@ -283,20 +283,25 @@ nunca é commitado; no GitHub as mesmas variáveis vêm dos secrets.
 
 ### 9. Várias fontes somadas, com dedupe sem banco
 
-A Adzuna devolve descrição truncada e raramente informa modalidade; a Gupy tem API interna
-(sem chave) com `workplaceType` estruturado e descrição completa. As duas são somadas por
-`ColetorComposto` (`collectors/composto.py`), que cumpre `ColetorDeVagas` como qualquer
-coletor: o pipeline não sabe quantas fontes existem. Uma fonte fora do ar vira `warning`; só
-falha se nenhuma responder. `FONTES` liga e desliga fontes sem mexer no código.
+As fontes ligadas em `FONTES` são somadas por `ColetorComposto` (`collectors/composto.py`), que
+cumpre `ColetorDeVagas` como qualquer coletor: o pipeline não sabe quantas fontes existem. Uma
+fonte fora do ar vira `warning`; só falha se nenhuma responder. `FONTES` liga e desliga fontes
+sem mexer no código.
 
-A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa +
+Hoje só a Adzuna está ligada, e ela devolve descrição truncada e raramente informa modalidade.
+A Gupy, que tinha `workplaceType` estruturado e descrição completa, saiu em 12/09/2026 porque os
+termos proíbem agregar vagas; a Jooble segue desligada sem parceria. Os dois coletores continuam
+no código.
+
+Com mais de uma fonte, a mesma vaga pode chegar duas vezes. `filtering/duplicatas.py` agrupa por título + empresa +
 cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
 descrição mais longa. Empresa sem nome ("Empresa não informada", "Confidencial") não distingue
 anúncio algum, então nesse caso a chave leva também a descrição. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
 que muda é a informação que chega ao extrator.
 
-`Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
-quando existe e só recorre a regex no texto quando a fonte não informa.
+`Vaga.modalidade` é opcional: a Adzuna não a informa. O pré-filtro decide pelo campo quando
+existe e só recorre a regex no texto quando a fonte não informa; depois da extração, a
+modalidade declarada no anúncio preenche a lacuna.
 
 A chave de duplicata inclui a cidade. Sem ela, duas vagas presenciais da mesma empresa com o
 mesmo título em cidades diferentes viravam uma só, e essa etapa roda antes do filtro por
@@ -475,8 +480,7 @@ agrega antes de devolver o funil; entidades e catálogo não recebem essa respon
 As decisões de cálculo e apresentação estão em [Métricas](metricas.md).
 
 Limites ainda registrados: republicação entre fontes com descrição curta pode passar pela
-deduplicação; extração/enriquecimento chaveados só por `id_externo` têm risco de colisão entre
-fontes, sem colisão real demonstrada nesta auditoria; banco aceita subárea de outro curso,
+deduplicação; banco aceita subárea de outro curso,
 mitigada no carregamento; Jooble multiplica consultas por termo e permanece opcional.
 Novos casos devem entrar na [matriz de cobertura](cobertura-estagios.md), com entrada,
 esperado, observado e teste por causa. Não reabrir os seis bugs apenas por ler o relatório antigo.
