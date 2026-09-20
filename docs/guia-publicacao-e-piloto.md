@@ -1,8 +1,8 @@
 # Guia de publicação e piloto
 
-**Revisado em 13/09/2026.** Nessa data, `supabase migration list --linked` mostrou as 25
-migrations (`0001`–`0025`) aplicadas, e `supabase functions list` mostrou `ir` republicada em
-10/09 e `telegram-webhook` em 13/09. O endereço `https://radarestagio.pages.dev` foi registrado
+**Revisado em 19/09/2026.** Nessa data, `supabase migration list --linked` mostrou as 30
+migrations (`0001`–`0031`, a numeração pula a `0029`) aplicadas, e `supabase functions list`
+mostrou `ir` republicada em 10/09 e `telegram-webhook` em 16/09. O endereço `https://radarestagio.pages.dev` foi registrado
 em 08/09; o domínio final segue pendente. Os textos legais continuam em revisão, sem vigência.
 As demais seções guardam evidências datadas e não foram reconsultadas nesta revisão.
 
@@ -201,8 +201,8 @@ login, reenvio e recuperação, incluindo expiração do desafio.
 
 ## 6.1 Republicar as funções depois das correções de 10/09/2026
 
-**Feito.** Pelo `supabase functions list` de 13/09, `ir` foi republicada em 10/09 e
-`telegram-webhook` em 13/09, depois dos commits de 10/09. O código no ar não foi comparado com o
+**Feito.** Pelo `supabase functions list` de 19/09, `ir` foi republicada em 10/09 e
+`telegram-webhook` em 16/09, depois dos commits que mudaram o vínculo e o feedback. O código no ar não foi comparado com o
 repositório nessa conferência. O procedimento fica como referência:
 
 ```bash
@@ -329,8 +329,8 @@ A checklist vigente está no [plano geral](plano-geral.md#2-o-que-falta-antes-de
 
 ## 12. Registro de preparação da expansão — 08/09/2026
 
-**Atualização de 13/09:** as `0018` e `0019`, pendentes neste registro, e as seguintes até a
-`0025` constam como aplicadas; o job tem 30 minutos desde o #57. A tabela abaixo continua sendo
+**Atualização de 19/09:** as `0018` e `0019`, pendentes neste registro, e as seguintes até a
+`0031` constam como aplicadas; o job tem 30 minutos desde o #57. A tabela abaixo continua sendo
 o retrato de 08/09.
 
 ### Evidência local consolidada em 09/09

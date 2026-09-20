@@ -1,6 +1,6 @@
 # Plano geral
 
-**Revisado em 13/09/2026** contra o código da `main` e, no Supabase, contra o histórico de
+**Revisado em 19/09/2026** contra o código da `main` e, no Supabase, contra o histórico de
 migrations e a lista de funções publicadas. A expansão para diferentes áreas foi autorizada em
 08/09 e as entregas locais de cadastro, landing, métricas e pausa (O00–R03) estão concluídas.
 Validação com estudantes e decisões externas continuam pendentes de evidência.
@@ -20,11 +20,11 @@ ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continua
 - **Cadastro e conta:** formulário em etapas, confirmação entre aparelhos, reenvio, recuperação
   de senha, edição de perfil, consentimento e preferência de e-mails.
 - **Controle dos dados:** pausa, retomada, desvínculo, exportação, exclusão com carência de
-  60 dias e cancelamento. As 25 migrations, `0001` a `0025`, constam como aplicadas no
-  `supabase migration list --linked` de 13/09.
+  60 dias e cancelamento. As 30 migrations, da `0001` à `0031` — a numeração pula a `0029` —,
+  constam como aplicadas no `supabase migration list --linked` de 19/09.
 - **Telegram:** vínculo por token de uso único, recomendações explicadas e feedback com seis
-  opções. Pelo `supabase functions list` de 13/09, `ir` foi republicada em 10/09 e
-  `telegram-webhook` em 13/09; o código no ar não foi comparado de novo com o repositório.
+  opções. Pelo `supabase functions list` de 19/09, `ir` foi republicada em 10/09 e
+  `telegram-webhook` em 16/09; o código no ar não foi comparado de novo com o repositório.
 - **Primeira entrega:** dispatch por perfil, com exceção entre 06:23 e 07:23 de Brasília.
   Teste registrado de vínculo até mensagem em cerca de quatro minutos; não é garantia de prazo.
 - **Concorrência:** trava por perfil e releitura do histórico, testadas com duas conexões.
@@ -37,8 +37,16 @@ ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continua
   Abertura com token real e relatório foram conferidos; falta confirmar o teste de feedback do Igor.
 - **Contato e e-mail:** `contato@radarestagio.com` com recebimento confirmado; Resend verificado
   e SMTP salvo. Confirmação e recuperação reais pelo site ainda precisam de teste registrado.
+- **Confiabilidade e produto, de 14 a 18/09:** trinta PRs fecharam falhas que derrubavam o
+  diário inteiro ou escondiam vagas — erro inesperado de um usuário, resposta malformada do
+  Gemini, texto que o Postgres recusa, coleta incompleta, extração com id de outra vaga, listas
+  do perfil em mais de uma dimensão — e o código de saída da execução deixou de ficar verde
+  quando ninguém recebeu mensagem. Entraram também a pergunta sobre deficiência (`0026`), o
+  feedback "Vaga encerrada", o prazo do cadastro que não confirma o e-mail (`0030`) e a
+  navegação da conta no celular. O porquê de cada uma está nas
+  [decisões do motor](decisoes-do-motor.md) e no `CLAUDE.md`.
 
-Migrations e funções foram conferidas em 13/09. As demais evidências remotas são de 05–06/09
+Migrations e funções foram conferidas em 19/09. As demais evidências remotas são de 05–06/09
 e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses testes.
 
 ## 2. O que falta antes de divulgar
@@ -132,7 +140,7 @@ A auditoria está em
 [auditorias/2026-09-10-agendamento-diario.md](auditorias/2026-09-10-agendamento-diario.md), com
 dez achados numerados e o histórico real das execuções. O disparo externo é confiável: 13 de 13
 dias no horário desde 28/08. O risco está no que acontece depois dele. Estado conferido no código
-em 13/09:
+em 19/09:
 
 - **G01 e G07 — resolvidos no PR #57.** Prazo da extração (`PRAZO_DA_EXTRACAO_SEGUNDOS`), timeout
   por chamada, candidatas intercaladas por usuário e timeouts de 30 min no job e 28 no passo.

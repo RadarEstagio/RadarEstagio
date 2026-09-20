@@ -1,6 +1,6 @@
 # Contrato entre o site e o radar
 
-Atualizado até a migration `0025` em 13/09/2026, junto com `web/assets/app.js`.
+Atualizado até a migration `0031` em 19/09/2026, junto com `web/assets/app.js`.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
 A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).

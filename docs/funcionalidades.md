@@ -1,6 +1,6 @@
 # Funcionalidades do Radar de Estágio
 
-Catálogo atualizado em 13/09/2026 com base no código da `main`. Destina-se aos integrantes,
+Catálogo atualizado em 19/09/2026 com base no código da `main`. Destina-se aos integrantes,
 estudantes e desenvolvedores. “Implementado” significa que existe código; a disponibilidade
 pública depende da configuração e publicação descritas no [guia](guia-publicacao-e-piloto.md).
 O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de todos os portais.
@@ -450,8 +450,8 @@ Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma aber
 
 ## Estado de disponibilização
 
-Em 13/09, as 25 migrations constavam como aplicadas e as funções `ir` e `telegram-webhook`
-tinham sido republicadas em 10/09 e 13/09. O guia registra a primeira entrega real e o teste de
+Em 19/09, as 30 migrations constavam como aplicadas e as funções `ir` e `telegram-webhook`
+tinham sido republicadas em 10/09 e 16/09. O guia registra a primeira entrega real e o teste de
 concorrência de 05–06/09. A equipe ainda precisa confirmar o domínio final, o Turnstile, a
 revisão dos textos e o teste completo de cadastro com conta da equipe antes do piloto. Não confundir testes automatizados
 com validação de utilidade por estudantes.
