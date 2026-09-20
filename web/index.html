@@ -302,14 +302,35 @@
     </div>
 
     <footer class="site-footer">
-      <div class="container footer-inner">
-        <a class="brand brand-footer" href="#inicio" id="footer-home"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
-        <p>Feito por Ian Dias, Igor Costa e Miguel Esteves.</p>
-        <p>© 2026 Radar de Estágio</p>
+      <div class="container footer-columns">
+        <nav class="footer-column" aria-labelledby="footer-produto">
+          <h2 id="footer-produto">Produto</h2>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#precos">Preços</a>
+          <a href="#faq">Perguntas frequentes</a>
+        </nav>
+        <nav class="footer-column" aria-labelledby="footer-conta">
+          <h2 id="footer-conta">Conta</h2>
+          <button class="footer-link js-open-signup" data-event-origin="rodape" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+          <a href="?conta">Entrar na minha conta</a>
+        </nav>
+        <nav class="footer-column" aria-labelledby="footer-legal">
+          <h2 id="footer-legal">Legal</h2>
+          <a href="termos.html">Termos de Uso (em revisão)</a>
+          <a href="privacidade.html">Política de Privacidade (em revisão)</a>
+        </nav>
+        <nav class="footer-column" aria-labelledby="footer-projeto">
+          <h2 id="footer-projeto">Projeto</h2>
+          <a href="#sobre">Sobre o Radar</a>
+          <a href="mailto:contato@radarestagio.com">contato@radarestagio.com</a>
+        </nav>
       </div>
-      <nav class="container legal-links" aria-label="Documentos legais"><a href="termos.html">Termos de Uso (em revisão)</a><a href="privacidade.html">Política de Privacidade (em revisão)</a></nav>
-      <div class="container footer-privacy">
-        <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail, o identificador da sua conversa no Telegram e, se você informar, se é pessoa com deficiência. Usa esses dados para selecionar e entregar vagas, manter sua conta e medir o uso do serviço. Fornecedores como Supabase, Telegram e GitHub Actions participam desse processamento. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro.</p>
+      <div class="container footer-bottom">
+        <a class="brand brand-footer" href="#inicio" id="footer-home"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+        <div class="footer-bottom-text">
+          <p class="footer-data">O Radar usa perfil, e-mail e Telegram para selecionar e entregar vagas, manter sua conta e medir o uso do serviço, com fornecedores como Supabase, Telegram e GitHub Actions. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro ou leia a <a href="privacidade.html">Política de Privacidade</a>.</p>
+          <p>© 2026 Radar de Estágio · Feito por Ian Dias, Igor Costa e Miguel Esteves.</p>
+        </div>
       </div>
     </footer>
 
