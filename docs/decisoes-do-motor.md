@@ -1161,3 +1161,146 @@ separaria a vaga que a empresa republica com texto reescrito; outro rótulo de e
   reconhece laboratório como título seu.
 - A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
   Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
+
+## A extração tem prazo
+
+(11/09/2026, G01 e G07 da auditoria do agendamento). Ela roda antes
+de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
+mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
+`PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
+de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
+extração". A conferência **reserva o tempo da própria chamada**, então uma requisição só começa
+se couber inteira no prazo: sem isso, três repetições de 120 s mais as esperas furavam os 600 s
+e o run podia terminar com zero extrações. Cada chamada leva `GEMINI_TIMEOUT_SEGUNDOS`
+(padrão 120, extrator e juiz), e tanto o timeout quanto falha de rede (`httpx.TransportError`,
+que cobre conexão recusada e queda no meio da resposta) viram indisponibilidade, tratada como o
+504: espera e repete o mesmo lote dentro do prazo. Antes só o timeout era tratado, e um
+`ConnectError` derrubava a execução inteira sem resumo de operação. As candidatas vão para a
+extração intercaladas por usuário, para o corte não cair sempre em quem entrou por último. O job
+tem 30 minutos e o passo do radar 28. Números que sustentam os valores, medidos no diário de
+11/09: ~27 s por requisição (93 vagas em 11 requisições) e ~21 s por usuário na entrega, o que
+acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é por operação de
+socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
+enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
+ainda pode levar o job ao kill.
+
+## Raciocínio da extração em `low`
+
+(11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
+pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
+4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
+US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
+gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
+`low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
+padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
+um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
+cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
+~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
+11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
+41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
+comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
+trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
+
+## A extração não é repetida por usuário
+
+(03/09/2026, formulação revista em 10/09). Isso não
+é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
+mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
+gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
+O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
+modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
+6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
+15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
+`criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
+`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
+
+## Lote incompleto pede junto o que faltou
+
+(10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
+1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
+de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
+mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
+uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
+com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
+com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
+ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
+Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
+que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
+conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
+tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
+acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
+temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
+troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
+como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
+na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
+extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
+os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+
+## Só entra extração com o id de uma vaga do lote pedido
+
+(18/09/2026, grave 3 da auditoria de
+17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
+`id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
+com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
+forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
+nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
+compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
+está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
+que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
+mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
+qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
+regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
+esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
+quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
+lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
+as sem extração.
+**A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
+`INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
+cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
+conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
+reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
+nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
+enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
+apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
+nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
+atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
+observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
+cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
+conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
+dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
+já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
+devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
+migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+## Resposta malformada do avaliador não derruba o job
+
+(16/09/2026, item 14 da auditoria). Só
+erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
+(página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
+`json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
+`usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
+`TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
+qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
+terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
+do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
+e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
+é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
+lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
+formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
+mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
+configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
+aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
+barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
+candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
+modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
+julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
+`UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
+o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
+mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
+`candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
+lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
+recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
+do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
+ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
+minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
+`7efdbc95`.
