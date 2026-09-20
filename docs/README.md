@@ -1,6 +1,6 @@
 # Documentação do Radar de Estágio
 
-Revisada em 13/09/2026 contra o código da `main` e o Supabase. Implementação, publicação e
+Revisada em 19/09/2026 contra o código da `main` e o Supabase. Implementação, publicação e
 validação com usuários são estados diferentes.
 
 ## Por onde começar
@@ -11,6 +11,8 @@ validação com usuários são estados diferentes.
   ordem de publicação, reversão e roteiro de validação.
 - [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.
 - [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
+- [Decisões do motor](decisoes-do-motor.md): por que cada regra de coleta, pré-filtro, pontuação
+  e mensagem existe, com as medições que a sustentaram.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
@@ -25,7 +27,7 @@ validação com usuários são estados diferentes.
 ## Históricos retirados
 
 O plano de expansão, as fichas e o registro de execução (`execucao-expansao/`), a auditoria
-adversarial de 08/09 e o `web/README.md` saíram em 13/09/2026, depois de consolidados nos
+adversarial de 08/09 e o `web/README.md` saíram em 19/09/2026, depois de consolidados nos
 documentos acima. Continuam no histórico do Git. A01–A06 estão resumidos na arquitetura.
 
 ## Como manter
