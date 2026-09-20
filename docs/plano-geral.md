@@ -1,10 +1,9 @@
 # Plano geral
 
-**Consolidado em 09/09/2026.** A expansão para diferentes áreas foi autorizada em 08/09.
-O registro de execução encerra as entregas locais de cadastro, landing, métricas e pausa
-(O00–R03), com testes registrados. Não há uma fila de implementação desses IDs a reiniciar.
-Publicação, validação com estudantes e decisões externas continuam pendentes de evidência.
-Esta consolidação não consultou serviços externos nem repetiu os testes de implementação.
+**Revisado em 19/09/2026** contra o código da `main` e, no Supabase, contra o histórico de
+migrations e a lista de funções publicadas. A expansão para diferentes áreas foi autorizada em
+08/09 e as entregas locais de cadastro, landing, métricas e pausa (O00–R03) estão concluídas.
+Validação com estudantes e decisões externas continuam pendentes de evidência.
 
 Este é o acompanhamento atual do projeto. O plano formal de piloto foi retirado por decisão
 do Igor: não há obrigação de recrutar uma coorte, realizar cinco entrevistas, calcular D7
@@ -16,15 +15,16 @@ ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continua
   conta, caminho explícito sem habilidades, sugestões conforme o curso, demonstração
   ilustrativa e FAQ, estados de vínculo sem promessa de busca já executada, participação no
   feedback, medianas observadas, utilidade por área e motivo opcional após a pausa.
-  Contratos nas migrations `0017`–`0019`; presença no Git não comprova aplicação remota.
+  Contratos nas migrations `0017`–`0019`.
 
 - **Cadastro e conta:** formulário em etapas, confirmação entre aparelhos, reenvio, recuperação
   de senha, edição de perfil, consentimento e preferência de e-mails.
 - **Controle dos dados:** pausa, retomada, desvínculo, exportação, exclusão com carência de
-  60 dias e cancelamento. Migrations até `0016` aplicadas; histórico reconciliado em 06/09.
+  60 dias e cancelamento. As 30 migrations, da `0001` à `0031` — a numeração pula a `0029` —,
+  constam como aplicadas no `supabase migration list --linked` de 19/09.
 - **Telegram:** vínculo por token de uso único, recomendações explicadas e feedback com seis
-  opções. Funções `ir` e `telegram-webhook` publicadas e código comparado com o repositório
-  em 06/09, conforme o registro no guia.
+  opções. Pelo `supabase functions list` de 19/09, `ir` foi republicada em 10/09 e
+  `telegram-webhook` em 16/09; o código no ar não foi comparado de novo com o repositório.
 - **Primeira entrega:** dispatch por perfil, com exceção entre 06:23 e 07:23 de Brasília.
   Teste registrado de vínculo até mensagem em cerca de quatro minutos; não é garantia de prazo.
 - **Concorrência:** trava por perfil e releitura do histórico, testadas com duas conexões.
@@ -37,9 +37,17 @@ ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continua
   Abertura com token real e relatório foram conferidos; falta confirmar o teste de feedback do Igor.
 - **Contato e e-mail:** `contato@radarestagio.com` com recebimento confirmado; Resend verificado
   e SMTP salvo. Confirmação e recuperação reais pelo site ainda precisam de teste registrado.
+- **Confiabilidade e produto, de 14 a 18/09:** trinta PRs fecharam falhas que derrubavam o
+  diário inteiro ou escondiam vagas — erro inesperado de um usuário, resposta malformada do
+  Gemini, texto que o Postgres recusa, coleta incompleta, extração com id de outra vaga, listas
+  do perfil em mais de uma dimensão — e o código de saída da execução deixou de ficar verde
+  quando ninguém recebeu mensagem. Entraram também a pergunta sobre deficiência (`0026`), o
+  feedback "Vaga encerrada", o prazo do cadastro que não confirma o e-mail (`0030`) e a
+  navegação da conta no celular. O porquê de cada uma está nas
+  [decisões do motor](decisoes-do-motor.md) e no `CLAUDE.md`.
 
-As evidências remotas acima são de 05–06/09 e estão no [guia](guia-publicacao-e-piloto.md).
-Esta revisão não refez esses testes nem consultou o estado atual das contas externas.
+Migrations e funções foram conferidas em 19/09. As demais evidências remotas são de 05–06/09
+e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses testes.
 
 ## 2. O que falta antes de divulgar
 
@@ -50,7 +58,9 @@ Esta revisão não refez esses testes nem consultou o estado atual das contas ex
 - [ ] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade.
       `radarestagio.com` ainda não resolve por HTTP: só tem MX, e os textos legais já apontam
       para ele.
-- [ ] Confirmar se mudanças na `main` atualizam o frontend automaticamente.
+- [ ] Confirmar se mudanças na `main` atualizam o frontend automaticamente. O pré-PRD registrou
+      que sim em 08/09 e o check "Cloudflare Pages" roda em cada pull request, mas o deploy de
+      produção a partir da `main` não foi conferido.
 
 A conversa sobre publicação no Pages não confirma que ela terminou. Por isso, o estado aqui
 é **a confirmar**, e não “não hospedado em lugar nenhum”. O domínio continua na conta do Igor;
@@ -107,10 +117,6 @@ habilidade, recusa corrigida deixando de penalizar, negação no pré-filtro de 
 temporária de entrega não pausando conta, travessão no nome do curso, suítes rodando em pull
 request e versão fixa do cliente supabase.
 
-**Antes da próxima execução:** a mudança do prompt invalidou o cache de extração. A execução
-seguinte reextrai as candidatas e gasta cota; ler o resumo das 07:23 e conferir "vagas sem
-extração".
-
 O que essa rodada deliberadamente não fez, e continua pendente:
 
 - **Pesos da nota.** A regra de não recalibrar sem `vaga_irrelevante` real continua valendo. O
@@ -133,21 +139,21 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 A auditoria está em
 [auditorias/2026-09-10-agendamento-diario.md](auditorias/2026-09-10-agendamento-diario.md), com
 dez achados numerados e o histórico real das execuções. O disparo externo é confiável: 13 de 13
-dias no horário desde 28/08. O risco está no que acontece depois dele, e estas são as pendências
-que saíram de lá:
+dias no horário desde 28/08. O risco está no que acontece depois dele. Estado conferido no código
+em 19/09:
 
-- **G01 e G07 — prazo da extração e timeouts do workflow.** É o único achado capaz de zerar as
-  entregas de todos: a extração roda para todos antes de qualquer envio e só é gravada no fim,
-  então um kill por timeout deixa a coorte sem mensagem e joga fora o que já foi pago ao Gemini.
-  Em correção no PR #57.
-- **G03 — não reenviar a quem já foi atendido no dia.** Sem essa marca não existe recuperação
-  segura depois de uma falha parcial nem agendador de reserva, e quem vincula no fim da janela
-  pode receber duas mensagens na mesma manhã. Exige migration.
-- **G04 — detectar execução ausente**, o mesmo item da rodada de confiabilidade acima.
-- **G06 — run por perfil coleta para a coorte inteira**: cada vínculo custa uma coleta completa
-  na Adzuna, e esse custo cresce com o número de cidades.
-- **G02 — registrar o fim de cada lote com a duração.** Fecha a margem do G01 e mede o efeito do
-  raciocínio `low` na latência.
+- **G01 e G07 — resolvidos no PR #57.** Prazo da extração (`PRAZO_DA_EXTRACAO_SEGUNDOS`), timeout
+  por chamada, candidatas intercaladas por usuário e timeouts de 30 min no job e 28 no passo.
+- **G06 — resolvido.** O run por perfil coleta só para os usuários que vai atender.
+- **G03 — aberto: não reenviar a quem já foi atendido no dia.** A consulta dos usuários ativos
+  não filtra quem já recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. A
+  #68 cobre só a entrega imediata (`entrega_imediata_atendida_em`). Sem essa marca não existe
+  recuperação segura depois de uma falha parcial nem agendador de reserva. Exige migration.
+- **G04 — aberto: detectar execução ausente**, o mesmo item da rodada de confiabilidade acima.
+- **G02 — aberto: registrar o fim de cada lote com a duração.** A omissão de vagas pelo modelo
+  foi identificada em 11/09; falta a duração por lote para medir o raciocínio `low`.
+- **G05, G08, G09 e G10 — abertos, prioridade baixa.** O G10 é o mais visível: falha do disparo
+  da primeira busca só aparece no log da Edge Function.
 
 ## 2.3 Migração do frontend para React (12/09/2026)
 
@@ -163,6 +169,32 @@ custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node
 troca do build no Pages e cada correção do `app.js` refeita em dobro até o merge.
 
 Retomar só se surgirem telas interativas grandes, como o painel web de métricas.
+
+## 2.4 Auditoria Revenue-Centric Design (10/09/2026)
+
+A auditoria está em
+[auditorias/2026-09-10-revenue-centric-design.md](auditorias/2026-09-10-revenue-centric-design.md),
+com 16 achados e um plano em nove passos (seção 7). Nenhum achado virou tarefa até 13/09. Estado
+conferido no código nessa data, para a equipe decidir o que entra:
+
+- **Textos que prometem mais que a prova (RCD-08, 14, 15 e 16), correção de minutos.** A landing
+  diz "100% automático" e "Vagas que atendem seu perfil"; a faixa de prova é "ADZUNA GEMINI
+  TELEGRAM"; o bot promete vagas "todos os dias de manhã"; a última etapa do cadastro diz "Comece
+  pela sua conta", com progresso que começa em 0%; o cartão de preço diz "A definir"; "Sobre"
+  leva ao CTA final.
+- **Mensagem livre ao bot (RCD-09).** Recebe resposta automática e não chega à equipe.
+- **Feedback sem sinal (RCD-01).** A pergunta continua no fim da mensagem ("Deixe seu feedback
+  👇"), sem "Me candidatei"; candidatura segue sem emissor.
+- **Distribuição sem origem (RCD-04).** A visita não guarda `referrer` nem `utm_source`, e as
+  sessões da equipe entram no funil.
+- **Não implementados (RCD-05, 06, 07, 12 e 13):** prévia com vagas reais antes da conta,
+  "Suas vagas" na conta, retorno perto do fim do estágio, mensagem com três destaques e
+  frequência semanal como alternativa à pausa.
+- **Pagador (RCD-02).** Restrição da Lei do Estágio registrada na
+  [hipótese comercial](hipotese-comercial.md) em 13/09; consulta jurídica e conversas com
+  possíveis pagadores pendentes.
+- **Foco (RCD-03 e RCD-10).** Congelar ajuste de regra do motor sem caso vindo de usuário e
+  definir o ICP do piloto são decisões da equipe, ainda sem registro.
 
 ## 3. Limitações e decisões que continuam valendo
 

@@ -1,7 +1,7 @@
 # Documentação do Radar de Estágio
 
-Consolidada em 09/09/2026. Implementação, publicação e validação com usuários são estados
-diferentes. Esta revisão reorganizou registros locais; não consultou serviços externos.
+Revisada em 19/09/2026 contra o código da `main` e o Supabase. Implementação, publicação e
+validação com usuários são estados diferentes.
 
 ## Por onde começar
 
@@ -11,6 +11,8 @@ diferentes. Esta revisão reorganizou registros locais; não consultou serviços
   ordem de publicação, reversão e roteiro de validação.
 - [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.
 - [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
+- [Decisões do motor](decisoes-do-motor.md): por que cada regra de coleta, pré-filtro, pontuação
+  e mensagem existe, com as medições que a sustentaram.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
@@ -22,35 +24,33 @@ diferentes. Esta revisão reorganizou registros locais; não consultou serviços
   [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
   decisões externas ainda abertos, com dados ausentes explicitados.
 
-## Consolidação para exclusão posterior
+## Históricos retirados
 
-Os nove arquivos abaixo continuam no repositório para revisão e consulta histórica.
-Seus comandos e estados antigos não são uma fila atual de trabalho. Nenhum foi excluído.
-O detalhamento histórico, cenários de aceite e resultados intermediários permanece neles
-e no Git; os documentos permanentes recebem a síntese útil para manutenção.
-
-| Arquivo histórico | Destino do conteúdo de manutenção |
-|---|---|
-| `plano-expansao-revenue-centric.md` | Estado, escopo e seis frentes externas no plano geral |
-| `execucao-expansao/00-protocolo.md` | Publicação compatível e verificações no guia; regras gerais já em `CLAUDE.md` |
-| `execucao-expansao/01-landing-e-cadastro.md` | Capacidades no catálogo; cadastro e decisões de interface no contrato frontend |
-| `execucao-expansao/02-metricas-e-retencao.md` | Cálculos em métricas; motivo de pausa no contrato |
-| `execucao-expansao/03-evidencias-e-decisoes.md` | Guia, cobertura, aquisição, custos, hipótese comercial e seção acadêmica do contrato |
-| `execucao-expansao/progresso.md` | Conclusão e pendências no plano geral; testes históricos e visual pendente no guia |
-| `execucao-expansao/decisoes-da-revisao.md` | Justificativas na arquitetura, contrato, métricas e guia; demonstração no catálogo |
-| `auditorias/2026-09-08-expansao-adversarial.md` | A01–A06, regressões e limites na arquitetura; casos novos na matriz de cobertura |
-| `../web/README.md` | Desenvolvimento no README principal; configuração no guia; comportamento no contrato |
-
-Antes da exclusão, revisar o diff da consolidação e conferir se alguma mudança posterior
-nesses arquivos precisa ser incorporada. Remover os nove em conjunto evita deixar referências
-internas dos documentos históricos apontando para arquivos apagados. Esta tabela usa caminhos
-como texto para não criar dependência de navegação dos arquivos a retirar.
+O plano de expansão, as fichas e o registro de execução (`execucao-expansao/`), a auditoria
+adversarial de 08/09 e o `web/README.md` saíram em 19/09/2026, depois de consolidados nos
+documentos acima. Continuam no histórico do Git. A01–A06 estão resumidos na arquitetura.
 
 ## Como manter
 
+Cada assunto tem um documento dono. Os demais citam o dono por link em vez de repetir o fato,
+porque cópia de estado diverge: foi o que tornou esta revisão necessária.
+
+| Assunto | Documento dono |
+|---|---|
+| Pendências e decisões da equipe | [Plano geral](plano-geral.md) |
+| O que o produto faz e seus limites | [Funcionalidades](funcionalidades.md) |
+| Contrato entre site e banco | [Contrato frontend](contrato-front.md) |
+| Configuração, publicação e evidências datadas | [Guia de publicação](guia-publicacao-e-piloto.md) |
+| Camadas e decisões técnicas | [Arquitetura](arquitetura.md) |
+| Por que cada regra do motor existe | [Decisões do motor](decisoes-do-motor.md) |
+| Definição e cálculo das métricas | [Métricas](metricas.md) |
+| Vocabulário do produto | [CONTEXT.md](../CONTEXT.md) |
+| Regras de contribuição e fatos operacionais | [CLAUDE.md](../CLAUDE.md) |
+| Achados de revisão | [Auditorias](auditorias/), datadas e não atualizadas depois |
+| Registro para a disciplina | [Pré-PRD](pre-prd.md), retrato de 08/09 |
+
 Ao mudar uma função, atualizar o catálogo e o contrato afetado. Ao publicar ou validar,
-registrar data, versão e resultado no guia e ajustar o estado no plano geral. Decisões de
-cálculo ficam em métricas; justificativas técnicas na arquitetura. Não duplicar o backlog.
+registrar data e resultado no guia e ajustar o estado no plano geral.
 
 O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7
 não são condições para divulgar. A conferência operacional e a revisão dos textos estão no
