@@ -320,3 +320,54 @@ em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julg
 dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
 não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
 antes de outra pendente, o push dela pede `--include-all`.
+
+## Entrega imediata (fase D, 05/09/2026)
+
+ao gravar o `chat_id`, a `telegram-webhook`
+dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
+(`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
+espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
+(`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
+conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
+compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
+segue normal e a primeira busca fica para o diário.
+**Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
+workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
+`0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
+atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
+e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
+`concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
+execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
+passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
+sem atendimento, e o diário também marca como atendidos os que atende. Disparo recusado pelo
+GitHub deixa a pessoa pendente para a próxima execução, imediata ou diária. `rodar --perfil` de
+perfil já atendido não faz nada: para testar com conta da equipe, zerar
+`entrega_imediata_atendida_em` antes. O backfill marcou as duas
+colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
+`rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
+execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
+começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
+**A marca só vem depois da mensagem (16/09/2026).** Até aqui `rodar --perfil` reivindicava os
+pendentes num `update … returning` e o diário marcava todos os ativos, os dois antes de coletar.
+Adzuna fora do ar, cota do dia sem saldo, mensagem segurada (vaga sem extração, coleta
+incompleta), exceção ou kill deixavam a pessoa sem a primeira mensagem até o diário, e
+`rodar --perfil` de novo respondia "sem entrega a fazer". Num dia de divulgação, esgotada a cota
+do dia, cada imediata falhava sem requisição alguma e marcava todos os pendentes. Agora a
+seleção só lê (`entregas_imediatas_pendentes`) e o pipeline grava `entrega_imediata_atendida_em`
+de cada perfil logo depois de atendê-lo, ainda com a trava do perfil. Conta como atendido quem
+recebeu a mensagem das vagas (inteira ou só parte), a de nenhuma vaga compatível ou a recusa
+definitiva do Telegram (403, bot bloqueado, chat inexistente): repetir na mesma hora não muda a
+resposta, e o diário segue tentando e pausa depois de `FALHAS_DE_ENVIO_ATE_PAUSAR`. Falha
+temporária do Telegram, mensagem segurada, falha ao ler o histórico, destinatário que não se
+revalida, erro de coleta, exceção e kill deixam a pessoa pendente para a próxima execução,
+imediata ou diária, e o histórico de envios impede repetir vaga. Falha ao marcar vira aviso no
+log. A reivindicação saiu, e não entrou coluna nova: as execuções do workflow já são seriais pela
+`concurrency`, e uma reivindicação que sobrevivesse a kill precisaria de prazo gravado. O que
+ela ainda protegia era o `rodar --perfil` manual contra o banco de produção junto com uma
+imediata do workflow; isso ficou com a revalidação do destinatário, que na entrega imediata
+(`RepositorioDaEntregaImediata`) confere, dentro da trava do perfil, se ele continua pendente.
+Limites: o diário não faz essa conferência, então um `rodar` manual durante o diário pode mandar
+uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava pendente, o que
+antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
+falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
+sem ordem; a `telegram-webhook` não muda.

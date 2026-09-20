@@ -36,15 +36,9 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Fontes ativas** vêm de `FONTES` (padrão `adzuna`) e são somadas por `ColetorComposto`,
   que ignora uma fonte fora do ar e só falha se nenhuma responder. Fonte nova só entra se a
   validação comprovar cobertura insuficiente.
-- **Jooble**: coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
-  `br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
-  InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
-  33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
-  ~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
-  vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
-  parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
-  várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
-  (40% das vagas dela) destrava a descrição completa.
+- **Jooble**: coletor pronto e **desligado por padrão**. A chave gratuita tem 500 requisições
+  no total, não por mês, então não ligar em produção sem parceria; a sondagem que mediu
+  +35% de cobertura está em `docs/decisoes-do-motor.md`.
 - **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
   para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
   padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele.
@@ -66,54 +60,11 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   quebra das recusas por motivo e o custo de extração por usuário ativado. As definições estão em
   `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql` e o agrupamento por área,
   que é regra de domínio, em `radar/domain/metricas.py`. Mediana é tempo observado, nunca prazo.
-- **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
-  dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
-  (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
-  espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
-  (`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
-  conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
-  compartilhadas, a primeira entrega pode não exigir IA; novas vagas elegíveis ainda consomem cota. Sem o token, o vínculo
-  segue normal e a primeira busca fica para o diário.
-  **Disparo único e sem entrega perdida (13/09/2026).** Antes, todo `/start` disparava o
-  workflow, até de quem já estava vinculado, e duas execuções rodavam juntas dividindo a cota. A
-  `0021` criou `perfis.entrega_imediata_disparada_em`, que o webhook reivindica numa única
-  atualização antes de disparar (`/start` repetido e desvincular e vincular de novo não disparam),
-  e `entrega_imediata_atendida_em`, gravada pela execução que atende. O workflow tem
-  `concurrency: radar-diario` sem cancelar a execução em andamento, mas o GitHub guarda só **uma**
-  execução na espera: a nova cancela a que esperava, e a cancelada nunca começa, então nem o
-  passo `if: cancelled()` roda. Por isso `rodar --perfil X` atende X e todo perfil com disparo e
-  sem atendimento, e o diário também marca como atendidos os que atende. Disparo recusado pelo
-  GitHub deixa a pessoa pendente para a próxima execução, imediata ou diária. `rodar --perfil` de
-  perfil já atendido não faz nada: para testar com conta da equipe, zerar
-  `entrega_imediata_atendida_em` antes. O backfill marcou as duas
-  colunas de quem já tinha vínculo ou ativação. Publicação: `db push` antes do merge, porque o
-  `rodar` do `main` passa a exigir as colunas, e o deploy da `telegram-webhook` depois. Se uma
-  execução ainda estiver rodando às 07:23, um disparo imediato pode substituir o diário na fila;
-  começar a janela às 05:53 fecharia esse caso, e fica como decisão de produto.
-  **A marca só vem depois da mensagem (16/09/2026).** Até aqui `rodar --perfil` reivindicava os
-  pendentes num `update … returning` e o diário marcava todos os ativos, os dois antes de coletar.
-  Adzuna fora do ar, cota do dia sem saldo, mensagem segurada (vaga sem extração, coleta
-  incompleta), exceção ou kill deixavam a pessoa sem a primeira mensagem até o diário, e
-  `rodar --perfil` de novo respondia "sem entrega a fazer". Num dia de divulgação, esgotada a cota
-  do dia, cada imediata falhava sem requisição alguma e marcava todos os pendentes. Agora a
-  seleção só lê (`entregas_imediatas_pendentes`) e o pipeline grava `entrega_imediata_atendida_em`
-  de cada perfil logo depois de atendê-lo, ainda com a trava do perfil. Conta como atendido quem
-  recebeu a mensagem das vagas (inteira ou só parte), a de nenhuma vaga compatível ou a recusa
-  definitiva do Telegram (403, bot bloqueado, chat inexistente): repetir na mesma hora não muda a
-  resposta, e o diário segue tentando e pausa depois de `FALHAS_DE_ENVIO_ATE_PAUSAR`. Falha
-  temporária do Telegram, mensagem segurada, falha ao ler o histórico, destinatário que não se
-  revalida, erro de coleta, exceção e kill deixam a pessoa pendente para a próxima execução,
-  imediata ou diária, e o histórico de envios impede repetir vaga. Falha ao marcar vira aviso no
-  log. A reivindicação saiu, e não entrou coluna nova: as execuções do workflow já são seriais pela
-  `concurrency`, e uma reivindicação que sobrevivesse a kill precisaria de prazo gravado. O que
-  ela ainda protegia era o `rodar --perfil` manual contra o banco de produção junto com uma
-  imediata do workflow; isso ficou com a revalidação do destinatário, que na entrega imediata
-  (`RepositorioDaEntregaImediata`) confere, dentro da trava do perfil, se ele continua pendente.
-  Limites: o diário não faz essa conferência, então um `rodar` manual durante o diário pode mandar
-  uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava pendente, o que
-  antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
-  falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
-  sem ordem; a `telegram-webhook` não muda.
+- **Entrega imediata**: ao gravar o `chat_id`, a `telegram-webhook` dispara o workflow com o
+  input `perfil` e o pipeline atende só quem está pendente (`rodar --perfil <id>`). Vínculo
+  entre 06:23 e 07:23 de Brasília espera o diário, `/start` repetido não dispara de novo
+  (`0021`) e a marca de atendido só é gravada depois da mensagem. O porquê está em
+  `docs/decisoes-do-banco.md`.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -148,34 +99,10 @@ prematuras nem código para casos hipotéticos futuros.
 
 ### Banco de dados: PostgreSQL, não SQLite
 
-A proposta original previa SQLite. Foi descartado por incompatibilidade com o modelo de
-execução escolhido: o GitHub Actions provisiona uma máquina nova a cada execução e a
-destrói ao terminar. SQLite é um arquivo em disco e não teria onde persistir entre as
-execuções diárias.
-
-As alternativas para contornar isso foram avaliadas e rejeitadas:
-
-- Versionar o arquivo `.db` no repositório exigiria permissão de escrita para o job,
-  incharia o histórico com blobs binários e — como o repositório é público — exporia
-  perfis e `chat_id` de Telegram dos usuários a partir da Fase 2.
-- `actions/cache` não é armazenamento durável: sofre evicção, e perder o histórico
-  significa reenviar vagas já vistas.
-
-A escolha é PostgreSQL gerenciado no **Supabase**, que a própria proposta já previa para
-a fase do painel web — adotá-lo na Fase 2 evita duas migrações. `JSONB` acomoda o payload
-cru das vagas e a saída estruturada da IA sem exigir mudança de schema a cada alteração
-das fontes.
-
-MySQL foi considerado e não oferece vantagem neste caso: suporte a JSON mais limitado e
-opções gerenciadas gratuitas piores que as de PostgreSQL.
-
-A Fase 1 não usava banco. O Passo 9 (Fase 2) adicionou o Supabase como opcional: tabelas
-`perfis`, `vagas`, `avaliacoes`, `envios` e `eventos_produto`, todas com RLS; `perfis` limita
-o usuário à própria linha e `eventos_produto` limita o navegador ao catálogo web permitido.
-O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
-erros ao enviar ou gravar de um usuário viram aviso. Revalidação indisponível bloqueia a mensagem daquele destinatário por
-privacidade e aparece no resumo de operação; os demais usuários continuam. Nunca alterar tabela pelo painel — só
-por migration em `supabase/migrations/`.
+SQLite não sobrevive ao GitHub Actions, que destrói a máquina a cada execução, e versionar o
+`.db` exporia `chat_id` num repositório público. A escolha é PostgreSQL gerenciado no Supabase,
+com `JSONB` para o payload das vagas. As alternativas avaliadas e o porquê de cada recusa estão
+na [arquitetura](docs/arquitetura.md).
 
 ### Bibliotecas
 
@@ -269,7 +196,8 @@ só o conhecimento operacional que não dá para reconstituir lendo o código.
 
 ### Termos de uso das fontes (12/09/2026)
 
-Leitura dos termos no texto original, depois do alerta do Igor. O que vale para o Radar:
+Leitura dos termos no texto original. As medições da cota, da coleta resiliente e do
+enriquecimento estão em `docs/decisoes-do-motor.md`. O que obriga:
 
 - **Adzuna, uso 1.** Os termos permitem "Publishing Adzuna ad listings" sem prazo. O teste de
   14 dias e a proibição de agregação ("vacancy counts, average salaries") estão no parágrafo de
@@ -280,96 +208,13 @@ Leitura dos termos no texto original, depois do alerta do Igor. O que vale para 
   os dois links, porque mensagem de texto não tem imagem (aprovação pedida no e-mail). No site
   vai o selo com `web/assets/adzuna-logo.png`, o logo oficial servido pelo site de
   desenvolvedores da Adzuna; no tema escuro ele ganha fundo branco, sem mudar as cores.
-- **Limites**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
-  `CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
-  acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
-  `uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
-  sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
-  12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
-  mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
-  `coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
-  (`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
-  10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
-  Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
-  zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
-  O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
-  roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
-  imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
-  `uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
-  essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
-  amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
-  falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
-  o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
-  Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
-  Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
-  valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
-  falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
-  07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
-  regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
-- **Coleta resiliente (13/09/2026).** Com pelo menos uma vaga em mãos, falha numa página tardia
-  da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
-  coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
-  aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
-  uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
-  inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
-  sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
-  não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
-  fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
-  sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
-  e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
-  cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
-  só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
-  nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
-  remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
-  de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
+- **Limites da Adzuna**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por
+  mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
+  quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
+  vira erro de coleta, nunca "nenhuma vaga".
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
-- **Pendente, a descrição completa.** O enriquecimento lê a página do anúncio no site da Adzuna
-  (`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
-  site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
-  12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
-  sai e a extração passa a ler só os 500 caracteres da API.
-  **Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
-  `/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
-  28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
-  (19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
-  quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
-  nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
-  a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
-  presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
-  atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
-  mérito, porque 81 antes da trava vence 60.
-  **A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
-  técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
-  extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
-  num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
-  ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
-  falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
-  com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
-  modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
-  `VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
-  a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
-  antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
-  Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
-  registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
-  texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
-  não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
-  histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
-  sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
-  cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
-  têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
-  no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
-  descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
-  só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
-  reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
-  texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
-  do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
-  a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
-  feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
-  e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
-  completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
-  medição acima) pode ver outro texto que o lido pela IA.
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
   envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
