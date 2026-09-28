@@ -119,14 +119,16 @@ O GitHub Actions cria uma máquina nova a cada execução e a destrói no final.
 guardar um arquivo entre um dia e outro. Então:
 
 - **SQLite foi descartado** — é um arquivo em disco, não sobreviveria.
-- Versionar o `.db` no repositório: repositório público exporia `chat_id` dos usuários,
-  e o job precisaria de permissão de escrita.
-- `actions/cache`: não é durável, sofre evicção.
+- Versionar o `.db` no repositório: repositório público exporia `chat_id` dos usuários, o job
+  precisaria de permissão de escrita e o histórico incharia com blobs binários.
+- `actions/cache`: não é durável, sofre evicção, e perder o histórico significa reenviar vagas
+  já vistas.
 
 Na Fase 1 o filtro por data (`DIAS_RECENTES`) faz o papel de dedupe. Na Fase 2 entrou
 **PostgreSQL no Supabase** — que a proposta já previa para o painel web, então adotar
-agora evita migrar duas vezes. MySQL foi considerado e não oferece vantagem (JSON pior,
-opções gratuitas piores). Ver a decisão 10.
+agora evita migrar duas vezes. `JSONB` acomoda o payload cru das vagas e a saída estruturada da
+IA sem exigir mudança de schema a cada alteração das fontes. MySQL foi considerado e não oferece
+vantagem (JSON pior, opções gratuitas piores). Ver a decisão 10.
 
 ### 2. Sem framework web
 

@@ -1161,3 +1161,254 @@ separaria a vaga que a empresa republica com texto reescrito; outro rótulo de e
   reconhece laboratório como título seu.
 - A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
   Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
+
+## A extração tem prazo
+
+(11/09/2026, G01 e G07 da auditoria do agendamento). Ela roda antes
+de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
+mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
+`PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
+de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
+extração". A conferência **reserva o tempo da própria chamada**, então uma requisição só começa
+se couber inteira no prazo: sem isso, três repetições de 120 s mais as esperas furavam os 600 s
+e o run podia terminar com zero extrações. Cada chamada leva `GEMINI_TIMEOUT_SEGUNDOS`
+(padrão 120, extrator e juiz), e tanto o timeout quanto falha de rede (`httpx.TransportError`,
+que cobre conexão recusada e queda no meio da resposta) viram indisponibilidade, tratada como o
+504: espera e repete o mesmo lote dentro do prazo. Antes só o timeout era tratado, e um
+`ConnectError` derrubava a execução inteira sem resumo de operação. As candidatas vão para a
+extração intercaladas por usuário, para o corte não cair sempre em quem entrou por último. O job
+tem 30 minutos e o passo do radar 28. Números que sustentam os valores, medidos no diário de
+11/09: ~27 s por requisição (93 vagas em 11 requisições) e ~21 s por usuário na entrega, o que
+acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é por operação de
+socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
+enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
+ainda pode levar o job ao kill.
+
+## Raciocínio da extração em `low`
+
+(11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
+pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
+4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
+US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
+gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
+`low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
+padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
+um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
+cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
+~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
+11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
+41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
+comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
+trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
+
+## A extração não é repetida por usuário
+
+(03/09/2026, formulação revista em 10/09). Isso não
+é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
+mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
+gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
+O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
+modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
+6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
+15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
+`criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
+`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
+
+## Lote incompleto pede junto o que faltou
+
+(10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
+1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
+de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
+mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
+uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
+com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
+com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
+ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
+Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
+que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
+conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
+tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
+acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
+temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
+troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
+como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
+na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
+extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
+os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+
+## Só entra extração com o id de uma vaga do lote pedido
+
+(18/09/2026, grave 3 da auditoria de
+17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
+`id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
+com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
+forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
+nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
+compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
+está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
+que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
+mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
+qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
+regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
+esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
+quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
+lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
+as sem extração.
+**A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
+`INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
+cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
+conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
+reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
+nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
+enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
+apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
+nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
+atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
+observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
+cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
+conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
+dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
+já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
+devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
+migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+## Resposta malformada do avaliador não derruba o job
+
+(16/09/2026, item 14 da auditoria). Só
+erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
+(página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
+`json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
+`usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
+`TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
+qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
+terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
+do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
+e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
+é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
+lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
+formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
+mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
+configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
+aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
+barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
+candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
+modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
+julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
+`UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
+o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
+mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
+`candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
+lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
+recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
+do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
+ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
+minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
+`7efdbc95`.
+
+## Limites
+
+25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
+`CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
+acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
+`uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
+sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
+12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
+mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
+`coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
+(`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
+10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
+Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
+zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
+O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
+roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
+imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
+`uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
+essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
+amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
+falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
+o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
+Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
+Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
+valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
+falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
+07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
+regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
+
+## Coleta resiliente (13/09/2026)
+
+Com pelo menos uma vaga em mãos, falha numa página tardia
+da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
+coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
+aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
+uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
+inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
+sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
+não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
+fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
+sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
+e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
+cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
+só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
+nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
+remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
+de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
+
+## Pendente, a descrição completa
+
+O enriquecimento lê a página do anúncio no site da Adzuna
+(`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
+site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
+12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
+sai e a extração passa a ler só os 500 caracteres da API.
+**Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
+`/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
+28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
+(19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
+quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
+nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
+a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
+presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
+atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
+mérito, porque 81 antes da trava vence 60.
+**A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
+técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
+extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
+num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
+ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
+falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
+com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
+modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
+`VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
+a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
+antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
+Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
+registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
+texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
+não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
+histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
+sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
+cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
+têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
+no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
+descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
+só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
+reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
+texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
+do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
+a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
+feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
+e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
+completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
+medição acima) pode ver outro texto que o lido pela IA.
+
+## Jooble
+
+coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
+`br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
+InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
+33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
+~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
+vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
+parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
+várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
+(40% das vagas dela) destrava a descrição completa.

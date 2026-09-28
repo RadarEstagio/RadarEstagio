@@ -13,6 +13,8 @@ validação com usuários são estados diferentes.
 - [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
 - [Decisões do motor](decisoes-do-motor.md): por que cada regra de coleta, pré-filtro, pontuação
   e mensagem existe, com as medições que a sustentaram.
+- [Decisões do banco e das funções](decisoes-do-banco.md): schema, migrations, webhook e resumo
+  de operação, com os limites aceitos de cada decisão.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
@@ -43,6 +45,7 @@ porque cópia de estado diverge: foi o que tornou esta revisão necessária.
 | Configuração, publicação e evidências datadas | [Guia de publicação](guia-publicacao-e-piloto.md) |
 | Camadas e decisões técnicas | [Arquitetura](arquitetura.md) |
 | Por que cada regra do motor existe | [Decisões do motor](decisoes-do-motor.md) |
+| Por que o banco, as migrations e o webhook são assim | [Decisões do banco](decisoes-do-banco.md) |
 | Definição e cálculo das métricas | [Métricas](metricas.md) |
 | Vocabulário do produto | [CONTEXT.md](../CONTEXT.md) |
 | Regras de contribuição e fatos operacionais | [CLAUDE.md](../CLAUDE.md) |

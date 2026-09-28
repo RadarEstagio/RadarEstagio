@@ -244,3 +244,127 @@ Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
   de eliminação imediata precisa ser definido pelos responsáveis no guia de publicação.
 - Não há limpeza automática de contas abandonadas. A limpeza de sessão anônima deve atingir
   somente dados sem proprietário, preservando outras contas do mesmo navegador.
+
+## Decisões e pós-mortems do site
+
+Movidos do `CLAUDE.md` em 20/09/2026, sem reescrita: cada um guarda a data da decisão, o que
+foi medido e o limite aceito.
+
+### Conta no site: volta à aba e botão de pausa (13/09/2026).
+
+Voltar à aba (`focus`) só consulta
+o banco com a tela de ativação à mostra e o link do Telegram visível
+(`aguardandoVinculoDoTelegram`), e a condição é conferida de novo quando a consulta termina, com
+sucesso ou erro. Antes, depois da ativação, toda volta à aba redesenhava a conta: descartava a
+edição em andamento, sumia com a pergunta do motivo da pausa e escondia a confirmação sem
+fechá-la. Um `<dialog>` aberto com `showModal` e escondido continua modal e trava a página, e no
+celular não há Esc; por isso esconder a conta é sempre `esconderConta()`, que passa por
+`fecharConfirmacao`, nunca `hidden = true`. O botão de pausa guarda a ação que mostrou
+(`data-acao`), e o update leva `.eq("ativo", ...)` e devolve a linha (`select(COLUNAS_DO_PERFIL)`),
+que desenha a conta sem leitura extra. Zero linhas significa que a conta mudou em outro lugar
+(outro aparelho, pausa automática, exclusão): nada é invertido, o perfil é relido e a pessoa é
+avisada. Antes, "Pausar entregas" com a conta já pausada retomava as entregas e apagava o
+motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `open`, `hidden` e se
+`close()` foi chamado. O card de preços fala só da Adzuna, e
+`test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
+
+### Armazenamento bloqueado e conta que não carrega (13/09/2026).
+
+Com o armazenamento bloqueado
+(modo privado, bloqueador), `eventSessionId` e `clearPendingProfile` lançavam exceção e o `signUp`
+nunca era chamado. Toda leitura e escrita de `localStorage`/`sessionStorage` do site fica em `try`,
+e a sessão de eventos vira um UUID em memória na página, o mesmo no cadastro e nos eventos. O
+cliente do Supabase não precisa de armazenamento: o auth-js testa o `localStorage` com `try` e, se
+falha, guarda a sessão em memória (conferido no código do 2.112.4 e do 2.114.0, iguais nesse
+ponto; o 2.116.0 não pôde ser baixado). Custo aceito: a sessão some ao recarregar, o tema não é
+lembrado e `landing_visualizada` conta toda carga. Falha ao ler sessão ou perfil deixou de virar
+"Sua conta foi criada, mas o perfil ainda não foi salvo", que quem tinha perfil via com a sessão
+velha ou sem rede: agora abre o login com "Não conseguimos carregar sua conta", e o aviso de perfil
+pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A visita comum à landing
+não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
+`#success-message`, porque o formulário fica escondido nessa tela.
+
+### Segunda auditoria da conta (13/09/2026).
+
+Propriedades de evento cabem em 256 bytes: a `0023`
+(branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
+caminho inteiro da URL. `propriedadesDoEvento` corta cada texto em 40 pontos de código, porque o
+pior caractere escapado no JSON tem 6 bytes (40 × 6 mais `{"pagina": ""}` dá 254); o corte é por
+ponto de código para não partir emoji, que o `jsonb` recusaria. Evento novo com dois textos exige
+refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registerEvent`.
+`closeSignup` fecha a confirmação antes de sair da conta, porque voltar no histórico deixava o
+`<dialog>` modal aberto. Envio do perfil e exclusão sem perfil se travam até a resposta, senão a
+exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
+tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
+
+### Perfil, habilidades e rascunho (13/09/2026).
+
+Os textos que o navegador grava no perfil têm teto
+no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. São os tetos que
+`validar_cadastro_radar` já cobrava desde a `0014`, agora também no `update` direto e sobre o texto
+cru (espaços nas pontas furavam o `btrim`); mantê-los evita que um cadastro pendente, validado antes,
+falhe na confirmação do e-mail. A folga vem dos catálogos: o maior curso sugerido tem 37 caracteres,
+84 com o maior prefixo e sufixo que a normalização conhece, e a maior cidade do IBGE tem 36. O site
+limita a digitação com o mesmo `maxlength` e cobra na etapa o mínimo de 2 no curso, porque o
+navegador só marca texto curto que a pessoa digitou. O teste de coerência compara com o site os
+checks, os dois números de cada texto em `validar_cadastro_radar` e o limite das listas da `0018`, e
+exige que perfil e cadastro aceitem todas as subáreas de um curso; lendo só os checks, mudar a
+validação do cadastro passava. Habilidade digitada nunca é separada por vírgula: cada item na tela é
+um item no banco. O envio partia o campo oculto por vírgula, então "Pacote Office (Word, Excel)"
+virava dois pedaços e 50 itens na tela viravam mais de 50 no banco, que recusava. Separar ao adicionar
+exigiria copiar no site as regras com que o Python já parte a habilidade composta (parênteses, " e ",
+nível da última parte). O corte de 100 é por ponto de código, como em `propriedadesDoEvento`: o
+`slice` partia emoji e o Postgres recusava o JSON. O limite de 50 vale também para a sugerida e para
+Continuar, que antes passavam sem aviso. Fechar o diálogo (Esc, X, clique fora, voltar) não apaga o
+rascunho: ele fica na memória da página, sem armazenamento, e reabre na mesma etapa, mas sem senha nem
+e-mail e só para a mesma dona. Senha e e-mail saem porque identificam a pessoa, e quem reabre já
+refaz a etapa da conta por causa da senha. O rascunho guarda a dona (`donoDoRascunho`): o id do
+usuário da sessão, ou visitante. Qualquer troca de dona limpa tudo: ao reabrir, na volta do link, ao
+completar o perfil, ao ler a conta e depois de um login. Só o `signUp` feito do rascunho o adota,
+porque é a mesma pessoa se cadastrando; se ele espera a confirmação do e-mail, a sessão que chega com
+esse e-mail também o mantém (`emailDoCadastroEnviado`). Login pelo diálogo e sessão vinda de outra aba
+nunca adotam. Sessão que falha ao renovar limpa o rascunho de conta, porque não se sabe quem é a dona.
+E nada do formulário é gravado numa conta que não é a dona: antes da edição, do `concluir_meu_cadastro`
+e da troca de conta, a sessão atual precisa ser a dona, senão o formulário é limpo e aparece "Sua
+sessão mudou". Em duas abas, a edição de A aberta aqui era gravada na conta de B que entrou na outra;
+o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpando. Custo aceito: na
+mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
+entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
+
+### Navegação da conta no celular (16/09/2026).
+
+A conta mostra um painel por vez
+(`mostrarSecaoDaConta`), e os links de `.account-nav` são o único caminho para Entregas, Dados e
+acesso e Privacidade. A regra que escondia a navegação até 860px vinha de quando as seções apareciam
+juntas; depois da troca para um painel por vez, no celular não havia como pausar, sair, baixar os
+dados, desvincular o Telegram ou excluir a conta. Agora ela é uma barra horizontal abaixo da marca,
+de borda a borda e com rolagem própria, dentro do cabeçalho grudado, que cresce uma linha de 44px.
+A barra lateral vira grade para a barra ocupar a linha inteira, e a navegação leva
+`contain: inline-size`: sem isso a largura dos links entra no cálculo das colunas da marca e do
+"Voltar ao site" e pode quebrar o botão em duas linhas. O JSDOM não avalia media query, então
+`test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes` lê o CSS e recusa regra de
+tela estreita que esconda a navegação ou os links. Limite aceito: quem abre a conta direto numa
+seção pelo endereço (`#account-privacy-panel`) pode ver o item ativo cortado na borda direita até
+rolar a barra; o título da página já diz a seção.
+
+### Ações da conta conferem a conta mostrada (16/09/2026).
+
+As ações de "Minha conta" usavam a sessão
+atual, e o auth-js relê a sessão do armazenamento a cada `getSession`. Com a conta de A na tela e B
+entrando em outra aba, Excluir marcava B e soltava o Telegram dele, Desvincular soltava o de B, pausa,
+motivo e e-mails gravavam na linha de B, Cancelar exclusão e Baixar meus dados agiam sobre B, e a conta
+sem perfil de A apagava B na hora. A página guarda o id da conta desenhada (`contaMostrada`):
+`showAccount` o lê da própria linha, e por isso `COLUNAS_DO_PERFIL` traz `user_id`; a conta sem perfil o
+lê da sessão que a abriu. Toda ação da conta que chama o Supabase (editar, pausar e retomar, motivo,
+e-mails, desvincular, excluir, cancelar a exclusão, baixar os dados e apagar a conta sem perfil) passa
+antes por `recusarSeASessaoMudou`: com outra conta na sessão nada é chamado e `recusarPorTrocaDeSessao`
+leva ao login com "Sua sessão mudou". É a mesma saída do rascunho de outra dona, que passou a usar
+`abrirLogin` e por isso esconde a conta, a confirmação e o "Excluir minha conta" da conta sem perfil.
+Sessão ausente segue como antes. Os `update` filtram por `contaMostrada`, não pelo id lido da sessão, e
+uma troca entre a conferência e a requisição não grava em B, porque o RLS não deixa o token de B
+alcançar a linha de A. As RPCs agem sobre `auth.uid()` e não têm esse fecho: a janela é a de uma
+leitura de sessão. Ficam de fora de propósito o "Minha conta" da ativação e a volta à aba, que releem e
+desenham a conta da sessão atual, e "Sair da conta", que encerra a sessão que estiver no navegador
+(o `signOut` global também revoga as outras sessões dessa conta). Controle novo da conta que chame o
+Supabase precisa da conferência, e teste que clica num controle da conta precisa desenhá-la antes
+(`?conta`), senão a ação é recusada.
