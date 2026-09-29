@@ -52,3 +52,6 @@ HANDOFF.md
 gabaritos/
 gabarito-*.json
 descartes-*.json
+
+# Relatório individual da disciplina: nunca versionar
+relatorio-individual/
