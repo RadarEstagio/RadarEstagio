@@ -197,7 +197,7 @@ s.addTable(
       { text: "Resultados", options: { bold: true, color: MUDO, fontSize: 9, fontFace: "Courier New" } },
     ],
     ["Unilever", "250 mil candidaturas por ciclo para 800 vagas; triagem de até 4 meses", "HireVue (entrevista em vídeo) e Pymetrics (jogos cognitivos)", "−90% no tempo de contratação, 50 mil horas e £1 mi/ano economizados, +16% em diversidade"],
-    ["Gupy", "Volume de currículos por vaga inviabiliza a triagem manual", "NLP na ordenação de candidatos, em mais de 10 mil empresas", "QuintoAndar: −50% no processo e −35% na triagem. Ambev: 1 em cada 4 entrevistados contratado"],
+    ["Gupy", "Volume de currículos por vaga inviabiliza a triagem manual", "NLP na ordenação e recomendação, em 2.300 empresas clientes (2021)", "480 mil vagas preenchidas em 2021 e até −80% no tempo de contratação, com 22,5 milhões de candidatos na base"],
     ["LinkedIn", "Casar 50 milhões de vagas com cada usuário em tempo real", "Funil de quatro estágios, com reordenação por regras de negócio", "Lição da própria engenharia: otimizar por clique premia título sensacionalista"],
   ],
   {
