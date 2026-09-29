@@ -1,0 +1,547 @@
+<title>Radar de Estágio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #0f1512;
+    --band: #17201a;
+    --surface: #1a241f;
+    --line: rgba(159, 211, 178, .18);
+    --ink: #eef3ef;
+    --ink-soft: #c2cfc7;
+    --muted: #8fa298;
+    --accent: #5cb584;
+    --accent-deep: #2b5b40;
+    --accent-light: #9fd3b2;
+    --warn: #e5b567;
+    --danger: #f19a8f;
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "Public Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .deck { scroll-snap-type: y mandatory; overflow-y: auto; height: 100%; }
+
+  .slide {
+    scroll-snap-align: start;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+    padding-block: 40px 78px;
+    padding-inline: clamp(18px, 5vw, 76px);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .slide > * { max-width: 1180px; width: 100%; margin-inline: auto; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .eyebrow b { color: var(--muted); font-weight: 400; }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(34px, 5.4vw, 64px);
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    font-weight: 800;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(24px, 3.3vw, 39px);
+    line-height: 1.08;
+    letter-spacing: -.025em;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0 0 6px;
+  }
+  p { margin: 0; max-width: 68ch; color: var(--ink-soft); }
+  .lead { font-size: clamp(15px, 1.4vw, 18px); }
+  @media (max-height: 860px) {
+    .slide { gap: 14px; padding-block: 30px 72px; }
+    .card { padding: 14px 16px; }
+    .etapa { padding: 13px 14px 15px; }
+    th, td { padding: 7px 10px; }
+    li { margin-bottom: 3px; }
+  }
+  strong { color: var(--ink); font-weight: 600; }
+  em { color: var(--accent-light); font-style: normal; }
+
+  .grid { display: grid; gap: 15px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .split { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: center; }
+
+  .card {
+    background: var(--band);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 17px 19px;
+  }
+  .card p { font-size: 14px; }
+
+  .figure { background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  .figure img { display: block; width: 100%; border-radius: 8px; }
+  .figure figcaption {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 9px 4px 3px;
+  }
+
+  .num { display: flex; flex-direction: column; gap: 2px; }
+  .num b {
+    font-family: var(--display);
+    font-size: clamp(26px, 3vw, 37px);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    color: var(--accent-light);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .num span { font-family: var(--mono); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .num small { color: var(--ink-soft); font-size: 13px; }
+
+  .fluxo { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); }
+  .etapa {
+    background: var(--band);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .etapa.ia { border-color: rgba(92, 181, 132, .55); background: linear-gradient(180deg, rgba(92,181,132,.12), var(--band)); }
+  .etapa .passo { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .etapa .titulo { font-family: var(--display); font-weight: 600; font-size: 17px; }
+  .etapa .detalhe { font-size: 13px; color: var(--ink-soft); }
+  .etapa .valor { font-family: var(--mono); font-size: 12.5px; color: var(--accent-light); font-variant-numeric: tabular-nums; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+  td b { color: var(--ink); }
+  .tabela-rolante { overflow-x: auto; }
+
+  ul { margin: 0; padding-left: 18px; color: var(--ink-soft); }
+  li { margin-bottom: 5px; }
+  li::marker { color: var(--accent); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 11px;
+    color: var(--ink-soft);
+  }
+  .pill.ok { border-color: rgba(92,181,132,.5); color: var(--accent-light); }
+  .pill.risco { border-color: rgba(241,154,143,.45); color: var(--danger); }
+  .pill.aberto { border-color: rgba(229,181,103,.45); color: var(--warn); }
+  .linha-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .fonte { font-family: var(--mono); font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+
+  .trilha { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .fase { padding: 16px 18px; border-left: 2px solid var(--line); }
+  .fase.feita { border-left-color: var(--accent); }
+  .fase.agora { border-left-color: var(--warn); background: linear-gradient(90deg, rgba(229,181,103,.08), transparent); }
+  .fase .quando { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .fase h3 { margin-bottom: 4px; }
+  .fase p { font-size: 13px; }
+
+  .barra {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 8px clamp(18px, 5vw, 76px);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 21, 18, .86);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    z-index: 5;
+  }
+  .pontos { display: flex; gap: 6px; }
+  .ponto { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line); background: transparent; padding: 0; cursor: pointer; }
+  .ponto[aria-current="true"] { background: var(--accent); border-color: var(--accent); }
+  .ponto:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: no-preference) { .deck { scroll-behavior: smooth; } }
+
+  @media print {
+    .barra { display: none; }
+    .slide { min-height: auto; page-break-after: always; border: 0; }
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <section class="slide" id="s1">
+    <div class="eyebrow"><span>01 · Abertura</span><b>Métodos e Aplicações de IA · IBM3116</b></div>
+    <h1>Radar de Estágio</h1>
+    <p class="lead">Um agente que garimpa vagas de estágio todos os dias, compara cada anúncio com o perfil do estudante e entrega no Telegram <em>até sete recomendações explicadas</em> — só quando há vagas compatíveis.</p>
+    <div class="grid g3">
+      <div class="card"><h3>Igor Costa</h3><p>Pipeline, matching e banco</p></div>
+      <div class="card"><h3>Ian Dias</h3><p>Operação, coleta e entrega</p></div>
+      <div class="card"><h3>Miguel Esteves</h3><p>Cadastro, dados e privacidade</p></div>
+    </div>
+    <div class="linha-pills">
+      <span class="pill ok">Em produção desde 28/08/2026</span>
+      <span class="pill">31 dias de entregas diárias</span>
+      <span class="pill">410 recomendações enviadas</span>
+    </div>
+  </section>
+
+  <section class="slide" id="s2">
+    <div class="eyebrow"><span>02 · Problema</span><b>Específico e mensurável</b></div>
+    <h2>Para achar 7 vagas que servem,<br>alguém precisa descartar 726.</h2>
+    <div class="grid g3">
+      <div class="num"><span>Coletadas hoje</span><b>733</b><small>anúncios de estágio, execução das 07:23</small></div>
+      <div class="num"><span>Sobraram para um perfil</span><b>35</b><small>depois de curso, cidade e modalidade</small></div>
+      <div class="num"><span>Entregues</span><b>7</b><small>as únicas acima da nota mínima</small></div>
+    </div>
+    <div class="split">
+      <p>Esse funil existe todo dia, com ou sem o Radar. Sem ele, é o estudante que abre os portais, lê requisitos repetidos e descarta à mão — e ainda perde a vaga que fechou antes de ele chegar.</p>
+      <div class="card">
+        <h3>O tamanho do mercado</h3>
+        <p><strong>20,1 milhões</strong> de estudantes aptos a estagiar no Brasil; <strong>1,2 milhão</strong> conseguem — cerca de <strong>6%</strong>. Entre 40% e 60% dos estagiários são efetivados.</p>
+        <p class="fonte" style="margin-top:8px">ABRES — Associação Brasileira de Estágios, dados de 2024</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s3">
+    <div class="eyebrow"><span>03 · Contexto e público</span><b>Quem usa e como é hoje</b></div>
+    <h2>Universitário procurando o primeiro estágio.</h2>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Quem</h3>
+        <ul>
+          <li>Estudante de graduação, qualquer curso do catálogo de <strong>12 áreas, 45 subáreas e 105 cursos</strong></li>
+          <li>Busca o primeiro estágio, sem tempo de triar anúncio todo dia</li>
+          <li>Já usa Telegram — nenhum aplicativo novo para instalar</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>O processo atual dele</h3>
+        <ul>
+          <li>Abrir vários portais e repetir a mesma busca</li>
+          <li>Ler requisitos para descobrir se o curso é aceito</li>
+          <li>Reencontrar a mesma vaga republicada com outro título</li>
+          <li>Descobrir tarde a vaga que combinava</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Piloto em números, últimos 30 dias</h3>
+      <div class="grid g3" style="margin-top:12px">
+        <div class="num"><span>Visitas</span><b>103</b><small>identidades distintas na landing</small></div>
+        <div class="num"><span>Perfis criados</span><b>6</b><small>4 vincularam o Telegram</small></div>
+        <div class="num"><span>Ativados</span><b>4</b><small>receberam a primeira recomendação</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s4">
+    <div class="eyebrow"><span>04 · Solução</span><b>O que faz, com o quê, e onde entra a IA</b></div>
+    <h2>A IA lê o anúncio. O Python decide a nota.</h2>
+    <div class="split">
+      <div>
+        <p class="lead">O estudante preenche o perfil uma vez. Todo dia às 07:23 o sistema coleta, descarta o que não serve, pede à IA apenas os <em>fatos do anúncio</em> e calcula a compatibilidade por regras determinísticas em Python.</p>
+        <p style="margin-top:14px">Separar as duas coisas é o que torna o custo viável e a nota auditável: a mesma extração serve todos os usuários, e a mesma vaga com o mesmo perfil dá sempre a mesma nota.</p>
+      </div>
+      <div class="grid g2">
+        <div class="card"><h3>Coleta e filtro</h3><p>API da Adzuna, deduplicação e pré-filtro por curso, cidade e modalidade — tudo em Python, sem IA.</p></div>
+        <div class="card"><h3>Extração por IA</h3><p>Gemini 3.6 Flash devolve requisitos, cursos aceitos, período e modalidade em JSON validado.</p></div>
+        <div class="card"><h3>Nota determinística</h3><p>45% habilidades, 15% período, 10% curso, 10% área, 10% logística, 10% interesse.</p></div>
+        <div class="card"><h3>Entrega e feedback</h3><p>Bot no Telegram, link rastreado e sete botões de resposta por mensagem.</p></div>
+      </div>
+    </div>
+    <div class="linha-pills">
+      <span class="pill">Python 3.12</span><span class="pill">GitHub Actions + cron</span><span class="pill">Supabase / PostgreSQL</span><span class="pill">Edge Functions</span><span class="pill">Gemini Flash</span><span class="pill">Telegram Bot API</span><span class="pill">Cloudflare Pages</span>
+    </div>
+  </section>
+
+  <section class="slide" id="s5">
+    <div class="eyebrow"><span>05 · Demonstração</span><b>As três telas do produto</b></div>
+    <h2>Cadastro, recomendação, conta.</h2>
+    <div class="split" style="align-items:start">
+      <figure class="figure">
+        <img src="telas/demo.png" alt="Mensagem do Radar no Telegram com duas vagas, nota, requisitos atendidos e botões de feedback">
+        <figcaption>A mensagem diária — nota, requisitos atendidos, o que conferir e o selo da fonte</figcaption>
+      </figure>
+      <div class="grid" style="gap:18px">
+        <figure class="figure">
+          <img src="telas/cadastro.png" alt="Diálogo de cadastro do site, com etapas e campos de conta">
+          <figcaption>Cadastro em quatro etapas — o perfil vem antes da conta</figcaption>
+        </figure>
+        <div class="card">
+          <h3>O que a tela não mostra</h3>
+          <p>Cada vaga carrega a atribuição “Jobs by Adzuna”, exigida pelos termos da fonte, e o link passa por uma função própria que registra a abertura antes de redirecionar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s6">
+    <div class="eyebrow"><span>06 · Fluxo</span><b>Números reais da execução de 28/09</b></div>
+    <h2>Entrada → Processamento → IA → Resultado → Decisão</h2>
+    <div class="fluxo">
+      <div class="etapa">
+        <span class="passo">Entrada</span>
+        <span class="titulo">Coleta</span>
+        <span class="detalhe">Adzuna, por termo e cidade de cada perfil</span>
+        <span class="valor">733 vagas · 16 requisições</span>
+      </div>
+      <div class="etapa">
+        <span class="passo">Processamento</span>
+        <span class="titulo">Dedupe e pré-filtro</span>
+        <span class="detalhe">Republicações, área do curso, cidade, nível</span>
+        <span class="valor">35 candidatas por perfil</span>
+      </div>
+      <div class="etapa ia">
+        <span class="passo">IA</span>
+        <span class="titulo">Extração de fatos</span>
+        <span class="detalhe">Um lote por chamada, cache compartilhado entre usuários</span>
+        <span class="valor">4 requisições ao Gemini</span>
+      </div>
+      <div class="etapa">
+        <span class="passo">Resultado</span>
+        <span class="titulo">Nota e ranking</span>
+        <span class="detalhe">Regras em Python, recalculadas a cada execução</span>
+        <span class="valor">23 vagas para 4 pessoas</span>
+      </div>
+      <div class="etapa">
+        <span class="passo">Decisão</span>
+        <span class="titulo">Telegram</span>
+        <span class="detalhe">A pessoa abre, se candidata na fonte e responde</span>
+        <span class="valor">7 botões de feedback</span>
+      </div>
+    </div>
+    <div class="grid g3">
+      <div class="num"><span>Do cadastro à 1ª lista</span><b>1,7 min</b><small>mediana observada, 4 casos</small></div>
+      <div class="num"><span>Extrações reaproveitadas</span><b>1.670</b><small>uma por vaga, servem todos os perfis</small></div>
+      <div class="num"><span>Custo por lote de 10 vagas</span><b>R$ 0,066</b><small>medido em 11/09, raciocínio baixo</small></div>
+    </div>
+  </section>
+
+  <section class="slide" id="s7">
+    <div class="eyebrow"><span>07 · Casos reais</span><b>Quem já fez algo parecido</b></div>
+    <h2>A indústria automatizou a triagem — do lado de quem contrata.</h2>
+    <div class="tabela-rolante">
+      <table>
+        <thead>
+          <tr><th>Empresa</th><th>Problema</th><th>Tecnologia</th><th>Resultados</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Unilever</b><br><span class="fonte">Global, RH</span></td>
+            <td>250 mil candidaturas por ciclo para 800 vagas; triagem levava até 4 meses</td>
+            <td>HireVue (análise de entrevista em vídeo) e Pymetrics (jogos cognitivos)</td>
+            <td>−90% no tempo de contratação (4 meses → 4 semanas), 50 mil horas de entrevista economizadas, £1 mi/ano, +16% em diversidade</td>
+          </tr>
+          <tr>
+            <td><b>Gupy</b><br><span class="fonte">Brasil, ATS com IA</span></td>
+            <td>Volume de currículos por vaga inviabiliza triagem manual</td>
+            <td>NLP na ordenação de candidatos (IA “Gaia”), em mais de 10 mil empresas</td>
+            <td>QuintoAndar: −50% no processo e −35% na triagem. Ambev: 1 em cada 4 entrevistados contratado. 480 mil vagas preenchidas em 2021</td>
+          </tr>
+          <tr>
+            <td><b>LinkedIn</b><br><span class="fonte">Referência técnica</span></td>
+            <td>Casar 50 milhões de vagas com cada usuário em tempo real</td>
+            <td>Funil de quatro estágios: recuperação, calibração, modelo de engajamento e reordenação com regras de negócio</td>
+            <td>Lição registrada pela própria engenharia: otimizar por clique premia título sensacionalista e gera candidatura frustrada</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>O que se parece</h3><p>Mesma mecânica: extrair requisitos de texto livre, comparar com um perfil e ordenar. Como no LinkedIn, a decisão final fica com regras explícitas, não com o modelo.</p></div>
+      <div class="card"><h3>O que muda</h3><p>Esses sistemas filtram <strong>pessoas</strong> para a empresa. O Radar inverte o lado: filtra <strong>vagas</strong> para o estudante, e por isso nunca descarta alguém — no máximo deixa de recomendar uma vaga.</p></div>
+    </div>
+    <p class="fonte">Fontes: bestpractice.ai e The Case Centre (Unilever/HireVue); gupy.io e Google for Startups (Gupy); LinkedIn Engineering Blog</p>
+  </section>
+
+  <section class="slide" id="s8">
+    <div class="eyebrow"><span>08 · Proposta de valor</span><b>O que o processo ganha</b></div>
+    <h2>O trabalho repetitivo sai do estudante.</h2>
+    <div class="tabela-rolante">
+      <table>
+        <thead><tr><th>Etapa do processo</th><th>Sem o Radar</th><th>Com o Radar</th></tr></thead>
+        <tbody>
+          <tr><td><b>Procurar</b></td><td>Abrir portais e repetir a busca todo dia</td><td>Uma execução diária às 07:23, sem ação do estudante</td></tr>
+          <tr><td><b>Triar</b></td><td>Ler anúncio por anúncio para ver se o curso é aceito</td><td>733 anúncios viram 7, com curso, período e cidade já conferidos</td></tr>
+          <tr><td><b>Entender</b></td><td>Deduzir dos requisitos se vale a pena</td><td>Nota de 0 a 100 com requisitos atendidos e o que falta conferir</td></tr>
+          <tr><td><b>Repetir</b></td><td>Reencontrar a mesma vaga republicada</td><td>Deduplicação e histórico por pessoa impedem o reenvio</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g3">
+      <div class="num"><span>Tempo até a primeira lista</span><b>1,7 min</b><small>do cadastro à mensagem no Telegram</small></div>
+      <div class="num"><span>Custo marginal por usuário novo</span><b>≈ R$ 0</b><small>a extração é por vaga, não por pessoa</small></div>
+      <div class="num"><span>Cobertura do catálogo</span><b>12 áreas</b><small>105 cursos reconhecidos, não só computação</small></div>
+    </div>
+  </section>
+
+  <section class="slide" id="s9">
+    <div class="eyebrow"><span>09 · Riscos, limites e dados</span><b>O que ainda não está provado</b></div>
+    <h2>O motor funciona. O valor ainda não foi confirmado.</h2>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Riscos e limitações</h3>
+        <ul>
+          <li><strong>Zero vaga marcada como útil</strong> em 410 entregas: 12 aberturas e 6 respostas. Sem esse sinal, não dá para recalibrar a nota.</li>
+          <li><strong>Uma fonte só.</strong> A Adzuna responde por tudo; Gupy saiu pelos termos de uso e Jooble tem limite de 500 requisições.</li>
+          <li><strong>Custo cresce com cidades e áreas</strong>, não com usuários — mas cresce.</li>
+          <li><strong>Cobrar do estudante esbarra na Lei 11.788/2008</strong>, art. 5º, §2º: o pagador precisa ser outro.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Dados: origem, formato e privacidade</h3>
+        <ul>
+          <li><strong>Origem:</strong> API oficial da Adzuna, com atribuição obrigatória em cada anúncio exibido.</li>
+          <li><strong>Formato:</strong> JSON das vagas e JSON validado por schema na saída da IA; perfis e histórico em PostgreSQL.</li>
+          <li><strong>Privacidade:</strong> RLS por usuário, exportação e exclusão com 60 dias de arrependimento; a pergunta sobre deficiência é opcional e não entra em log, evento nem prompt.</li>
+          <li><strong>O perfil nunca vai para a IA:</strong> o prompt só contém o anúncio.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="linha-pills">
+      <span class="pill ok">2.020 testes automatizados</span>
+      <span class="pill ok">30 migrations versionadas</span>
+      <span class="pill aberto">Domínio próprio pendente</span>
+      <span class="pill aberto">CAPTCHA desligado</span>
+      <span class="pill risco">Sem validação por estudantes</span>
+    </div>
+  </section>
+
+  <section class="slide" id="s10">
+    <div class="eyebrow"><span>10 · Próximos passos</span><b>Onde estamos e o que falta</b></div>
+    <h2>Protótipo → MVP → Piloto → Implantação</h2>
+    <div class="trilha">
+      <div class="fase feita"><span class="quando">Agosto</span><h3>Protótipo</h3><p>Coleta da Adzuna e nota em Python, com perfil fixo e sem banco.</p></div>
+      <div class="fase feita"><span class="quando">28/08</span><h3>MVP</h3><p>Banco, conta no site, vínculo com o Telegram e entrega diária automática.</p></div>
+      <div class="fase agora"><span class="quando">Agora</span><h3>Piloto</h3><p>6 perfis, 4 ativados, 410 recomendações. Falta o sinal de utilidade.</p></div>
+      <div class="fase"><span class="quando">A seguir</span><h3>Implantação</h3><p>Domínio próprio, CAPTCHA, textos legais aprovados e um pagador definido.</p></div>
+    </div>
+    <div class="split">
+      <div class="card">
+        <h3>As três próximas decisões</h3>
+        <ul>
+          <li>Conversar com quem recebeu as vagas: por que abriu 12 e não respondeu nada?</li>
+          <li>Fechar o ciclo de feedback antes de mexer em qualquer peso da nota.</li>
+          <li>Testar instituição de ensino ou empresa como pagador, já que o estudante não pode ser.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 style="font-size:clamp(22px,2.6vw,32px)">A pergunta honesta: isso vira negócio?</h2>
+        <p style="margin-top:10px">Tecnicamente, já roda sozinho há 31 dias. Como produto, ainda falta a prova de que a recomendação serve — e é isso, não mais código, que decide o próximo passo.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<nav class="barra" aria-label="Navegação dos slides">
+  <span id="rotulo">01 / 10 · Abertura</span>
+  <span class="pontos" id="pontos"></span>
+  <span>← → para navegar</span>
+</nav>
+
+<script>
+  (function () {
+    var deck = document.getElementById('deck');
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var pontos = document.getElementById('pontos');
+    var rotulo = document.getElementById('rotulo');
+    var nomes = slides.map(function (s) {
+      var texto = s.querySelector('.eyebrow span').textContent;
+      return texto.replace(/^\d+\s·\s/, '');
+    });
+    var atual = 0;
+
+    slides.forEach(function (s, i) {
+      var b = document.createElement('button');
+      b.className = 'ponto';
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Ir para o slide ' + (i + 1) + ': ' + nomes[i]);
+      b.addEventListener('click', function () { irPara(i); });
+      pontos.appendChild(b);
+    });
+
+    function marcar(i) {
+      atual = i;
+      rotulo.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0') + ' · ' + nomes[i];
+      Array.prototype.forEach.call(pontos.children, function (p, n) {
+        p.setAttribute('aria-current', n === i ? 'true' : 'false');
+      });
+    }
+
+    function irPara(i) {
+      var alvo = Math.max(0, Math.min(slides.length - 1, i));
+      slides[alvo].scrollIntoView({ block: 'start' });
+      marcar(alvo);
+    }
+
+    if ('IntersectionObserver' in window) {
+      var observador = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (e) {
+          if (e.isIntersecting) marcar(slides.indexOf(e.target));
+        });
+      }, { threshold: 0.5 });
+      slides.forEach(function (s) { observador.observe(s); });
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); irPara(atual + 1); }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); irPara(atual - 1); }
+      if (e.key === 'Home') { e.preventDefault(); irPara(0); }
+      if (e.key === 'End') { e.preventDefault(); irPara(slides.length - 1); }
+    });
+
+    marcar(0);
+  })();
+</script>
