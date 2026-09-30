@@ -391,9 +391,9 @@ conversa produzem sinal melhor que teste A/B.
 4. Domínio próprio para o site ou manter `pages.dev` durante o piloto?
 5. Textos de termos e privacidade: as passagens pendentes foram redigidas em 08/09; falta a
    aprovação dos três e a data de vigência, que também vira a `VERSAO_DOS_TERMOS` do site.
-6. Responsáveis: proposta de 08/09 no guia de publicação (Miguel responde o `contato@` e os
-   pedidos de dados; Ian acompanha o resumo diário, falhas e cota; Igor cuida do domínio).
-   Igor e Miguel precisam confirmar.
+6. Responsáveis: falta definir quem responde o `contato@` e os pedidos de dados, quem acompanha
+   o resumo diário, as falhas e a cota, e quem cuida do domínio. As condições de cada uma estão
+   no guia de publicação.
 7. Ativar o Turnstile antes de divulgar?
 8. Quais evidências o professor espera na próxima entrega: arquitetura, demonstração, métricas
    ou validação com estudantes?

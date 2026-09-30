@@ -84,13 +84,10 @@ Miguel também está identificado como responsável pelos dados. Registrem:
 - Quem acompanha falhas do job e a rotina de apagamento.
 - Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
 
-Proposta de divisão registrada em 08/09/2026 por Ian, **a confirmar por Igor e Miguel**:
-
-| Responsabilidade | Proposta | Por quê |
-|---|---|---|
-| Responder o `contato@radarestagio.com` e os pedidos de dados e eliminação | Miguel | Já identificado como responsável pelos dados na Política; prazo de resposta combinado: 5 dias úteis |
-| Acompanhar o resumo diário das 07:23, falhas do job, cota do Gemini e a rotina de apagamento | Ian | Dono das contas do Actions, do cron-job.org, da Cloudflare e do Supabase |
-| Domínio `radarestagio.com`, DNS, e-mail e renovação | Igor | O domínio está na conta pessoal dele; ao fim da disciplina, transferir para quem continuar ou deixar expirar com aviso no site |
+O prazo de resposta combinado para pedidos de dados e eliminação é de 5 dias úteis. As contas do
+Actions, do cron-job.org, da Cloudflare e do Supabase e o domínio `radarestagio.com` estão em
+contas pessoais do grupo; ao fim da disciplina, transferir para quem continuar ou deixar expirar
+com aviso no site.
 
 Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
 (`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
