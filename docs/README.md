@@ -17,7 +17,11 @@ validação com usuários são estados diferentes.
   de operação, com os limites aceitos de cada decisão.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
-- [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina.
+- [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina,
+  retrato de 08/09.
+- [PIT](pit-do-grupo.md): entrega da AP1, com problema, contexto, solução, fluxo, casos reais,
+  valor, dados, riscos, viabilidade e próximos passos, medido em 28 e 30/09. O pré-PRD é o
+  registro anterior e não é atualizado; o PIT é o que vale para a apresentação.
 - [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
   no plano geral, e o que virou regra, na arquitetura e no `CLAUDE.md`.
 - [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): rascunhos
@@ -50,7 +54,8 @@ porque cópia de estado diverge: foi o que tornou esta revisão necessária.
 | Vocabulário do produto | [CONTEXT.md](../CONTEXT.md) |
 | Regras de contribuição e fatos operacionais | [CLAUDE.md](../CLAUDE.md) |
 | Achados de revisão | [Auditorias](auditorias/), datadas e não atualizadas depois |
-| Registro para a disciplina | [Pré-PRD](pre-prd.md), retrato de 08/09 |
+| Entrega da disciplina | [PIT](pit-do-grupo.md), medido em 28 e 30/09 |
+| Registro anterior da disciplina | [Pré-PRD](pre-prd.md), retrato de 08/09 |
 
 Ao mudar uma função, atualizar o catálogo e o contrato afetado. Ao publicar ou validar,
 registrar data e resultado no guia e ajustar o estado no plano geral.
