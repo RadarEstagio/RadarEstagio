@@ -14,7 +14,6 @@ def perfil_de_exemplo() -> Perfil:
             "Git",
             "Lógica de Programação",
             "Java",
-            
         ],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
