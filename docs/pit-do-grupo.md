@@ -271,8 +271,8 @@ validação; e a mensagem é segurada quando uma candidata fica sem extração, 
 
 **Dependência de API externa.** A Adzuna responde por toda a coleta. A Gupy foi desligada em 12/09
 porque os termos de uso dela proíbem agregar vagas, e a Jooble tem limite de 500 requisições por
-chave na versão gratuita. Fonte única significa que uma mudança de termos, de preço ou de
-disponibilidade para o serviço inteiro.
+chave na versão gratuita. Com fonte única, uma mudança de termos, de preço ou de disponibilidade
+atinge o serviço inteiro.
 
 **Qualidade dos dados.** Descrição truncada, vaga encerrada que continua listada e cidade informada
 por região são limitações da fonte, não do nosso código, e afetam direto a qualidade da
