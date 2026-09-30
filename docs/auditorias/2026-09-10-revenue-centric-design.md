@@ -39,6 +39,11 @@ e utilidade semanal de 0 em 4. Não há pagador definido, preço nem canal de aq
 pagador que os documentos presumem, o estudante, esbarra na Lei do Estágio e no modo como esse
 mercado já funciona no Brasil.
 
+**Correção de 29/09/2026:** a parte legal deste veredito e do achado RCD-02 está errada. A
+vedação do art. 5º, §2º alcança os agentes de integração, e o Radar não é um; o que resta é o
+argumento de mercado. A leitura corrigida está em `docs/hipotese-comercial.md`. O resto da
+auditoria fica como foi escrito em 10/09.
+
 Quatro problemas decidem o futuro do projeto, nesta ordem:
 
 1. **O ciclo de aprendizado está travado.** A nota só pode ser recalibrada com recusa real, a
@@ -267,6 +272,12 @@ a pessoa tende a fechar. O sinal para ler em duas semanas é a fração de quem 
 Custo: webhook e uma etapa no job, sem IA.
 
 ### RCD-02 · Crítico · Não há pagador viável
+
+**Corrigido em 29/09/2026 na parte legal:** o §2º do art. 5º veda a cobrança pelos serviços dos
+agentes de integração, figura que o caput define por um instrumento jurídico com instituição de
+ensino ou parte cedente. Executar dois dos cinco serviços da lista não faz do Radar um agente,
+então a lei não veda cobrar do estudante. O achado sobrevive pelo mercado, não pela lei; ver
+`docs/hipotese-comercial.md`.
 
 **Princípios:** preço é filtro; nicho com dor e dinheiro para pagar; cobrar os primeiros dez
 usuários; o custo de servir decide se o gratuito funciona.
