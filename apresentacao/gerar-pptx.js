@@ -2,15 +2,16 @@ const pptxgen = require("pptxgenjs");
 const path = require("path");
 
 const REPO = "/Users/igorcosta/Projetos/RadarEstagio";
-const FUNDO = "FFFFFF";
-const SUPERFICIE = "F3F6F3";
-const LINHA = "DDE5DF";
-const TINTA = "111A15";
-const SUAVE = "4A5952";
-const MUDO = "7A8880";
-const ACENTO = "1F6B45";
-const ALERTA = "8A5A12";
-const RISCO = "A0362A";
+const FUNDO = "0F1512";
+const BANDA = "17201A";
+const BANDA_ALTA = "1C2620";
+const LINHA = "26332C";
+const TINTA = "EEF3EF";
+const SUAVE = "C2CFC7";
+const MUDO = "8FA298";
+const ACENTO = "5CB584";
+const CLARO = "9FD3B2";
+const ALERTA = "E5B567";
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_16x9";
@@ -24,14 +25,14 @@ function novo(numero, seccao) {
   const s = pres.addSlide();
   s.background = { color: FUNDO };
   s.addText(String(numero).padStart(2, "0") + " · " + seccao.toUpperCase(), {
-    x: L, y: 0.36, w: LARG, h: 0.22,
+    x: L, y: 0.34, w: LARG, h: 0.22,
     fontSize: 9, bold: true, color: ACENTO, fontFace: "Courier New",
     charSpacing: 1.6, isTextBox: true, margin: 0,
   });
   return s;
 }
 
-function titulo(s, texto, tamanho = 30, y = 0.68) {
+function titulo(s, texto, tamanho = 30, y = 0.66) {
   const porLinha = Math.floor((LARG * 1.85 * 72) / tamanho);
   const linhas = texto.split("\n").reduce(function (total, parte) {
     return total + Math.max(1, Math.ceil(parte.length / porLinha));
@@ -43,9 +44,9 @@ function titulo(s, texto, tamanho = 30, y = 0.68) {
   });
 }
 
-function paragrafo(s, texto, y, tamanho = 12, w = LARG) {
+function paragrafo(s, texto, y, tamanho = 12) {
   s.addText(texto, {
-    x: L, y, w, h: 0.6,
+    x: L, y, w: LARG, h: 0.62,
     fontSize: tamanho, color: SUAVE, fontFace: "Calibri",
     lineSpacingMultiple: 1.1, isTextBox: true, margin: 0,
   });
@@ -58,270 +59,266 @@ function fonte(s, texto, y) {
   });
 }
 
-function numero(s, x, y, w, valor, rotulo) {
-  s.addText(valor, {
-    x, y, w, h: 0.62,
-    fontSize: 34, bold: true, color: ACENTO, fontFace: "Calibri", isTextBox: true, margin: 0,
-  });
-  s.addText(rotulo, {
-    x, y: y + 0.64, w, h: 0.66,
-    fontSize: 10, color: SUAVE, fontFace: "Calibri",
-    lineSpacingMultiple: 1.08, isTextBox: true, margin: 0,
-  });
-}
-
-function coluna(s, x, y, w, cabecalho, itens) {
-  s.addText(cabecalho, {
-    x, y, w, h: 0.28,
-    fontSize: 13, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
-  });
-  s.addText(
-    itens.map(function (item, i) {
-      return { text: item, options: { bullet: true, breakLine: i < itens.length - 1 } };
-    }),
-    {
-      x, y: y + 0.34, w, h: 1.8,
-      fontSize: 11, color: SUAVE, fontFace: "Calibri",
-      lineSpacingMultiple: 1.08, paraSpaceAfter: 6, isTextBox: true, margin: 0,
-    }
-  );
-}
-
-function bloco(s, x, y, w, h, cabecalho, corpo, corDaBorda) {
+function moldura(s, y, h, destaque) {
   s.addShape(pres.ShapeType.roundRect, {
-    x, y, w, h, fill: { color: SUPERFICIE }, line: { color: corDaBorda || LINHA, width: 1 }, rectRadius: 0.06,
-  });
-  s.addText(cabecalho, {
-    x: x + 0.16, y: y + 0.14, w: w - 0.32, h: 0.42,
-    fontSize: 12, bold: true, color: TINTA, fontFace: "Calibri",
-    lineSpacingMultiple: 0.95, isTextBox: true, margin: 0,
-  });
-  s.addText(corpo, {
-    x: x + 0.16, y: y + 0.58, w: w - 0.32, h: h - 0.74,
-    fontSize: 10, color: SUAVE, fontFace: "Calibri",
-    lineSpacingMultiple: 1.06, isTextBox: true, margin: 0,
+    x: L, y, w: LARG, h,
+    fill: { color: destaque || BANDA }, line: { color: LINHA, width: 1 }, rectRadius: 0.06,
   });
 }
 
-function passo(s, x, y, w, etapa, nome, valor) {
-  s.addShape(pres.ShapeType.line, {
-    x, y, w, h: 0, line: { color: etapa === "IA" ? ACENTO : LINHA, width: 2 },
+function divisorias(s, y, h, quantidade) {
+  const passoDaColuna = LARG / quantidade;
+  for (let i = 1; i < quantidade; i += 1) {
+    s.addShape(pres.ShapeType.line, {
+      x: L + i * passoDaColuna, y, w: 0, h,
+      line: { color: LINHA, width: 1 },
+    });
+  }
+}
+
+function faixa(s, y, itens, opcoes) {
+  const config = opcoes || {};
+  const h = config.h || 1.25;
+  const tamanhoDoValor = config.tamanhoDoValor || 30;
+  moldura(s, y, h);
+  divisorias(s, y, h, itens.length);
+  const largura = LARG / itens.length;
+  itens.forEach(function (item, i) {
+    const x = L + i * largura + 0.2;
+    const w = largura - 0.4;
+    if (item.realce) {
+      s.addShape(pres.ShapeType.rect, {
+        x: L + i * largura + 0.02, y: y + 0.02, w: largura - 0.04, h: h - 0.04,
+        fill: { color: BANDA_ALTA }, line: { color: BANDA_ALTA, width: 0 },
+      });
+    }
+    if (item.etapa) {
+      s.addText(item.etapa.toUpperCase(), {
+        x, y: y + 0.16, w, h: 0.2,
+        fontSize: 7.5, color: MUDO, fontFace: "Courier New", charSpacing: 1.2, isTextBox: true, margin: 0,
+      });
+    }
+    s.addText(item.valor, {
+      x, y: y + (item.etapa ? 0.38 : 0.18), w,
+      h: item.etapa ? 0.5 : tamanhoDoValor > 20 ? 0.56 : 0.3,
+      fontSize: tamanhoDoValor, bold: true,
+      color: item.corDoValor || (tamanhoDoValor > 20 ? CLARO : TINTA),
+      fontFace: "Calibri", lineSpacingMultiple: 0.95, isTextBox: true, margin: 0,
+    });
+    s.addText(item.rotulo, {
+      x, y: y + (item.etapa ? 0.92 : tamanhoDoValor > 20 ? 0.8 : 0.5), w,
+      h: h - (item.etapa ? 1.04 : tamanhoDoValor > 20 ? 0.92 : 0.62),
+      fontSize: item.mono ? 9 : 10,
+      color: item.mono ? ACENTO : SUAVE,
+      fontFace: item.mono ? "Courier New" : "Calibri",
+      lineSpacingMultiple: 1.08, isTextBox: true, margin: 0,
+    });
   });
-  s.addText(etapa.toUpperCase(), {
-    x, y: y + 0.1, w, h: 0.2,
-    fontSize: 8, color: MUDO, fontFace: "Courier New", charSpacing: 1.2, isTextBox: true, margin: 0,
+}
+
+function caixa(s, x, y, w, h, cabecalho, itens, destaque) {
+  s.addShape(pres.ShapeType.roundRect, {
+    x, y, w, h,
+    fill: { color: BANDA }, line: { color: destaque ? ACENTO : LINHA, width: 1 }, rectRadius: 0.06,
   });
-  s.addText(nome, {
-    x, y: y + 0.32, w, h: 0.48,
+  s.addText(cabecalho, {
+    x: x + 0.2, y: y + 0.16, w: w - 0.4, h: 0.42,
     fontSize: 12.5, bold: true, color: TINTA, fontFace: "Calibri",
     lineSpacingMultiple: 0.95, isTextBox: true, margin: 0,
   });
-  s.addText(valor, {
-    x, y: y + 0.84, w, h: 0.5,
-    fontSize: 9, color: ACENTO, fontFace: "Courier New",
-    lineSpacingMultiple: 1.1, isTextBox: true, margin: 0,
+  const corpo = Array.isArray(itens)
+    ? itens.map(function (item, i) {
+        return { text: item, options: { bullet: true, breakLine: i < itens.length - 1 } };
+      })
+    : itens;
+  s.addText(corpo, {
+    x: x + 0.2, y: y + 0.6, w: w - 0.4, h: h - 0.76,
+    fontSize: Array.isArray(itens) ? 10.5 : 10,
+    color: SUAVE, fontFace: "Calibri",
+    lineSpacingMultiple: 1.08, paraSpaceAfter: Array.isArray(itens) ? 6 : 0,
+    isTextBox: true, margin: 0,
   });
 }
 
-function etiquetas(s, y, itens) {
-  let x = L;
-  let linha = 0;
-  itens.forEach(function (item) {
-    const w = 0.072 * item.texto.length + 0.34;
-    if (x + w > L + LARG) { x = L; linha += 1; }
-    const yy = y + linha * 0.4;
-    s.addShape(pres.ShapeType.roundRect, {
-      x, y: yy, w, h: 0.3,
-      fill: { color: item.cor === ACENTO ? "E7F1EB" : FUNDO },
-      line: { color: item.cor || LINHA, width: 1 }, rectRadius: 0.15,
-    });
-    s.addText(item.texto.toUpperCase(), {
-      x, y: yy, w, h: 0.3,
-      fontSize: 8, color: item.cor || SUAVE, fontFace: "Courier New",
-      align: "center", valign: "middle", isTextBox: true, margin: 0,
-    });
-    x += w + 0.12;
-  });
-}
-
-function tabela(s, y, cabecalhos, linhas, larguras) {
-  const cabeca = cabecalhos.map(function (texto) {
+function tabela(s, y, cabecalhos, linhas, larguras, colunaDeDestaque) {
+  const cabeca = cabecalhos.map(function (texto, i) {
     return {
       text: texto.toUpperCase(),
-      options: { bold: false, color: MUDO, fontFace: "Courier New", fontSize: 8, valign: "top" },
+      options: {
+        color: i === colunaDeDestaque ? ACENTO : MUDO,
+        fontFace: "Courier New", fontSize: 8, valign: "middle", fill: { color: BANDA_ALTA },
+      },
     };
   });
-  const corpo = linhas.map(function (linha) {
+  const corpo = linhas.map(function (linha, n) {
     return linha.map(function (celula, i) {
       return {
         text: celula,
-        options: { color: i === 0 ? TINTA : SUAVE, bold: i === 0, fontFace: "Calibri", fontSize: 10, valign: "top" },
+        options: {
+          color: i === 0 || i === colunaDeDestaque ? TINTA : SUAVE,
+          bold: i === 0,
+          fontFace: "Calibri", fontSize: 10, valign: "top",
+          fill: { color: n % 2 === 0 ? BANDA : FUNDO },
+        },
       };
     });
   });
   s.addTable([cabeca].concat(corpo), {
     x: L, y, w: LARG, colW: larguras,
     border: { type: "solid", pt: 0.5, color: LINHA },
-    margin: [6, 10, 6, 0], autoPage: false,
+    margin: [7, 12, 7, 12], autoPage: false,
   });
 }
 
 // 01 · Abertura
 let s = novo(1, "Abertura");
 s.addText("Radar de Estágio", {
-  x: L, y: 1.42, w: LARG, h: 1.05,
-  fontSize: 48, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
+  x: L, y: 1.18, w: LARG, h: 1.0,
+  fontSize: 46, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
 });
-paragrafo(s, "Um agente que busca vagas de estágio todos os dias, compara cada anúncio com o perfil do estudante e entrega no Telegram até sete recomendações explicadas.", 2.55, 14);
-s.addText("Igor Costa · Ian Dias · Miguel Esteves", {
-  x: L, y: 3.42, w: LARG, h: 0.26,
-  fontSize: 12, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
-});
-paragrafo(s, "Métodos e Aplicações de IA · IBM3116", 3.7, 11);
-etiquetas(s, 4.32, [
-  { texto: "Em produção desde 28/08/2026", cor: ACENTO },
-  { texto: "31 dias de entrega diária" },
-  { texto: "410 recomendações enviadas" },
-]);
+paragrafo(s, "Um agente que busca vagas de estágio todos os dias, compara cada anúncio com o perfil do estudante e entrega no Telegram até sete recomendações explicadas.", 2.28, 13.5);
+faixa(s, 3.28, [
+  { valor: "Igor Costa", rotulo: "pipeline, matching e banco" },
+  { valor: "Ian Dias", rotulo: "operação, coleta e entrega" },
+  { valor: "Miguel Esteves", rotulo: "cadastro, dados e privacidade" },
+  { valor: "31 dias no ar", rotulo: "410 recomendações entregues", corDoValor: CLARO },
+], { h: 0.98, tamanhoDoValor: 14 });
+fonte(s, "Métodos e Aplicações de IA · IBM3116", 4.52);
 s.addNotes("Somos três alunos e o Radar está no ar há 31 dias, entregando sozinho todo dia às 07:23. Tudo que vem a seguir são números de produção, não de simulação.");
 
 // 02 · Problema
 s = novo(2, "Problema");
 titulo(s, "Para achar 7 vagas que servem,\nalguém precisa descartar 726.");
-numero(s, L, 2.2, 2.6, "733", "anúncios coletados na execução de hoje");
-numero(s, L + 2.95, 2.2, 2.6, "35", "sobram para um perfil, depois de curso, cidade e modalidade");
-numero(s, L + 5.9, 2.2, 2.6, "7", "chegam ao estudante, as únicas acima da nota mínima");
-paragrafo(s, "Esse funil existe com ou sem o Radar. Sem ele, quem descarta é o estudante — todo dia, à mão. No Brasil, 20,1 milhões podem estagiar e 1,2 milhão consegue.", 4.15, 12);
-fonte(s, "ABRES — Associação Brasileira de Estágios, 2024", 4.85);
+faixa(s, 2.22, [
+  { valor: "733", rotulo: "anúncios coletados na execução de hoje" },
+  { valor: "35", rotulo: "sobram para um perfil, depois de curso, cidade e modalidade" },
+  { valor: "7", rotulo: "chegam ao estudante, as únicas acima da nota mínima" },
+], { h: 1.42 });
+paragrafo(s, "Esse funil existe com ou sem o Radar. Sem ele, quem descarta é o estudante — todo dia, à mão. No Brasil, 20,1 milhões podem estagiar e 1,2 milhão consegue.", 3.95, 12);
+fonte(s, "ABRES — Associação Brasileira de Estágios, 2024", 4.72);
 s.addNotes("O 733 é a coleta real de hoje. O 35 é o que sobra para um perfil depois do pré-filtro, e o 7 é o limite da mensagem. O trabalho de descartar 726 anúncios existe de qualquer jeito: a pergunta é quem faz.");
 
 // 03 · Contexto e público
 s = novo(3, "Contexto e público");
 titulo(s, "Universitário no primeiro estágio.");
-coluna(s, L, 1.62, 4.2, "Quem usa", [
+caixa(s, L, 1.68, 4.3, 2.35, "Quem usa", [
   "Estudante de graduação, qualquer curso das 12 áreas do catálogo",
   "Procura o primeiro estágio e não tem tempo de triar anúncio todo dia",
   "Já usa Telegram — nenhum aplicativo novo",
 ]);
-coluna(s, L + 4.6, 1.62, 4.2, "Como ele faz hoje", [
+caixa(s, L + 4.5, 1.68, 4.3, 2.35, "Como ele faz hoje", [
   "Abre vários portais e repete a mesma busca",
   "Lê o anúncio inteiro para saber se o curso é aceito",
   "Reencontra a mesma vaga republicada com outro título",
 ]);
-numero(s, L, 3.75, 2.6, "103", "visitas na landing em 30 dias");
-numero(s, L + 2.95, 3.75, 2.6, "6", "perfis criados");
-numero(s, L + 5.9, 3.75, 2.6, "4", "recebendo recomendações");
-s.addNotes("O público é o estudante de qualquer curso, não só de computação: o catálogo tem 12 áreas e 105 cursos. Os números embaixo são do piloto dos últimos 30 dias, e o funil aperta forte entre visita e cadastro.");
+s.addNotes("O público é o estudante de qualquer curso, não só de computação: o catálogo tem 12 áreas e 105 cursos. No piloto são 6 perfis criados e 4 recebendo recomendações.");
 
 // 04 · Solução
 s = novo(4, "Solução");
 titulo(s, "A IA lê o anúncio. O Python decide a nota.", 26);
-paragrafo(s, "O estudante preenche o perfil uma vez. Todo dia às 07:23 o sistema coleta, descarta o que não serve, pede à IA apenas os fatos do anúncio e calcula a compatibilidade por regras determinísticas.", 1.56, 12);
-bloco(s, L, 2.42, 2.05, 1.62, "Coleta e filtro", "API da Adzuna, deduplicação e pré-filtro por curso, cidade e modalidade. Sem IA.");
-bloco(s, L + 2.22, 2.42, 2.05, 1.62, "Extração por IA", "Gemini Flash devolve requisitos, cursos aceitos, período e modalidade em JSON validado.", ACENTO);
-bloco(s, L + 4.44, 2.42, 2.05, 1.62, "Nota determinística", "45% habilidades, 15% período, 10% curso, 10% área, 10% logística, 10% interesse.");
-bloco(s, L + 6.66, 2.42, 2.05, 1.62, "Entrega", "Bot no Telegram, link rastreado e um botão de resposta por vaga.");
-etiquetas(s, 4.36, [
-  { texto: "Python" }, { texto: "GitHub Actions" }, { texto: "Supabase / PostgreSQL" },
-  { texto: "Gemini Flash" }, { texto: "Telegram Bot API" },
-]);
+paragrafo(s, "O estudante preenche o perfil uma vez. Todo dia às 07:23, pelo GitHub Actions, o sistema coleta, descarta o que não serve, pede à IA apenas os fatos do anúncio e calcula a compatibilidade por regras determinísticas.", 1.5, 12);
+const largDaCaixa = 2.08;
+const vaoDaCaixa = 0.16;
+caixa(s, L, 2.42, largDaCaixa, 2.1, "Coleta e filtro", "API da Adzuna, deduplicação e pré-filtro por curso, cidade e modalidade. Sem IA.");
+caixa(s, L + largDaCaixa + vaoDaCaixa, 2.42, largDaCaixa, 2.1, "Extração por IA", "Gemini Flash devolve requisitos, cursos aceitos, período e modalidade em JSON validado.", true);
+caixa(s, L + 2 * (largDaCaixa + vaoDaCaixa), 2.42, largDaCaixa, 2.1, "Nota determinística", "Python puro: 45% habilidades, 15% período, 10% curso, 10% área, 10% logística, 10% interesse.");
+caixa(s, L + 3 * (largDaCaixa + vaoDaCaixa), 2.42, largDaCaixa, 2.1, "Entrega e histórico", "Bot no Telegram, link rastreado e perfis, notas e envios no Supabase.");
 s.addNotes("A divisão de trabalho é a decisão central do projeto: a IA só extrai fatos do anúncio e nunca vê o perfil; quem compara e pontua é Python puro. Isso torna a nota auditável e o custo viável, porque a mesma extração serve todos os usuários.");
 
 // 05 · Demonstração
 s = novo(5, "Demonstração");
 titulo(s, "Cadastro no site, recomendação no Telegram.", 26);
-const alturaDaTela = 2.6;
+const alturaDaTela = 3.3;
 const larguraDoCadastro = alturaDaTela * (2122 / 1330);
-const larguraDoTelegram = alturaDaTela * (950 / 1271);
-const inicio = L + (LARG - (larguraDoCadastro + larguraDoTelegram + 0.35)) / 2;
-s.addImage({ path: path.join(REPO, "apresentacao/telas/cadastro.png"), x: inicio, y: 1.6, w: larguraDoCadastro, h: alturaDaTela });
-s.addImage({ path: path.join(REPO, "apresentacao/telas/demo.png"), x: inicio + larguraDoCadastro + 0.35, y: 1.6, w: larguraDoTelegram, h: alturaDaTela });
+const larguraDoTelegram = alturaDaTela * (980 / 1280);
+const inicio = L + (LARG - (larguraDoCadastro + larguraDoTelegram + 0.28)) / 2;
+s.addImage({ path: path.join(REPO, "apresentacao/telas/cadastro.png"), x: inicio, y: 1.4, w: larguraDoCadastro, h: alturaDaTela });
+s.addImage({ path: path.join(REPO, "apresentacao/telas/demo.png"), x: inicio + larguraDoCadastro + 0.28, y: 1.4, w: larguraDoTelegram, h: alturaDaTela });
 s.addText("O perfil vem antes da conta — quatro etapas, uma única vez.", {
-  x: inicio, y: 4.32, w: larguraDoCadastro, h: 0.4,
-  fontSize: 10, color: MUDO, fontFace: "Calibri", isTextBox: true, margin: 0,
+  x: inicio, y: 4.82, w: larguraDoCadastro, h: 0.3,
+  fontSize: 9.5, color: MUDO, fontFace: "Calibri", isTextBox: true, margin: 0,
 });
-s.addText("A mensagem diária: nota, requisitos atendidos e o selo da fonte.", {
-  x: inicio + larguraDoCadastro + 0.35, y: 4.32, w: larguraDoTelegram + 1.2, h: 0.4,
-  fontSize: 10, color: MUDO, fontFace: "Calibri", isTextBox: true, margin: 0,
+s.addText("A mensagem diária: nota, requisitos e o selo da fonte.", {
+  x: inicio + larguraDoCadastro + 0.28, y: 4.82, w: larguraDoTelegram + 0.9, h: 0.3,
+  fontSize: 9.5, color: MUDO, fontFace: "Calibri", isTextBox: true, margin: 0,
 });
 s.addNotes("À esquerda, o cadastro: o perfil vem antes da conta, de propósito, para não cobrar e-mail e senha antes de mostrar o produto. À direita, a mensagem real das 07:23, com a nota, o que o perfil atende, o que falta conferir e a atribuição obrigatória da Adzuna.");
 
 // 06 · Fluxo
 s = novo(6, "Fluxo");
 titulo(s, "Entrada → Processamento → IA → Resultado → Decisão", 24);
-const largDoPasso = 1.62;
-const vaoDoPasso = 0.18;
-passo(s, L, 2.0, largDoPasso, "Entrada", "Coleta", "733 vagas\n16 requisições");
-passo(s, L + (largDoPasso + vaoDoPasso), 2.0, largDoPasso, "Processamento", "Dedupe e pré-filtro", "35 candidatas\npor perfil");
-passo(s, L + 2 * (largDoPasso + vaoDoPasso), 2.0, largDoPasso, "IA", "Extração de fatos", "4 requisições\nao Gemini");
-passo(s, L + 3 * (largDoPasso + vaoDoPasso), 2.0, largDoPasso, "Resultado", "Nota e ranking", "23 vagas\npara 4 pessoas");
-passo(s, L + 4 * (largDoPasso + vaoDoPasso), 2.0, largDoPasso, "Decisão", "Telegram", "a pessoa abre\ne responde");
-paragrafo(s, "A extração é por vaga, não por pessoa: a mesma leitura serve todos os perfis, e por isso um usuário novo quase não custa. Números da execução de 28/09.", 3.8, 12);
+faixa(s, 2.0, [
+  { etapa: "Entrada", valor: "Coleta", rotulo: "733 vagas\n16 requisições", mono: true },
+  { etapa: "Processamento", valor: "Dedupe e pré-filtro", rotulo: "35 candidatas\npor perfil", mono: true },
+  { etapa: "IA", valor: "Extração de fatos", rotulo: "4 requisições\nao Gemini", mono: true, realce: true, corDoValor: CLARO },
+  { etapa: "Resultado", valor: "Nota e ranking", rotulo: "23 vagas\npara 4 pessoas", mono: true },
+  { etapa: "Decisão", valor: "Telegram", rotulo: "a pessoa abre\ne responde", mono: true },
+], { h: 1.62, tamanhoDoValor: 12.5 });
+paragrafo(s, "A extração é por vaga, não por pessoa: a mesma leitura serve todos os perfis, e por isso um usuário novo quase não custa. Números da execução de 28/09.", 3.92, 12);
 s.addNotes("Da coleta à mensagem são cinco etapas, e só uma usa IA. As 4 requisições ao Gemini valeram para os quatro usuários juntos, porque a extração fica guardada por vaga e é reaproveitada entre pessoas e entre dias.");
 
 // 07 · Casos reais
 s = novo(7, "Casos reais");
 titulo(s, "A indústria já automatizou a triagem.");
-tabela(s, 1.6, ["Empresa", "O que fez", "Resultado"], [
+tabela(s, 1.58, ["Empresa", "O que fez", "Resultado"], [
   ["Unilever", "Triagem de 250 mil candidaturas por ciclo com entrevista em vídeo e jogos cognitivos", "Contratação de 4 meses para 4 semanas; 50 mil horas de entrevista economizadas"],
-  ["Gupy", "ATS brasileiro com NLP na ordenação de candidatos, em 2.300 empresas clientes (2021)", "480 mil vagas preenchidas em 2021, com redução de até 80% no tempo de contratação"],
+  ["Gupy", "ATS brasileiro com NLP na ordenação de candidatos, em 2.300 empresas clientes", "480 mil vagas preenchidas em 2021, com redução de até 80% no tempo de contratação"],
   ["LinkedIn", "Casa 50 milhões de vagas com cada usuário num funil de quatro estágios", "Lição da própria engenharia: otimizar por clique premia título sensacionalista"],
-], [1.3, 3.9, 3.6]);
-paragrafo(s, "Todos filtram pessoas para a empresa. O Radar inverte o lado: filtra vagas para o estudante, então nunca descarta alguém — no máximo deixa de recomendar uma vaga.", 3.95, 12);
-fonte(s, "Google for Startups, história da Gupy · LinkedIn Engineering Blog · estudos de caso sobre HireVue e Pymetrics na Unilever", 4.75);
+], [1.4, 3.7, 3.7]);
+paragrafo(s, "Todos filtram pessoas para a empresa. O Radar inverte o lado: filtra vagas para o estudante, então nunca descarta alguém — no máximo deixa de recomendar uma vaga.", 3.92, 12);
+fonte(s, "Google for Startups, história da Gupy · LinkedIn Engineering Blog · estudos de caso sobre HireVue e Pymetrics na Unilever", 4.72);
 s.addNotes("A mecânica não é nova: extrair requisitos de texto livre, comparar com um perfil e ordenar. O que muda é o lado do funil. Como esses sistemas decidem sobre pessoas, o risco deles é discriminar; o nosso risco é só deixar de recomendar uma vaga.");
 
 // 08 · Proposta de valor
 s = novo(8, "Proposta de valor");
 titulo(s, "O trabalho repetitivo sai do estudante.");
-tabela(s, 1.6, ["Etapa", "Sem o Radar", "Com o Radar"], [
+tabela(s, 1.58, ["Etapa", "Sem o Radar", "Com o Radar"], [
   ["Procurar", "Abrir portais e repetir a busca todo dia", "Uma execução diária, sem ação do estudante"],
   ["Triar", "Ler anúncio por anúncio para ver se o curso é aceito", "733 anúncios viram 7, já conferidos"],
   ["Entender", "Deduzir dos requisitos se vale a pena", "Nota de 0 a 100 com o que atende e o que falta"],
   ["Repetir", "Reencontrar a mesma vaga republicada", "Deduplicação e histórico por pessoa"],
-], [1.3, 3.75, 3.75]);
-numero(s, L, 4.05, 2.6, "1,7 min", "do cadastro à primeira lista, mediana observada");
-numero(s, L + 2.95, 4.05, 2.6, "≈ R$ 0", "custo de um usuário novo: a extração é por vaga");
-numero(s, L + 5.9, 4.05, 2.6, "105", "cursos reconhecidos, não só computação");
+], [1.4, 3.7, 3.7], 2);
+faixa(s, 4.02, [
+  { valor: "1,7 min", rotulo: "do cadastro à primeira lista, mediana observada", corDoValor: CLARO },
+  { valor: "≈ R$ 0", rotulo: "custo de um usuário novo: a extração é por vaga", corDoValor: CLARO },
+  { valor: "105 cursos", rotulo: "reconhecidos pelo catálogo, não só computação", corDoValor: CLARO },
+], { h: 1.02, tamanhoDoValor: 15 });
 s.addNotes("O ganho não é achar uma vaga que ninguém acharia: é tirar do estudante o trabalho repetido. E o custo marginal perto de zero é consequência direta da arquitetura, não de otimização.");
 
 // 09 · Riscos, limites e dados
 s = novo(9, "Riscos, limites e dados");
 titulo(s, "O motor funciona. Falta a prova de valor.", 26);
-coluna(s, L, 1.62, 4.2, "Riscos e limitações", [
+caixa(s, L, 1.62, 4.3, 2.6, "Riscos e limitações", [
   "Zero vaga marcada como útil em 410 entregas: 12 aberturas e 6 respostas",
   "Uma fonte só: a Adzuna responde por tudo, e a Gupy saiu pelos termos de uso",
   "O estudante é um pagador improvável: os concorrentes são gratuitos para ele",
 ]);
-coluna(s, L + 4.6, 1.62, 4.2, "Dados e privacidade", [
+caixa(s, L + 4.5, 1.62, 4.3, 2.6, "Dados e privacidade", [
   "Origem: API oficial da Adzuna, com atribuição obrigatória em cada anúncio",
   "Formato: JSON das vagas e JSON validado por schema na saída da IA",
   "O perfil nunca vai para a IA: o prompt só contém o anúncio",
-]);
-etiquetas(s, 4.05, [
-  { texto: "2.020 testes automatizados", cor: ACENTO },
-  { texto: "Domínio próprio pendente", cor: ALERTA },
-  { texto: "Sem validação por estudantes", cor: RISCO },
 ]);
 s.addNotes("O risco que decide o projeto não é técnico. Sem ninguém marcando uma vaga como útil, não há como recalibrar a nota, e por isso a regra do projeto é não mexer em peso nenhum sem um caso real vindo de usuário.");
 
 // 10 · Próximos passos
 s = novo(10, "Próximos passos");
 titulo(s, "Protótipo → MVP → Piloto → Implantação", 28);
-bloco(s, L, 1.68, 2.05, 1.5, "Protótipo · agosto", "Coleta e nota em Python, com perfil fixo e sem banco.");
-bloco(s, L + 2.22, 1.68, 2.05, 1.5, "MVP · 28/08", "Banco, conta no site, Telegram e entrega diária automática.", ACENTO);
-bloco(s, L + 4.44, 1.68, 2.05, 1.5, "Piloto · agora", "6 perfis, 4 ativados, 410 recomendações. Falta o sinal de utilidade.", ALERTA);
-bloco(s, L + 6.66, 1.68, 2.05, 1.5, "Implantação · a seguir", "Domínio próprio, textos legais aprovados e um pagador definido.");
+faixa(s, 1.66, [
+  { etapa: "Agosto", valor: "Protótipo", rotulo: "Coleta e nota em Python, com perfil fixo e sem banco." },
+  { etapa: "28/08", valor: "MVP", rotulo: "Banco, conta no site, Telegram e entrega diária automática." },
+  { etapa: "Agora", valor: "Piloto", rotulo: "6 perfis, 4 ativados, 410 recomendações. Falta o sinal de utilidade.", realce: true, corDoValor: ALERTA },
+  { etapa: "A seguir", valor: "Implantação", rotulo: "Domínio próprio, textos legais aprovados e um pagador definido." },
+], { h: 1.62, tamanhoDoValor: 14 });
 s.addShape(pres.ShapeType.roundRect, {
-  x: L, y: 3.48, w: LARG, h: 1.34, fill: { color: SUPERFICIE }, line: { color: LINHA, width: 1 }, rectRadius: 0.06,
+  x: L, y: 3.54, w: LARG, h: 1.32, fill: { color: BANDA }, line: { color: LINHA, width: 1 }, rectRadius: 0.06,
 });
 s.addText("A pergunta honesta: isso vira negócio?", {
-  x: L + 0.26, y: 3.68, w: LARG - 0.52, h: 0.4,
-  fontSize: 20, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
+  x: L + 0.28, y: 3.74, w: LARG - 0.56, h: 0.4,
+  fontSize: 19, bold: true, color: TINTA, fontFace: "Calibri", isTextBox: true, margin: 0,
 });
 s.addText("Tecnicamente, já roda sozinho há 31 dias. Como produto, ainda falta a prova de que a recomendação serve — e é isso, não mais código, que decide o próximo passo.", {
-  x: L + 0.26, y: 4.14, w: LARG - 0.52, h: 0.56,
-  fontSize: 11.5, color: SUAVE, fontFace: "Calibri", lineSpacingMultiple: 1.1, isTextBox: true, margin: 0,
+  x: L + 0.28, y: 4.18, w: LARG - 0.56, h: 0.56,
+  fontSize: 11, color: SUAVE, fontFace: "Calibri", lineSpacingMultiple: 1.1, isTextBox: true, margin: 0,
 });
 s.addNotes("Fechamos com a pergunta que o próprio projeto ainda não respondeu. O próximo passo não é mais código: é conversar com quem recebeu as vagas e descobrir por que ninguém respondeu.");
 
