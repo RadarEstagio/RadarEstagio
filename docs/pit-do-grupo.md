@@ -62,8 +62,8 @@ descobrir tarde a vaga que combinava.
 4. **Esforço diário.** A busca é episódica para a pessoa, mas o mercado publica todo dia; quem
    não olha todo dia perde.
 
-**Situação do piloto.** Nos últimos 30 dias: 103 visitas na landing, 6 perfis criados e 4 pessoas
-recebendo recomendações diárias.
+**Situação do piloto.** Nos últimos 30 dias, medido em 30/09/2026: 113 visitas na landing, 6
+perfis criados e 4 pessoas recebendo recomendações diárias.
 
 ## 3. Solução desenvolvida
 
@@ -290,8 +290,11 @@ projeto sob a LGPD.
 diário para perceber cota estourada, coleta incompleta ou queda do modelo. A execução termina com
 código de erro quando não consegue se reportar, justamente para não passar por verde.
 
-**Resistência e adoção — o risco que decide o projeto.** Em **410 recomendações entregues houve 12
-aberturas de vaga, 6 respostas de feedback e nenhuma vaga marcada como útil**. Sem esse sinal, não
+**Resistência e adoção — o risco que decide o projeto.** No relatório da coorte dos últimos 30
+dias, medido em 30/09/2026: **425 recomendações entregues, 12 aberturas de vaga (3%), 6 respostas de
+feedback (0,9% das 644 recomendações do período) e nenhuma vaga marcada como útil**. No acumulado
+desde 28/08 são 704 envios e 46 aberturas, em 36 pares distintos de pessoa e vaga, e o número de
+vagas marcadas como úteis continua zero. Sem esse sinal, não
 há como recalibrar a nota com evidência, e a regra que adotamos é não mexer em peso nenhum sem um
 caso real vindo de usuário. Este é o risco mais grave do projeto, e ele não é técnico.
 
