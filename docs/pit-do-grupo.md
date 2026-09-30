@@ -137,6 +137,19 @@ documento, slide 5.
 **Entrada → Processamento → IA → Resultado → Decisão**, com os números medidos na execução de
 28/09/2026:
 
+```mermaid
+flowchart LR
+  A["Entrada<br/>API da Adzuna<br/>733 vagas do dia"] --> B["Processamento em Python<br/>deduplicação e pré-filtro<br/>35 candidatas por perfil"]
+  B --> C["IA<br/>extração dos fatos do anúncio<br/>4 requisições, cache por vaga"]
+  C --> D["Resultado<br/>nota de 0 a 100 por regra<br/>ranking por perfil"]
+  D --> E["Decisão<br/>até 7 vagas no Telegram<br/>abertura, candidatura e feedback"]
+  E -. "feedback do estudante" .-> B
+  P["Perfil do estudante<br/>site e banco"] --> B
+  P --> D
+```
+
+O perfil entra no pré-filtro e na nota, **nunca na IA**: o modelo recebe só o texto do anúncio.
+
 | Etapa | O que acontece | Medida do dia |
 |---|---|---|
 | **Entrada** | Coleta na API da Adzuna, por termos de busca das áreas cadastradas e por cidade de cada perfil ativo | 733 vagas em 16 requisições |
