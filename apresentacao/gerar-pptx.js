@@ -242,7 +242,7 @@ s.addNotes("O ganho não é achar vaga que ninguém tem: é tirar a triagem diá
 s = novo(9, "Riscos, limites e dados", "O que ainda não está provado");
 titulo(s, "O motor funciona. Falta a prova de valor.", 0.72, 30);
 cartao(s, L, 1.8, 4.3, 2.1, "Riscos e limitações",
-  "• Zero vaga marcada como útil em 410 entregas: 12 aberturas e 6 respostas\n• Uma fonte só: a Adzuna responde por tudo\n• O custo cresce com cidades e áreas, não com usuários\n• Cobrar do estudante esbarra na Lei 11.788/2008, art. 5º, §2º");
+  "• Zero vaga marcada como útil em 410 entregas: 12 aberturas e 6 respostas\n• Uma fonte só: a Adzuna responde por tudo\n• O custo cresce com cidades e áreas, não com usuários\n• Estudante é pagador improvável: concorrentes são gratuitos para ele, e a lei só veda cobrança a agentes de integração");
 cartao(s, L + 4.6, 1.8, 4.3, 2.1, "Dados: origem, formato e privacidade",
   "• Origem: API oficial da Adzuna, com atribuição obrigatória\n• Formato: JSON das vagas e JSON validado por schema na saída da IA\n• Privacidade: RLS por usuário, exportação e exclusão com 60 dias\n• O perfil nunca vai para a IA: o prompt só contém o anúncio");
 etiquetas(s, 4.1, [
