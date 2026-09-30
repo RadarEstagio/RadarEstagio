@@ -15,20 +15,31 @@ na fonte da vaga.
 Estudante era a hipótese inicial de pagador; instituição patrocinadora é outra hipótese e não
 deve ser assumida como novo público. Nenhuma opção foi escolhida pela equipe.
 
-## Restrição legal e pagadores alternativos
+## O que limita cobrar do estudante
 
-- **Cobrar do estudante esbarra na Lei do Estágio.** A Lei 11.788/2008, art. 5º, §1º, lista
-  entre os serviços dos agentes de integração "identificar oportunidades de estágio" e
-  "cadastrar os estudantes", e o §2º veda "a cobrança de qualquer valor dos estudantes" por
-  eles. O Radar não é agente de integração formal, mas executa esses dois serviços. Nenhuma
-  oferta ao estudante antes de consulta jurídica (auditoria de 10/09/2026, RCD-02).
-- **Compatibilidade de curso vira responsabilidade.** O §3º do mesmo artigo responsabiliza
-  civilmente quem indica estágio incompatível com o curso. Num modelo pago por instituição ou
-  empresa, a regra de curso do motor passa a ser argumento de venda e também risco.
+- **A Lei do Estágio não veda cobrar do nosso usuário.** O art. 5º da Lei 11.788/2008 trata de
+  agentes de integração, a quem instituições de ensino e partes cedentes recorrem "mediante
+  condições acordadas em instrumento jurídico apropriado". O §1º lista os serviços desses
+  agentes, entre eles "identificar oportunidades de estágio" e "cadastrar os estudantes", e o
+  §2º veda a cobrança dos estudantes "a título de remuneração pelos serviços referidos nos
+  incisos deste artigo" — os serviços deles. O Radar não é um agente de integração: não tem
+  instrumento com instituição nem com parte cedente, não entra no termo de compromisso e não
+  cadastra ninguém para uma empresa. A leitura anterior (auditoria de 10/09/2026, RCD-02) tirava
+  a vedação de o Radar executar dois dos cinco serviços da lista, mas ela acompanha a figura, não
+  a atividade isolada. Correção de 29/09/2026; a trava "nenhuma oferta ao estudante antes de
+  consulta jurídica" nasceu dessa leitura, e mantê-la é decisão da equipe.
+- **O que restringe é o mercado.** CIEE e Nube são gratuitos para o estudante porque quem paga
+  são as empresas, e LinkedIn, Indeed e a própria Adzuna dão alerta de vaga de graça. O estudante
+  compara o preço com gratuito, não com concorrente pago, e nenhum parecer jurídico muda isso.
+- **O caminho por instituição é o que aproxima o Radar da figura legal.** Convênio para
+  identificar vagas e cadastrar alunos é, na letra do art. 5º, o que um agente de integração faz.
+  Nele o §2º passa a valer — não se cobra do estudante — e com ele o §3º, que responsabiliza
+  civilmente quem indica estágio incompatível com o curso: a regra de curso do motor vira
+  argumento de venda e risco ao mesmo tempo.
 - **Pagadores ainda não consultados:** instituições de ensino (coordenação ou núcleo de
   estágios), empresas que recrutam estagiários e o programa de parceiros da Adzuna, que oferece
   "a sponsored feed of ads for your site", registrado em 12/09 como caminho de receita sem
-  cobrar do estudante. O mercado segue a lei: agentes como CIEE e Nube são pagos pelas empresas.
+  cobrar do estudante.
 
 ## Decisões pendentes
 

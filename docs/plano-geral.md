@@ -190,9 +190,10 @@ conferido no código nessa data, para a equipe decidir o que entra:
 - **Não implementados (RCD-05, 06, 07, 12 e 13):** prévia com vagas reais antes da conta,
   "Suas vagas" na conta, retorno perto do fim do estágio, mensagem com três destaques e
   frequência semanal como alternativa à pausa.
-- **Pagador (RCD-02).** Restrição da Lei do Estágio registrada na
-  [hipótese comercial](hipotese-comercial.md) em 13/09; consulta jurídica e conversas com
-  possíveis pagadores pendentes.
+- **Pagador (RCD-02).** A leitura da Lei do Estágio foi corrigida em 29/09 na
+  [hipótese comercial](hipotese-comercial.md): a vedação do art. 5º, §2º alcança agentes de
+  integração, e o Radar não é um, então o que limita cobrar do estudante é o mercado. As
+  conversas com possíveis pagadores seguem pendentes.
 - **Foco (RCD-03 e RCD-10).** Congelar ajuste de regra do motor sem caso vindo de usuário e
   definir o ICP do piloto são decisões da equipe, ainda sem registro.
 
