@@ -27,8 +27,9 @@ método e sem histórico: ele reencontra a mesma vaga republicada com outro tít
 perde a que combinava porque chegou tarde e não tem como comparar dez anúncios em critérios
 iguais.
 
-O problema é relevante em escala: segundo a ABRES, **20,1 milhões** de estudantes brasileiros
-estão aptos a estagiar e cerca de **1,2 milhão** consegue uma vaga — algo próximo de 6%.
+O problema é relevante em escala: segundo a ABRES, a partir de dados do Inep/MEC, **20,1 milhões**
+de estudantes brasileiros estão aptos a estagiar e cerca de **1,2 milhão** consegue uma vaga — 6%.
+No ensino superior, que é o público do Radar, são 10,2 milhões de aptos e 925 mil estagiando (9%).
 
 ## 2. Contexto do negócio
 
@@ -157,8 +158,10 @@ requisições por usuário por dia, e vinte estudantes já estouravam a cota.
   programas de entrada; a triagem manual levava meses.
 - **Tecnologia:** entrevista em vídeo com análise automatizada (HireVue) e jogos cognitivos
   (Pymetrics) para ordenar candidatos antes da etapa humana.
-- **Resultados relatados:** tempo de contratação de cerca de quatro meses para cerca de quatro
-  semanas; aproximadamente 50 mil horas de entrevista economizadas.
+- **Resultados relatados pelo fornecedor da tecnologia (HireVue):** tempo de contratação de
+  quatro a seis meses para cerca de quatro semanas, redução relatada de 90%; 50 mil horas de
+  entrevista economizadas em 18 meses e £1 milhão por ano. São números da empresa que vendeu a
+  solução, sem auditoria independente publicada — valem como relato, não como medição.
 - **Semelhança com o Radar:** o gargalo é o mesmo — volume grande demais para leitura humana — e a
   resposta é a mesma: ordenar antes de ler. **Diferença:** ali a máquina decide sobre pessoas, o
   que levanta risco de discriminação; no Radar ela decide sobre anúncios.
@@ -365,10 +368,13 @@ para quem a recebe, e quem paga por ela.
 
 ## Referências
 
-1. ABRES — Associação Brasileira de Estágios. *Dados do estágio no Brasil*, 2024.
+1. ABRES — Associação Brasileira de Estágios. *Estatísticas do estágio no Brasil*, com dados do
+   Inep/MEC: <https://abres.org.br/estatisticas/>. Consultado em 30/09/2026.
 2. Google for Startups. *História da Gupy* — caso empresarial de ATS brasileiro com IA.
 3. LinkedIn Engineering Blog. *Job recommendations at LinkedIn* — arquitetura de recomendação em
    quatro estágios.
-4. Adzuna. *API documentation and terms of use* — documentação oficial da fonte de vagas.
-5. Google. *Gemini API — structured output e limites de uso* — documentação oficial do modelo.
-6. BRASIL. *Lei nº 11.788, de 25 de setembro de 2008* — Lei do Estágio.
+4. HireVue. *Unilever goes digital to transform its graduate hiring process* — caso empresarial do
+   fornecedor, compilado em <https://bestpractice.ai>. É a origem dos números do caso 1.
+5. Adzuna. *API documentation and terms of use* — documentação oficial da fonte de vagas.
+6. Google. *Gemini API — structured output e limites de uso* — documentação oficial do modelo.
+7. BRASIL. *Lei nº 11.788, de 25 de setembro de 2008* — Lei do Estágio.
