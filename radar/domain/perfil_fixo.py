@@ -13,8 +13,10 @@ def perfil_de_exemplo() -> Perfil:
             "CSS",
             "Git",
             "Lógica de Programação",
+            "Java",
+            
         ],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
-        areas_de_interesse=[AreaDeInteresse.DESENVOLVIMENTO_WEB, AreaDeInteresse.DADOS_IA],
+        areas_de_interesse=[AreaDeInteresse.DESENVOLVIMENTO_WEB],
     )
