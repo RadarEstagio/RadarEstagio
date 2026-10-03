@@ -66,36 +66,41 @@ o domínio. Adicione e verifique o e-mail pessoal de destino. Em **Routing Rules
 Envie uma mensagem de outra conta para `contato@radarestagio.com`; confira a caixa e o spam.
 [Instruções do Cloudflare](https://developers.cloudflare.com/email-service/get-started/route-emails/).
 
-O encaminhamento resolve o recebimento. Combine com Ian e Miguel quem acompanhará e responderá
-as mensagens. O envio automático da confirmação será configurado separadamente no Resend.
+O encaminhamento resolve o recebimento: Igor responde as mensagens (ver "Responsabilidades
+combinadas" na seção 2). O envio automático da confirmação será configurado separadamente no
+Resend.
 
-**Recebimento concluído.** Combine quem responderá e acompanhará os pedidos.
+**Recebimento concluído.** Igor responde e acompanha os pedidos.
 
 ## 2. Revisar os documentos e combinar a manutenção
 
-Revise com Ian os [Termos](../web/termos.html) e a [Política](../web/privacidade.html).
-Miguel também está identificado como responsável pelos dados. Registrem:
+Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.html) e na
+[Política](../web/privacidade.html). A revisão fechou em 02/10/2026:
 
-- Concordância com a descrição do serviço, dados, fornecedores e retenção de 60 dias.
+- Descrição do serviço, dados, fornecedores e retenção de 60 dias: mantidas como estavam.
 - Bases legais por finalidade e condições de processamento internacional, logs e backups:
-  **redigidas em 08/09/2026** na seção 3, na seção 4 e na seção 6 da Política (Markdown e HTML
-  iguais). Falta só a aprovação dos três.
-- Quem atenderá solicitações de dados e pedidos de eliminação sem aguardar arrependimento.
-- Quem acompanha falhas do job e a rotina de apagamento.
-- Quem paga a renovação do domínio, a data e o destino do domínio e das contas ao fim da disciplina.
+  redigidas em 08/09/2026 (seções 3, 4 e 6 da Política), sem passagem pendente.
+- **Vigência:** versão `2026-10-02`, em vigor desde 02/10/2026, nos dois HTML, nos dois Markdown
+  e em `VERSAO_DOS_TERMOS` de `web/assets/app.js`. O aviso de rascunho saiu das páginas. O banco
+  só aceita a versão como data (`AAAA-MM-DD`), e cada conta guarda a que aceitou. Contas que
+  aceitaram `2026-09-05` continuam válidas: o piloto ainda não começou e não há aceite a renovar.
 
-O prazo de resposta combinado para pedidos de dados e eliminação é de 5 dias úteis. As contas do
-Actions, do cron-job.org, da Cloudflare e do Supabase e o domínio `radarestagio.com` estão em
-contas pessoais do grupo; ao fim da disciplina, transferir para quem continuar ou deixar expirar
-com aviso no site.
+### Responsabilidades combinadas (02/10/2026)
 
-Para publicar depois da aprovação, em um único commit: definir a data de vigência nos dois HTML
-(`legal-updated` e o `aside.legal-notice`, que sai) e nos dois Markdown, e trocar
-`VERSAO_DOS_TERMOS` em `web/assets/app.js` para a mesma data, porque o banco guarda a versão
-aceita por cada conta. Confiram também os controles reais descritos no
-[contrato frontend](contrato-front.md).
+- **Contato e pedidos de dados:** Igor responde `contato@radarestagio.com`, que encaminha para o
+  e-mail dele, e atende pedidos de dados e eliminação em até 5 dias úteis, sem esperar o prazo de
+  arrependimento.
+- **Falhas do diário e rotina de apagamento:** Igor lê o resumo que cada execução envia ao chat de
+  operação. Execução que sai com código 1 ou resumo que não chega é investigada no mesmo dia.
+- **Domínio:** Igor paga a renovação de `radarestagio.com`. As contas do Actions, do cron-job.org,
+  da Cloudflare e do Supabase seguem em contas pessoais do grupo; ao fim da disciplina, transferir
+  para quem continuar ou deixar o domínio expirar com aviso no site.
 
-**Concluído quando:** texto final aprovado, contato ativo e responsabilidades confirmadas.
+Para alterar uma versão futura, no mesmo commit: nova data nos dois HTML (`legal-updated` e o
+parágrafo final da seção de mudanças), nos dois Markdown e em `VERSAO_DOS_TERMOS`. Confiram os
+controles reais descritos no [contrato frontend](contrato-front.md).
+
+**Concluído em 02/10/2026:** texto final em vigor, contato ativo e responsabilidades registradas.
 
 ## 3. Configurar Resend e SMTP — pode preparar agora
 
@@ -275,8 +280,8 @@ conforme o registro acima. Falta testar o cadastro completo pela interface publi
 registrar respostas positivas e negativas reais no feedback.
 
 As migrations `0013`–`0016` já aplicadas não serão reescritas. Correções futuras devem
-entrar em novas migrations pelo histórico do projeto. Depois da integração e revisão final,
-retirar os avisos de rascunho das páginas e registrar versão/data coerentes com o aceite.
+entrar em novas migrations pelo histórico do projeto. Os avisos de rascunho
+saíram das páginas em 02/10/2026, com versão e data coerentes com o aceite.
 
 **As `0014`–`0016` foram aplicadas fora do histórico de migrations, e isso foi corrigido em
 06/09.** A conferência encontrou todos os objetos das três no banco — as colunas de consentimento,
@@ -418,7 +423,7 @@ inválido sem corrigir dados pessoais por suposição nem apenas adiar a valida�
 
 - A definir: acesso e aprovação da equipe para publicar a branch e conferir Cloudflare Pages.
 - A definir: aplicação remota de `0018` e `0019`, conferência de RLS/grants e `migration list`.
-- A definir: Redirect URLs, SMTP/Resend, Turnstile e textos legais vigentes.
-- A definir: conta/Telegram de teste, acompanhamento de `contato@radarestagio.com` e confirmação
-  do cron-job.org.
+- A definir: Redirect URLs, SMTP/Resend e Turnstile. Textos legais vigentes desde 02/10/2026.
+- A definir: conta/Telegram de teste e confirmação do cron-job.org. Igor acompanha
+  `contato@radarestagio.com` desde 02/10/2026.
 - A definir: domínio público final e autorização para qualquer relato de uso.

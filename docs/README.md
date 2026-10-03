@@ -24,8 +24,8 @@ validação com usuários são estados diferentes.
   registro anterior e não é atualizado; o PIT é o que vale para a apresentação.
 - [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
   no plano geral, e o que virou regra, na arquitetura e no `CLAUDE.md`.
-- [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): rascunhos
-  para revisão; sincronizar com HTML e versão aceita antes da vigência.
+- [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): versão
+  `2026-10-02`, em vigor desde 02/10/2026; manter iguais aos HTML e a `VERSAO_DOS_TERMOS`.
 - [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
   [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
   decisões externas ainda abertos, com dados ausentes explicitados.

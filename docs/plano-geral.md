@@ -91,11 +91,11 @@ os bloqueadores antes de convidar outras pessoas.
 
 ### 4. Concluir os textos e combinar a manutenção
 
-- [ ] Igor, Ian e Miguel revisarem Termos e Política e resolverem as passagens pendentes.
-- [ ] Definir versão/vigência e sincronizar Markdown e páginas HTML.
-- [ ] Combinar quem responde ao contato, acompanha falhas e paga a renovação do domínio.
-
-As páginas seguem como rascunhos até essa revisão; a implementação não aprova os textos.
+- [x] Igor, Ian e Miguel revisarem Termos e Política e resolverem as passagens pendentes.
+- [x] Definir versão/vigência e sincronizar Markdown e páginas HTML: versão `2026-10-02`, em
+  vigor desde 02/10/2026.
+- [x] Combinar quem responde ao contato, acompanha falhas e paga a renovação do domínio: Igor, nas
+  três funções ([guia](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção)).
 
 ### 5. Pedir para alguns colegas usarem
 
