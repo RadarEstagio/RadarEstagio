@@ -1,11 +1,9 @@
 # Política de Privacidade — Radar de Estágio
 
-**Rascunho para aprovação de Igor, Ian e Miguel. Não publicado e ainda sem vigência.**
+**Versão 2026-10-02 · Em vigor desde 02/10/2026.**
 
-Este texto é o mesmo de `web/privacidade.html` e descreve a versão prevista para o piloto. As
-passagens antes marcadas como pendentes (bases legais, processamento internacional, logs e cópias
-de segurança) foram resolvidas em 08/09/2026 e aguardam aprovação. As condições para publicar
-estão em [revisão dos documentos](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção).
+Este texto é o mesmo de `web/privacidade.html`, revisado por Igor, Ian e Miguel, e descreve o
+tratamento de dados no piloto.
 
 ## 1. Responsáveis e contato
 
@@ -163,6 +161,6 @@ não inclui senhas, hashes, tokens de acesso ou credenciais dos serviços.
 
 ## 8. Atualizações
 
-A versão publicada terá data de vigência. Alterações relevantes serão informadas no site.
-Novas finalidades que exijam consentimento terão uma escolha específica apresentada antes
-do início desse uso.
+Esta é a versão 2026-10-02, em vigor desde 02/10/2026. Alterações relevantes serão informadas
+no site, com a nova versão e a data de vigência. Novas finalidades que exijam consentimento
+terão uma escolha específica apresentada antes do início desse uso.

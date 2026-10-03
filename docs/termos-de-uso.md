@@ -1,10 +1,9 @@
 # Termos de Uso — Radar de Estágio
 
-**Rascunho para aprovação de Igor, Ian e Miguel. Não publicado e ainda sem vigência.**
+**Versão 2026-10-02 · Em vigor desde 02/10/2026.**
 
-Este texto é o mesmo de `web/termos.html` e descreve a versão prevista para o piloto. As condições
-para publicá-lo estão em
-[revisão dos documentos](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção).
+Este texto é o mesmo de `web/termos.html`, revisado por Igor, Ian e Miguel, e descreve o serviço
+no piloto. A versão registrada no aceite de cada conta é a data acima.
 
 ## 1. Quem oferece o Radar
 
@@ -81,5 +80,7 @@ e-mail e recuperação de senha, não dependem dessa opção.
 O Radar está em validação e pode ter funcionalidades e fontes alteradas. Mudanças relevantes
 nestes Termos serão comunicadas no site, com a versão e a data de vigência. Quando necessário,
 será solicitado novo aceite.
+
+Esta é a versão 2026-10-02, em vigor desde 02/10/2026.
 
 Dúvidas ou problemas podem ser enviados a [contato@radarestagio.com](mailto:contato@radarestagio.com).
