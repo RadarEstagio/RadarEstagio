@@ -97,7 +97,28 @@ os bloqueadores antes de convidar outras pessoas.
 - [x] Combinar quem responde ao contato, acompanha falhas e paga a renovação do domínio: Igor, nas
   três funções ([guia](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção)).
 
-### 5. Pedir para alguns colegas usarem
+### 5. Proteger o site e o cadastro contra tráfego abusivo
+
+Motivo (03/10/2026): um site alheio, em plano gratuito, recebeu 126 milhões de requisições para
+973 visitas, 99% com erro 4xx e vindas de dezenas de países, o padrão de uma botnet, e a
+hospedagem pausou por estourar o plano. Bot não escolhe o alvo, e o Radar tem o captcha do Auth
+desligado e a chave pública do Supabase no `web/config.js`.
+
+- [ ] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa.
+- [ ] Cloudflare, no `radarestagio.com`: ligar o Bot Fight Mode (Security → Bots) e criar uma
+  regra de limite de requisições por IP, que o plano gratuito permite em número pequeno.
+  O Under Attack Mode fica como botão de emergência. Só vale com o tráfego passando pelo
+  Cloudflare, ou seja, com o proxy do domínio ligado.
+- [ ] Notificações do Cloudflare para pico de tráfego, e conferir em Workers & Pages → Usage que
+  os arquivos estáticos não consomem a cota de 100.000 execuções por dia. O `wrangler.jsonc` não
+  tem script (`main`), mas isso não foi confirmado no painel.
+- [ ] Supabase: conferir o plano, o teto de gasto e o uso das Edge Functions, principalmente a
+  `ir`, que é pública por natureza. O `telegram-webhook` já recusa com 401 quem não tem o
+  segredo, e a `0023` já limita os eventos web.
+- [ ] Resend: conferir o limite diário de e-mails, para um cadastro em massa não esgotar a cota e
+  travar a confirmação de quem é real.
+
+### 6. Pedir para alguns colegas usarem
 
 - [ ] Enviar o site quando o fluxo estiver funcionando.
 - [ ] Perguntar onde travaram, se alguma vaga serviu e se as mensagens ficaram claras.
