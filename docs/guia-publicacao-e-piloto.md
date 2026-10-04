@@ -40,11 +40,12 @@ Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloud
   `main` sozinho em cerca de 30 segundos, com o check verde, e o `config.js` no ar passou a trazer
   a chave. O widget aparece no login. Com o captcha ligado no Supabase, `/auth/v1/token` sem
   token responde 400 `captcha_failed`. O Igor confirmou que login, cadastro e recuperação de
-  senha passaram com o widget, sem o detalhe por fluxo. O check "Workers Builds" falha em 0 s nos
-  PRs de branch de preview (#119 e #120), por motivo ainda não lido.
+  senha passaram com o widget, sem o detalhe por fluxo. O check "Workers Builds" falhava em 0 s
+  nos PRs: o build de branch roda `wrangler preview`, que exige `"previews": {}` no
+  `wrangler.jsonc`. O PR #122 acrescentou o bloco e o check passou.
 - **Ainda aberto.** Forma de pagamento da conta do grupo para a renovação; zona antiga na conta
   pessoal, que não se apaga até ficar no estado "Moved"; projeto Pages antigo na conta do Ian, que
-  só se apaga depois dos testes do endereço novo; a falha dos builds de preview.
+  só se apaga depois dos testes do endereço novo.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 

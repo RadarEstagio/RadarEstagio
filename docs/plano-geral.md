@@ -132,10 +132,10 @@ desligado e a chave pública do Supabase no `web/config.js`.
 
 Estado em 03/10/2026, conferido com `gh` e `git`:
 
-- [ ] Descobrir por que o check "Workers Builds: radarestagio" falha nos PRs #119 e #120, que são
-  builds de branch de preview, e falha em 0 s, ou seja, antes de clonar o repositório. O log está
-  no painel do Cloudflare e não foi lido. Os checks `python` e `web` do GitHub passam. O build de
-  produção, na `main`, passou depois do merge do #120.
+- [x] Descobrir por que o check "Workers Builds: radarestagio" falhava nos PRs: o build de
+  branch roda `npx wrangler preview`, que exige `"previews": {}` no `wrangler.jsonc`. Corrigido em
+  03/10 (PR #122), e o check passou nos PRs seguintes. O build de produção, na `main`, nunca
+  teve o problema.
 - [ ] Decidir o que fazer com o check "Cloudflare Pages", do projeto antigo na conta do Ian, que
   segue passando em cada PR: sai junto com o projeto, e nenhuma regra depende dele hoje.
 - [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
