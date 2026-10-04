@@ -35,10 +35,16 @@ Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloud
 - **Cadastro no domínio novo.** O Igor confirmou o cadastro com a confirmação do e-mail voltando
   ao site. Reenvio, recuperação de senha, entrega, feedback e controles da conta seguem sem teste
   registrado.
-- **Ainda aberto.** Turnstile e captcha do Auth; forma de pagamento da conta do grupo para a
-  renovação; zona antiga na conta pessoal, que não se apaga até ficar no estado "Moved"; projeto
-  Pages antigo na conta do Ian, que só se apaga depois dos testes; deploy automático a cada push
-  na `main`, que não foi exercitado porque o primeiro build foi manual.
+- **Turnstile e deploy automático (03/10/2026).** O widget gerenciado, criado na conta do grupo,
+  tem a site key no `web/config.js` (PR #120). Depois do merge, o Workers Builds publicou a
+  `main` sozinho em cerca de 30 segundos, com o check verde, e o `config.js` no ar passou a trazer
+  a chave. O widget aparece no login. Com o captcha ligado no Supabase, `/auth/v1/token` sem
+  token responde 400 `captcha_failed`. O Igor confirmou que login, cadastro e recuperação de
+  senha passaram com o widget, sem o detalhe por fluxo. O check "Workers Builds" falha em 0 s nos
+  PRs de branch de preview (#119 e #120), por motivo ainda não lido.
+- **Ainda aberto.** Forma de pagamento da conta do grupo para a renovação; zona antiga na conta
+  pessoal, que não se apaga até ficar no estado "Moved"; projeto Pages antigo na conta do Ian, que
+  só se apaga depois dos testes do endereço novo; a falha dos builds de preview.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -194,7 +200,7 @@ Edge Certificates**, ligue "Always Use HTTPS" e deixe o HSTS desligado. Não alt
 do e-mail.
 
 **Concluído quando:** início, Termos e Privacidade abrem em HTTPS, inclusive no celular, e uma
-mudança na `main` publica sozinha, o que ainda não foi exercitado. A publicação sozinha não libera
+mudança na `main` publica sozinha, o que foi exercitado em 03/10 com o PR #120. A publicação sozinha não libera
 o piloto: os bloqueadores da seção 9 continuam valendo.
 
 ## 5. Configurar o retorno do Auth
@@ -231,17 +237,17 @@ No Cloudflare Turnstile, **na conta do grupo**, crie um widget gerenciado com os
 conta pessoal é de outro projeto e não serve. Guarde a **site key** pública para o frontend e a
 **secret key** para **Authentication → Bot and Abuse Protection → CAPTCHA**, no Supabase.
 
-**A integração está pronta localmente e inerte**, com `turnstileSiteKey` vazio. O site já manda
-o token nas quatro chamadas que o Supabase passa a exigir (cadastro, login, reenvio da
-confirmação e recuperação de senha), com teste de cada uma em `tests/web/cadastro_test.ts`. A
-ordem importa: (1) a site key vai para `web/config.js`; (2) o site publicado precisa mostrar o
-widget; (3) só então o CAPTCHA é ligado no Supabase com a secret key. Ligado antes, todo cadastro,
-login, reenvio e recuperação passam a falhar.
-Depois escolha Turnstile no Supabase, habilite e teste cadastro,
-login, reenvio e recuperação, incluindo expiração do desafio.
+**Ligado em 03/10/2026.** O site manda o token nas quatro chamadas que o Supabase exige
+(cadastro, login, reenvio da confirmação e recuperação de senha), com teste de cada uma em
+`tests/web/cadastro_test.ts`. A ordem importa: (1) a site key vai para `web/config.js`; (2) o site
+publicado precisa mostrar o widget; (3) só então o CAPTCHA é ligado no Supabase, em
+**Authentication → Attack Protection**, com a secret key. Ligado antes, todo cadastro, login,
+reenvio e recuperação falham até o site publicar a chave, que é o que aconteceu por cerca de dez
+minutos em 03/10, entre a ativação no Supabase e o merge do PR #120. A secret key vive só no
+Supabase, nunca no repositório. Falta testar a expiração do desafio.
 [CAPTCHA no Supabase](https://supabase.com/docs/guides/auth/auth-captcha).
 
-**Concluído quando:** os fluxos passam com token válido e o servidor recusa token inválido.
+**Concluído quando:** os fluxos passam com token válido e o servidor recusa o pedido sem token, o que foi conferido em 03/10.
 
 ## 6.1 Republicar as funções depois das correções de 10/09/2026
 

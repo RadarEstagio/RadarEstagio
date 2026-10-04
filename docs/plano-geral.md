@@ -60,8 +60,8 @@ e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses 
 - [x] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade:
       `https://radarestagio.com` responde 200 com certificado válido, `/termos` e `/privacidade`
       também, `www` e `http://` redirecionam para ele. Falta abrir no celular.
-- [ ] Confirmar se mudanças na `main` atualizam o frontend automaticamente. O primeiro build no
-      Workers foi manual, e o deploy a partir de um push na `main` não foi exercitado.
+- [x] Confirmar se mudanças na `main` atualizam o frontend automaticamente: o merge do PR #120
+      publicou a site key do Turnstile em cerca de 30 segundos, com o Workers Builds verde.
 - [ ] Concluir a limpeza: apagar o projeto Pages antigo, na conta do Ian, e a zona antiga na conta
       pessoal do Igor, esta só depois de aparecer como "Moved"; pôr forma de pagamento na conta do
       grupo para a renovação de 04/09/2027.
@@ -77,8 +77,8 @@ sem compartilhar senhas: o convite de membros resolve.
       03/10 passou a `https://radarestagio.com`.
 - [x] Trocar a `URL_DA_LANDING` provisória pelo endereço escolhido: em 03/10, a `ir` passou a
       redirecionar para `https://radarestagio.com`.
-- [ ] Configurar Turnstile no frontend e no Supabase e testar o desafio; hoje
-      `turnstileSiteKey` está vazio e o captcha do Auth está desligado.
+- [x] Configurar Turnstile no frontend e no Supabase e testar o desafio: ligado em 03/10, com o
+      widget no login e o Supabase recusando pedido sem token. Falta testar a expiração do desafio.
 
 Não reaplicar as migrations já registradas nem republicar funções só para repetir etapas
 concluídas. Se o código ou o repositório mudar, atualizar as integrações afetadas.
@@ -114,7 +114,7 @@ Motivo (03/10/2026): um site alheio, em plano gratuito, recebeu 126 milhões de 
 hospedagem pausou por estourar o plano. Bot não escolhe o alvo, e o Radar tem o captcha do Auth
 desligado e a chave pública do Supabase no `web/config.js`.
 
-- [ ] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa.
+- [x] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa. Ligado em 03/10.
 - [ ] Cloudflare, no `radarestagio.com`: ligar o Bot Fight Mode (Security → Bots) e criar uma
   regra de limite de requisições por IP, que o plano gratuito permite em número pequeno.
   O Under Attack Mode fica como botão de emergência. Só vale com o tráfego passando pelo
@@ -133,9 +133,9 @@ desligado e a chave pública do Supabase no `web/config.js`.
 Estado em 03/10/2026, conferido com `gh` e `git`:
 
 - [ ] Descobrir por que o check "Workers Builds: radarestagio" falha nos PRs #119 e #120, que são
-  builds de branch de preview. O log está no painel do Cloudflare e não foi lido. Os checks
-  `python` e `web` do GitHub passam. O build de produção só foi exercitado à mão, e nenhum push na
-  `main` rodou depois de o Workers ser conectado.
+  builds de branch de preview, e falha em 0 s, ou seja, antes de clonar o repositório. O log está
+  no painel do Cloudflare e não foi lido. Os checks `python` e `web` do GitHub passam. O build de
+  produção, na `main`, passou depois do merge do #120.
 - [ ] Decidir o que fazer com o check "Cloudflare Pages", do projeto antigo na conta do Ian, que
   segue passando em cada PR: sai junto com o projeto, e nenhuma regra depende dele hoje.
 - [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
