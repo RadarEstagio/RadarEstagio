@@ -368,3 +368,11 @@ desenham a conta da sessão atual, e "Sair da conta", que encerra a sessão que 
 (o `signOut` global também revoga as outras sessões dessa conta). Controle novo da conta que chame o
 Supabase precisa da conferência, e teste que clica num controle da conta precisa desenhá-la antes
 (`?conta`), senão a ação é recusada.
+
+### Termos e Privacidade seguem o tema do site (04/10/2026).
+
+As páginas `termos.html` e `privacidade.html` eram sempre escuras, com tokens próprios, e destoavam
+da landing no tema claro. Agora usam os tokens do site (`--paper`, `--surface`, `--ink`, `--muted`,
+`--line`, `--accent-text`) e o mesmo script de `index.html`, que lê `prefers-color-scheme` e grava
+`data-tema` na raiz antes de pintar. Como o tema não é lembrado entre páginas (ver acima), quem
+alterna o botão na landing e abre os Termos volta ao tema do sistema.
