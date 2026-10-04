@@ -1,10 +1,50 @@
 # Guia de publicação e piloto
 
-**Revisado em 19/09/2026.** Nessa data, `supabase migration list --linked` mostrou as 30
-migrations (`0001`–`0031`, a numeração pula a `0029`) aplicadas, e `supabase functions list`
-mostrou `ir` republicada em 10/09 e `telegram-webhook` em 16/09. O endereço `https://radarestagio.pages.dev` foi registrado
-em 08/09; o domínio final segue pendente. Os textos legais continuam em revisão, sem vigência.
-As demais seções guardam evidências datadas e não foram reconsultadas nesta revisão.
+**Revisado em 19/09/2026, com a hospedagem e o endereço atualizados em 03/10/2026.** Em 19/09,
+`supabase migration list --linked` mostrou as 30 migrations (`0001`–`0031`, a numeração pula a
+`0029`) aplicadas, e `supabase functions list` mostrou `ir` republicada em 10/09 e
+`telegram-webhook` em 16/09. As demais seções guardam evidências datadas e não foram
+reconsultadas depois dessas datas.
+
+### Hospedagem e endereço público (03/10/2026)
+
+Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloudflare do grupo:
+
+- **Domínio na conta do grupo.** `radarestagio.com` saiu da conta pessoal do Igor pela opção
+  "Move to another account" do Registrar, depois de a conta do grupo cadastrar o domínio como site;
+  sem isso o painel recusa com "Gaining account must first add the domain as a website". O
+  registrador segue o Cloudflare, os nameservers passaram a `dexter` e `walk.ns.cloudflare.com` e a
+  validade é 04/09/2027, com renovação automática ligada.
+- **Site no Workers, não mais no Pages.** O PR #117 trouxe o `wrangler.jsonc`, que aponta a pasta
+  `web/` como arquivos estáticos, sem etapa de build. O projeto `radarestagio` na conta do grupo
+  foi criado a partir da `main` (build `#8c1bc853`, comando de deploy `npx wrangler deploy`) e
+  responde em `radarestagio.estagioradar.workers.dev`. A conexão com o GitHub exigiu um owner da
+  organização liberando o repositório no app Cloudflare Workers and Pages.
+- **Endereço final no ar.** `https://radarestagio.com` responde 200 com certificado válido, e
+  `/termos` e `/privacidade` também. `www` é um registro A com proxy e uma regra que redireciona
+  com 301 para o domínio principal, preservando caminho e query. "Always Use HTTPS" está ligado,
+  e `http://` redireciona para `https://` nos dois nomes. O HSTS segue desligado.
+- **E-mail preservado.** MX do Email Routing e do `send`, SPF e DKIM do Cloudflare e do Resend
+  continuam respondendo. A regra `contato@radarestagio.com` não acompanhou a mudança de conta:
+  foi recriada com o mesmo destino de antes, e o teste de entrega chegou. O Resend como "Verified"
+  no painel não foi reconferido.
+- **Supabase.** O Site URL é `https://radarestagio.com`, e os Redirect URLs levam
+  `https://radarestagio.com/**`, `http://localhost:8000/**` e, por enquanto, o `pages.dev`. O secret
+  `URL_DA_LANDING` está em `https://radarestagio.com`: a `ir` redireciona token inexistente e
+  chamada sem token para o domínio novo. O GitHub Actions não tem `URL_DA_LANDING`.
+- **Cadastro no domínio novo.** O Igor confirmou o cadastro com a confirmação do e-mail voltando
+  ao site. Reenvio, recuperação de senha, entrega, feedback e controles da conta seguem sem teste
+  registrado.
+- **Turnstile e deploy automático (03/10/2026).** O widget gerenciado, criado na conta do grupo,
+  tem a site key no `web/config.js` (PR #120). Depois do merge, o Workers Builds publicou a
+  `main` sozinho em cerca de 30 segundos, com o check verde, e o `config.js` no ar passou a trazer
+  a chave. O widget aparece no login. Com o captcha ligado no Supabase, `/auth/v1/token` sem
+  token responde 400 `captcha_failed`. O Igor confirmou que login, cadastro e recuperação de
+  senha passaram com o widget, sem o detalhe por fluxo. O check "Workers Builds" falha em 0 s nos
+  PRs de branch de preview (#119 e #120), por motivo ainda não lido.
+- **Ainda aberto.** Forma de pagamento da conta do grupo para a renovação; zona antiga na conta
+  pessoal, que não se apaga até ficar no estado "Moved"; projeto Pages antigo na conta do Ian, que
+  só se apaga depois dos testes do endereço novo; a falha dos builds de preview.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -92,9 +132,10 @@ Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.
   arrependimento.
 - **Falhas do diário e rotina de apagamento:** Igor lê o resumo que cada execução envia ao chat de
   operação. Execução que sai com código 1 ou resumo que não chega é investigada no mesmo dia.
-- **Domínio:** Igor paga a renovação de `radarestagio.com`. As contas do Actions, do cron-job.org,
-  da Cloudflare e do Supabase seguem em contas pessoais do grupo; ao fim da disciplina, transferir
-  para quem continuar ou deixar o domínio expirar com aviso no site.
+- **Domínio:** Igor paga a renovação de `radarestagio.com`, que desde 03/10/2026 está na conta
+  Cloudflare do grupo, junto do site e do Email Routing. As contas do
+  Actions, do cron-job.org e do Supabase seguem em contas pessoais do grupo; ao fim da disciplina,
+  transferir para quem continuar ou deixar o domínio expirar com aviso no site.
 
 Para alterar uma versão futura, no mesmo commit: nova data nos dois HTML (`legal-updated` e o
 parágrafo final da seção de mudanças), nos dois Markdown e em `VERSAO_DOS_TERMOS`. Confiram os
@@ -132,29 +173,35 @@ A tela de recuperação está implementada localmente; falta conferir o fluxo co
 
 ## 4. Hospedar o site e associar o domínio
 
-Primeiro conferir o projeto Pages existente, sua URL e ligação com a organização; não criar
-outro projeto para substituir uma integração desconectada. Registrar SHA do deploy e se a
-main publica automaticamente. Se não houver projeto, abra **Workers & Pages → Create application →
-Pages → Import an existing Git repository** e escolha o repositório do Radar:
+Desde 03/10/2026 o site roda no **Workers com arquivos estáticos**, na conta Cloudflare do grupo,
+que também tem o domínio. O `wrangler.jsonc` da raiz aponta a pasta `web/`; não há etapa de build.
+O Pages que o grupo usava antes está na conta do Ian e sai do ar quando ele o apagar, depois dos
+testes do endereço novo.
+
+Para criar o projeto de novo, na conta do grupo: **Workers & Pages → Create application → Connect
+GitHub** e escolha o repositório do Radar. O app Cloudflare Workers and Pages precisa estar
+instalado na organização com acesso ao repositório, e isso só um owner da organização faz.
 
 | Campo | Valor |
 |---|---|
+| Project name | `radarestagio`, igual ao `name` do `wrangler.jsonc`, senão o build falha |
 | Production branch | `main` |
-| Framework preset | Nenhum |
-| Root directory | Raiz do repositório |
-| Build command | `exit 0` |
-| Build output directory | `web` |
+| Build command | em branco |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
 
-Confira o endereço `*.pages.dev`. Publique somente a pasta `web`.
-[HTML estático no Pages](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/).
+Confira o endereço `*.workers.dev`. O `uv sync` que aparece no log é do Cloudflare ao achar o
+`pyproject.toml`: não leva segredo, porque o build não tem variáveis.
 
-No projeto Pages, abra **Custom domains** e adicione `radarestagio.com`. Faça a associação
-pelo Pages antes de criar registros manualmente. Aguarde domínio e HTTPS ativos. Se usar
-`www`, associe-o também e configure seu redirecionamento ao domínio principal.
-[Domínios no Pages](https://developers.cloudflare.com/pages/configuration/custom-domains/).
+O domínio entra por **Settings → Domains & Routes → Add Domain** (`radarestagio.com`). O `www` não
+se associa ao Worker: ele recebe um registro A `192.0.2.1` com proxy e uma regra em **Rules →
+Redirect Rules** (modelo "Redirect from WWW to root", 301, preservando a query). Em **SSL/TLS →
+Edge Certificates**, ligue "Always Use HTTPS" e deixe o HSTS desligado. Não altere os MX e os TXT
+do e-mail.
 
-**Concluído quando:** início, Termos e Privacidade abrem em HTTPS, inclusive no celular.
-Publicação para conferir não libera o piloto: os bloqueadores da seção 9 continuam valendo.
+**Concluído quando:** início, Termos e Privacidade abrem em HTTPS, inclusive no celular, e uma
+mudança na `main` publica sozinha, o que foi exercitado em 03/10 com o PR #120. A publicação sozinha não libera
+o piloto: os bloqueadores da seção 9 continuam valendo.
 
 ## 5. Configurar o retorno do Auth
 
@@ -162,8 +209,8 @@ Em **Authentication → URL Configuration**, preencha:
 
 | Campo | Valor |
 |---|---|
-| Site URL | O endereço em que o site está publicado hoje: `https://radarestagio.pages.dev` enquanto `radarestagio.com` não estiver associado ao Pages |
-| Redirect URLs | `https://radarestagio.pages.dev/**` e `https://radarestagio.com/**` |
+| Site URL | `https://radarestagio.com`, sem barra no final e sem curinga (desde 03/10/2026) |
+| Redirect URLs | `https://radarestagio.com/**`; o `https://radarestagio.pages.dev/**` sai quando o Pages antigo for apagado |
 | Desenvolvimento local | `http://localhost:8000/**` |
 
 O site manda `emailRedirectTo` com a própria origem (`window.location.origin`), então a origem
@@ -185,21 +232,22 @@ teste em outro aparelho deve ser repetido após qualquer troca de endereço.
 
 ## 6. Preparar Turnstile — ativar a exigência só depois do código
 
-No Cloudflare Turnstile, crie um widget gerenciado com os hostnames `radarestagio.pages.dev` (o
-endereço publicado hoje), `radarestagio.com` e `localhost` (testes locais). Guarde a **site key** pública para o frontend e a
+No Cloudflare Turnstile, **na conta do grupo**, crie um widget gerenciado com os hostnames
+`radarestagio.com`, `www.radarestagio.com` e `localhost` (testes locais). O widget que existia na
+conta pessoal é de outro projeto e não serve. Guarde a **site key** pública para o frontend e a
 **secret key** para **Authentication → Bot and Abuse Protection → CAPTCHA**, no Supabase.
 
-**A integração está pronta localmente e inerte**, com `turnstileSiteKey` vazio. O site já manda
-o token nas quatro chamadas que o Supabase passa a exigir (cadastro, login, reenvio da
-confirmação e recuperação de senha), com teste de cada uma em `tests/web/cadastro_test.ts`. A
-ordem importa: (1) a site key vai para `web/config.js`; (2) o site publicado precisa mostrar o
-widget; (3) só então o CAPTCHA é ligado no Supabase com a secret key. Ligado antes, todo cadastro,
-login, reenvio e recuperação passam a falhar.
-Depois escolha Turnstile no Supabase, habilite e teste cadastro,
-login, reenvio e recuperação, incluindo expiração do desafio.
+**Ligado em 03/10/2026.** O site manda o token nas quatro chamadas que o Supabase exige
+(cadastro, login, reenvio da confirmação e recuperação de senha), com teste de cada uma em
+`tests/web/cadastro_test.ts`. A ordem importa: (1) a site key vai para `web/config.js`; (2) o site
+publicado precisa mostrar o widget; (3) só então o CAPTCHA é ligado no Supabase, em
+**Authentication → Attack Protection**, com a secret key. Ligado antes, todo cadastro, login,
+reenvio e recuperação falham até o site publicar a chave, que é o que aconteceu por cerca de dez
+minutos em 03/10, entre a ativação no Supabase e o merge do PR #120. A secret key vive só no
+Supabase, nunca no repositório. Falta testar a expiração do desafio.
 [CAPTCHA no Supabase](https://supabase.com/docs/guides/auth/auth-captcha).
 
-**Concluído quando:** os fluxos passam com token válido e o servidor recusa token inválido.
+**Concluído quando:** os fluxos passam com token válido e o servidor recusa o pedido sem token, o que foi conferido em 03/10.
 
 ## 6.1 Republicar as funções depois das correções de 10/09/2026
 
@@ -225,7 +273,7 @@ Nenhum secret muda e o webhook não precisa ser re-registrado. Depois do deploy,
 
 | Onde | Nome | Valor |
 |---|---|---|
-| Supabase → Edge Functions → Secrets | `URL_DA_LANDING` | `https://radarestagio.pages.dev` (trocar pelo domínio próprio quando existir) |
+| Supabase → Edge Functions → Secrets | `URL_DA_LANDING` | `https://radarestagio.com` (desde 03/10/2026; `supabase secrets list` mostra só o hash do valor) |
 | GitHub → Settings → Secrets and variables → Actions | `URL_DE_RASTREIO` | `https://xrhvjwemmylwbqgluebc.supabase.co/functions/v1/ir` |
 
 Preserve os secrets existentes `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` das funções.

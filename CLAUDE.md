@@ -304,11 +304,11 @@ ligação das automações, porque cada uma guardava o dono no nome:
 - **Entrega imediata**: `REPOSITORIO` em `entrega_imediata.ts` é constante, então exige commit
   **e** `supabase functions deploy telegram-webhook` — trocar só o `GITHUB_DISPATCH_TOKEN` não
   basta.
-- **Cloudflare Pages**: o app da Cloudflare fica instalado por conta, não segue o repositório. O
-  link "Manage" da tela de build passa a dar 404 porque aponta para a instalação da conta
-  pessoal. Reconectar é Disconnect e ligar de novo escolhendo a organização, o que instala o app
-  nela — **Disconnect não apaga o projeto nem muda a URL**, e criar projeto novo mudaria, o que
-  derrubaria o Supabase Auth e o `URL_DA_LANDING`.
+- **Hospedagem do site** (03/10/2026): o site saiu do Pages e roda no Workers com arquivos
+  estáticos, na conta Cloudflare do grupo, que também tem o domínio `radarestagio.com`. O
+  `wrangler.jsonc` da raiz aponta `web/` e seu `name` tem de ser igual ao do projeto, senão o
+  build falha. O app do Cloudflare precisa de um owner da organização para liberar o repositório.
+  Trocar o endereço exige Site URL, Redirect URLs e `URL_DA_LANDING` juntos; ver o guia, seção 4.
 - **Antes de gerar os tokens**, a organização precisa liberar tokens fine-grained (Settings →
   Personal access tokens). Sem isso o token nasce válido e a API responde 404, sem dizer por quê.
 - Os secrets do Actions sobreviveram à transferência. O token do cron **vence em 09/09/2027**:

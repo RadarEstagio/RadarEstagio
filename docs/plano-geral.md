@@ -1,7 +1,8 @@
 # Plano geral
 
 **Revisado em 19/09/2026** contra o código da `main` e, no Supabase, contra o histórico de
-migrations e a lista de funções publicadas. A expansão para diferentes áreas foi autorizada em
+migrations e a lista de funções publicadas; o endereço e a hospedagem foram atualizados em
+03/10/2026 (seção 2, itens 1 e 2). A expansão para diferentes áreas foi autorizada em
 08/09 e as entregas locais de cadastro, landing, métricas e pausa (O00–R03) estão concluídas.
 Validação com estudantes e decisões externas continuam pendentes de evidência.
 
@@ -54,26 +55,30 @@ e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses 
 ### 1. Confirmar onde o site está publicado
 
 - [x] Confirmado em 09/09 que `radarestagio.pages.dev` serve os arquivos do `main`
-  ([guia](guia-publicacao-e-piloto.md)); falta a conta Cloudflare e a forma de publicação.
-- [ ] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade.
-      `radarestagio.com` ainda não resolve por HTTP: só tem MX, e os textos legais já apontam
-      para ele.
-- [ ] Confirmar se mudanças na `main` atualizam o frontend automaticamente. O pré-PRD registrou
-      que sim em 08/09 e o check "Cloudflare Pages" roda em cada pull request, mas o deploy de
-      produção a partir da `main` não foi conferido.
+  ([guia](guia-publicacao-e-piloto.md)). Em 03/10 o site passou para o Workers, na conta
+  Cloudflare do grupo.
+- [x] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade:
+      `https://radarestagio.com` responde 200 com certificado válido, `/termos` e `/privacidade`
+      também, `www` e `http://` redirecionam para ele. Falta abrir no celular.
+- [x] Confirmar se mudanças na `main` atualizam o frontend automaticamente: o merge do PR #120
+      publicou a site key do Turnstile em cerca de 30 segundos, com o Workers Builds verde.
+- [ ] Concluir a limpeza: apagar o projeto Pages antigo, na conta do Ian, e a zona antiga na conta
+      pessoal do Igor, esta só depois de aparecer como "Moved"; pôr forma de pagamento na conta do
+      grupo para a renovação de 04/09/2027.
 
-A conversa sobre publicação no Pages não confirma que ela terminou. Por isso, o estado aqui
-é **a confirmar**, e não “não hospedado em lugar nenhum”. O domínio continua na conta do Igor;
-a transferência para `RadarEstagio/RadarEstagio` foi confirmada em 08/09 e o PR #21 foi
-integrado à main. A configuração de cada automação ainda deve ser verificada. Combinar acesso e administração sem compartilhar senhas.
+O domínio, o site e o Email Routing estão na conta Cloudflare do grupo desde 03/10/2026, com
+o detalhe e a evidência no [guia](guia-publicacao-e-piloto.md). Combinar acesso e administração
+sem compartilhar senhas: o convite de membros resolve.
 
 ### 2. Conectar o endereço ao cadastro
 
 - [x] Site URL corrigido para o endereço publicado em 09/09, depois do cadastro de ponta a
-      ponta ter caído em `radarestagio.com` ([guia](guia-publicacao-e-piloto.md), seção 5).
-- [ ] Trocar a `URL_DA_LANDING` provisória pelo endereço escolhido.
-- [ ] Configurar Turnstile no frontend e no Supabase e testar o desafio; hoje
-      `turnstileSiteKey` está vazio e o captcha do Auth está desligado.
+      ponta ter caído em `radarestagio.com` ([guia](guia-publicacao-e-piloto.md), seção 5). Em
+      03/10 passou a `https://radarestagio.com`.
+- [x] Trocar a `URL_DA_LANDING` provisória pelo endereço escolhido: em 03/10, a `ir` passou a
+      redirecionar para `https://radarestagio.com`.
+- [x] Configurar Turnstile no frontend e no Supabase e testar o desafio: ligado em 03/10, com o
+      widget no login e o Supabase recusando pedido sem token. Falta testar a expiração do desafio.
 
 Não reaplicar as migrations já registradas nem republicar funções só para repetir etapas
 concluídas. Se o código ou o repositório mudar, atualizar as integrações afetadas.
@@ -83,6 +88,11 @@ concluídas. Se o código ou o repositório mudar, atualizar as integrações af
 - [ ] Cadastro, confirmação, reenvio e recuperação de senha.
 - [ ] Vínculo, entrega de recomendações, abertura e feedback positivo/negativo.
 - [ ] Edição, pausa/retomada, exportação, exclusão e cancelamento.
+- [ ] Reescrever a resposta do bot a um Telegram já vinculado a outra conta
+      (`telegram-webhook/vinculo.ts`): não diz qual conta nem onde fica "Desvincular o Telegram".
+
+Em 03/10, o Igor confirmou o cadastro e a confirmação do e-mail no domínio novo. Reenvio,
+recuperação de senha, entrega, feedback e controles seguem sem teste registrado.
 
 Para feedback, usar envio persistido no banco: `testar-local` gera tokens que o webhook não
 encontra. `rodar --perfil` recebe `perfis.id` e exige `DATABASE_URL` configurada para atender
@@ -104,7 +114,7 @@ Motivo (03/10/2026): um site alheio, em plano gratuito, recebeu 126 milhões de 
 hospedagem pausou por estourar o plano. Bot não escolhe o alvo, e o Radar tem o captcha do Auth
 desligado e a chave pública do Supabase no `web/config.js`.
 
-- [ ] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa.
+- [x] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa. Ligado em 03/10.
 - [ ] Cloudflare, no `radarestagio.com`: ligar o Bot Fight Mode (Security → Bots) e criar uma
   regra de limite de requisições por IP, que o plano gratuito permite em número pequeno.
   O Under Attack Mode fica como botão de emergência. Só vale com o tráfego passando pelo
@@ -118,7 +128,24 @@ desligado e a chave pública do Supabase no `web/config.js`.
 - [ ] Resend: conferir o limite diário de e-mails, para um cadastro em massa não esgotar a cota e
   travar a confirmação de quem é real.
 
-### 6. Pedir para alguns colegas usarem
+### 6. Revisar o CI/CD e as branches
+
+Estado em 03/10/2026, conferido com `gh` e `git`:
+
+- [ ] Descobrir por que o check "Workers Builds: radarestagio" falha nos PRs #119 e #120, que são
+  builds de branch de preview, e falha em 0 s, ou seja, antes de clonar o repositório. O log está
+  no painel do Cloudflare e não foi lido. Os checks `python` e `web` do GitHub passam. O build de
+  produção, na `main`, passou depois do merge do #120.
+- [ ] Decidir o que fazer com o check "Cloudflare Pages", do projeto antigo na conta do Ian, que
+  segue passando em cada PR: sai junto com o projeto, e nenhuma regra depende dele hoje.
+- [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
+  de mesclar. O GitHub deixa o admin mesclar mesmo assim.
+- [ ] Apagar as 32 branches remotas já mescladas e ligar "Automatically delete head branches"
+  (hoje `delete_branch_on_merge` está falso). Ficam fora as que não foram mescladas.
+- [ ] Revisar os workflows (`testes.yml` e `radar-diario.yml`) e o Dependabot depois dessas
+  mudanças, e registrar o resultado aqui.
+
+### 7. Pedir para alguns colegas usarem
 
 - [ ] Enviar o site quando o fluxo estiver funcionando.
 - [ ] Perguntar onde travaram, se alguma vaga serviu e se as mensagens ficaram claras.
