@@ -128,7 +128,24 @@ desligado e a chave pública do Supabase no `web/config.js`.
 - [ ] Resend: conferir o limite diário de e-mails, para um cadastro em massa não esgotar a cota e
   travar a confirmação de quem é real.
 
-### 6. Pedir para alguns colegas usarem
+### 6. Revisar o CI/CD e as branches
+
+Estado em 03/10/2026, conferido com `gh` e `git`:
+
+- [ ] Descobrir por que o check "Workers Builds: radarestagio" falha nos PRs #119 e #120, que são
+  builds de branch de preview. O log está no painel do Cloudflare e não foi lido. Os checks
+  `python` e `web` do GitHub passam. O build de produção só foi exercitado à mão, e nenhum push na
+  `main` rodou depois de o Workers ser conectado.
+- [ ] Decidir o que fazer com o check "Cloudflare Pages", do projeto antigo na conta do Ian, que
+  segue passando em cada PR: sai junto com o projeto, e nenhuma regra depende dele hoje.
+- [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
+  de mesclar. O GitHub deixa o admin mesclar mesmo assim.
+- [ ] Apagar as 32 branches remotas já mescladas e ligar "Automatically delete head branches"
+  (hoje `delete_branch_on_merge` está falso). Ficam fora as que não foram mescladas.
+- [ ] Revisar os workflows (`testes.yml` e `radar-diario.yml`) e o Dependabot depois dessas
+  mudanças, e registrar o resultado aqui.
+
+### 7. Pedir para alguns colegas usarem
 
 - [ ] Enviar o site quando o fluxo estiver funcionando.
 - [ ] Perguntar onde travaram, se alguma vaga serviu e se as mensagens ficaram claras.
