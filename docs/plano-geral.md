@@ -253,6 +253,15 @@ conferido no código nessa data, para a equipe decidir o que entra:
 - **Histórico:** exclusões definitivas podem alterar métricas de semanas passadas.
 - **Ranking:** a v1 usa repetição e recusas de área. Os outros motivos não mudam pesos
   automaticamente; investigar exemplos antes de recalibrar.
+- **Vaga encerrada:** o Radar não detecta que uma vaga fechou, porque a Adzuna segue listando o
+  anúncio e conferir a origem exigiria seguir o link dela de forma automática. O que existe é a
+  janela de coleta (`dias_recentes`, padrão 3 dias) e o feedback "Vaga encerrada", que tira a vaga
+  da pessoa e, com abertura prévia e no máximo 3 marcações do perfil em 30 dias, dos outros
+  ([decisões do motor](decisoes-do-motor.md), "Vaga fechada na origem"). Quem recebe a vaga no
+  mesmo envio de quem a marcou não é protegido. As linhas de `vagas` não são apagadas por idade,
+  só por fonte se o acordo com a Adzuna acabar. Encurtar a janela não pegaria o caso medido em
+  16/09, de uma vaga com menos de um dia, e perderia vagas válidas; só reavaliar com dados do
+  piloto.
 - **IA:** reuso reduz trabalho repetido; novos anúncios, cidades e áreas podem exigir extrações.
 - **Fora do trabalho imediato:** cobrança, plano formal de pesquisa, D7, campanhas de e-mail
   e exclusão automática por abandono. Medianas de entrega e abertura já estão implementadas;
