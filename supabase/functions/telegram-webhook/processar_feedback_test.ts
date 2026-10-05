@@ -27,6 +27,9 @@ function operacoes(permitido = true) {
     perguntarOMotivo: async () => {
       chamadas.push("abrir");
     },
+    abrirMotivosDaPergunta: async () => {
+      chamadas.push("motivos");
+    },
     encerrarPergunta: async () => {
       chamadas.push("fechar");
     },
@@ -43,7 +46,17 @@ Deno.test("número abre feedback e resposta registra antes de fechar a pergunta"
 });
 
 Deno.test("conta ou chat reprovado não gera feedback nem mensagem", async () => {
-  for (const acao of ["feedback", "recusa", "util", "motivo_nota"]) {
+  for (
+    const acao of [
+      "feedback",
+      "recusa",
+      "util",
+      "motivo_nota",
+      "candidatei",
+      "nao_serviu",
+      "ainda_vou_ver",
+    ]
+  ) {
     const { api, chamadas } = operacoes(false);
     await processarFeedback({ ...consulta, acao }, api);
     assertEquals(chamadas, []);
@@ -108,4 +121,59 @@ Deno.test("vaga encerrada responde com aviso próprio que diz como desfazer", as
   );
   assertEquals(outraRecusa, "Obrigado, isso ajuda a melhorar as próximas.");
   assertEquals(encerrada.length <= 200, true);
+});
+
+Deno.test("Me candidatei grava candidatura_iniciada, fecha a pergunta e agradece", async () => {
+  const { api, chamadas } = operacoes();
+
+  const aviso = await processarFeedback({ ...consulta, acao: "candidatei" }, api);
+
+  assertEquals(chamadas, ["candidatei", "fechar"]);
+  assertEquals(aviso, "Anotado, boa sorte!");
+});
+
+Deno.test("Não serviu abre os motivos na própria pergunta e não grava nada ainda", async () => {
+  const { api, chamadas } = operacoes();
+
+  const aviso = await processarFeedback({ ...consulta, acao: "nao_serviu" }, api);
+
+  assertEquals(chamadas, ["motivos"]);
+  assertEquals(aviso, "");
+});
+
+Deno.test("Ainda vou ver fecha a pergunta sem gravar recusa nem candidatura", async () => {
+  const { api, chamadas } = operacoes();
+
+  const aviso = await processarFeedback({ ...consulta, acao: "ainda_vou_ver" }, api);
+
+  assertEquals(chamadas, ["fechar"]);
+  assertEquals(aviso, "Combinado, sem pressa.");
+});
+
+Deno.test("Ainda vou ver não pede reentrega do webhook se a pergunta não puder ser apagada", async () => {
+  const { api, chamadas } = operacoes();
+  api.encerrarPergunta = async () => {
+    chamadas.push("fechar");
+    throw new Error("message can't be deleted");
+  };
+
+  const resposta = await responderConsultaDeFeedback(
+    { ...consulta, acao: "ainda_vou_ver" },
+    api,
+    async () => {
+      chamadas.push("confirmar");
+    },
+  );
+
+  assertEquals(resposta.status, 200);
+  assertEquals(chamadas, ["fechar", "confirmar"]);
+});
+
+Deno.test("depois de Não serviu o motivo escolhido grava a recusa e fecha a pergunta", async () => {
+  const { api, chamadas } = operacoes();
+
+  await processarFeedback({ ...consulta, acao: "nao_serviu" }, api);
+  await processarFeedback({ ...consulta, acao: "motivo_area" }, api);
+
+  assertEquals(chamadas, ["motivos", "motivo_area", "fechar"]);
 });

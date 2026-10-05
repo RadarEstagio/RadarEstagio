@@ -32,6 +32,9 @@ export const ACAO_DE_RECUSA = "recusa";
 export const ACAO_DE_FEEDBACK = "feedback";
 export const ACAO_UTIL = "util";
 export const ACAO_SEM_RECUSA = "todas";
+export const ACAO_DE_CANDIDATURA = "candidatei";
+export const ACAO_DE_NAO_SERVIU = "nao_serviu";
+export const ACAO_DE_AINDA_VOU_VER = "ainda_vou_ver";
 
 export const ROTULOS_DE_MOTIVO: Record<MotivoDaRecusa, string> = {
   motivo_nota: "A nota não fez sentido",
@@ -47,6 +50,8 @@ export const AVISO_DE_VAGA_ENCERRADA =
   "Obrigado. Essa vaga deixa de ser enviada. Tocou por engano? Toque no número dela e escolha outra opção.";
 export const MOTIVO_DE_VAGA_ENCERRADA = "motivo_encerrada";
 export const AVISO_DE_TUDO_CERTO = "Combinado, obrigado.";
+export const AVISO_DE_CANDIDATURA = "Anotado, boa sorte!";
+export const AVISO_DE_AINDA_VOU_VER = "Combinado, sem pressa.";
 export const AVISO_DE_CONSULTA_DESCONHECIDA = "Esta pergunta não vale mais.";
 
 export function extrairClique(atualizacao: {
@@ -100,8 +105,12 @@ export function tecladoDeFeedback(token: string): BotaoDoTeclado[][] {
 
 export function eventoDoFeedback(
   acao: string,
-): { nome: "vaga_util" | "vaga_irrelevante"; propriedades: Record<string, string> } | null {
+): {
+  nome: "vaga_util" | "vaga_irrelevante" | "candidatura_iniciada";
+  propriedades: Record<string, string>;
+} | null {
   if (acao === ACAO_UTIL) return { nome: "vaga_util", propriedades: {} };
+  if (acao === ACAO_DE_CANDIDATURA) return { nome: "candidatura_iniciada", propriedades: {} };
   if (eMotivo(acao)) return { nome: "vaga_irrelevante", propriedades: { motivo: acao } };
   return null;
 }
