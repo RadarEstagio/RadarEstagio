@@ -341,6 +341,10 @@ p, h1, h2, h3 { margin-top: 0; }
 .faq-list details p { margin: 0; padding: 0 26px 26px 58px; color: var(--ink-soft); font-size: 14px; line-height: 1.75; }
 
 
+.about { padding-bottom: 72px; }
+.about .section-heading { margin-bottom: 28px; }
+.about-text { max-width: 60ch; margin: 0; color: var(--ink-soft); font-size: 16px; line-height: 1.7; }
+.about-text a { color: var(--accent-deep-text); }
 .final-cta { padding-top: 32px; padding-bottom: 80px; border-top: 0; }
 .final-card { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 32px; overflow: hidden; padding: 84px 48px; border-radius: var(--radius-lg); color: var(--white); background: var(--band); text-align: center; }
 .final-card::before, .final-card::after { content: ""; position: absolute; z-index: -1; width: 420px; height: 420px; border: 1px solid var(--rail-dark); border-radius: 50%; box-shadow: 0 0 0 60px rgba(159, 211, 178, .035), 0 0 0 120px rgba(159, 211, 178, .025); pointer-events: none; }

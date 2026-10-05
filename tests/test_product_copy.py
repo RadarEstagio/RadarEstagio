@@ -344,6 +344,21 @@ def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
     assert (RAIZ / "web/assets/adzuna-logo.png").exists()
 
 
+def test_sobre_leva_a_uma_secao_propria_e_nao_ao_chamado_final():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert html.count('id="sobre"') == 1
+    assert 'class="final-cta section" id="sobre"' not in html
+    sobre = html[html.index('id="sobre"') :]
+    sobre = sobre[: sobre.index("</section>")]
+    assert "Ian Dias, Igor Costa e Miguel Esteves" in sobre
+    assert "mailto:contato@radarestagio.com" in sobre
+    assert "js-open-signup" not in sobre
+    assert html.index('id="sobre"') < html.index('class="final-cta section"')
+    assert ".about-text {" in css
+
+
 def test_precos_nao_ancoram_valor_futuro_e_assumem_o_compromisso_do_piloto():
     html = (RAIZ / "web/index.html").read_text()
     precos = html[html.index('id="precos"') : html.index('id="faq"')]
