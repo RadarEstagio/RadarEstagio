@@ -60,6 +60,7 @@ Deno.test("a visita guarda o domínio de origem e a campanha", async () => {
   try {
     const propriedades = {
       pagina: "/",
+      host: "radarestagio.com",
       referrer_dominio: "l.instagram.com",
       utm_source: "grupo-ccet",
       utm_medium: "whatsapp",
@@ -105,21 +106,33 @@ Deno.test("a origem aceita só domínio e rótulo em letras minúsculas, sem cam
       { referrer_dominio: "l.instagram.com/post/123" },
       { referrer_dominio: "L.Instagram.com" },
       { referrer_dominio: "" },
-      { referrer_dominio: "a".repeat(41) },
+      { referrer_dominio: "a".repeat(37) },
       { referrer_dominio: 5 },
       { referrer_dominio: ["l.instagram.com"] },
       { utm_source: "Grupo CCET" },
+      { utm_source: "a".repeat(21) },
       { utm_medium: "e-mail?x=1" },
-      { utm_campaign: "a".repeat(25) },
+      { utm_medium: "a".repeat(17) },
+      { utm_campaign: "a".repeat(21) },
       { utm_source: "voce@email.com" },
       { utm_campaign: { nome: "x" } },
+      { host: "Radar.com" },
+      { host: "radarestagio.com/x" },
+      { host: "a".repeat(31) },
+      { host: "" },
+      { host: 1 },
     ];
 
     for (const propriedades of recusadas) {
       assert.equal(await visitar(db, propriedades), CHECK_VIOLADO, JSON.stringify(propriedades));
     }
-    assert.equal(await visitar(db, { referrer_dominio: "a".repeat(40) }), null);
-    assert.equal(await visitar(db, { utm_campaign: "a".repeat(24) }), null);
+    assert.equal(await visitar(db, { referrer_dominio: "a".repeat(36) }), null);
+    assert.equal(await visitar(db, { utm_source: "a".repeat(20) }), null);
+    assert.equal(await visitar(db, { utm_medium: "a".repeat(16) }), null);
+    assert.equal(await visitar(db, { utm_campaign: "a".repeat(20) }), null);
+    assert.equal(await visitar(db, { host: "a".repeat(30) }), null);
+    assert.equal(await visitar(db, { host: "localhost" }), null);
+    assert.equal(await visitar(db, { host: "192.168.0.10" }), null);
     assert.equal(await visitar(db, { utm_source: "grupo_ccet.2026-b" }), null);
   } finally {
     await db.close();
@@ -130,11 +143,12 @@ Deno.test("a visita mais cheia que o site grava cabe no teto de 256 bytes", asyn
   const db = await bancoComAsMigracoes();
   try {
     const maisCheia = {
-      pagina: "/".padEnd(40, "a"),
-      referrer_dominio: "a".repeat(40),
-      utm_source: "b".repeat(24),
-      utm_medium: "c".repeat(24),
-      utm_campaign: "d".repeat(24),
+      pagina: "/".padEnd(20, "a"),
+      host: "h".repeat(30),
+      referrer_dominio: "a".repeat(36),
+      utm_source: "b".repeat(20),
+      utm_medium: "c".repeat(16),
+      utm_campaign: "d".repeat(20),
     };
 
     assert.equal(await visitar(db, maisCheia), null);
