@@ -77,6 +77,15 @@ Deno.test("chat de outra conta ensina como liberar o Telegram", () => {
   );
 });
 
+Deno.test("chat de outra conta diz onde desvincular e o que fazer depois", () => {
+  const resposta = RESPOSTAS_DO_VINCULO.chat_de_outra_conta;
+
+  assertEquals(resposta.includes("Minha conta > Privacidade"), true);
+  assertEquals(resposta.includes("botão do Telegram"), true);
+  assertEquals(resposta.includes("não precisa fazer nada"), true);
+  assertEquals(resposta.includes("naquela conta"), false);
+});
+
 Deno.test("o link usado uma vez não promete vínculo", () => {
   assertEquals(
     RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"),
