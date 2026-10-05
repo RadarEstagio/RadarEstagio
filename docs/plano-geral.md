@@ -245,6 +245,11 @@ conferido no código nessa data, para a equipe decidir o que entra:
 - **Foco (RCD-03 e RCD-10).** Congelar ajuste de regra do motor sem caso vindo de usuário e
   definir o ICP do piloto são decisões da equipe, ainda sem registro.
 
+**Acompanhamento de 05/10/2026:** nenhum dos 16 achados tinha sido tratado e só dois perfis
+foram criados desde a auditoria. O plano em três frentes (textos e progresso, origem da visita,
+pergunta do dia seguinte) e os sinais para reavaliar em 19/10 estão em
+[auditorias/2026-10-05-revenue-centric-design.md](auditorias/2026-10-05-revenue-centric-design.md).
+
 ## 3. Limitações e decisões que continuam valendo
 
 - **Candidatura:** acontece na fonte; o Radar não se candidata e não captura novas candidaturas.
