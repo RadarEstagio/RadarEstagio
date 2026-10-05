@@ -62,9 +62,14 @@ e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses 
       também, `www` e `http://` redirecionam para ele. Falta abrir no celular.
 - [x] Confirmar se mudanças na `main` atualizam o frontend automaticamente: o merge do PR #120
       publicou a site key do Turnstile em cerca de 30 segundos, com o Workers Builds verde.
-- [ ] Concluir a limpeza: apagar o projeto Pages antigo, na conta do Ian, e a zona antiga na conta
-      pessoal do Igor, esta só depois de aparecer como "Moved"; pôr forma de pagamento na conta do
-      grupo para a renovação de 04/09/2027.
+- [x] Apagar o projeto Pages antigo, na conta do Ian: feito em 05/10. O Cloudflare recusou pelo
+      painel por excesso de deployments, que foram apagados pela API antes. O
+      `radarestagio.pages.dev` deixou de resolver, e o domínio novo, o `www`, o e-mail e a `ir`
+      seguem respondendo.
+- [ ] Tirar o `https://radarestagio.pages.dev/**` dos Redirect URLs do Supabase, o que só o Igor
+      faz no painel.
+- [ ] Apagar a zona antiga na conta pessoal do Igor, só depois de aparecer como "Moved"; pôr forma
+      de pagamento na conta do grupo para a renovação de 04/09/2027.
 
 O domínio, o site e o Email Routing estão na conta Cloudflare do grupo desde 03/10/2026, com
 o detalhe e a evidência no [guia](guia-publicacao-e-piloto.md). Combinar acesso e administração
@@ -136,8 +141,8 @@ Estado em 03/10/2026, conferido com `gh` e `git`:
   branch roda `npx wrangler preview`, que exige `"previews": {}` no `wrangler.jsonc`. Corrigido em
   03/10 (PR #122), e o check passou nos PRs seguintes. O build de produção, na `main`, nunca
   teve o problema.
-- [ ] Decidir o que fazer com o check "Cloudflare Pages", do projeto antigo na conta do Ian, que
-  segue passando em cada PR: sai junto com o projeto, e nenhuma regra depende dele hoje.
+- [ ] Conferir no próximo PR que o check "Cloudflare Pages" sumiu. Ele era do projeto antigo, que
+  foi apagado em 05/10, e nenhuma regra dependia dele.
 - [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
   de mesclar. O GitHub deixa o admin mesclar mesmo assim.
 - [ ] Apagar as 32 branches remotas já mescladas e ligar "Automatically delete head branches"
