@@ -5,6 +5,7 @@ import {
   extrairPedidoDeVinculo,
   RESPOSTAS_DO_VINCULO,
   type ResultadoDoVinculo,
+  textoDaMensagem,
 } from "./vinculo.ts";
 
 const TOKEN = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
@@ -129,4 +130,10 @@ Deno.test("o vínculo diz que a vaga só chega quando for compatível e que a pr
     RESPOSTAS_DO_VINCULO.chat_ja_vinculado.includes("quando houver vagas compatíveis"),
     true,
   );
+});
+
+Deno.test("texto da mensagem vem como está e é nulo quando a mensagem não tem texto", () => {
+  assertEquals(textoDaMensagem({ message: { chat: { id: 1 }, text: "como pauso?" } }), "como pauso?");
+  assertEquals(textoDaMensagem({ message: { chat: { id: 1 } } }), null);
+  assertEquals(textoDaMensagem({}), null);
 });
