@@ -94,7 +94,10 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
             f"({taxa}); "
             f"nota: {grupo.recusas_da_nota}/{grupo.entregas}"
         )
-    linhas.append("Candidatura: sem captura no piloto; contagem apenas de registros históricos.")
+    linhas.append(
+        'Candidatura: só a que a pessoa declara em "Me candidatei", na pergunta do dia seguinte; '
+        "quem não responde não conta."
+    )
     return "\n".join(aquisicao + [""] + linhas)
 
 
