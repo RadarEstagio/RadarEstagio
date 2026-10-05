@@ -43,9 +43,15 @@ Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloud
   senha passaram com o widget, sem o detalhe por fluxo. O check "Workers Builds" falhava em 0 s
   nos PRs: o build de branch roda `wrangler preview`, que exige `"previews": {}` no
   `wrangler.jsonc`. O PR #122 acrescentou o bloco e o check passou.
+- **Pages antigo apagado (05/10/2026).** O Cloudflare recusou apagar o projeto pelo painel
+  ("too many deployments"). O Ian apagou os deployments pela API do Cloudflare, com um token
+  temporário de permissão Pages Edit, depois apagou o projeto e revogou o token. Conferido por
+  terminal: `radarestagio.pages.dev` deixou de resolver, e `radarestagio.com`, `/termos`,
+  `/privacidade`, `www` (301), o MX do e-mail e a `ir` (302 para o domínio novo) seguem
+  respondendo, com os 4 checks verdes na `main`.
 - **Ainda aberto.** Forma de pagamento da conta do grupo para a renovação; zona antiga na conta
-  pessoal, que não se apaga até ficar no estado "Moved"; projeto Pages antigo na conta do Ian, que
-  só se apaga depois dos testes do endereço novo.
+  pessoal, que não se apaga até ficar no estado "Moved"; o `pages.dev` ainda consta nos Redirect
+  URLs do Supabase, e só o Igor o tira no painel.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -176,8 +182,9 @@ A tela de recuperação está implementada localmente; falta conferir o fluxo co
 
 Desde 03/10/2026 o site roda no **Workers com arquivos estáticos**, na conta Cloudflare do grupo,
 que também tem o domínio. O `wrangler.jsonc` da raiz aponta a pasta `web/`; não há etapa de build.
-O Pages que o grupo usava antes está na conta do Ian e sai do ar quando ele o apagar, depois dos
-testes do endereço novo.
+O Pages que o grupo usava antes estava na conta do Ian e foi apagado em 05/10/2026. Projeto Pages
+com muitos deployments não se apaga pelo painel: é preciso apagar os deployments pela API
+(`DELETE .../pages/projects/<nome>/deployments/<id>?force=true`) antes.
 
 Para criar o projeto de novo, na conta do grupo: **Workers & Pages → Create application → Connect
 GitHub** e escolha o repositório do Radar. O app Cloudflare Workers and Pages precisa estar
