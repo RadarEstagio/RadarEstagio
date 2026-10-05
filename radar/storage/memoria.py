@@ -86,7 +86,12 @@ class RepositorioEmMemoria:
     def abertura_sem_resposta(self, usuario: Usuario, hoje: date) -> AberturaSemResposta | None:
         return None
 
-    def registrar_pergunta_do_dia_seguinte(
+    def reservar_pergunta_do_dia_seguinte(
+        self, usuario: Usuario, abertura: AberturaSemResposta
+    ) -> bool:
+        return False
+
+    def liberar_pergunta_do_dia_seguinte(
         self, usuario: Usuario, abertura: AberturaSemResposta
     ) -> None:
         return None

@@ -28,6 +28,11 @@ class BancoComAberturaDeOntem(RepositorioEmMemoria):
             token=TOKEN, titulo="Estágio em Direito", empresa="Escritório Exemplo"
         )
 
+    def reservar_pergunta_do_dia_seguinte(
+        self, usuario: Usuario, abertura: AberturaSemResposta
+    ) -> bool:
+        return True
+
 
 def corpos_enviados_ao(httpx_mock: HTTPXMock, chat_id: str) -> list[dict]:
     corpos = [

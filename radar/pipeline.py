@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from radar.domain.datas import data_local
 from radar.domain.models import (
+    AberturaSemResposta,
     ChaveDaVaga,
     ExtracaoDaVaga,
     Perfil,
@@ -275,9 +276,27 @@ def perguntar_sobre_a_abertura_de_ontem(
     abertura = repositorio.abertura_sem_resposta(usuario, hoje)
     if abertura is None or not repositorio.pode_entregar(usuario):
         return False
-    notificador.enviar_pergunta(usuario.chat_id, formatar_pergunta_do_dia_seguinte(abertura))
-    repositorio.registrar_pergunta_do_dia_seguinte(usuario, abertura)
+    if not repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura):
+        return False
+    try:
+        notificador.enviar_pergunta(usuario.chat_id, formatar_pergunta_do_dia_seguinte(abertura))
+    except Exception:
+        liberar_a_pergunta(repositorio, usuario, abertura)
+        raise
     return True
+
+
+def liberar_a_pergunta(
+    repositorio: Repositorio, usuario: Usuario, abertura: AberturaSemResposta
+) -> None:
+    try:
+        repositorio.liberar_pergunta_do_dia_seguinte(usuario, abertura)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: a pergunta não saiu e a reserva ficou, então não volta hoje: %s",
+            usuario.id,
+            erro,
+        )
 
 
 def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Vaga]:

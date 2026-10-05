@@ -366,9 +366,16 @@ SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
 SQL_ABERTURA_SEM_RESPOSTA = Path(__file__).with_name("abertura_sem_resposta.sql").read_text()
 
-SQL_REGISTRAR_PERGUNTA_DO_DIA_SEGUINTE = """
+SQL_RESERVAR_PERGUNTA_DO_DIA_SEGUINTE = """
     update envios
     set pergunta_do_dia_seguinte_em = now()
+    where perfil_id = %(perfil_id)s and token = %(token)s
+      and pergunta_do_dia_seguinte_em is null
+"""
+
+SQL_LIBERAR_PERGUNTA_DO_DIA_SEGUINTE = """
+    update envios
+    set pergunta_do_dia_seguinte_em = null
     where perfil_id = %(perfil_id)s and token = %(token)s
 """
 
@@ -646,18 +653,33 @@ class RepositorioPostgres:
             ) from erro
         return AberturaSemResposta(**linha) if linha else None
 
-    def registrar_pergunta_do_dia_seguinte(
+    def reservar_pergunta_do_dia_seguinte(
+        self, usuario: Usuario, abertura: AberturaSemResposta
+    ) -> bool:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                reservou = cursor.execute(
+                    SQL_RESERVAR_PERGUNTA_DO_DIA_SEGUINTE,
+                    {"perfil_id": usuario.id, "token": abertura.token},
+                ).rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao reservar a pergunta do dia seguinte: {descrever(erro)}"
+            ) from erro
+        return reservou == 1
+
+    def liberar_pergunta_do_dia_seguinte(
         self, usuario: Usuario, abertura: AberturaSemResposta
     ) -> None:
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:
                 cursor.execute(
-                    SQL_REGISTRAR_PERGUNTA_DO_DIA_SEGUINTE,
+                    SQL_LIBERAR_PERGUNTA_DO_DIA_SEGUINTE,
                     {"perfil_id": usuario.id, "token": abertura.token},
                 )
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
-                f"Falha ao gravar a pergunta do dia seguinte: {descrever(erro)}"
+                f"Falha ao liberar a pergunta do dia seguinte: {descrever(erro)}"
             ) from erro
 
     def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int:

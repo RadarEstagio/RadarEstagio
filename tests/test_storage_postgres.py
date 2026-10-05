@@ -247,7 +247,7 @@ def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
     assert depois.silencio_avisado_em is not None
 
 
-def test_abertura_de_ontem_sem_resposta_vira_pergunta_e_so_uma_vez(
+def test_abertura_de_ontem_sem_resposta_vira_pergunta_reservada_e_liberada(
     conexao: psycopg.Connection, usuario: Usuario
 ):
     repositorio = RepositorioPostgres(conexao)
@@ -271,8 +271,11 @@ def test_abertura_de_ontem_sem_resposta_vira_pergunta_e_so_uma_vez(
     assert abertura is not None
     assert abertura.token == recomendacao.token
     assert abertura.titulo == "Estágio 1"
-    repositorio.registrar_pergunta_do_dia_seguinte(usuario, abertura)
+    assert repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura) is True
+    assert repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura) is False
     assert repositorio.abertura_sem_resposta(usuario, amanha) is None
+    repositorio.liberar_pergunta_do_dia_seguinte(usuario, abertura)
+    assert repositorio.abertura_sem_resposta(usuario, amanha) == abertura
 
 
 def test_extracao_em_formato_antigo_e_ignorada_em_vez_de_quebrar(conexao: psycopg.Connection):
