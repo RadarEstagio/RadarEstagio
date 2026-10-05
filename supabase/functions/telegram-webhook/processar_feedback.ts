@@ -12,6 +12,7 @@ import {
   AVISO_DE_TUDO_CERTO,
   AVISO_DE_VAGA_ENCERRADA,
   type ConsultaDeFeedback,
+  eMensagemNaoModificada,
   eventoDoFeedback,
   MOTIVO_DE_VAGA_ENCERRADA,
 } from "./feedback.ts";
@@ -47,7 +48,11 @@ export async function processarFeedback(
     return AVISO_DE_TUDO_CERTO;
   }
   if (consulta.acao === ACAO_DE_NAO_SERVIU) {
-    await operacoes.abrirMotivosDaPergunta(consulta, envio);
+    try {
+      await operacoes.abrirMotivosDaPergunta(consulta, envio);
+    } catch (erro) {
+      if (!eMensagemNaoModificada(erro)) throw erro;
+    }
     return "";
   }
   if (consulta.acao === ACAO_DE_AINDA_VOU_VER) {

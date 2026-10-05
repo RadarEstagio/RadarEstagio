@@ -118,7 +118,9 @@ async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {
     body: JSON.stringify(corpo),
   });
   const resultado = await resposta.json();
-  if (!resposta.ok || !resultado.ok) throw new Error(`Telegram recusou ${metodo}`);
+  if (!resposta.ok || !resultado.ok) {
+    throw new Error(`Telegram recusou ${metodo}: ${resultado.description ?? resposta.status}`);
+  }
 }
 
 async function envioDoToken(

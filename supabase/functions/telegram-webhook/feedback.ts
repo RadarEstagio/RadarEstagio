@@ -70,6 +70,10 @@ export function extrairClique(atualizacao: {
   };
 }
 
+export function eMensagemNaoModificada(erro: unknown): boolean {
+  return erro instanceof Error && erro.message.includes("message is not modified");
+}
+
 export function eMotivo(acao: string): acao is MotivoDaRecusa {
   return Object.hasOwn(ROTULOS_DE_MOTIVO, acao);
 }

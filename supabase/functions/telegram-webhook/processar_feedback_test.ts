@@ -177,3 +177,42 @@ Deno.test("depois de Não serviu o motivo escolhido grava a recusa e fecha a per
 
   assertEquals(chamadas, ["motivos", "motivo_area", "fechar"]);
 });
+
+Deno.test("toque duplo em Não serviu não vira erro: a mensagem já estava com os motivos", async () => {
+  const { api, chamadas } = operacoes();
+  api.abrirMotivosDaPergunta = async () => {
+    chamadas.push("motivos");
+    throw new Error(
+      "Telegram recusou editMessageText: Bad Request: message is not modified: specified new message content and reply markup are exactly the same",
+    );
+  };
+
+  const resposta = await responderConsultaDeFeedback(
+    { ...consulta, acao: "nao_serviu" },
+    api,
+    async () => {
+      chamadas.push("confirmar");
+    },
+  );
+
+  assertEquals(resposta.status, 200);
+  assertEquals(chamadas, ["motivos", "confirmar"]);
+});
+
+Deno.test("outra falha ao abrir os motivos continua pedindo a reentrega do Telegram", async () => {
+  const { api, chamadas } = operacoes();
+  api.abrirMotivosDaPergunta = async () => {
+    throw new Error("Telegram recusou editMessageText: Bad Request: message to edit not found");
+  };
+
+  const resposta = await responderConsultaDeFeedback(
+    { ...consulta, acao: "nao_serviu" },
+    api,
+    async () => {
+      chamadas.push("confirmar");
+    },
+  );
+
+  assertEquals(resposta.status, 500);
+  assertEquals(chamadas, []);
+});
