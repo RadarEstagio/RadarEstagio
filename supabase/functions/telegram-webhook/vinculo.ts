@@ -35,6 +35,7 @@ export const RESPOSTA_CHAT_DE_OUTRA_CONTA =
   "Se a conta antiga é a que você quer manter, não precisa fazer nada.";
 export const RESPOSTA_CHAT_JA_VINCULADO =
   "Seu Telegram já está vinculado. Nada a fazer: quando houver vagas compatíveis, elas chegam aqui.";
+export const CONTATO_DA_EQUIPE = "contato@radarestagio.com";
 export const RESPOSTA_SEM_TOKEN =
   "Para vincular, use o botão do Telegram no site do Radar de Estágio.";
 export const RESPOSTA_SOMENTE_EM_PRIVADO =
@@ -71,4 +72,9 @@ export function chatIdDaMensagem(
 ): string | null {
   const id = atualizacao.message?.chat.id;
   return id === undefined ? null : String(id);
+}
+
+export function textoDaMensagem(atualizacao: AtualizacaoDoTelegram): string | null {
+  const texto = atualizacao.message?.text;
+  return typeof texto === "string" ? texto : null;
 }
