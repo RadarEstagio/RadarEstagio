@@ -652,9 +652,10 @@ function landingJaContadaNestaSessao() {
   }
 }
 
-const TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM = 40;
-const TAMANHO_MAXIMO_DO_ROTULO_DA_CAMPANHA = 24;
-const PARAMETROS_DA_CAMPANHA = ["utm_source", "utm_medium", "utm_campaign"];
+const TAMANHO_MAXIMO_DA_PAGINA_DA_VISITA = 20;
+const TAMANHO_MAXIMO_DO_HOST_DA_VISITA = 30;
+const TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM = 36;
+const TAMANHOS_DA_CAMPANHA = { utm_source: 20, utm_medium: 16, utm_campaign: 20 };
 
 function rotuloDeOrigem(valor, tamanhoMaximo) {
   const rotulo = String(valor ?? "")
@@ -675,13 +676,20 @@ function dominioDoReferrer() {
   }
 }
 
-function origemDaVisita() {
+function propriedadesDaVisita() {
   const parametros = new URLSearchParams(window.location.search);
-  const origem = { referrer_dominio: dominioDoReferrer() };
-  for (const parametro of PARAMETROS_DA_CAMPANHA) {
-    origem[parametro] = rotuloDeOrigem(parametros.get(parametro), TAMANHO_MAXIMO_DO_ROTULO_DA_CAMPANHA);
+  const propriedades = {
+    pagina: Array.from(window.location.pathname).slice(0, TAMANHO_MAXIMO_DA_PAGINA_DA_VISITA).join(""),
+    host: rotuloDeOrigem(
+      window.location.hostname || window.location.protocol,
+      TAMANHO_MAXIMO_DO_HOST_DA_VISITA,
+    ),
+    referrer_dominio: dominioDoReferrer(),
+  };
+  for (const [parametro, tamanho] of Object.entries(TAMANHOS_DA_CAMPANHA)) {
+    propriedades[parametro] = rotuloDeOrigem(parametros.get(parametro), tamanho);
   }
-  return Object.fromEntries(Object.entries(origem).filter(([, valor]) => valor));
+  return Object.fromEntries(Object.entries(propriedades).filter(([, valor]) => valor));
 }
 
 function percentualDoPasso() {
@@ -2190,6 +2198,6 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
 setupCaptcha();
 
 if (!landingJaContadaNestaSessao()) {
-  void registerEvent("landing_visualizada", { pagina: window.location.pathname, ...origemDaVisita() });
+  void registerEvent("landing_visualizada", propriedadesDaVisita());
 }
 resumeConfirmedSignup();

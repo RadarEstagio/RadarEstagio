@@ -485,6 +485,8 @@ async function propriedadesDaVisita(opcoes: { url?: string; referrer?: string; a
   }
 }
 
+const SITE = { pagina: "/", host: "radarestagio.com" };
+
 Deno.test("a visita guarda só o domínio do referrer e a campanha da URL", async () => {
   const propriedades = await propriedadesDaVisita({
     url: "https://radarestagio.com/?utm_source=grupo-ccet&utm_medium=whatsapp&utm_campaign=outubro-2026&nome=ana",
@@ -492,7 +494,7 @@ Deno.test("a visita guarda só o domínio do referrer e a campanha da URL", asyn
   });
 
   assert.deepEqual(propriedades, {
-    pagina: "/",
+    ...SITE,
     referrer_dominio: "l.instagram.com",
     utm_source: "grupo-ccet",
     utm_medium: "whatsapp",
@@ -500,39 +502,39 @@ Deno.test("a visita guarda só o domínio do referrer e a campanha da URL", asyn
   });
 });
 
-Deno.test("a visita sem referrer nem campanha leva só a página", async () => {
-  assert.deepEqual(await propriedadesDaVisita({}), { pagina: "/" });
+Deno.test("a visita sem referrer nem campanha leva só a página e o host", async () => {
+  assert.deepEqual(await propriedadesDaVisita({}), SITE);
 });
 
 Deno.test("o referrer do próprio site e o prefixo www não viram origem", async () => {
   assert.deepEqual(
     await propriedadesDaVisita({ referrer: "https://radarestagio.com/termos.html" }),
-    { pagina: "/" },
+    SITE,
   );
   assert.deepEqual(
     await propriedadesDaVisita({ referrer: "https://www.google.com/search?q=estagio" }),
-    { pagina: "/", referrer_dominio: "google.com" },
+    { ...SITE, referrer_dominio: "google.com" },
   );
 });
 
 Deno.test("o próprio site com ou sem www nos dois lados não vira origem externa", async () => {
   assert.deepEqual(
     await propriedadesDaVisita({ referrer: "https://www.radarestagio.com/termos.html" }),
-    { pagina: "/" },
+    SITE,
   );
   assert.deepEqual(
     await propriedadesDaVisita({
       url: "https://www.radarestagio.com/",
       referrer: "https://radarestagio.com/termos.html",
     }),
-    { pagina: "/" },
+    { pagina: "/", host: "www.radarestagio.com" },
   );
   assert.deepEqual(
     await propriedadesDaVisita({
       url: "https://www.radarestagio.com/",
       referrer: "https://www.radarestagio.com/privacidade.html",
     }),
-    { pagina: "/" },
+    { pagina: "/", host: "www.radarestagio.com" },
   );
 });
 
@@ -542,14 +544,14 @@ Deno.test("campanha com maiúscula, espaço ou acento chega normalizada e vazia 
   });
 
   assert.deepEqual(propriedades, {
-    pagina: "/",
+    ...SITE,
     utm_source: "grupo-ccet",
     utm_medium: "e-mail",
     utm_campaign: "o",
   });
   assert.deepEqual(
     await propriedadesDaVisita({ url: "https://radarestagio.com/?utm_source=%20%20&utm_medium=" }),
-    { pagina: "/" },
+    SITE,
   );
 });
 
@@ -561,26 +563,46 @@ Deno.test("a origem da visita funciona com o armazenamento bloqueado", async () 
   });
 
   assert.deepEqual(propriedades, {
-    pagina: "/",
+    ...SITE,
     referrer_dominio: "t.co",
     utm_source: "grupo-ccet",
   });
 });
 
-Deno.test("a visita com URL, referrer e campanha enormes cabe nos 256 bytes do banco", async () => {
+Deno.test("o host da página separa o ambiente: site, servidor local, rede local e arquivo", async () => {
+  const hosts = {
+    "http://localhost:8000/": "localhost",
+    "http://127.0.0.1:8787/": "127.0.0.1",
+    "http://192.168.0.10:8000/": "192.168.0.10",
+    "https://radar.exemplo.workers.dev/": "radar.exemplo.workers.dev",
+    "file:///caminho/web/index.html": "file",
+  };
+
+  for (const [url, host] of Object.entries(hosts)) {
+    const propriedades = await propriedadesDaVisita({ url });
+
+    assert.equal(propriedades.host, host, url);
+  }
+});
+
+Deno.test("a visita com URL, host, referrer e campanha enormes cabe nos 256 bytes do banco", async () => {
   const longa = "a".repeat(300);
   const propriedades = await propriedadesDaVisita({
-    url: `https://radarestagio.com/${"estágio-remoto/".repeat(40)}?utm_source=${longa}&utm_medium=${longa}&utm_campaign=${longa}`,
+    url: `https://${"sub".repeat(30)}.radarestagio.com/${"estágio-remoto/".repeat(40)}?utm_source=${longa}&utm_medium=${longa}&utm_campaign=${longa}`,
     referrer: `https://${"sub.".repeat(30)}exemplo.com/${longa}`,
   });
   const bytes = new TextEncoder().encode(JSON.stringify(propriedades)).length +
     2 * Object.keys(propriedades).length;
 
   assert.ok(bytes <= 256, `${bytes} bytes`);
-  assert.equal(propriedades.utm_source.length, 24);
-  assert.equal(propriedades.referrer_dominio.length, 40);
+  assert.equal(propriedades.pagina.length, 20);
+  assert.equal(propriedades.host.length, 30);
+  assert.equal(propriedades.referrer_dominio.length, 36);
+  assert.equal(propriedades.utm_source.length, 20);
+  assert.equal(propriedades.utm_medium.length, 16);
+  assert.equal(propriedades.utm_campaign.length, 20);
   for (const [chave, valor] of Object.entries(propriedades)) {
-    if (chave !== "pagina") assert.match(valor, /^[a-z0-9._-]{1,40}$/);
+    if (chave !== "pagina") assert.match(valor, /^[a-z0-9._-]{1,36}$/);
   }
 });
 
