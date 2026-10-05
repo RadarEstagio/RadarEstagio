@@ -667,9 +667,9 @@ function rotuloDeOrigem(valor, tamanhoMaximo) {
 
 function dominioDoReferrer() {
   try {
-    const { hostname } = new URL(document.referrer);
-    if (!hostname || hostname === window.location.hostname) return null;
-    return rotuloDeOrigem(hostname.replace(/^www\./, ""), TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM);
+    const dominio = new URL(document.referrer).hostname.replace(/^www\./, "");
+    if (!dominio || dominio === window.location.hostname.replace(/^www\./, "")) return null;
+    return rotuloDeOrigem(dominio, TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM);
   } catch {
     return null;
   }

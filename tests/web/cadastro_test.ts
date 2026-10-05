@@ -515,6 +515,27 @@ Deno.test("o referrer do próprio site e o prefixo www não viram origem", async
   );
 });
 
+Deno.test("o próprio site com ou sem www nos dois lados não vira origem externa", async () => {
+  assert.deepEqual(
+    await propriedadesDaVisita({ referrer: "https://www.radarestagio.com/termos.html" }),
+    { pagina: "/" },
+  );
+  assert.deepEqual(
+    await propriedadesDaVisita({
+      url: "https://www.radarestagio.com/",
+      referrer: "https://radarestagio.com/termos.html",
+    }),
+    { pagina: "/" },
+  );
+  assert.deepEqual(
+    await propriedadesDaVisita({
+      url: "https://www.radarestagio.com/",
+      referrer: "https://www.radarestagio.com/privacidade.html",
+    }),
+    { pagina: "/" },
+  );
+});
+
 Deno.test("campanha com maiúscula, espaço ou acento chega normalizada e vazia some", async () => {
   const propriedades = await propriedadesDaVisita({
     url: "https://radarestagio.com/?utm_source=Grupo%20CCET&utm_medium=E-mail&utm_campaign=%C3%A7%C3%A3o&utm_term=x",
