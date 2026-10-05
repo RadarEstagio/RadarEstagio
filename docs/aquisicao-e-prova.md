@@ -36,8 +36,12 @@ de compartilhar. Não inserir token de vínculo, token de recomendação ou URL 
 | 08/09/2026 | nenhum envio nesta sessão | proposta acima | não medido | não medido | não medido | não medido | falta autorização e origem publicada |
 
 Campos desconhecidos permanecem desconhecidos, não zero. O produto já registra eventos de
-aquisição e feedback conforme `docs/metricas.md`, mas a origem de uma divulgação futura precisa
-ser definida com propriedades permitidas antes de atribuir uma pessoa a um canal.
+aquisição e feedback conforme `docs/metricas.md`. Desde a migration `0032`, a visita guarda o
+domínio do referrer e `utm_source`, `utm_medium` e `utm_campaign`, e o relatório `metricas` mostra
+as visitas por origem. Para atribuir uma divulgação, use um `utm_source` por grupo ou canal, em
+letras minúsculas (`https://radarestagio.com/?utm_source=grupo-ccet`); sem ele a visita é lida
+pelo domínio do referrer ou, se não houver, como "direto ou desconhecido". Origem agrupa visitas, não identifica pessoas: não atribua um cadastro a
+um canal sem a evidência do próprio cadastro.
 
 ## Modelo de autorização de relato
 
