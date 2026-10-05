@@ -132,9 +132,8 @@ Deno.test("o vínculo não promete vaga todos os dias nem de manhã", () => {
   }
 });
 
-Deno.test("o vínculo diz que a vaga só chega quando for compatível e que a primeira busca é em instantes", () => {
+Deno.test("o vínculo diz que a vaga só chega quando for compatível", () => {
   assertEquals(RESPOSTAS_DO_VINCULO.vinculado.includes("Quando houver vagas compatíveis"), true);
-  assertEquals(RESPOSTAS_DO_VINCULO.vinculado.includes("primeira busca"), true);
   assertEquals(
     RESPOSTAS_DO_VINCULO.chat_ja_vinculado.includes("quando houver vagas compatíveis"),
     true,

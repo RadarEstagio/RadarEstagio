@@ -117,7 +117,9 @@ Acessar e encerrar sessão no painel.
 Abrir o bot pelo link pessoal e confirmar Start.
 
 **Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas. A
-resposta do vínculo promete vagas "quando houver compatíveis", não todos os dias. Texto livre de
+resposta do vínculo só diz "a primeira busca já começou" depois de o disparo sair; na janela
+das 06:23 às 07:23, com o disparo recusado ou sem o token, diz que a lista chega com a execução
+da manhã ou a próxima diária, e nunca promete vaga todos os dias. Texto livre de
 chat vinculado recebe "Recebemos sua mensagem; a equipe lê todas" e vai ao chat de operação, se
 ele estiver configurado; sem isso a resposta aponta o e-mail de contato. Chat não vinculado
 continua recebendo a instrução de vínculo.
