@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from radar.domain.models import (
+    AberturaSemResposta,
     ChaveDaVaga,
     EntregaParaJulgar,
     EventosDoSite,
@@ -81,6 +82,12 @@ class RepositorioDeAvaliacoes(Protocol):
     def apagar_contas_nao_confirmadas(self, dias_de_prazo: int) -> int: ...
 
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None: ...
+
+    def abertura_sem_resposta(self, usuario: Usuario, hoje: date) -> AberturaSemResposta | None: ...
+
+    def registrar_pergunta_do_dia_seguinte(
+        self, usuario: Usuario, abertura: AberturaSemResposta
+    ) -> None: ...
 
     def registrar_vagas_sem_extracao(
         self, vagas: list[Vaga], dia: date

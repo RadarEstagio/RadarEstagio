@@ -12,6 +12,7 @@ from radar.domain.areas import subareas_do_curso
 from radar.domain.datas import FUSO_DA_ENTREGA
 from radar.domain.metricas import agrupar_utilidade_por_area
 from radar.domain.models import (
+    AberturaSemResposta,
     AreaDeInteresse,
     ChaveDaVaga,
     EntregaParaJulgar,
@@ -363,6 +364,14 @@ SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS = """
 
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
 
+SQL_ABERTURA_SEM_RESPOSTA = Path(__file__).with_name("abertura_sem_resposta.sql").read_text()
+
+SQL_REGISTRAR_PERGUNTA_DO_DIA_SEGUINTE = """
+    update envios
+    set pergunta_do_dia_seguinte_em = now()
+    where perfil_id = %(perfil_id)s and token = %(token)s
+"""
+
 
 class RepositorioPostgres:
     def __init__(self, conexao: psycopg.Connection) -> None:
@@ -623,6 +632,32 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao gravar o aviso de silêncio: {descrever(erro)}"
+            ) from erro
+
+    def abertura_sem_resposta(self, usuario: Usuario, hoje: date) -> AberturaSemResposta | None:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linha = cursor.execute(
+                    SQL_ABERTURA_SEM_RESPOSTA, {"perfil_id": usuario.id, "hoje": hoje}
+                ).fetchone()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler a abertura sem resposta: {descrever(erro)}"
+            ) from erro
+        return AberturaSemResposta(**linha) if linha else None
+
+    def registrar_pergunta_do_dia_seguinte(
+        self, usuario: Usuario, abertura: AberturaSemResposta
+    ) -> None:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(
+                    SQL_REGISTRAR_PERGUNTA_DO_DIA_SEGUINTE,
+                    {"perfil_id": usuario.id, "token": abertura.token},
+                )
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao gravar a pergunta do dia seguinte: {descrever(erro)}"
             ) from erro
 
     def requisicoes_da_fonte_desde(self, fonte: str, desde: date) -> int:
