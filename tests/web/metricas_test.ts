@@ -278,6 +278,36 @@ Deno.test("visitas de páginas locais saem do funil com a sessão inteira e as d
   }
 });
 
+Deno.test("a conta ligada a uma sessão local sai também dos eventos de banco e de Telegram", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into perfis values
+        (1,'dev','Computação','2026-09-05','2026-09-05','111',true,null,null),
+        (2,'aluna','Direito','2026-09-05','2026-09-05','222',true,null,null);
+      insert into eventos_produto(nome, sessao_id, user_id, perfil_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','local',null,null,'{"pagina":"/web/index.html"}','2026-09-05 00:00Z'),
+        ('conta_criada','local','dev',null,'{}','2026-09-05 00:01Z'),
+        ('telegram_vinculado',null,'dev',1,'{}','2026-09-05 00:02Z'),
+        ('primeira_recomendacao_enviada',null,null,1,'{}','2026-09-05 00:03Z'),
+        ('landing_visualizada','real',null,null,'{"pagina":"/"}','2026-09-05 00:00Z'),
+        ('conta_criada','real','aluna',null,'{}','2026-09-05 00:01Z'),
+        ('telegram_vinculado',null,'aluna',2,'{}','2026-09-05 00:02Z'),
+        ('primeira_recomendacao_enviada',null,null,2,'{}','2026-09-05 00:03Z');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.equal(result.etapas.landing_visualizada, 1);
+    assert.equal(result.etapas.conta_criada, 1);
+    assert.equal(result.etapas.telegram_vinculado, 1);
+    assert.equal(result.etapas.primeira_recomendacao_enviada, 1);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("sem visitas no período a lista de origens vem vazia", async () => {
   const db = new PGlite();
   try {
