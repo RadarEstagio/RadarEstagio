@@ -9,7 +9,7 @@ import {
   textoDaMensagem,
 } from "./vinculo.ts";
 import { processarVinculo, type VinculoRealizado } from "./processar_vinculo.ts";
-import { processarMensagemLivre } from "./processar_mensagem_livre.ts";
+import { type PerfilDoChat, processarMensagemLivre } from "./processar_mensagem_livre.ts";
 import {
   type ConsultaDeFeedback,
   eventoDoFeedback,
@@ -81,15 +81,15 @@ async function chatJaVinculado(chatId: string): Promise<boolean> {
   return data !== null;
 }
 
-async function perfilDoChat(chatId: string): Promise<string | null> {
+async function perfilDoChat(chatId: string): Promise<PerfilDoChat | null> {
   const { data, error } = await supabase
     .from("perfis")
-    .select("id")
+    .select("id, ativo")
     .eq("telegram_chat_id", chatId)
     .is("excluida_em", null)
     .maybeSingle();
   if (error) throw error;
-  return data?.id ?? null;
+  return data ? { id: data.id, ativo: data.ativo } : null;
 }
 
 function enderecoDaConta(): string {
