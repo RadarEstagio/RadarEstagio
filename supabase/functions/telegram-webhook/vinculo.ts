@@ -26,8 +26,12 @@ export const RESPOSTA_VINCULADO =
 export const RESPOSTA_TOKEN_JA_USADO =
   "Este link já foi usado ou expirou. Abra o site do Radar de Estágio e clique de novo em vincular o Telegram.";
 export const RESPOSTA_CHAT_DE_OUTRA_CONTA =
-  "Este Telegram já está vinculado a outra conta do Radar de Estágio. " +
-  "Entre naquela conta no site e use \"Desvincular o Telegram\" antes de vincular a esta.";
+  "Este Telegram já está conectado a outra conta do Radar de Estágio, " +
+  "por isso não dá para vinculá-lo a esta.\n\n" +
+  "Para trocar: entre no site com a conta antiga, abra Minha conta > Privacidade " +
+  "e toque em \"Desvincular o Telegram\". Depois volte à conta nova e use o botão " +
+  "do Telegram de novo.\n\n" +
+  "Se a conta antiga é a que você quer manter, não precisa fazer nada.";
 export const RESPOSTA_CHAT_JA_VINCULADO =
   "Seu Telegram já está vinculado. Nada a fazer: as vagas chegam aqui todos os dias de manhã.";
 export const RESPOSTA_SEM_TOKEN =
