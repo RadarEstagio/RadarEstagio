@@ -131,6 +131,10 @@ Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.
   e em `VERSAO_DOS_TERMOS` de `web/assets/app.js`. O aviso de rascunho saiu das páginas. O banco
   só aceita a versão como data (`AAAA-MM-DD`), e cada conta guarda a que aceitou. Contas que
   aceitaram `2026-09-05` continuam válidas: o piloto ainda não começou e não há aceite a renovar.
+- **Versão `2026-10-05`:** a Política passa a dizer que a equipe lê as mensagens enviadas ao bot,
+  encaminhadas ao chat de operação pela `telegram-webhook`, com a base legal (art. 7º, V) e o que
+  a exclusão da conta não apaga. Os Termos só trocam a data. Contas que aceitaram `2026-10-02`
+  continuam válidas: nenhuma finalidade nova exige consentimento.
 
 ### Responsabilidades combinadas (02/10/2026)
 

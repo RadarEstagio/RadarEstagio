@@ -1,6 +1,6 @@
 # Política de Privacidade — Radar de Estágio
 
-**Versão 2026-10-02 · Em vigor desde 02/10/2026.**
+**Versão 2026-10-05 · Em vigor desde 05/10/2026.**
 
 Este texto é o mesmo de `web/privacidade.html`, revisado por Igor, Ian e Miguel, e descreve o
 tratamento de dados no piloto.
@@ -30,6 +30,7 @@ Para assuntos de privacidade e pedidos sobre seus dados: [contato@radarestagio.c
   não informar” na edição do perfil remove a resposta do perfil; as avaliações de vagas e as
   recomendações feitas até ali continuam no histórico até a exclusão da conta.
 - **Telegram.** Usamos o identificador do seu chat para vincular a conta e entregar mensagens.
+- **Mensagens enviadas ao bot.** Se você escrever ao bot do Radar no Telegram, a equipe lê o texto: ele é encaminhado ao chat de operação do projeto, junto com o identificador do seu perfil, para responder ao seu pedido e corrigir problemas que você apontar. Não envie senhas nem dados sensíveis por esse canal. O Radar não grava a mensagem no banco, mas ela permanece no histórico do chat de operação até a equipe apagá-la.
 - **Uso do Radar.** Registramos aberturas de links, feedback sobre vagas, identificador de
   sessão e eventos de navegação e cadastro para entender o uso do serviço e identificar
   problemas nas recomendações e no cadastro.
@@ -76,6 +77,7 @@ deficiência, por ser dado sensível, na do artigo 11:
   uso sem texto livre. Você pode se opor a esse tratamento pelo canal de contato.
 - **Registro do aceite dos termos e das suas escolhas:** exercício regular de direitos e
   comprovação das condições aceitas (art. 7º, VI).
+- **Mensagens enviadas ao bot:** lidas pela equipe para atender o que você pediu ao escrever, como parte do serviço (art. 7º, V).
 
 ## 4. Quem processa seus dados
 
@@ -127,6 +129,7 @@ outras contas que usaram o mesmo navegador.
 Anúncios públicos de vagas podem permanecer no catálogo. Mensagens já recebidas no Telegram
 e dados enviados aos sites de candidatura não são removidos por essa rotina. O apagamento do
 banco também não limpa automaticamente o armazenamento local dos seus outros dispositivos.
+A exclusão da conta não apaga mensagens que você enviou ao bot e que já foram encaminhadas ao chat de operação; peça a remoção pelo e-mail de contato.
 
 Se o e-mail não for confirmado, o perfil enviado no cadastro, inclusive a resposta sobre
 deficiência, é apagado pela rotina diária 2 dias depois do envio. Pedir um novo link de
@@ -161,6 +164,6 @@ não inclui senhas, hashes, tokens de acesso ou credenciais dos serviços.
 
 ## 8. Atualizações
 
-Esta é a versão 2026-10-02, em vigor desde 02/10/2026. Alterações relevantes serão informadas
+Esta é a versão 2026-10-05, em vigor desde 05/10/2026. Alterações relevantes serão informadas
 no site, com a nova versão e a data de vigência. Novas finalidades que exijam consentimento
 terão uma escolha específica apresentada antes do início desse uso.
