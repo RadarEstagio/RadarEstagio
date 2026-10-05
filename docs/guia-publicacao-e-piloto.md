@@ -322,7 +322,7 @@ versão atual do frontend a conferir:
 Também implementados e testados localmente:
 - Feedback individual com seis opções, incluindo positivo e motivo da nota incorreta.
 - Funil completo, vagas distintas, utilidade semanal e denominadores das recusas.
-- Vocabulário e métricas alinhados; candidatura continua sem emissor por decisão do plano.
+- Vocabulário e métricas alinhados; a candidatura só tem emissor na pergunta do dia seguinte (05/10/2026).
 
 O pipeline por perfil, o dispatch e a trava de concorrência foram implementados e validados
 conforme o registro acima. Falta testar o cadastro completo pela interface publicada e

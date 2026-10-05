@@ -126,9 +126,33 @@ sempre tira a vaga de quem marcou, mas só vale para os outros com abertura pelo
 excluída e entre as três primeiras marcações vigentes do perfil em 30 dias, e o feedback de uma
 conta excluída continua contado aqui.
 
-Vagas úteis formam a união de feedback positivo vigente e candidatura atribuída histórica,
-sem duplicar quem tem os dois sinais. **Candidatura não tem emissor no piloto**; o relatório
-explicita essa limitação. A definição conceitual de vaga útil permanece no `CONTEXT.md`.
+Vagas úteis formam a união de feedback positivo vigente e candidatura atribuída, sem duplicar
+quem tem os dois sinais. Desde 05/10/2026 a candidatura tem emissor: o botão **Me candidatei**
+da pergunta do dia seguinte grava `candidatura_iniciada`. É uma candidatura **declarada** pela
+pessoa, não observada, e quem se candidata e não responde não conta; o relatório diz isso. A
+definição conceitual de vaga útil permanece no `CONTEXT.md`.
+
+### Pergunta do dia seguinte
+
+A pergunta "Ontem você abriu *título — empresa*. E aí?" sai no máximo uma vez por pessoa por dia,
+sobre a abertura mais recente do dia anterior em Brasília cuja vaga ainda não teve
+`vaga_util`, `vaga_irrelevante` nem `candidatura_iniciada` depois do envio. A marca de que ela
+saiu é `envios.pergunta_do_dia_seguinte_em`. As respostas viram eventos que já existiam:
+
+| Botão | Evento | Conta como |
+|---|---|---|
+| Me candidatei | `candidatura_iniciada` | vaga útil e candidatura declarada |
+| Não serviu, depois de escolher o motivo | `vaga_irrelevante` com `motivo` | recusa, como no feedback pelo número |
+| Ainda vou ver | nenhum | nada; indistinguível do silêncio |
+
+Leitura combinada para 19/10, ainda **sem linha no relatório `metricas`**, por consulta avulsa:
+**taxa de resposta** = envios com a marca preenchida que têm `vaga_util`, `vaga_irrelevante` ou
+`candidatura_iniciada` depois dela, sobre os envios com a marca preenchida; e
+**candidaturas declaradas por semana** = pares `(perfil_id, vaga_id)` distintos com
+`candidatura_iniciada`, por semana de Brasília. O denominador da taxa é o conjunto de perguntas
+enviadas, não o de aberturas, e "Ainda vou ver" fica no denominador sem entrar no numerador.
+Resposta pelo número da mensagem de recomendações também entra, porque o par é o mesmo; a
+pergunta não é a única porta, só a que se apresenta a quem abriu.
 
 ## Utilidade semanal — North Star
 

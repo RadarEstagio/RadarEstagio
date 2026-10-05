@@ -394,8 +394,9 @@ recomendação e pausa, porque esses marcos não devem depender do navegador per
 
 A sessão anônima é ligada ao usuário por um evento autenticado de `perfil_salvo`. Consultas usam
 a primeira ocorrência de cada nome, pois o gatilho autoritativo e o navegador podem registrar o
-mesmo marco. Os eventos de clique, utilidade e candidatura permanecem reservados até existirem
-interações reais no Telegram; o contrato não fabrica comportamento futuro.
+mesmo marco. Abertura, utilidade e recusa vêm dos cliques no Telegram, e a candidatura vem do
+botão "Me candidatei" da pergunta do dia seguinte, declarada pela pessoa; o contrato não
+fabrica comportamento que nenhum emissor produz.
 
 ## Como cada ferramenta se encaixa
 

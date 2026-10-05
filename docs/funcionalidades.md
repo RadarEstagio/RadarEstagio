@@ -155,6 +155,13 @@ todos, só se a pessoa abriu a vaga pelo link, não excluiu a conta e a marcaç�
 primeiras dela nos últimos 30 dias, e a republicação só sai se for da mesma empresa ou de empresa
 sem nome; quem a recebeu no mesmo envio não é protegido.
 
+No dia seguinte a uma abertura sem resposta, o Radar pergunta "Ontem você abriu título —
+empresa. E aí?" com Me candidatei (grava `candidatura_iniciada`, que conta como vaga útil),
+Não serviu (troca a pergunta pelos seis motivos) e Ainda vou ver (só fecha a pergunta). No
+máximo uma por pessoa por dia, depois da mensagem de recomendações, e a falha dela só aparece
+como aviso no resumo. A candidatura é declarada pela pessoa, não observada, e "Ainda vou ver" não
+deixa registro.
+
 #### 15. Corrigir feedback
 
 Reabrir o número e escolher outra resposta.
