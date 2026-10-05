@@ -846,19 +846,25 @@ regra do motor.
   `candidatura_iniciada` depois do envio. A consulta é `radar/storage/abertura_sem_resposta.sql`,
   a mesma que o PGlite roda com todas as migrations. A abertura é a primeira do par, porque a
   `0028` só grava essa.
-- **Uma marca por envio.** `envios.pergunta_do_dia_seguinte_em` (`0033`) é gravada depois do
-  envio da pergunta. Sem ela, um segundo `rodar` no mesmo dia repetiria a pergunta, e "Ainda vou
-  ver", que não emite evento, voltaria no dia seguinte. A mesma coluna garante o limite de uma por
-  pessoa por dia. A vaga que ficou sem resposta não é perguntada de novo: o laço de ontem se
-  fecha uma vez só, para a pergunta não virar cobrança.
+- **Uma marca por envio, reservada antes do envio.** `envios.pergunta_do_dia_seguinte_em`
+  (`0033`) é gravada por um `update ... where pergunta_do_dia_seguinte_em is null` **antes** de
+  mandar a pergunta, como a entrega imediata reivindica o disparo antes de fazê-lo. Gravar depois
+  do envio deixava um furo: se a gravação falhasse e o diário rodasse de novo, a pergunta saía
+  duas vezes. Com a reserva, quem não consegue reservar não envia, e quem envia já está marcado.
+  Se o Telegram recusar o envio, a reserva é desfeita e a próxima execução tenta de novo; se
+  desfazê-la também falhar, ou se o processo morrer entre a reserva e o envio, a pergunta se
+  perde naquele dia. Foi a escolha: erra para o lado de não repetir, e o custo é uma pergunta a
+  menos, nunca uma a mais. A marca também garante o limite de uma por pessoa por dia, e "Ainda
+  vou ver", que não emite evento, não volta no dia seguinte. A vaga que ficou sem resposta não é
+  perguntada de novo: o laço de ontem se fecha uma vez só, para a pergunta não virar cobrança.
 - **Não segura nem atrasa a mensagem de recomendações.** É um laço próprio, depois de todos os
   usuários atendidos, fora da trava do atendimento, e vale também no dia sem vaga compatível e na
   mensagem segurada. Quem ficou sem mensagem por falha de revalidação ou de envio não é
   perguntado: a pergunta falharia pelo mesmo motivo e contaria duas vezes no resumo.
 - **Falha vira aviso, nunca código 1.** Erro do Telegram, do banco ou inesperado conta em
   `perguntas_do_dia_seguinte_com_falha`, aparece como "⚠️ Perguntas do dia seguinte com falha" no
-  resumo de operação e não entra em `ninguem_foi_atendido_por_falha`. Pergunta enviada e não
-  gravada também conta como falha, porque a próxima execução do mesmo dia a repetiria.
+  resumo de operação e não entra em `ninguem_foi_atendido_por_falha`. Falha ao reservar também
+  conta, e então a pergunta não sai.
 - **Os botões.** "Me candidatei" grava `candidatura_iniciada` (já no catálogo, e já somada às
   vagas úteis pela consulta de métricas) e fecha a pergunta. "Não serviu" troca a própria
   mensagem pelos seis motivos de `feedback.ts`, sem a opção positiva, e o motivo segue o caminho

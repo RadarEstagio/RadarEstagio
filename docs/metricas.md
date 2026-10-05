@@ -137,7 +137,8 @@ definição conceitual de vaga útil permanece no `CONTEXT.md`.
 A pergunta "Ontem você abriu *título — empresa*. E aí?" sai no máximo uma vez por pessoa por dia,
 sobre a abertura mais recente do dia anterior em Brasília cuja vaga ainda não teve
 `vaga_util`, `vaga_irrelevante` nem `candidatura_iniciada` depois do envio. A marca de que ela
-saiu é `envios.pergunta_do_dia_seguinte_em`. As respostas viram eventos que já existiam:
+vai sair é `envios.pergunta_do_dia_seguinte_em`, reservada antes do envio e desfeita se o
+envio falhar. As respostas viram eventos que já existiam:
 
 | Botão | Evento | Conta como |
 |---|---|---|
@@ -150,7 +151,7 @@ Leitura combinada para 19/10, ainda **sem linha no relatório `metricas`**, por 
 `candidatura_iniciada` depois dela, sobre os envios com a marca preenchida; e
 **candidaturas declaradas por semana** = pares `(perfil_id, vaga_id)` distintos com
 `candidatura_iniciada`, por semana de Brasília. O denominador da taxa é o conjunto de perguntas
-enviadas, não o de aberturas, e "Ainda vou ver" fica no denominador sem entrar no numerador.
+enviadas (a marca pode ficar sem pergunta entregue no raro caso de o envio e a liberação falharem juntos), não o de aberturas, e "Ainda vou ver" fica no denominador sem entrar no numerador.
 Resposta pelo número da mensagem de recomendações também entra, porque o par é o mesmo; a
 pergunta não é a única porta, só a que se apresenta a quem abriu.
 
