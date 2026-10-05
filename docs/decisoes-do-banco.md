@@ -221,6 +221,65 @@ confere as linhas antigas, mas barra `update` futuro de linha web antiga maior q
 nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
 dos limites.
 
+## Origem da visita tem lista de propriedades (05/10/2026, `0032`)
+
+Nenhuma `landing_visualizada` dizia de onde a pessoa veio (RCD-04), e o banco só limitava o
+tamanho das propriedades do evento web, não o que cabia nelas. A `0032` cria o check
+`origem_da_visita_permitida`: na `landing_visualizada` só valem `pagina`, `referrer_dominio`,
+`utm_source`, `utm_medium` e `utm_campaign`, os quatro últimos como texto em `[a-z0-9._-]`, com
+no máximo 40 caracteres no domínio e 24 em cada campanha. Lista fechada, e não só tamanho, porque
+a chave pública escreve nessa tabela e um campo livre carregaria o que a pessoa quisesse, inclusive
+URL com token, e-mail ou texto digitado; o domínio sem caminho nem query é o que a decisão quer
+guardar, e o banco o cobra.
+
+- **O teto de 256 bytes da `0023` continua valendo e fica folgado.** Chaves e pontuação de um
+  JSON com as cinco propriedades somam 94 bytes; 40 de `pagina` (o site corta em 40), 40 de
+  domínio e 3 × 24 de campanha dão 246. Com rótulos em `[a-z0-9._-]` cada caractere é um byte,
+  então o pior caso é conhecido; a `pagina`, que não tem formato fixo, segue presa ao corte de
+  40 pontos de código de `propriedadesDoEvento`. Rótulo mais longo ou outro campo exigiria
+  refazer essa conta.
+- **O site normaliza antes de enviar**, porque o check recusa a visita inteira se um rótulo fugir
+  do formato: minúsculas, o que não for `[a-z0-9._-]` vira hífen, hífens das pontas saem, e o
+  que sobrar vazio some. Domínio é o hostname do `document.referrer`, sem `www` e sem o do
+  próprio site. O site não lê nem grava armazenamento para isso.
+- **O check é `not valid`, como o da `0023`.** Visita antiga só tinha `pagina` e continua como
+  está; a regra vale para insert e update novos. A `0032` pode ir ao banco antes ou depois do
+  merge: o site publicado não envia as chaves novas e o site novo só as envia depois do deploy.
+  Se o site novo subir antes da migration, as chaves novas entram sem lista, o que é inofensivo.
+- **Medição.** A origem de "direto" mistura acesso direto com referrer cortado pelo navegador ou
+  pelo aplicativo de origem; é leitura de canal, não de pessoa. `utm_medium` e `utm_campaign`
+  ficam gravados e ainda sem relatório.
+
+## Contas da equipe fora do funil (proposta de 05/10/2026)
+
+**Proposta, sem migration e sem marca gravada em produção.** A coorte e a aquisição misturam
+contas e sessões da equipe com as de estudantes (RCD-04), e o guia já pede para separá-las. Duas
+marcas, uma para cada tipo de identidade:
+
+- **Visita e sessão: `utm_source=equipe`.** A equipe abre o site, em teste ou demonstração, por
+  `radarestagio.com/?utm_source=equipe`. É a única marca possível antes de existir conta, não
+  exige banco e já cabe na `0032`. A consulta de métricas passaria a descartar a sessão inteira
+  que traga essa origem, como faz com as de páginas locais.
+- **Conta: tabela `contas_da_equipe (user_id uuid primary key references auth.users on delete
+  cascade, registrada_em timestamptz not null default now())`**, com RLS ligada e nenhum grant,
+  fora do alcance do site. A `coorte` e os eventos por `user_id` e `perfil_id` do `metricas.sql`
+  passariam a ignorar essas contas, enquanto o pipeline, que não lê a tabela, continua entregando
+  para elas: a equipe precisa receber a mensagem para testar.
+
+Alternativas recusadas. Coluna `perfis.da_equipe`: o site escreve em `perfis` e o pipeline lê as
+mesmas linhas, então a marca ficaria misturada ao dado do estudante. Metadado da conta
+(`raw_user_meta_data`): a própria pessoa o edita. Domínio do e-mail: a equipe usa e-mail
+pessoal. Inserir os ids por migration: o repositório é público e a migration ligaria contas
+reais a "equipe" para sempre.
+
+**Quem grava.** Quem tiver a chave de serviço, por SQL fora do repositório (`insert into
+contas_da_equipe select id from auth.users where email = ...`), depois de a tabela existir.
+Esse insert é dado, não schema; a regra de nunca alterar tabela pelo painel vale para a criação
+da tabela, que seria migration. **Falta decidir**: a lista de contas (a equipe tem três
+integrantes, mais as contas de teste), se a tabela entra numa migration própria antes da
+mudança no `metricas.sql`, e se o resumo diário também as exclui. Até lá, o número de perfis
+da coorte inclui a equipe, e a leitura precisa dizer isso.
+
 ## Aberturas, pausas e vínculos repetidos
 
 (16/09/2026, migration `0028`). O limite da `0023`
