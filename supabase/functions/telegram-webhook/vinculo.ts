@@ -22,8 +22,16 @@ export type ResultadoDoVinculo =
   | "chat_ja_vinculado";
 
 export const RESPOSTA_VINCULADO =
-  "Telegram vinculado! Quando houver vagas compatíveis com o seu perfil, elas chegam aqui. " +
-  "Sua primeira busca começa em instantes.";
+  "Telegram vinculado! Quando houver vagas compatíveis com o seu perfil, elas chegam aqui.";
+export const RESPOSTA_VINCULADO_COM_BUSCA =
+  "Telegram vinculado! Sua primeira busca já começou: se houver vagas compatíveis com o seu " +
+  "perfil, a lista chega aqui em alguns minutos.";
+export const RESPOSTA_VINCULADO_NA_JANELA =
+  "Telegram vinculado! Sua primeira lista chega com a execução da manhã, se houver vagas " +
+  "compatíveis com o seu perfil.";
+export const RESPOSTA_VINCULADO_SEM_DISPARO =
+  "Telegram vinculado! Sua primeira lista chega com a próxima execução diária, se houver vagas " +
+  "compatíveis com o seu perfil.";
 export const RESPOSTA_TOKEN_JA_USADO =
   "Este link já foi usado ou expirou. Abra o site do Radar de Estágio e clique de novo em vincular o Telegram.";
 export const RESPOSTA_CHAT_DE_OUTRA_CONTA =

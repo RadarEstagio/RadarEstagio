@@ -9,16 +9,19 @@ export function dentroDaJanelaDoDiario(agora: Date): boolean {
     minutos < FIM_DA_JANELA_DO_DIARIO_EM_MINUTOS_UTC;
 }
 
-export async function dispararEntregaImediata(perfilId: string): Promise<void> {
-  const token = Deno.env.get("GITHUB_DISPATCH_TOKEN");
+export async function dispararEntregaImediata(
+  perfilId: string,
+  token: string | null = Deno.env.get("GITHUB_DISPATCH_TOKEN") ?? null,
+  enviar: typeof fetch = fetch,
+): Promise<boolean> {
   if (!token) {
     console.warn(
       "GITHUB_DISPATCH_TOKEN ausente: a primeira busca fica para o diário",
     );
-    return;
+    return false;
   }
   try {
-    const resposta = await fetch(
+    const resposta = await enviar(
       `https://api.github.com/repos/${REPOSITORIO}/actions/workflows/${WORKFLOW}/dispatches`,
       {
         method: "POST",
@@ -32,8 +35,11 @@ export async function dispararEntregaImediata(perfilId: string): Promise<void> {
     );
     if (!resposta.ok) {
       console.error(`disparo da primeira busca falhou: HTTP ${resposta.status}`);
+      return false;
     }
+    return true;
   } catch (erro) {
     console.error("disparo da primeira busca falhou", erro);
+    return false;
   }
 }
