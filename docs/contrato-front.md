@@ -228,11 +228,12 @@ primeira entrega têm fontes próprias no banco. A sessão de origem não substi
 O site corta cada texto das propriedades em 40 caracteres, para caber nos 256 bytes que o banco
 aceita em evento web (`0023`).
 
-A `landing_visualizada` leva `pagina` e, quando existem, `referrer_dominio`, `utm_source`,
-`utm_medium` e `utm_campaign` (`0032`); o banco recusa qualquer outra chave nesse evento.
-`origemDaVisita` só envia o hostname do `document.referrer`, sem `www`, sem o do próprio site e
-nunca com caminho ou query, e normaliza os rótulos (minúsculas, `[a-z0-9._-]`, 40 caracteres no
-domínio e 24 em cada campanha): o check recusa a visita inteira se um rótulo fugir disso, então
+A `landing_visualizada` leva `pagina` (20 caracteres), `host` (30) e, quando existem,
+`referrer_dominio` (36), `utm_source` (20), `utm_medium` (16) e `utm_campaign` (20) (`0032`); o
+banco recusa qualquer outra chave nesse evento. `propriedadesDaVisita` só envia o hostname do
+`document.referrer`, sem `www`, sem o do próprio site (com ou sem `www` nos dois lados) e nunca
+com caminho ou query, e normaliza os rótulos (minúsculas, `[a-z0-9._-]`): o check recusa a
+visita inteira se um rótulo fugir disso, então
 mudar a normalização exige mudar a migration e `tests/web/origem_da_visita_test.ts` juntos. A
 função não lê nem grava armazenamento. Detalhe e leitura no [relatório](metricas.md).
 

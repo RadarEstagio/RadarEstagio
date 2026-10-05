@@ -225,19 +225,25 @@ dos limites.
 
 Nenhuma `landing_visualizada` dizia de onde a pessoa veio (RCD-04), e o banco só limitava o
 tamanho das propriedades do evento web, não o que cabia nelas. A `0032` cria o check
-`origem_da_visita_permitida`: na `landing_visualizada` só valem `pagina`, `referrer_dominio`,
-`utm_source`, `utm_medium` e `utm_campaign`, os quatro últimos como texto em `[a-z0-9._-]`, com
-no máximo 40 caracteres no domínio e 24 em cada campanha. Lista fechada, e não só tamanho, porque
+`origem_da_visita_permitida`: na `landing_visualizada` só valem `pagina`, `host`,
+`referrer_dominio`, `utm_source`, `utm_medium` e `utm_campaign`, os cinco últimos como texto em
+`[a-z0-9._-]`, com no máximo 30 caracteres no host, 36 no domínio do referrer, 20 em `utm_source`,
+16 em `utm_medium` e 20 em `utm_campaign`. Lista fechada, e não só tamanho, porque
 a chave pública escreve nessa tabela e um campo livre carregaria o que a pessoa quisesse, inclusive
 URL com token, e-mail ou texto digitado; o domínio sem caminho nem query é o que a decisão quer
 guardar, e o banco o cobra.
 
 - **O teto de 256 bytes da `0023` continua valendo e fica folgado.** Chaves e pontuação de um
-  JSON com as cinco propriedades somam 94 bytes; 40 de `pagina` (o site corta em 40), 40 de
-  domínio e 3 × 24 de campanha dão 246. Com rótulos em `[a-z0-9._-]` cada caractere é um byte,
-  então o pior caso é conhecido; a `pagina`, que não tem formato fixo, segue presa ao corte de
-  40 pontos de código de `propriedadesDoEvento`. Rótulo mais longo ou outro campo exigiria
-  refazer essa conta.
+  JSON com as seis propriedades somam 106 bytes; 20 de `pagina`, 30 de host, 36 de domínio e
+  20 + 16 + 20 de campanha dão 248. Com rótulos em `[a-z0-9._-]` cada caractere é um byte, então
+  o pior caso é conhecido; a `pagina` é o pathname do navegador, já em ASCII, cortado em 20 pelo
+  site. Os tetos saíram de 40 e 24 quando o `host` entrou, porque com ele a conta antiga passava
+  de 256. Rótulo mais longo ou outro campo exige refazer a conta.
+- **O host separa o ambiente.** `localhost`, `wrangler dev` e a pasta `web/` servida na raiz
+  mandavam `pagina` igual à do site publicado, e só o caminho não os distingue. O site grava
+  `location.hostname` (ou `file` para página aberta do disco) e `metricas.sql` descarta a sessão
+  de host local, de rede privada, `.local` ou `.localhost`. Visita anterior à `0032` não tem host
+  e segue pela `pagina`.
 - **O site normaliza antes de enviar**, porque o check recusa a visita inteira se um rótulo fugir
   do formato: minúsculas, o que não for `[a-z0-9._-]` vira hífen, hífens das pontas saem, e o
   que sobrar vazio some. Domínio é o hostname do `document.referrer`, sem `www` e sem o do
@@ -246,8 +252,9 @@ guardar, e o banco o cobra.
   está; a regra vale para insert e update novos. A `0032` pode ir ao banco antes ou depois do
   merge: o site publicado não envia as chaves novas e o site novo só as envia depois do deploy.
   Se o site novo subir antes da migration, as chaves novas entram sem lista, o que é inofensivo.
-- **Medição.** A origem de "direto" mistura acesso direto com referrer cortado pelo navegador ou
-  pelo aplicativo de origem; é leitura de canal, não de pessoa. `utm_medium` e `utm_campaign`
+- **Medição.** A origem "(direto)" mistura acesso direto com referrer cortado pelo navegador ou
+  pelo aplicativo de origem; é leitura de canal, não de pessoa. O rótulo tem parênteses, que o
+  check não deixa um `utm_source` ter, para os dois nunca se somarem. `utm_medium` e `utm_campaign`
   ficam gravados e ainda sem relatório.
 
 ## Contas da equipe fora do funil (proposta de 05/10/2026)

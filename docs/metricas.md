@@ -83,27 +83,33 @@ como a coorte é de 30 dias, ela só sai do funil depois de sair da janela.
 
 ### Visitas por origem e páginas locais
 
-(05/10/2026, migration `0032`.) A `landing_visualizada` guarda, além de `pagina`, o domínio do
-`document.referrer` (`referrer_dominio`) e a campanha da URL (`utm_source`, `utm_medium`,
-`utm_campaign`). Só o domínio do referrer, em minúsculas e sem `www`, nunca o caminho nem a
-query; o domínio do próprio site não conta; cada rótulo da campanha só tem letras minúsculas,
-números, ponto, hífen e sublinhado, com no máximo 24 caracteres (40 no domínio), e o banco recusa
-o que fugir disso. A visita mais cheia ocupa 246 dos 256 bytes da `0023`.
+(05/10/2026, migration `0032`.) A `landing_visualizada` guarda `pagina` (20 caracteres), o
+`host` da página (30), o domínio do `document.referrer` (`referrer_dominio`, 36) e a campanha da
+URL (`utm_source` com 20, `utm_medium` com 16, `utm_campaign` com 20). Só o domínio do referrer,
+em minúsculas e sem `www`, nunca o caminho nem a query; o do próprio site, com ou sem `www`, não
+conta. Cada valor só tem letras minúsculas, números, ponto, hífen e sublinhado, e o banco recusa
+o que fugir disso. A visita mais cheia ocupa 248 dos 256 bytes da `0023`.
 
 O relatório mostra as visitas dos últimos 30 dias por origem: o `utm_source` quando a URL o
 traz, senão o domínio do referrer, senão "direto ou desconhecido", que também é o que sobra
-quando o navegador corta o referrer. Visita anterior à `0032` não tem origem e cai em "direto".
+quando o navegador corta o referrer. Visita anterior à `0032` não tem origem e cai nesse grupo.
+Internamente o grupo é `(direto)`, com parênteses, que nenhum `utm_source` válido pode ter; um
+`utm_source=direto` aparece como "direto", separado.
 `utm_medium` e `utm_campaign` ficam gravados para consulta avulsa e ainda não aparecem no
 relatório. Para atribuir uma divulgação, use um `utm_source` por grupo ou canal, em letras
 minúsculas, por exemplo `radarestagio.com/?utm_source=grupo-ccet`.
 
-**Páginas locais.** Uma sessão cuja `landing_visualizada` tem página local sai do relatório
-inteira, com todos os eventos dela: `pagina` com `web/` no caminho, caminho de arquivo em disco
-(`/Users/…`, `/home/…`, `/private/…`, `/tmp/…`, `/var/…`, `/mnt/…`, `/Volumes/…`, `/opt/…`) ou
-unidade do Windows. Limite: `localhost` servindo a pasta `web/` na raiz grava só `/`, igual ao
-site publicado, e não dá para separar sem gravar o host. Conta criada de uma sessão local deixa
-de aparecer nas etapas de aquisição, mas segue na coorte de perfis. Contas da equipe ainda
-entram na coorte: a decisão de onde marcá-las está em
+**Páginas locais.** Uma sessão cuja `landing_visualizada` é local sai do relatório inteira, com
+todos os eventos dela. É local o `host` `localhost`, `file` (página aberta do disco), `127.x`,
+`0.0.0.0`, as faixas privadas `10.x`, `172.16` a `172.31` e `192.168.x`, e os que terminam em
+`.local` ou `.localhost`; e, nas visitas anteriores à `0032`, que não têm host, a `pagina` com
+`web/` no caminho, caminho de arquivo em disco (`/Users/…`, `/home/…`, `/private/…`, `/tmp/…`,
+`/var/…`, `/mnt/…`, `/Volumes/…`, `/opt/…`) ou unidade do Windows. Visita antiga de `localhost`
+servindo a pasta `web/` na raiz, que grava só `/`, não dá para separar. O usuário que aparece
+numa sessão local sai também dos eventos de banco e de Telegram dele (`conta_criada`,
+`telegram_vinculado`, `primeira_recomendacao_enviada`, aberturas e respostas), para as etapas
+não passarem de 100%, mas segue na coorte de perfis. Contas da equipe ainda entram na coorte: a
+decisão de onde marcá-las está em
 [decisões do banco](decisoes-do-banco.md#contas-da-equipe-fora-do-funil-proposta-de-05102026).
 
 ### Mapa dos eventos do funil
