@@ -17,8 +17,10 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
-    assert "100% automático" in html
-    assert "Vagas que atendem seu perfil" in html
+    assert "Compara curso, cidade e período" in html
+    assert "Explica o que falta conferir" in html
+    assert "100% automático" not in html
+    assert "Vagas que atendem seu perfil" not in html
     assert "Pare de procurar estágio" not in html
     assert "A IA compara" not in html
 
