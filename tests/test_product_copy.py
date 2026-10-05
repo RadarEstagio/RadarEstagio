@@ -359,6 +359,18 @@ def test_sobre_leva_a_uma_secao_propria_e_nao_ao_chamado_final():
     assert ".about-text {" in css
 
 
+def test_quadro_dos_precos_tem_a_largura_do_cartao_e_nao_a_do_conteiner():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    quadro = declaracoes_do_css(css, ".pricing-grid")
+
+    assert quadro["max-width"] == "560px"
+    assert quadro["grid-template-columns"] == "1fr"
+    assert "minmax(0, 560px)" not in css
+    assert declaracoes_do_css(css, ".pricing-grid", media="@media (max-width: 760px)")[
+        "grid-template-columns"
+    ] == "minmax(0, 1fr)"
+
+
 def test_precos_nao_ancoram_valor_futuro_e_assumem_o_compromisso_do_piloto():
     html = (RAIZ / "web/index.html").read_text()
     precos = html[html.index('id="precos"') : html.index('id="faq"')]

@@ -313,7 +313,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .transparency-boundary { margin: 48px 0 0; padding: 22px 28px; border-radius: var(--radius-sm); color: var(--ink-soft); background: var(--paper-deep); font-size: 14px; line-height: 1.7; }
 .transparency-boundary strong { color: var(--accent-deep-text); font-weight: 600; }
 
-.pricing-grid { display: grid; grid-template-columns: minmax(0, 560px); border: 1px solid var(--rail); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.pricing-grid { display: grid; grid-template-columns: 1fr; max-width: 560px; border: 1px solid var(--rail); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
 .plan { display: flex; flex-direction: column; padding: 38px; }
 .plan-badge { align-self: flex-start; margin-bottom: 24px; padding: 6px 13px; border-radius: 999px; color: var(--white); background: var(--accent); font-size: 12px; font-weight: 600; }
 .plan-name { margin: 0; color: var(--muted); font-size: 14px; font-weight: 500; }
