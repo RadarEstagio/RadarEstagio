@@ -7,8 +7,33 @@ with limites as (
   from perfis p
   where p.ativo = false and p.excluida_em is null
   group by 1
+), sessoes_locais as (
+  select distinct sessao_id from eventos_produto
+  where nome = 'landing_visualizada' and sessao_id is not null and (
+    propriedades->>'host' ~ '^(localhost|file|127\.[0-9.]+|0\.0\.0\.0|10\.[0-9.]+|192\.168\.[0-9.]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9.]+|.*\.local|.*\.localhost)$'
+    or propriedades->>'pagina' ~ '(^|/)web/'
+    or propriedades->>'pagina' ~ '^/(Users|home|private|tmp|var|mnt|Volumes|opt)/'
+    or propriedades->>'pagina' ~ '^/[A-Za-z]:'
+  )
+), usuarios_locais as (
+  select distinct e.user_id::text as user_id from eventos_produto e
+  join sessoes_locais s on s.sessao_id = e.sessao_id
+  where e.user_id is not null
 ), eventos as (
-  select e.* from eventos_produto e, limites l where e.ocorrido_em <= l.fim
+  select e.* from eventos_produto e
+  left join perfis dono on dono.id = e.perfil_id, limites l
+  where e.ocorrido_em <= l.fim
+    and not exists (select 1 from sessoes_locais s where s.sessao_id = e.sessao_id)
+    and not exists (
+      select 1 from usuarios_locais u
+      where u.user_id = coalesce(e.user_id::text, dono.user_id::text)
+    )
+), visitas_por_origem as (
+  select coalesce(e.propriedades->>'utm_source', e.propriedades->>'referrer_dominio', '(direto)') as origem,
+    count(*) as visitas
+  from eventos e, limites l
+  where e.nome = 'landing_visualizada' and e.ocorrido_em >= l.inicio
+  group by 1
 ), sessoes as (
   select sessao_id, min(user_id::text) as dono from eventos
   where sessao_id is not null and user_id is not null
@@ -152,4 +177,5 @@ select
   coalesce((select jsonb_agg(to_jsonb(s) order by semana) from semanais s), '[]') as utilidade_semanal,
   coalesce((select jsonb_agg(to_jsonb(u) order by u.semana, u.perfil_id) from utilidade_por_perfil_semana u), '[]') as utilidade_semanal_fatos,
   coalesce((select jsonb_agg(to_jsonb(g) order by grupo) from grupos g), '[]') as recusas_por_grupo,
-  coalesce((select jsonb_agg(to_jsonb(p) order by motivo) from pausas_atuais p), '[]') as pausas_atuais
+  coalesce((select jsonb_agg(to_jsonb(p) order by motivo) from pausas_atuais p), '[]') as pausas_atuais,
+  coalesce((select jsonb_agg(to_jsonb(v) order by v.visitas desc, v.origem) from visitas_por_origem v), '[]') as visitas_por_origem

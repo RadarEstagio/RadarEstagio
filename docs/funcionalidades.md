@@ -389,8 +389,12 @@ Workflow manual disparado pelo cron-job.org ou pelo vínculo.
 
 #### 21. Relatório CLI
 
-Aquisição, coorte, participação no feedback, tempo observado até a primeira entrega e abertura,
-utilidade semanal e por área do curso, contas pausadas por motivo e recusas com denominadores.
+Aquisição, visitas da landing por origem (`utm_source`, domínio do referrer ou direto), coorte,
+participação no feedback, tempo observado até a primeira entrega e abertura, utilidade semanal e
+por área do curso, contas pausadas por motivo e recusas com denominadores.
+
+**Condições e limites:** Sessões cuja landing é de página local (caminho de arquivo ou `/web/`)
+saem do relatório; contas da equipe ainda entram na coorte.
 
 **Código de referência:** `radar/reporting/funil.py`, `radar/domain/metricas.py`,
 `radar/storage/metricas.sql`.

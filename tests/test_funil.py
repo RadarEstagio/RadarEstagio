@@ -293,3 +293,47 @@ def test_recusas_sem_entregas_exibem_ausencia_de_denominador():
         )
     )
     assert "0/0 recusas (sem denominador)" in texto
+
+
+def test_relatorio_mostra_as_visitas_por_origem_com_a_participacao_de_cada_uma():
+    texto = formatar_funil(
+        funil(
+            visitas_por_origem=[
+                {"origem": "(direto)", "visitas": 6},
+                {"origem": "l.instagram.com", "visitas": 3},
+                {"origem": "grupo-ccet", "visitas": 1},
+            ]
+        )
+    )
+
+    visitas = texto.split("Visitas por origem")[1].split("Funil da coorte")[0]
+
+    assert "últimos 30 dias" in visitas
+    assert "sem páginas locais" in visitas
+    assert "direto ou desconhecido" in visitas
+    assert "(60%)" in visitas
+    assert "l.instagram.com" in visitas
+    assert "grupo-ccet" in visitas
+    assert "(10%)" in visitas
+
+
+def test_utm_source_chamado_direto_nao_vira_visita_sem_origem():
+    texto = formatar_funil(
+        funil(
+            visitas_por_origem=[
+                {"origem": "(direto)", "visitas": 2},
+                {"origem": "direto", "visitas": 1},
+            ]
+        )
+    )
+
+    visitas = texto.split("Visitas por origem")[1].split("Funil da coorte")[0]
+
+    assert "\n  direto ou desconhecido        2  (67%)" in visitas
+    assert "\n  direto                        1  (33%)" in visitas
+
+
+def test_relatorio_sem_visitas_diz_que_nao_ha_origem_para_mostrar():
+    texto = formatar_funil(funil(visitas_por_origem=[]))
+
+    assert "nenhuma visita no período" in texto

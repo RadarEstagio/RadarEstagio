@@ -1,6 +1,8 @@
 from radar.domain.models import FunilDaCoorte
 
 LARGURA_DO_ROTULO = 26
+ORIGEM_SEM_REFERENCIA = "(direto)"
+ROTULO_SEM_REFERENCIA = "direto ou desconhecido"
 MOTIVO_SEM_RESPOSTA = "sem_motivo"
 ROTULO_SEM_RESPOSTA = "Não informado"
 SEGUNDOS_POR_MINUTO = 60
@@ -62,8 +64,12 @@ def formatar_funil(funil: FunilDaCoorte) -> str:
         "telegram_vinculado",
         "primeira_recomendacao_enviada",
     ]
-    aquisicao = ["Aquisição — primeira aparição no período (inclui sessões sem conta)"]
+    aquisicao = [
+        "Aquisição — primeira aparição no período (inclui sessões sem conta, "
+        "exclui sessões de páginas locais)"
+    ]
     aquisicao.extend(f"  {nome}: {funil.etapas.get(nome, 0)}" for nome in etapas)
+    aquisicao.extend(["", *linhas_das_visitas(funil)])
     linhas.extend(["", "Utilidade semanal — semanas de Brasília; todos os ativados:"])
     for semana in funil.utilidade_semanal:
         percentual = semana.percentual()
@@ -115,6 +121,21 @@ def linhas_dos_motivos(funil: FunilDaCoorte) -> list[str]:
         f"  {motivo:<{LARGURA_DO_ROTULO}}{total:>3}"
         for motivo, total in funil.recusas_por_motivo.items()
     ]
+
+
+def linhas_das_visitas(funil: FunilDaCoorte) -> list[str]:
+    cabecalho = f"Visitas por origem — landing nos últimos {funil.dias} dias, sem páginas locais:"
+    if not funil.visitas_por_origem:
+        return [cabecalho, "  nenhuma visita no período"]
+    total = sum(visita.visitas for visita in funil.visitas_por_origem)
+    return [cabecalho] + [
+        "  " + etapa(rotulo_da_origem(visita.origem), visita.visitas, total)
+        for visita in funil.visitas_por_origem
+    ]
+
+
+def rotulo_da_origem(origem: str) -> str:
+    return ROTULO_SEM_REFERENCIA if origem == ORIGEM_SEM_REFERENCIA else origem
 
 
 def linhas_das_pausas(funil: FunilDaCoorte) -> list[str]:

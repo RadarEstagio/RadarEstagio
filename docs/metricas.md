@@ -81,6 +81,37 @@ Contas criadas sem perfil ou sem confirmação aparecem em suas respectivas etap
 confirma o e-mail é apagada 30 dias depois do último link, com os eventos das sessões do cadastro;
 como a coorte é de 30 dias, ela só sai do funil depois de sair da janela.
 
+### Visitas por origem e páginas locais
+
+(05/10/2026, migration `0032`.) A `landing_visualizada` guarda `pagina` (20 caracteres), o
+`host` da página (30), o domínio do `document.referrer` (`referrer_dominio`, 36) e a campanha da
+URL (`utm_source` com 20, `utm_medium` com 16, `utm_campaign` com 20). Só o domínio do referrer,
+em minúsculas e sem `www`, nunca o caminho nem a query; o do próprio site, com ou sem `www`, não
+conta. Cada valor só tem letras minúsculas, números, ponto, hífen e sublinhado, e o banco recusa
+o que fugir disso. A visita mais cheia ocupa 248 dos 256 bytes da `0023`.
+
+O relatório mostra as visitas dos últimos 30 dias por origem: o `utm_source` quando a URL o
+traz, senão o domínio do referrer, senão "direto ou desconhecido", que também é o que sobra
+quando o navegador corta o referrer. Visita anterior à `0032` não tem origem e cai nesse grupo.
+Internamente o grupo é `(direto)`, com parênteses, que nenhum `utm_source` válido pode ter; um
+`utm_source=direto` aparece como "direto", separado.
+`utm_medium` e `utm_campaign` ficam gravados para consulta avulsa e ainda não aparecem no
+relatório. Para atribuir uma divulgação, use um `utm_source` por grupo ou canal, em letras
+minúsculas, por exemplo `radarestagio.com/?utm_source=grupo-ccet`.
+
+**Páginas locais.** Uma sessão cuja `landing_visualizada` é local sai do relatório inteira, com
+todos os eventos dela. É local o `host` `localhost`, `file` (página aberta do disco), `127.x`,
+`0.0.0.0`, as faixas privadas `10.x`, `172.16` a `172.31` e `192.168.x`, e os que terminam em
+`.local` ou `.localhost`; e, nas visitas anteriores à `0032`, que não têm host, a `pagina` com
+`web/` no caminho, caminho de arquivo em disco (`/Users/…`, `/home/…`, `/private/…`, `/tmp/…`,
+`/var/…`, `/mnt/…`, `/Volumes/…`, `/opt/…`) ou unidade do Windows. Visita antiga de `localhost`
+servindo a pasta `web/` na raiz, que grava só `/`, não dá para separar. O usuário que aparece
+numa sessão local sai também dos eventos de banco e de Telegram dele (`conta_criada`,
+`telegram_vinculado`, `primeira_recomendacao_enviada`, aberturas e respostas), para as etapas
+não passarem de 100%, mas segue na coorte de perfis. Contas da equipe ainda entram na coorte: a
+decisão de onde marcá-las está em
+[decisões do banco](decisoes-do-banco.md#contas-da-equipe-fora-do-funil-proposta-de-05102026).
+
 ### Mapa dos eventos do funil
 
 O relatório mostra a primeira aparição por identidade, não uma conversão sequencial entre
@@ -89,7 +120,7 @@ são os marcos autoritativos quando o navegador pode fechar ou perder a conexão
 
 | Fluxo/etapa visível | Evento existente e condição válida | Emissor | Identidade disponível | Repetição | Leitura no SQL | Limite de interpretação |
 |---|---|---|---|---|---|---|
-| Visita à landing | `landing_visualizada`, uma vez por armazenamento de sessão | navegador | `sessao_id`; `user_id` se a sessão já estiver autenticada | `sessionStorage` reduz recarga; linhas brutas ainda podem repetir entre sessões | `identificados` + `entradas` + `etapas` | não é pessoa única; sessões anônimas em aparelhos diferentes podem contar separadamente |
+| Visita à landing | `landing_visualizada`, uma vez por armazenamento de sessão, com `pagina` e, desde a `0032`, `referrer_dominio` e `utm_*` | navegador | `sessao_id`; `user_id` se a sessão já estiver autenticada | `sessionStorage` reduz recarga; linhas brutas ainda podem repetir entre sessões | `identificados` + `entradas` + `etapas`; `visitas_por_origem` | não é pessoa única; sessões anônimas em aparelhos diferentes podem contar separadamente; sessão de página local sai do relatório |
 | Abertura do cadastro | `cta_cadastro_aberto`, somente clique não autenticado | navegador | sessão ou usuário autenticado disponível | cada clique não autenticado pode gerar linha | `etapas` conta pessoa distinta | mede intenção de abrir, não envio nem conta criada |
 | Momento/curso e período | `etapa_perfil_concluida`, avanço após validação do passo | navegador | sessão ou usuário | voltar e avançar pode repetir | `etapas` por identidade | inclui edição; não prova novo cadastro nem habilidade informada |
 | Habilidades | `etapa_habilidades_concluida`, avanço após seleção ou opção explícita vazia; somente quantidade | navegador | sessão ou usuário | revisitas podem repetir; `quantidade` não contém valores | `etapas` por identidade | não mede quais habilidades foram digitadas nem conversão |

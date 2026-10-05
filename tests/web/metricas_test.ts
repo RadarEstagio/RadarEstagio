@@ -29,6 +29,7 @@ interface Metricas {
     com_utilidade: number;
   }[];
   recusas_por_grupo: { grupo: string; entregas: number; recusas: number }[];
+  visitas_por_origem: { origem: string; visitas: number }[];
 }
 
 Deno.test("métricas deduplicam sinais, incluem abandono e medem semanas e denominadores", async () => {
@@ -222,6 +223,151 @@ Deno.test("medianas de entrega e abertura usam somente ocorrências observadas",
     assert.equal(result.mediana_segundos_ate_entrega, 120);
     assert.equal(result.perfis_sem_abertura, 2);
     assert.equal(result.mediana_segundos_ate_abertura, 300);
+  } finally {
+    await db.close();
+  }
+});
+
+const TABELAS_DO_FUNIL = `
+  create table perfis(id int primary key, user_id text, curso text, criado_em timestamptz, ativado_em timestamptz, telegram_chat_id text, ativo boolean default true, excluida_em timestamptz, motivo_pausa text);
+  create table vagas(id int primary key, extracao jsonb, extraida_em timestamptz);
+  create table envios(perfil_id int, vaga_id int, enviada_em timestamptz);
+  create table eventos_produto(id serial, nome text, perfil_id int, vaga_id int, user_id text, sessao_id text, propriedades jsonb default '{}', ocorrido_em timestamptz);
+`;
+
+async function consultarOFunilEm(db: PGlite, agora: string): Promise<Metricas> {
+  const sql = (await Deno.readTextFile(
+    new URL("../../radar/storage/metricas.sql", import.meta.url),
+  ))
+    .replaceAll("%(dias)s", "30")
+    .replaceAll("now()", `timestamptz '${agora}'`);
+  return (await db.query<Metricas>(sql)).rows[0];
+}
+
+Deno.test("visitas de páginas locais saem do funil com a sessão inteira e as demais contam por origem", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into eventos_produto(nome, sessao_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','ig-1','{"pagina":"/","referrer_dominio":"l.instagram.com"}','2026-09-05'),
+        ('landing_visualizada','ig-2','{"pagina":"/","referrer_dominio":"l.instagram.com"}','2026-09-05'),
+        ('landing_visualizada','grupo-1','{"pagina":"/","utm_source":"grupo-ccet","referrer_dominio":"l.instagram.com"}','2026-09-06'),
+        ('landing_visualizada','direto-1','{"pagina":"/"}','2026-09-06'),
+        ('landing_visualizada','antigo-1','{}','2026-09-06'),
+        ('landing_visualizada','fora-do-periodo','{"pagina":"/","utm_source":"velho"}','2026-07-01'),
+        ('cta_cadastro_aberto','ig-1','{"origem":"hero"}','2026-09-05 00:01Z'),
+        ('landing_visualizada','local-arquivo','{"pagina":"/Users/ana/Projetos/RadarEstagio/web/index.html"}','2026-09-05'),
+        ('cta_cadastro_aberto','local-arquivo','{"origem":"hero"}','2026-09-05 00:01Z'),
+        ('landing_visualizada','local-raiz','{"pagina":"/web/index.html"}','2026-09-05'),
+        ('landing_visualizada','local-agente','{"pagina":"/private/tmp/radar/index.html"}','2026-09-05'),
+        ('landing_visualizada','local-windows','{"pagina":"/C:/radar/web/index.html"}','2026-09-05');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.equal(result.etapas.landing_visualizada, 5);
+    assert.equal(result.etapas.cta_cadastro_aberto, 1);
+    assert.deepEqual(result.visitas_por_origem, [
+      { origem: "(direto)", visitas: 2 },
+      { origem: "l.instagram.com", visitas: 2 },
+      { origem: "grupo-ccet", visitas: 1 },
+    ]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a conta ligada a uma sessão local sai também dos eventos de banco e de Telegram", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into perfis values
+        (1,'dev','Computação','2026-09-05','2026-09-05','111',true,null,null),
+        (2,'aluna','Direito','2026-09-05','2026-09-05','222',true,null,null);
+      insert into eventos_produto(nome, sessao_id, user_id, perfil_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','local',null,null,'{"pagina":"/web/index.html"}','2026-09-05 00:00Z'),
+        ('conta_criada','local','dev',null,'{}','2026-09-05 00:01Z'),
+        ('telegram_vinculado',null,'dev',1,'{}','2026-09-05 00:02Z'),
+        ('primeira_recomendacao_enviada',null,null,1,'{}','2026-09-05 00:03Z'),
+        ('landing_visualizada','real',null,null,'{"pagina":"/"}','2026-09-05 00:00Z'),
+        ('conta_criada','real','aluna',null,'{}','2026-09-05 00:01Z'),
+        ('telegram_vinculado',null,'aluna',2,'{}','2026-09-05 00:02Z'),
+        ('primeira_recomendacao_enviada',null,null,2,'{}','2026-09-05 00:03Z');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.equal(result.etapas.landing_visualizada, 1);
+    assert.equal(result.etapas.conta_criada, 1);
+    assert.equal(result.etapas.telegram_vinculado, 1);
+    assert.equal(result.etapas.primeira_recomendacao_enviada, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("o host local tira a sessão mesmo com a página igual à do site publicado", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into eventos_produto(nome, sessao_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','l1','{"pagina":"/","host":"localhost"}','2026-09-05'),
+        ('landing_visualizada','l2','{"pagina":"/","host":"127.0.0.1"}','2026-09-05'),
+        ('landing_visualizada','l3','{"pagina":"/","host":"192.168.0.10"}','2026-09-05'),
+        ('landing_visualizada','l4','{"pagina":"/","host":"10.0.0.5"}','2026-09-05'),
+        ('landing_visualizada','l5','{"pagina":"/","host":"172.16.1.1"}','2026-09-05'),
+        ('landing_visualizada','l6','{"pagina":"/","host":"meu-mac.local"}','2026-09-05'),
+        ('landing_visualizada','l7','{"pagina":"/","host":"file"}','2026-09-05'),
+        ('landing_visualizada','l8','{"pagina":"/","host":"app.localhost"}','2026-09-05'),
+        ('landing_visualizada','ok1','{"pagina":"/","host":"radarestagio.com"}','2026-09-05'),
+        ('landing_visualizada','ok2','{"pagina":"/","host":"www.radarestagio.com"}','2026-09-05'),
+        ('landing_visualizada','ok3','{"pagina":"/","host":"radar.exemplo.workers.dev"}','2026-09-05'),
+        ('landing_visualizada','ok4','{"pagina":"/","host":"172.32.0.1"}','2026-09-05'),
+        ('landing_visualizada','ok5','{"pagina":"/","host":"localhost-radar.com"}','2026-09-05');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.equal(result.etapas.landing_visualizada, 5);
+    assert.deepEqual(result.visitas_por_origem, [{ origem: "(direto)", visitas: 5 }]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("um utm_source chamado direto não se mistura com as visitas sem origem", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into eventos_produto(nome, sessao_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','a','{"pagina":"/","utm_source":"direto"}','2026-09-05'),
+        ('landing_visualizada','b','{"pagina":"/"}','2026-09-05'),
+        ('landing_visualizada','c','{"pagina":"/"}','2026-09-05');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.deepEqual(result.visitas_por_origem, [
+      { origem: "(direto)", visitas: 2 },
+      { origem: "direto", visitas: 1 },
+    ]);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("sem visitas no período a lista de origens vem vazia", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.deepEqual(result.visitas_por_origem, []);
   } finally {
     await db.close();
   }
