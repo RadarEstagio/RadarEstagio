@@ -652,6 +652,38 @@ function landingJaContadaNestaSessao() {
   }
 }
 
+const TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM = 40;
+const TAMANHO_MAXIMO_DO_ROTULO_DA_CAMPANHA = 24;
+const PARAMETROS_DA_CAMPANHA = ["utm_source", "utm_medium", "utm_campaign"];
+
+function rotuloDeOrigem(valor, tamanhoMaximo) {
+  const rotulo = String(valor ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, tamanhoMaximo);
+  return rotulo || null;
+}
+
+function dominioDoReferrer() {
+  try {
+    const { hostname } = new URL(document.referrer);
+    if (!hostname || hostname === window.location.hostname) return null;
+    return rotuloDeOrigem(hostname.replace(/^www\./, ""), TAMANHO_MAXIMO_DO_DOMINIO_DE_ORIGEM);
+  } catch {
+    return null;
+  }
+}
+
+function origemDaVisita() {
+  const parametros = new URLSearchParams(window.location.search);
+  const origem = { referrer_dominio: dominioDoReferrer() };
+  for (const parametro of PARAMETROS_DA_CAMPANHA) {
+    origem[parametro] = rotuloDeOrigem(parametros.get(parametro), TAMANHO_MAXIMO_DO_ROTULO_DA_CAMPANHA);
+  }
+  return Object.fromEntries(Object.entries(origem).filter(([, valor]) => valor));
+}
+
 function percentualDoPasso() {
   return Math.round((passosAtivos.indexOf(currentStep) / passosAtivos.length) * 100);
 }
@@ -2158,6 +2190,6 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
 setupCaptcha();
 
 if (!landingJaContadaNestaSessao()) {
-  void registerEvent("landing_visualizada", { pagina: window.location.pathname });
+  void registerEvent("landing_visualizada", { pagina: window.location.pathname, ...origemDaVisita() });
 }
 resumeConfirmedSignup();

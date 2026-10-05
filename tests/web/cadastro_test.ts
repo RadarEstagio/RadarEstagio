@@ -84,6 +84,7 @@ function app(
     session = null,
     savedProfile = null,
     url = "https://radarestagio.com/",
+    referrer = "",
     key = "",
     temaDoSistema = "claro",
     armazenamentoBloqueado = false,
@@ -94,6 +95,7 @@ function app(
     session?: Session | null;
     savedProfile?: Profile | null;
     url?: string;
+    referrer?: string;
     key?: string;
     temaDoSistema?: "claro" | "escuro";
     armazenamentoBloqueado?: boolean;
@@ -108,6 +110,7 @@ function app(
   virtualConsole.on("jsdomError", (erro: Error) => erros.push(erro));
   const dom = new JSDOM(html, {
     url,
+    referrer: referrer || undefined,
     runScripts: "dangerously",
     virtualConsole,
     beforeParse: (janela: TestWindow) => {
@@ -464,6 +467,100 @@ Deno.test("nenhum evento do site passa de 256 bytes de propriedades, mesmo com U
   }
   const pagina = vistos.find((evento) => evento.nome === "landing_visualizada")?.propriedades.pagina;
   assert.match(String(pagina), /^\/est/);
+});
+
+async function propriedadesDaVisita(opcoes: { url?: string; referrer?: string; armazenamentoBloqueado?: boolean }) {
+  const a = app(opcoes);
+  try {
+    await settle();
+    const visitas = a.calls.filter(([nome, tabela, payload]) =>
+      nome === "insert" && tabela === "eventos_produto" &&
+      (payload as Payload).nome === "landing_visualizada"
+    );
+    assert.equal(visitas.length, 1);
+    const { propriedades } = visitas[0][2] as { propriedades: Record<string, string> };
+    return JSON.parse(JSON.stringify(propriedades)) as Record<string, string>;
+  } finally {
+    a.close();
+  }
+}
+
+Deno.test("a visita guarda só o domínio do referrer e a campanha da URL", async () => {
+  const propriedades = await propriedadesDaVisita({
+    url: "https://radarestagio.com/?utm_source=grupo-ccet&utm_medium=whatsapp&utm_campaign=outubro-2026&nome=ana",
+    referrer: "https://l.instagram.com/post/123?token=segredo#parte",
+  });
+
+  assert.deepEqual(propriedades, {
+    pagina: "/",
+    referrer_dominio: "l.instagram.com",
+    utm_source: "grupo-ccet",
+    utm_medium: "whatsapp",
+    utm_campaign: "outubro-2026",
+  });
+});
+
+Deno.test("a visita sem referrer nem campanha leva só a página", async () => {
+  assert.deepEqual(await propriedadesDaVisita({}), { pagina: "/" });
+});
+
+Deno.test("o referrer do próprio site e o prefixo www não viram origem", async () => {
+  assert.deepEqual(
+    await propriedadesDaVisita({ referrer: "https://radarestagio.com/termos.html" }),
+    { pagina: "/" },
+  );
+  assert.deepEqual(
+    await propriedadesDaVisita({ referrer: "https://www.google.com/search?q=estagio" }),
+    { pagina: "/", referrer_dominio: "google.com" },
+  );
+});
+
+Deno.test("campanha com maiúscula, espaço ou acento chega normalizada e vazia some", async () => {
+  const propriedades = await propriedadesDaVisita({
+    url: "https://radarestagio.com/?utm_source=Grupo%20CCET&utm_medium=E-mail&utm_campaign=%C3%A7%C3%A3o&utm_term=x",
+  });
+
+  assert.deepEqual(propriedades, {
+    pagina: "/",
+    utm_source: "grupo-ccet",
+    utm_medium: "e-mail",
+    utm_campaign: "o",
+  });
+  assert.deepEqual(
+    await propriedadesDaVisita({ url: "https://radarestagio.com/?utm_source=%20%20&utm_medium=" }),
+    { pagina: "/" },
+  );
+});
+
+Deno.test("a origem da visita funciona com o armazenamento bloqueado", async () => {
+  const propriedades = await propriedadesDaVisita({
+    armazenamentoBloqueado: true,
+    url: "https://radarestagio.com/?utm_source=grupo-ccet",
+    referrer: "https://t.co/abc",
+  });
+
+  assert.deepEqual(propriedades, {
+    pagina: "/",
+    referrer_dominio: "t.co",
+    utm_source: "grupo-ccet",
+  });
+});
+
+Deno.test("a visita com URL, referrer e campanha enormes cabe nos 256 bytes do banco", async () => {
+  const longa = "a".repeat(300);
+  const propriedades = await propriedadesDaVisita({
+    url: `https://radarestagio.com/${"estágio-remoto/".repeat(40)}?utm_source=${longa}&utm_medium=${longa}&utm_campaign=${longa}`,
+    referrer: `https://${"sub.".repeat(30)}exemplo.com/${longa}`,
+  });
+  const bytes = new TextEncoder().encode(JSON.stringify(propriedades)).length +
+    2 * Object.keys(propriedades).length;
+
+  assert.ok(bytes <= 256, `${bytes} bytes`);
+  assert.equal(propriedades.utm_source.length, 24);
+  assert.equal(propriedades.referrer_dominio.length, 40);
+  for (const [chave, valor] of Object.entries(propriedades)) {
+    if (chave !== "pagina") assert.match(valor, /^[a-z0-9._-]{1,40}$/);
+  }
 });
 
 Deno.test("voltar do link de confirmação com o armazenamento bloqueado mostra a ativação", async () => {
