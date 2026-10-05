@@ -653,7 +653,7 @@ function landingJaContadaNestaSessao() {
 }
 
 function percentualDoPasso() {
-  return Math.round((passosAtivos.indexOf(currentStep) / passosAtivos.length) * 100);
+  return Math.round(((passosAtivos.indexOf(currentStep) + 1) / (passosAtivos.length + 1)) * 100);
 }
 
 function mostrarProgresso(percent) {
@@ -873,7 +873,7 @@ function setSubmitting(submitting) {
 
 const COPY_DA_CONTA = {
   signup: {
-    titulo: "Comece pela sua conta",
+    titulo: "Último passo: crie sua conta para ativar seu Radar",
     ajuda: "O e-mail dá acesso à conta e confirma o cadastro. A senha protege seus dados.",
     senha: "Pelo menos 8 caracteres",
   },
