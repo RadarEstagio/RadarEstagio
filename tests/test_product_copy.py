@@ -17,8 +17,10 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
-    assert "100% automático" in html
-    assert "Vagas que atendem seu perfil" in html
+    assert "Compara curso, cidade e período" in html
+    assert "Explica o que falta conferir" in html
+    assert "100% automático" not in html
+    assert "Vagas que atendem seu perfil" not in html
     assert "Pare de procurar estágio" not in html
     assert "A IA compara" not in html
 
@@ -314,14 +316,19 @@ SELO_DA_ADZUNA = (
 )
 
 
-def test_site_nao_cita_a_gupy_e_a_faixa_de_fontes_volta_sem_ela():
+def test_site_nao_cita_a_gupy_e_a_faixa_mostra_o_trabalho_do_radar_sem_numero():
     html = (RAIZ / "web/index.html").read_text()
     faixa = html[html.index('class="proof-strip"') :]
     faixa = faixa[: faixa.index("</section>")]
 
     assert "gupy" not in html.lower()
-    assert "Fontes e tecnologias do Radar" in faixa
-    assert "<span>ADZUNA</span><span>GEMINI</span><span>TELEGRAM</span>" in faixa
+    assert "O que o Radar faz por você" in faixa
+    assert (
+        "<span>REMOVE ANÚNCIOS REPETIDOS</span><span>COMPARA COM O SEU PERFIL</span>"
+        "<span>EXPLICA O QUE FALTA CONFERIR</span>"
+    ) in faixa
+    assert "GEMINI" not in faixa
+    assert not re.search(r"\d", faixa)
     assert "Gupy" not in (RAIZ / "web/privacidade.html").read_text()
     assert "Gupy" not in (RAIZ / "docs/politica-de-privacidade.md").read_text()
 

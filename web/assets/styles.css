@@ -265,7 +265,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .proof-strip { border-top: 1px solid var(--rail); border-bottom: 1px solid var(--rail); background: var(--surface); }
 .proof-inner { min-height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
 .proof-inner p { margin: 0; font-size: 13px; }
-.proof-items { display: flex; align-items: center; gap: 38px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .12em; }
+.proof-items { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 38px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .12em; }
 
 .section-heading { max-width: 780px; margin-bottom: 76px; }
 .section-heading h2, .frame-head h2, .transparency-copy h2, .final-card h2, .faq-intro h2 { margin-bottom: 0; font-size: clamp(32px, 3.2vw, 46px); font-weight: 600; line-height: 1.16; letter-spacing: -.018em; text-wrap: balance; }
