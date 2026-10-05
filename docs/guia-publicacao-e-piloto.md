@@ -286,6 +286,7 @@ Nenhum secret muda e o webhook não precisa ser re-registrado. Depois do deploy,
 | Onde | Nome | Valor |
 |---|---|---|
 | Supabase → Edge Functions → Secrets | `URL_DA_LANDING` | `https://radarestagio.com` (desde 03/10/2026; `supabase secrets list` mostra só o hash do valor) |
+| Supabase → Edge Functions → Secrets | `TELEGRAM_CHAT_ID` | o mesmo chat de operação do `.env` e do Actions; a `telegram-webhook` encaminha a ele as mensagens livres (a criar antes de publicar a função, ver `decisoes-do-banco.md`) |
 | GitHub → Settings → Secrets and variables → Actions | `URL_DE_RASTREIO` | `https://xrhvjwemmylwbqgluebc.supabase.co/functions/v1/ir` |
 
 Preserve os secrets existentes `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` das funções.

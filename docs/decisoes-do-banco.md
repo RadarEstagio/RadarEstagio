@@ -437,3 +437,29 @@ uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava 
 antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
 falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
 sem ordem; a `telegram-webhook` não muda.
+
+## Mensagem livre ao bot chega à equipe (05/10/2026)
+
+Qualquer texto que não fosse `/start <token>` recebia "use o botão do site", inclusive de chat
+já vinculado, e a FAQ manda quem precisa de ajuda "falar com a gente pelo Telegram" (RCD-09). A
+`telegram-webhook` agora procura o perfil pelo `telegram_chat_id`, sem conta marcada para
+exclusão. Se acha, entrega o texto ao chat de operação, com o id do perfil e o corte em 3.000
+caracteres, e responde "Recebemos sua mensagem; a equipe lê todas" com `contato@radarestagio.com`
+e o link `/?conta`. Se não acha, a resposta de vínculo de sempre.
+
+- **A promessa só sai se o encaminhamento aconteceu.** Sem o chat de operação configurado ou com
+  o Telegram recusando o envio, a pessoa recebe "Não consegui entregar sua mensagem à equipe
+  agora" e o contato, nunca "a equipe lê todas".
+- **Comando solto (`/start`, `/ajuda`) e mensagem sem texto não vão para a equipe.** São ruído, e
+  foto ou áudio não cabem no encaminhamento.
+- **Segredo:** a função lê `TELEGRAM_CHAT_ID`, o mesmo valor e o mesmo nome do `.env` e do
+  Actions, que com banco é o chat de operação. Ele precisa existir também nos secrets do Supabase
+  (`supabase secrets set TELEGRAM_CHAT_ID=...`); o link da conta sai de `URL_DA_LANDING`, com
+  `https://radarestagio.com` como padrão. Enquanto a função não for republicada, nada muda;
+  republicada sem o segredo, a pessoa recebe a resposta honesta acima.
+- **Não grava nada no banco.** O texto não vira evento nem linha: fica só no chat de operação,
+  onde a equipe já recebe o resumo diário.
+- **Pendente da equipe:** a Política de Privacidade precisa dizer que a equipe lê as mensagens
+  enviadas ao bot, e a mudança de texto legal muda a versão. Até lá, publicar a função é decisão
+  de quem revisar o PR. Não há limite por pessoa: quem está vinculado pode encher o chat de
+  operação, e o primeiro sinal de abuso pede um teto por perfil por hora.

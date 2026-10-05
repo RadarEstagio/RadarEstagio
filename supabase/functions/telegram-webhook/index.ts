@@ -5,10 +5,11 @@ import {
   chatIdDaMensagem,
   conversaPrivada,
   extrairPedidoDeVinculo,
-  RESPOSTA_SEM_TOKEN,
   RESPOSTA_SOMENTE_EM_PRIVADO,
+  textoDaMensagem,
 } from "./vinculo.ts";
 import { processarVinculo, type VinculoRealizado } from "./processar_vinculo.ts";
+import { type PerfilDoChat, processarMensagemLivre } from "./processar_mensagem_livre.ts";
 import {
   type ConsultaDeFeedback,
   eventoDoFeedback,
@@ -26,6 +27,7 @@ import {
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
 const CODIGO_DE_VALOR_DUPLICADO = "23505";
+const LANDING_PADRAO = "https://radarestagio.com";
 
 const tokenDoBot = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const segredoDoWebhook = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
@@ -80,6 +82,32 @@ async function chatJaVinculado(chatId: string): Promise<boolean> {
   return data !== null;
 }
 
+async function perfilDoChat(chatId: string): Promise<PerfilDoChat | null> {
+  const { data, error } = await supabase
+    .from("perfis")
+    .select("id, ativo")
+    .eq("telegram_chat_id", chatId)
+    .is("excluida_em", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { id: data.id, ativo: data.ativo } : null;
+}
+
+function enderecoDaConta(): string {
+  const landing = Deno.env.get("URL_DA_LANDING") ?? LANDING_PADRAO;
+  return `${landing.replace(/\/+$/, "")}/?conta`;
+}
+
+async function encaminharParaOperacao(texto: string): Promise<boolean> {
+  const chatDeOperacao = Deno.env.get("TELEGRAM_CHAT_ID");
+  if (!chatDeOperacao) {
+    console.warn("TELEGRAM_CHAT_ID ausente: a mensagem livre não chega ao chat de operação");
+    return false;
+  }
+  await chamarTelegram("sendMessage", { chat_id: chatDeOperacao, text: texto });
+  return true;
+}
+
 async function reivindicarEntregaImediata(perfilId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from("perfis")
@@ -97,10 +125,16 @@ async function tratarAtualizacao(
   const pedido = extrairPedidoDeVinculo(atualizacao);
   if (!pedido) {
     const chatId = chatIdDaMensagem(atualizacao);
-    const resposta = conversaPrivada(atualizacao)
-      ? RESPOSTA_SEM_TOKEN
-      : RESPOSTA_SOMENTE_EM_PRIVADO;
-    if (chatId) await responderNoTelegram(chatId, resposta);
+    if (!chatId) return;
+    if (!conversaPrivada(atualizacao)) {
+      await responderNoTelegram(chatId, RESPOSTA_SOMENTE_EM_PRIVADO);
+      return;
+    }
+    await processarMensagemLivre(
+      { chatId, texto: textoDaMensagem(atualizacao) },
+      { perfilDoChat, responder: responderNoTelegram, encaminharParaOperacao },
+      enderecoDaConta(),
+    );
     return;
   }
   await processarVinculo(pedido, {

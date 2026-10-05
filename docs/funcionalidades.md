@@ -42,7 +42,9 @@ visual escuro.
 Informar curso, período, habilidades, áreas, cidade e modalidade e, no último passo, e-mail e
 senha. O curso é escolhido numa lista dos cursos do catálogo, filtrada conforme a digitação, ou
 digitado livremente quando não está nela. Quem já tem conta escolhe "Entrar" e vê só o passo
-da conta; quem edita o perfil depois do login não passa por ele.
+da conta; quem edita o perfil depois do login não passa por ele. A barra de progresso é
+(posição + 1) / (total + 1), então nunca parte de 0%, e o passo da conta se chama "Último passo:
+crie sua conta para ativar seu Radar".
 
 **Condições e limites:** Confirmação de e-mail mantida; a conta só é criada no envio do último
 passo, nunca ao avançar entre etapas; interface pública depende da hospedagem. Fechar o cadastro
@@ -113,7 +115,13 @@ Acessar e encerrar sessão no painel.
 
 Abrir o bot pelo link pessoal e confirmar Start.
 
-**Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas.
+**Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas. A
+resposta do vínculo só diz "a primeira busca já começou" depois de o disparo sair; na janela
+das 06:23 às 07:23, com o disparo recusado ou sem o token, diz que a lista chega com a execução
+da manhã ou a próxima diária, e nunca promete vaga todos os dias. Texto livre de
+chat vinculado recebe "Recebemos sua mensagem; a equipe lê todas" e vai ao chat de operação, se
+ele estiver configurado; sem isso a resposta aponta o e-mail de contato. Chat não vinculado
+continua recebendo a instrução de vínculo.
 
 #### 10. Primeira busca após vínculo
 

@@ -1315,21 +1315,21 @@ Deno.test("cadastro começa pelo perfil e só no final pede a conta", async () =
     ];
     assert.equal(passoAtivo(), "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 4");
-    assert.deepEqual(progresso(), ["0%", "0", "0%"]);
+    assert.deepEqual(progresso(), ["20%", "20", "20%"]);
     assert.equal(doc.querySelector("#previous-step").hidden, true);
     assert.equal(doc.querySelector("#submit-profile").hidden, true);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "3");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 2 de 4");
-    assert.deepEqual(progresso(), ["25%", "25", "25%"]);
+    assert.deepEqual(progresso(), ["40%", "40", "40%"]);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "4");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 3 de 4");
-    assert.deepEqual(progresso(), ["50%", "50", "50%"]);
+    assert.deepEqual(progresso(), ["60%", "60", "60%"]);
     doc.querySelector("#next-step").click();
     assert.equal(passoAtivo(), "1");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 4 de 4");
-    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
+    assert.deepEqual(progresso(), ["80%", "80", "80%"]);
     assert.equal(a.calls.filter(([name]) => name === "signup").length, 0);
     assert.equal(form.elements.senha.value, "uma-senha-forte");
     await settle();
@@ -1384,7 +1384,7 @@ Deno.test("botão de cadastrar continua abrindo na triagem", async () => {
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
     assert.equal(doc.querySelector("#submit-label").textContent, "Criar conta e continuar");
-    assert.equal(doc.querySelector("#conta-titulo").textContent, "Comece pela sua conta");
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Último passo: crie sua conta para ativar seu Radar");
   } finally { a.close(); }
 });
 
@@ -1962,7 +1962,7 @@ Deno.test("entrar pede só a conta e edição do perfil pula esse passo", async 
     await settle();
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "2");
     assert.equal(doc.querySelector("#progress-label").textContent, "Etapa 1 de 3");
-    assert.equal(doc.querySelector("#progress-percent").textContent, "0%");
+    assert.equal(doc.querySelector("#progress-percent").textContent, "25%");
     assert.equal(doc.querySelector("#credenciais").hidden, true);
   } finally { a.close(); }
 });
@@ -3551,7 +3551,7 @@ Deno.test("confirmar o cadastro leva a barra a 100% enquanto a conta é criada",
     doc.querySelector("#next-step").click();
     doc.querySelector("#next-step").click();
     doc.querySelector("#next-step").click();
-    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
+    assert.deepEqual(progresso(), ["80%", "80", "80%"]);
     a.client.auth.signUp = async (args: Signup) => {
       a.calls.push(["signup", args]);
       await cadastroLiberado;
@@ -3588,7 +3588,7 @@ Deno.test("cadastro recusado devolve a barra ao último passo", async () => {
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
     assert.equal(form.hidden, false);
-    assert.deepEqual(progresso(), ["75%", "75", "75%"]);
+    assert.deepEqual(progresso(), ["80%", "80", "80%"]);
   } finally { a.close(); }
 });
 

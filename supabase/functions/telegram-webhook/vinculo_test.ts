@@ -5,6 +5,7 @@ import {
   extrairPedidoDeVinculo,
   RESPOSTAS_DO_VINCULO,
   type ResultadoDoVinculo,
+  textoDaMensagem,
 } from "./vinculo.ts";
 
 const TOKEN = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
@@ -123,4 +124,24 @@ Deno.test("payload sem tipo de chat é tratado como privado", () => {
   };
 
   assertEquals(extrairPedidoDeVinculo(semTipo)?.chatId, "5");
+});
+
+Deno.test("o vínculo não promete vaga todos os dias nem de manhã", () => {
+  for (const resposta of Object.values(RESPOSTAS_DO_VINCULO)) {
+    assertEquals(/todos os dias|de manhã/i.test(resposta), false);
+  }
+});
+
+Deno.test("o vínculo diz que a vaga só chega quando for compatível", () => {
+  assertEquals(RESPOSTAS_DO_VINCULO.vinculado.includes("Quando houver vagas compatíveis"), true);
+  assertEquals(
+    RESPOSTAS_DO_VINCULO.chat_ja_vinculado.includes("quando houver vagas compatíveis"),
+    true,
+  );
+});
+
+Deno.test("texto da mensagem vem como está e é nulo quando a mensagem não tem texto", () => {
+  assertEquals(textoDaMensagem({ message: { chat: { id: 1 }, text: "como pauso?" } }), "como pauso?");
+  assertEquals(textoDaMensagem({ message: { chat: { id: 1 } } }), null);
+  assertEquals(textoDaMensagem({}), null);
 });
