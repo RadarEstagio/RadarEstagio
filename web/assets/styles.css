@@ -313,12 +313,9 @@ p, h1, h2, h3 { margin-top: 0; }
 .transparency-boundary { margin: 48px 0 0; padding: 22px 28px; border-radius: var(--radius-sm); color: var(--ink-soft); background: var(--paper-deep); font-size: 14px; line-height: 1.7; }
 .transparency-boundary strong { color: var(--accent-deep-text); font-weight: 600; }
 
-.pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid var(--rail); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.pricing-grid { display: grid; grid-template-columns: minmax(0, 560px); border: 1px solid var(--rail); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
 .plan { display: flex; flex-direction: column; padding: 38px; }
-.plan + .plan { border-left: 1px solid var(--rail); }
-.plan-muted { background: var(--paper); }
 .plan-badge { align-self: flex-start; margin-bottom: 24px; padding: 6px 13px; border-radius: 999px; color: var(--white); background: var(--accent); font-size: 12px; font-weight: 600; }
-.plan-badge-soft { color: var(--muted); background: var(--paper-deep); }
 .plan-name { margin: 0; color: var(--muted); font-size: 14px; font-weight: 500; }
 .plan-price { margin: 14px 0 8px; font-size: clamp(34px, 3.2vw, 46px); font-weight: 600; line-height: 1.05; letter-spacing: -.022em; }
 .plan-note { margin: 0 0 26px; max-width: 34ch; color: var(--muted); font-size: 13px; line-height: 1.6; }
@@ -326,7 +323,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .plan li { display: flex; gap: 11px; padding: 13px 0; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.5; }
 .plan li span { color: var(--accent-text); }
 .plan .button { margin-top: auto; align-self: flex-start; }
-.plan-footnote { margin: auto 0 0; color: var(--muted); font-size: 12px; }
+.plan-footnote { margin: 16px 0 0; color: var(--muted); font-size: 12px; }
 
 
 .faq-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 80px; align-items: start; }
@@ -534,7 +531,7 @@ p, h1, h2, h3 { margin-top: 0; }
   .site-header { --header-padding: 12px; }.header-inner { gap: 12px; }.header-inner > .brand { min-height: 46px; padding: 8px 12px; font-size: 16px; }.brand-symbol { width: 28px; height: 28px; border-radius: 8px; }.header-actions { gap: 8px; }.header-utilities { gap: 8px; }.header-actions > .button { min-height: 48px; padding-inline: 16px; }.brand { font-size: 17px; }.radar-mark { width: 30px; height: 30px; }
   .hero { padding: 58px 0 20px; }.hero-grid { background: radial-gradient(circle 420px at 50% 82%, #dcebdd 0%, transparent 68%); }.hero h1 { font-size: clamp(34px, 9.6vw, 42px); line-height: 1.15; }.hero-lead { font-size: 16px; }.hero-actions { align-items: stretch; flex-direction: column; }.button-large { width: 100%; }
   .trust-list { gap: 12px; flex-direction: column; align-items: center; }.hero-demo { min-height: 550px; }.orbit-one { width: 420px; height: 420px; }.orbit-two { width: 320px; height: 320px; }.telegram-chat { width: calc(100% - 8px); }.chat-header { padding-inline: 13px; }.chat-stage { min-height: 470px; padding-inline: 10px; }.chat-typing { inset-inline-start: 10px; }.chat-platform span { display: none; }.chat-message { padding-inline: 14px; }.chat-vacancy-title { font-size: 13px; }
-  .pricing-grid { grid-template-columns: 1fr; }.plan { padding: 30px 25px; }.plan + .plan { border-left: 0; border-top: 1px solid var(--rail); }
+  .pricing-grid { grid-template-columns: minmax(0, 1fr); }.plan { padding: 30px 25px; }
   .faq-list summary { padding: 19px 20px; font-size: 15px; }.faq-list details p { padding: 0 20px 22px 51px; }
   .benefit-grid { grid-template-columns: 1fr; }.benefit-card { min-height: 0; padding: 32px 26px; }.benefit-card + .benefit-card { border-left: 0; border-top: 1px solid var(--rail-dark); }
   .how { padding: 0; }.rail-band { height: 56px; }.hatch-band { height: 48px; }.frame-head, .how-copy { padding: 32px 26px; }.steps li { grid-template-columns: 58px 1fr; gap: 14px; padding: 28px 26px; }

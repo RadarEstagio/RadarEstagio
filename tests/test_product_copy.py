@@ -344,6 +344,18 @@ def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
     assert (RAIZ / "web/assets/adzuna-logo.png").exists()
 
 
+def test_precos_nao_ancoram_valor_futuro_e_assumem_o_compromisso_do_piloto():
+    html = (RAIZ / "web/index.html").read_text()
+    precos = html[html.index('id="precos"') : html.index('id="faq"')]
+
+    assert precos.count("<article") == 1
+    assert "A definir" not in html
+    assert "Depois do piloto" not in html
+    assert "Ainda não definido" not in html
+    assert "Sem cartão de crédito" in precos
+    assert "nada muda sem aviso e aceite" in precos
+
+
 def test_card_de_precos_nao_promete_duas_fontes_de_vagas():
     html = (RAIZ / "web/index.html").read_text()
 
