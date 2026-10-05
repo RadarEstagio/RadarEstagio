@@ -269,7 +269,7 @@ Deno.test("visitas de páginas locais saem do funil com a sessão inteira e as d
     assert.equal(result.etapas.landing_visualizada, 5);
     assert.equal(result.etapas.cta_cadastro_aberto, 1);
     assert.deepEqual(result.visitas_por_origem, [
-      { origem: "direto", visitas: 2 },
+      { origem: "(direto)", visitas: 2 },
       { origem: "l.instagram.com", visitas: 2 },
       { origem: "grupo-ccet", visitas: 1 },
     ]);
@@ -303,6 +303,28 @@ Deno.test("a conta ligada a uma sessão local sai também dos eventos de banco e
     assert.equal(result.etapas.conta_criada, 1);
     assert.equal(result.etapas.telegram_vinculado, 1);
     assert.equal(result.etapas.primeira_recomendacao_enviada, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("um utm_source chamado direto não se mistura com as visitas sem origem", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into eventos_produto(nome, sessao_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','a','{"pagina":"/","utm_source":"direto"}','2026-09-05'),
+        ('landing_visualizada','b','{"pagina":"/"}','2026-09-05'),
+        ('landing_visualizada','c','{"pagina":"/"}','2026-09-05');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.deepEqual(result.visitas_por_origem, [
+      { origem: "(direto)", visitas: 2 },
+      { origem: "direto", visitas: 1 },
+    ]);
   } finally {
     await db.close();
   }

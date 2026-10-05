@@ -28,7 +28,7 @@ with limites as (
       where u.user_id = coalesce(e.user_id::text, dono.user_id::text)
     )
 ), visitas_por_origem as (
-  select coalesce(e.propriedades->>'utm_source', e.propriedades->>'referrer_dominio', 'direto') as origem,
+  select coalesce(e.propriedades->>'utm_source', e.propriedades->>'referrer_dominio', '(direto)') as origem,
     count(*) as visitas
   from eventos e, limites l
   where e.nome = 'landing_visualizada' and e.ocorrido_em >= l.inicio

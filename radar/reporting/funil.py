@@ -1,7 +1,7 @@
 from radar.domain.models import FunilDaCoorte
 
 LARGURA_DO_ROTULO = 26
-ORIGEM_SEM_REFERENCIA = "direto"
+ORIGEM_SEM_REFERENCIA = "(direto)"
 ROTULO_SEM_REFERENCIA = "direto ou desconhecido"
 MOTIVO_SEM_RESPOSTA = "sem_motivo"
 ROTULO_SEM_RESPOSTA = "Não informado"
