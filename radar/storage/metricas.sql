@@ -10,7 +10,8 @@ with limites as (
 ), sessoes_locais as (
   select distinct sessao_id from eventos_produto
   where nome = 'landing_visualizada' and sessao_id is not null and (
-    propriedades->>'pagina' ~ '(^|/)web/'
+    propriedades->>'host' ~ '^(localhost|file|127\.[0-9.]+|0\.0\.0\.0|10\.[0-9.]+|192\.168\.[0-9.]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9.]+|.*\.local|.*\.localhost)$'
+    or propriedades->>'pagina' ~ '(^|/)web/'
     or propriedades->>'pagina' ~ '^/(Users|home|private|tmp|var|mnt|Volumes|opt)/'
     or propriedades->>'pagina' ~ '^/[A-Za-z]:'
   )

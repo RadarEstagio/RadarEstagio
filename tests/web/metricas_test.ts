@@ -308,6 +308,36 @@ Deno.test("a conta ligada a uma sessão local sai também dos eventos de banco e
   }
 });
 
+Deno.test("o host local tira a sessão mesmo com a página igual à do site publicado", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(TABELAS_DO_FUNIL);
+    await db.exec(`
+      insert into eventos_produto(nome, sessao_id, propriedades, ocorrido_em) values
+        ('landing_visualizada','l1','{"pagina":"/","host":"localhost"}','2026-09-05'),
+        ('landing_visualizada','l2','{"pagina":"/","host":"127.0.0.1"}','2026-09-05'),
+        ('landing_visualizada','l3','{"pagina":"/","host":"192.168.0.10"}','2026-09-05'),
+        ('landing_visualizada','l4','{"pagina":"/","host":"10.0.0.5"}','2026-09-05'),
+        ('landing_visualizada','l5','{"pagina":"/","host":"172.16.1.1"}','2026-09-05'),
+        ('landing_visualizada','l6','{"pagina":"/","host":"meu-mac.local"}','2026-09-05'),
+        ('landing_visualizada','l7','{"pagina":"/","host":"file"}','2026-09-05'),
+        ('landing_visualizada','l8','{"pagina":"/","host":"app.localhost"}','2026-09-05'),
+        ('landing_visualizada','ok1','{"pagina":"/","host":"radarestagio.com"}','2026-09-05'),
+        ('landing_visualizada','ok2','{"pagina":"/","host":"www.radarestagio.com"}','2026-09-05'),
+        ('landing_visualizada','ok3','{"pagina":"/","host":"radar.exemplo.workers.dev"}','2026-09-05'),
+        ('landing_visualizada','ok4','{"pagina":"/","host":"172.32.0.1"}','2026-09-05'),
+        ('landing_visualizada','ok5','{"pagina":"/","host":"localhost-radar.com"}','2026-09-05');
+    `);
+
+    const result = await consultarOFunilEm(db, "2026-09-09 12:00Z");
+
+    assert.equal(result.etapas.landing_visualizada, 5);
+    assert.deepEqual(result.visitas_por_origem, [{ origem: "(direto)", visitas: 5 }]);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("um utm_source chamado direto não se mistura com as visitas sem origem", async () => {
   const db = new PGlite();
   try {
