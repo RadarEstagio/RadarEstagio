@@ -286,8 +286,14 @@ class RecusasPorGrupo(BaseModel):
     recusas_da_nota: int
 
 
+class VisitasPorOrigem(BaseModel):
+    origem: str
+    visitas: int
+
+
 class FunilDaCoorte(BaseModel):
     etapas: dict[str, int] = Field(default_factory=dict)
+    visitas_por_origem: list[VisitasPorOrigem] = Field(default_factory=list)
     utilidade_semanal: list[UtilidadeSemanal] = Field(default_factory=list)
     utilidade_por_area: list[UtilidadePorArea] = Field(default_factory=list)
     pausas_atuais: list[PausaAtual] = Field(default_factory=list)
