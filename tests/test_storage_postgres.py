@@ -247,6 +247,37 @@ def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
     assert depois.silencio_avisado_em is not None
 
 
+def test_abertura_de_ontem_sem_resposta_vira_pergunta_reservada_e_liberada(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    recomendacao = Recomendacao(resultado=ResultadoMatch(vaga=vaga(1), nota=80))
+    repositorio.registrar_envios(usuario, [recomendacao])
+    vaga_id = conexao.execute("select id from vagas where id_externo = 'teste-1'").fetchone()[0]
+    user_id = conexao.execute("select user_id from perfis where id = %s", (usuario.id,)).fetchone()[
+        0
+    ]
+    conexao.execute(
+        "insert into eventos_produto (nome, origem, user_id, perfil_id, vaga_id, ocorrido_em) "
+        "values ('vaga_aberta', 'telegram', %s, %s, %s, now())",
+        (user_id, usuario.id, vaga_id),
+    )
+    hoje = conexao.execute("select (now() at time zone 'America/Sao_Paulo')::date").fetchone()[0]
+    amanha = date.fromordinal(hoje.toordinal() + 1)
+
+    assert repositorio.abertura_sem_resposta(usuario, hoje) is None
+    abertura = repositorio.abertura_sem_resposta(usuario, amanha)
+
+    assert abertura is not None
+    assert abertura.token == recomendacao.token
+    assert abertura.titulo == "Estágio 1"
+    assert repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura) is True
+    assert repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura) is False
+    assert repositorio.abertura_sem_resposta(usuario, amanha) is None
+    repositorio.liberar_pergunta_do_dia_seguinte(usuario, abertura)
+    assert repositorio.abertura_sem_resposta(usuario, amanha) == abertura
+
+
 def test_extracao_em_formato_antigo_e_ignorada_em_vez_de_quebrar(conexao: psycopg.Connection):
     repositorio = RepositorioPostgres(conexao)
     guardar_vaga(conexao.cursor(), vaga(1))

@@ -237,6 +237,12 @@ class Recomendacao(BaseModel):
     token: UUID = Field(default_factory=uuid4)
 
 
+class AberturaSemResposta(BaseModel):
+    token: UUID
+    titulo: str
+    empresa: str
+
+
 class UtilidadeSemanal(BaseModel):
     semana: str
     parcial: bool

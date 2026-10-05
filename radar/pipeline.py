@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from itertools import zip_longest
 from uuid import UUID
 
@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from radar.domain.datas import data_local
 from radar.domain.models import (
+    AberturaSemResposta,
     ChaveDaVaga,
     ExtracaoDaVaga,
     Perfil,
@@ -31,6 +32,7 @@ from radar.notification.formatador import (
     formatar_mensagem,
     formatar_mensagem_sem_vagas,
     formatar_pergunta_de_feedback,
+    formatar_pergunta_do_dia_seguinte,
     recomendacoes_por_parte,
 )
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
@@ -107,6 +109,12 @@ class RegistroDasEntregas:
         self.com_envio_nao_gravado.add(usuario.id)
 
 
+class RegistroDasPerguntas:
+    def __init__(self) -> None:
+        self.enviadas: set[UUID] = set()
+        self.com_falha: set[UUID] = set()
+
+
 class ResumoDaExecucao(BaseModel):
     usuarios: int
     usuarios_com_falha_de_revalidacao: int = 0
@@ -124,6 +132,8 @@ class ResumoDaExecucao(BaseModel):
     vagas_extraidas_agora: int
     vagas_sem_extracao: int = 0
     extracoes_nao_gravadas: int = 0
+    perguntas_do_dia_seguinte: int = 0
+    perguntas_do_dia_seguinte_com_falha: int = 0
     enviadas_por_usuario: dict[UUID, list[Recomendacao]]
 
     def atendidos(self) -> int:
@@ -203,6 +213,16 @@ def executar(
             continue
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
+    perguntas = perguntar_sobre_as_aberturas_de_ontem(
+        [
+            usuario
+            for usuario in usuarios
+            if usuario.id not in registro.sem_mensagem_por_falha | revalidacao.falhas
+        ],
+        notificador,
+        repositorio,
+        data_local(agora),
+    )
     return ResumoDaExecucao(
         usuarios=len(usuarios),
         usuarios_com_falha_de_revalidacao=len(revalidacao.falhas),
@@ -224,8 +244,59 @@ def executar(
         vagas_extraidas_agora=balanco.extraidas_agora,
         vagas_sem_extracao=balanco.sem_extracao,
         extracoes_nao_gravadas=balanco.nao_gravadas,
+        perguntas_do_dia_seguinte=len(perguntas.enviadas),
+        perguntas_do_dia_seguinte_com_falha=len(perguntas.com_falha),
         enviadas_por_usuario=enviadas_por_usuario,
     )
+
+
+def perguntar_sobre_as_aberturas_de_ontem(
+    usuarios: list[Usuario],
+    notificador: Notificador,
+    repositorio: Repositorio,
+    hoje: date,
+) -> RegistroDasPerguntas:
+    registro = RegistroDasPerguntas()
+    for usuario in usuarios:
+        try:
+            if perguntar_sobre_a_abertura_de_ontem(usuario, notificador, repositorio, hoje):
+                registro.enviadas.add(usuario.id)
+        except (ErroDeNotificacao, ErroDeArmazenamento) as erro:
+            registro.com_falha.add(usuario.id)
+            logger.warning("usuário %s ficou sem a pergunta do dia seguinte: %s", usuario.id, erro)
+        except Exception:
+            registro.com_falha.add(usuario.id)
+            logger.exception("usuário %s ficou sem a pergunta do dia seguinte", usuario.id)
+    return registro
+
+
+def perguntar_sobre_a_abertura_de_ontem(
+    usuario: Usuario, notificador: Notificador, repositorio: Repositorio, hoje: date
+) -> bool:
+    abertura = repositorio.abertura_sem_resposta(usuario, hoje)
+    if abertura is None or not repositorio.pode_entregar(usuario):
+        return False
+    if not repositorio.reservar_pergunta_do_dia_seguinte(usuario, abertura):
+        return False
+    try:
+        notificador.enviar_pergunta(usuario.chat_id, formatar_pergunta_do_dia_seguinte(abertura))
+    except Exception:
+        liberar_a_pergunta(repositorio, usuario, abertura)
+        raise
+    return True
+
+
+def liberar_a_pergunta(
+    repositorio: Repositorio, usuario: Usuario, abertura: AberturaSemResposta
+) -> None:
+    try:
+        repositorio.liberar_pergunta_do_dia_seguinte(usuario, abertura)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: a pergunta não saiu e a reserva ficou, então não volta hoje: %s",
+            usuario.id,
+            erro,
+        )
 
 
 def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Vaga]:

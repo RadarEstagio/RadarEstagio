@@ -276,7 +276,8 @@ def test_utilidade_semanal_exibe_denominador_e_semana_incompleta():
     texto = formatar_funil(dados)
     assert "2026-09-07 (em andamento): 1/4 — 25.0%" in texto
     assert "2026-08-31: 0/0 — sem denominador" in texto
-    assert "sem captura no piloto" in texto
+    assert 'Candidatura: só a que a pessoa declara em "Me candidatei"' in texto
+    assert "sem captura" not in texto
 
 
 def test_recusas_sem_entregas_exibem_ausencia_de_denominador():

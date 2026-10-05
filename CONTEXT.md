@@ -29,7 +29,8 @@ Uma abertura isolada não basta para classificá-la como útil.
 _Evitar_: Vaga aberta, vaga entregue
 
 **Candidatura atribuída**:
-Uma candidatura iniciada a partir de uma recomendação do Radar.
+Uma candidatura iniciada a partir de uma recomendação do Radar, declarada pela pessoa em "Me
+candidatei" na pergunta do dia seguinte. É relato, não observação: a candidatura acontece na fonte.
 _Evitar_: Candidatura, conversão
 
 **Tempo até a primeira entrega**:

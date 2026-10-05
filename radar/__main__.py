@@ -332,6 +332,8 @@ def executar_fluxo(
         f"{resumo.extracoes_nao_gravadas} extrações não gravadas; "
         f"{repositorio.perfis_ilegiveis} perfis com dados inválidos; "
         f"{resumo.usuarios_sem_entrega_por_erro_inesperado} sem entrega por erro inesperado; "
+        f"{resumo.perguntas_do_dia_seguinte} perguntas do dia seguinte, "
+        f"{resumo.perguntas_do_dia_seguinte_com_falha} com falha; "
         f"{cota.requisicoes} requisições à Adzuna"
     )
     resumo_entregue = avisar_operacao(
@@ -365,6 +367,8 @@ def executar_fluxo(
             ),
             usuarios_com_envio_nao_gravado=resumo.usuarios_com_envio_nao_gravado,
             falhas_de_limpeza=resumo.falhas_de_limpeza,
+            perguntas_do_dia_seguinte=resumo.perguntas_do_dia_seguinte,
+            perguntas_do_dia_seguinte_com_falha=resumo.perguntas_do_dia_seguinte_com_falha,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():

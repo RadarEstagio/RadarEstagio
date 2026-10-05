@@ -14,6 +14,7 @@ import {
   eventoDoFeedback,
   extrairClique,
   tecladoDeFeedback,
+  tecladoDeMotivos,
 } from "./feedback.ts";
 import { type EnvioDoToken, responderConsultaDeFeedback } from "./processar_feedback.ts";
 import { dispararEntregaImediata } from "./entrega_imediata.ts";
@@ -117,7 +118,9 @@ async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {
     body: JSON.stringify(corpo),
   });
   const resultado = await resposta.json();
-  if (!resposta.ok || !resultado.ok) throw new Error(`Telegram recusou ${metodo}`);
+  if (!resposta.ok || !resultado.ok) {
+    throw new Error(`Telegram recusou ${metodo}: ${resultado.description ?? resposta.status}`);
+  }
 }
 
 async function envioDoToken(
@@ -170,6 +173,18 @@ async function perguntarOMotivo(consulta: ConsultaDeFeedback, envio: EnvioDoToke
   });
 }
 
+async function abrirMotivosDaPergunta(
+  consulta: ConsultaDeFeedback,
+  envio: EnvioDoToken,
+): Promise<void> {
+  await chamarTelegram("editMessageText", {
+    chat_id: consulta.chatId,
+    message_id: consulta.mensagemId,
+    text: `${envio.titulo} — ${envio.empresa}\n\nO que não serviu nessa vaga?`,
+    reply_markup: { inline_keyboard: tecladoDeMotivos(consulta.token) },
+  });
+}
+
 async function encerrarPergunta(consulta: ConsultaDeFeedback): Promise<void> {
   await chamarTelegram("deleteMessage", {
     chat_id: consulta.chatId,
@@ -199,6 +214,7 @@ Deno.serve(async (requisicao) => {
       envioDoToken,
       registrarFeedback,
       perguntarOMotivo,
+      abrirMotivosDaPergunta,
       encerrarPergunta,
     }, async (aviso) => {
       await chamarTelegram("answerCallbackQuery", {

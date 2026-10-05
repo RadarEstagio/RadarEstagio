@@ -231,8 +231,11 @@ conferido no código nessa data, para a equipe decidir o que entra:
   pela sua conta", com progresso que começa em 0%; o cartão de preço diz "A definir"; "Sobre"
   leva ao CTA final.
 - **Mensagem livre ao bot (RCD-09).** Recebe resposta automática e não chega à equipe.
-- **Feedback sem sinal (RCD-01).** A pergunta continua no fim da mensagem ("Deixe seu feedback
-  👇"), sem "Me candidatei"; candidatura segue sem emissor.
+- **Feedback sem sinal (RCD-01).** A pergunta do fim da mensagem ("Deixe seu feedback 👇")
+  continua, e em 05/10 ganhou a pergunta do dia seguinte sobre a vaga aberta, com "Me
+  candidatei", "Não serviu" e "Ainda vou ver" (ver
+  [decisões do motor](decisoes-do-motor.md#pergunta-do-dia-seguinte-05102026)). Falta publicar a
+  `0033`, a função e o código, e ler a taxa de resposta em 19/10.
 - **Distribuição sem origem (RCD-04).** A visita não guarda `referrer` nem `utm_source`, e as
   sessões da equipe entram no funil.
 - **Não implementados (RCD-05, 06, 07, 12 e 13):** prévia com vagas reais antes da conta,
@@ -252,7 +255,7 @@ pergunta do dia seguinte) e os sinais para reavaliar em 19/10 estão em
 
 ## 3. Limitações e decisões que continuam valendo
 
-- **Candidatura:** acontece na fonte; o Radar não se candidata e não captura novas candidaturas.
+- **Candidatura:** acontece na fonte; o Radar não se candidata e só registra a declaração "Me candidatei" da pergunta do dia seguinte.
 - **Feedback:** última resposta conta nas métricas, mas pode haver eventos brutos repetidos e
   perguntas simultâneas. Mensagem enviada sem gravação pode deixar token órfão.
 - **Histórico:** exclusões definitivas podem alterar métricas de semanas passadas.

@@ -1,9 +1,17 @@
 import re
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
-from radar.domain.models import EventosDoSite, Modalidade, Recomendacao, ResultadoMatch, Vaga
+from radar.domain.models import (
+    AberturaSemResposta,
+    EventosDoSite,
+    Modalidade,
+    Recomendacao,
+    ResultadoMatch,
+    Vaga,
+)
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     SEPARADOR_ENTRE_VAGAS,
@@ -12,6 +20,7 @@ from radar.notification.formatador import (
     formatar_mensagem,
     formatar_mensagem_sem_vagas,
     formatar_pergunta_de_feedback,
+    formatar_pergunta_do_dia_seguinte,
     formatar_resumo_da_execucao,
     recomendacoes_por_parte,
 )
@@ -759,3 +768,71 @@ def test_resumo_avisa_quando_os_eventos_do_site_chegaram_ao_teto(horas: int, tex
 
 def test_resumo_sem_eventos_do_site_conhecidos_nao_mostra_a_linha():
     assert "Eventos do site" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
+
+
+def abertura(
+    titulo: str = "Estágio Python", empresa: str = "Empresa Exemplo"
+) -> AberturaSemResposta:
+    return AberturaSemResposta(
+        token="15130004-9e8c-4247-aa2d-0514b82d078e", titulo=titulo, empresa=empresa
+    )
+
+
+def test_pergunta_do_dia_seguinte_cita_titulo_e_empresa_da_vaga_aberta():
+    pergunta = formatar_pergunta_do_dia_seguinte(abertura())
+
+    assert pergunta.texto == "Ontem você abriu <b>Estágio Python — Empresa Exemplo</b>. E aí?"
+
+
+def test_pergunta_do_dia_seguinte_escapa_e_limita_titulo_e_empresa():
+    pergunta = formatar_pergunta_do_dia_seguinte(
+        abertura("Estágio <b>&</b> " + "longo " * 60, "Cia & <i>Filhos</i> " + "SA " * 60)
+    )
+
+    assert "<b>Estágio &lt;b&gt;&amp;&lt;/b&gt;" in pergunta.texto
+    assert "Cia &amp; &lt;i&gt;Filhos&lt;/i&gt;" in pergunta.texto
+    assert "<i>" not in pergunta.texto
+    assert len(pergunta.texto) < LIMITE_DE_CARACTERES_DO_TELEGRAM
+
+
+def test_pergunta_do_dia_seguinte_tem_tres_botoes_presos_ao_token_do_envio():
+    pergunta = formatar_pergunta_do_dia_seguinte(abertura())
+    botoes = [botao for linha in pergunta.linhas_de_botoes for botao in linha]
+
+    assert [(botao.rotulo, botao.dados) for botao in botoes] == [
+        ("Me candidatei", "candidatei:15130004-9e8c-4247-aa2d-0514b82d078e"),
+        ("Não serviu", "nao_serviu:15130004-9e8c-4247-aa2d-0514b82d078e"),
+        ("Ainda vou ver", "ainda_vou_ver:15130004-9e8c-4247-aa2d-0514b82d078e"),
+    ]
+    assert all(len(botao.dados.encode()) <= 64 for botao in botoes)
+
+
+def test_acoes_da_pergunta_do_dia_seguinte_existem_na_telegram_webhook():
+    fonte = (
+        Path(__file__).parent.parent / "supabase/functions/telegram-webhook/feedback.ts"
+    ).read_text()
+    pergunta = formatar_pergunta_do_dia_seguinte(abertura())
+
+    for linha in pergunta.linhas_de_botoes:
+        for botao in linha:
+            assert f'"{botao.dados.split(":")[0]}"' in fonte, botao.dados
+
+
+def test_resumo_conta_as_perguntas_do_dia_seguinte_e_avisa_das_que_falharam():
+    sem_falha = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, perguntas_do_dia_seguinte=3
+    )
+    com_falha = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        perguntas_do_dia_seguinte=3,
+        perguntas_do_dia_seguinte_com_falha=2,
+    )
+
+    assert "Perguntas do dia seguinte enviadas: 3" in sem_falha
+    assert "⚠️ Perguntas do dia seguinte com falha" not in sem_falha
+    assert "⚠️ Perguntas do dia seguinte com falha: 2" in com_falha

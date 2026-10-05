@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 from radar.domain.datas import data_de_publicacao, data_local
 from radar.domain.models import (
+    AberturaSemResposta,
     BotaoDeFeedback,
     EventosDoSite,
     MotivoDeRecusa,
@@ -31,6 +32,9 @@ PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 NUMEROS_POR_LINHA = 5
 ACAO_DE_RECUSA = "feedback"
+ACAO_DE_CANDIDATURA = "candidatei"
+ACAO_DE_NAO_SERVIU = "nao_serviu"
+ACAO_DE_AINDA_VOU_VER = "ainda_vou_ver"
 FONTE_ADZUNA = "adzuna"
 URL_DA_ADZUNA = "https://www.adzuna.com.br"
 PROPORCAO_DE_ALERTA_DA_COTA = 0.8
@@ -92,6 +96,29 @@ def formatar_pergunta_de_feedback(recomendacoes: list[Recomendacao]) -> Pergunta
     return PerguntaDeFeedback(texto=TEXTO_DA_PERGUNTA, linhas_de_botoes=linhas)
 
 
+def formatar_pergunta_do_dia_seguinte(abertura: AberturaSemResposta) -> PerguntaDeFeedback:
+    titulo = escapar_limitado(abertura.titulo, LIMITE_DO_TITULO)
+    empresa = escapar_limitado(abertura.empresa, LIMITE_DA_EMPRESA)
+    return PerguntaDeFeedback(
+        texto=f"Ontem você abriu <b>{titulo} — {empresa}</b>. E aí?",
+        linhas_de_botoes=[
+            [
+                BotaoDeFeedback(
+                    rotulo="Me candidatei", dados=f"{ACAO_DE_CANDIDATURA}:{abertura.token}"
+                )
+            ],
+            [
+                BotaoDeFeedback(
+                    rotulo="Não serviu", dados=f"{ACAO_DE_NAO_SERVIU}:{abertura.token}"
+                ),
+                BotaoDeFeedback(
+                    rotulo="Ainda vou ver", dados=f"{ACAO_DE_AINDA_VOU_VER}:{abertura.token}"
+                ),
+            ],
+        ],
+    )
+
+
 def formatar_motivos_da_recusa(token: str) -> list[list[BotaoDeFeedback]]:
     return [
         [BotaoDeFeedback(rotulo=rotulo, dados=f"{motivo.value}:{token}")]
@@ -147,6 +174,8 @@ def formatar_resumo_da_execucao(
     mensagens_seguradas_pela_coleta_incompleta: int = 0,
     usuarios_com_envio_nao_gravado: int = 0,
     falhas_de_limpeza: list[str] | None = None,
+    perguntas_do_dia_seguinte: int = 0,
+    perguntas_do_dia_seguinte_com_falha: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -157,6 +186,7 @@ def formatar_resumo_da_execucao(
         f"Requisições ao avaliador: {requisicoes}",
         f"Usuários com falha de revalidação: {falhas_de_revalidacao}",
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
+        f"Perguntas do dia seguinte enviadas: {perguntas_do_dia_seguinte}",
     ]
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
@@ -183,6 +213,10 @@ def formatar_resumo_da_execucao(
         )
     if usuarios_com_envio_nao_gravado:
         linhas.append(f"⚠️ Usuários com envio não gravado: {usuarios_com_envio_nao_gravado}")
+    if perguntas_do_dia_seguinte_com_falha:
+        linhas.append(
+            f"⚠️ Perguntas do dia seguinte com falha: {perguntas_do_dia_seguinte_com_falha}"
+        )
     for falha in falhas_de_limpeza or []:
         linhas.append(f"⚠️ Limpeza de contas falhou: {escape(falha)}")
     if adzuna_hoje is not None and adzuna_no_mes is not None and adzuna_limite:

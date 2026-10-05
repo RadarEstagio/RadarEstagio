@@ -126,3 +126,28 @@ Deno.test("quem acha a vaga fechada marca como encerrada, registrada como recusa
     propriedades: { motivo: "motivo_encerrada" },
   });
 });
+
+Deno.test("Me candidatei vira candidatura_iniciada e as outras duas ações da pergunta não viram evento", () => {
+  assertEquals(eventoDoFeedback("candidatei"), { nome: "candidatura_iniciada", propriedades: {} });
+  assertEquals(eventoDoFeedback("nao_serviu"), null);
+  assertEquals(eventoDoFeedback("ainda_vou_ver"), null);
+});
+
+Deno.test("os cliques da pergunta do dia seguinte são lidos com a ação e o token", () => {
+  for (const acao of ["candidatei", "nao_serviu", "ainda_vou_ver"]) {
+    const consulta = extrairClique(clique(`${acao}:${TOKEN}`));
+
+    assertEquals(consulta?.acao, acao);
+    assertEquals(consulta?.token, TOKEN);
+  }
+});
+
+Deno.test("o texto dos motivos depois de Não serviu cita a vaga e não oferece o positivo", () => {
+  const linhas = tecladoDeMotivos(TOKEN);
+
+  assertEquals(
+    linhas.flat().some((botao) => botao.callback_data.startsWith("util:")),
+    false,
+  );
+  assertEquals(linhas.length, 6);
+});

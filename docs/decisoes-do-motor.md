@@ -831,6 +831,63 @@ compatibilidade observada de informação ausente; a resposta foi um aviso na me
   `radar/`, sem migration e sem deploy de função; o aviso do bot ("Essa vaga deixa de ser enviada")
   segue verdadeiro para quem marcou.
 
+## Pergunta do dia seguinte (05/10/2026)
+
+O feedback do fim da mensagem não produzia sinal (RCD-01): em 05/10, 6 respostas em 750
+recomendações, três perfis, só uma de fora da equipe, e nenhum `vaga_util` nem
+`candidatura_iniciada` na história. A pergunta pedia uma taxonomia de reclamação no fim de uma
+mensagem longa, depois de a pessoa já ter saído pelo link. A nova pergunta pede o que a pessoa
+fez, no dia seguinte, sobre uma vaga que ela mesma abriu: "Ontem você abriu *título — empresa*.
+E aí?", com **Me candidatei**, **Não serviu** e **Ainda vou ver**. Sem IA e sem mudar peso ou
+regra do motor.
+
+- **Quem recebe e quando.** No máximo uma por pessoa por dia, sobre a abertura mais recente do
+  dia anterior em Brasília cuja vaga ainda não teve `vaga_util`, `vaga_irrelevante` nem
+  `candidatura_iniciada` depois do envio. A consulta é `radar/storage/abertura_sem_resposta.sql`,
+  a mesma que o PGlite roda com todas as migrations. A abertura é a primeira do par, porque a
+  `0028` só grava essa.
+- **Uma marca por envio, reservada antes do envio.** `envios.pergunta_do_dia_seguinte_em`
+  (`0033`) é gravada por um `update ... where pergunta_do_dia_seguinte_em is null` **antes** de
+  mandar a pergunta, como a entrega imediata reivindica o disparo antes de fazê-lo. Gravar depois
+  do envio deixava um furo: se a gravação falhasse e o diário rodasse de novo, a pergunta saía
+  duas vezes. Com a reserva, quem não consegue reservar não envia, e quem envia já está marcado.
+  Se o Telegram recusar o envio, a reserva é desfeita e a próxima execução tenta de novo; se
+  desfazê-la também falhar, ou se o processo morrer entre a reserva e o envio, a pergunta se
+  perde naquele dia. Foi a escolha: erra para o lado de não repetir, e o custo é uma pergunta a
+  menos, nunca uma a mais. A marca também garante o limite de uma por pessoa por dia, e "Ainda
+  vou ver", que não emite evento, não volta no dia seguinte. A vaga que ficou sem resposta não é
+  perguntada de novo: o laço de ontem se fecha uma vez só, para a pergunta não virar cobrança.
+- **Não segura nem atrasa a mensagem de recomendações.** É um laço próprio, depois de todos os
+  usuários atendidos, fora da trava do atendimento, e vale também no dia sem vaga compatível e na
+  mensagem segurada. Quem ficou sem mensagem por falha de revalidação ou de envio não é
+  perguntado: a pergunta falharia pelo mesmo motivo e contaria duas vezes no resumo.
+- **Falha vira aviso, nunca código 1.** Erro do Telegram, do banco ou inesperado conta em
+  `perguntas_do_dia_seguinte_com_falha`, aparece como "⚠️ Perguntas do dia seguinte com falha" no
+  resumo de operação e não entra em `ninguem_foi_atendido_por_falha`. Falha ao reservar também
+  conta, e então a pergunta não sai.
+- **Os botões.** "Me candidatei" grava `candidatura_iniciada` (já no catálogo, e já somada às
+  vagas úteis pela consulta de métricas) e fecha a pergunta. "Não serviu" troca a própria
+  mensagem pelos seis motivos de `feedback.ts`, sem a opção positiva, e o motivo segue o caminho
+  da recusa de sempre. "Ainda vou ver" só fecha a pergunta. O formato da mensagem fica em
+  `notification/formatador.py` e a tratativa dos cliques na `telegram-webhook`; um teste Python
+  lê o `feedback.ts` para as ações não divergirem.
+- **A candidatura é declarada, não observada.** Ela acontece na fonte, que o Radar não vê. "Me
+  candidatei" pode superestimar (toque por engano, ninguém confere) e subestimar (quem se
+  candidata e não responde). Serve como sinal de utilidade, não como contagem de candidaturas, e
+  não é motivo para mexer em peso: a regra de não ajustar a nota sem `vaga_irrelevante` real
+  continua.
+- **Limites aceitos.** "Ainda vou ver" e o silêncio ficam indistinguíveis no banco, porque a
+  marca só diz que a pergunta saiu. "Não serviu" sem escolher o motivo não grava nada. O botão
+  só vale com conta ativa e chat vinculado; pausar a conta entre a pergunta e o toque o deixa
+  sem efeito ("Esta pergunta não vale mais"). A entrega imediata não pergunta: o perfil recém
+  vinculado não abriu nada ontem, e depois de atendido `pode_entregar` da entrega imediata já
+  devolve falso.
+- **Ordem de publicação.** `db push` da `0033`, depois `supabase functions deploy
+  telegram-webhook`, depois o merge. Com o radar novo antes da migration, a consulta falha e só
+  gera o aviso no resumo; com ele antes da função, o toque nos botões novos responde "Esta
+  pergunta não vale mais". A `0033` é o número seguinte à `0032` da origem da visita; se a
+  `0033` subir antes da `0032`, o push pede `--include-all`.
+
 ## Erro inesperado não derruba os outros usuários (18/09/2026)
 
 Auditoria dos médios "o run inteiro cai por causa de um único dado". `atender_usuario` e
