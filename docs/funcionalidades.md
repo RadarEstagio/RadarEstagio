@@ -27,7 +27,8 @@ na fonte; não há promessa de contratação ou cobertura de todos os anúncios.
 O cartão é um exemplo fictício identificado como ilustrativo, com nota, requisitos a
 conferir e diferenciais que a vaga cita. “Publicada hoje” é texto estático desse exemplo, escolhido na revisão de 08/09
 para evitar data fixa envelhecida; não é data de anúncio real nem consulta dinâmica.
-Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summary` nativo
+Marcas identificam fontes e tecnologias, não parceiros. Os destaques do topo dizem "Compara
+curso, cidade e período" e "Explica o que falta conferir". A FAQ usa `details/summary` nativo
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
 Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. A
@@ -42,7 +43,9 @@ visual escuro.
 Informar curso, período, habilidades, áreas, cidade e modalidade e, no último passo, e-mail e
 senha. O curso é escolhido numa lista dos cursos do catálogo, filtrada conforme a digitação, ou
 digitado livremente quando não está nela. Quem já tem conta escolhe "Entrar" e vê só o passo
-da conta; quem edita o perfil depois do login não passa por ele.
+da conta; quem edita o perfil depois do login não passa por ele. A barra de progresso é
+(posição + 1) / (total + 1), então nunca parte de 0%, e o passo da conta se chama "Último passo:
+crie sua conta para ativar seu Radar".
 
 **Condições e limites:** Confirmação de e-mail mantida; a conta só é criada no envio do último
 passo, nunca ao avançar entre etapas; interface pública depende da hospedagem. Fechar o cadastro
@@ -113,7 +116,11 @@ Acessar e encerrar sessão no painel.
 
 Abrir o bot pelo link pessoal e confirmar Start.
 
-**Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas.
+**Condições e limites:** Token de uso único; um chat não pode pertencer a duas contas. A
+resposta do vínculo promete vagas "quando houver compatíveis", não todos os dias. Texto livre de
+chat vinculado recebe "Recebemos sua mensagem; a equipe lê todas" e vai ao chat de operação, se
+ele estiver configurado; sem isso a resposta aponta o e-mail de contato. Chat não vinculado
+continua recebendo a instrução de vínculo.
 
 #### 10. Primeira busca após vínculo
 
