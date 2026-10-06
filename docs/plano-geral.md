@@ -66,8 +66,8 @@ e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses 
       painel por excesso de deployments, que foram apagados pela API antes. O
       `radarestagio.pages.dev` deixou de resolver, e o domínio novo, o `www`, o e-mail e a `ir`
       seguem respondendo.
-- [ ] Tirar o `https://radarestagio.pages.dev/**` dos Redirect URLs do Supabase, o que só o Igor
-      faz no painel.
+- [x] Conferir os Redirect URLs do Supabase sem o `pages.dev`: em 05/10 a lista tinha só
+      `radarestagio.com` e `localhost:8000`, e o `www` redireciona com 301 para o domínio novo.
 - [ ] Apagar a zona antiga na conta pessoal do Igor, só depois de aparecer como "Moved"; pôr forma
       de pagamento na conta do grupo para a renovação de 04/09/2027.
 
