@@ -375,7 +375,6 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
 - **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
   atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
   do clique deixa de valer depois do vínculo.
-- Pendência externa: configurar o redirect do Auth para `http://localhost:8000`.
 - No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
   usuário viram aviso. Falhas de revalidação são contadas por usuário no resumo e bloqueiam a
   mensagem afetada; o resumo distingue quem ficou sem entrega de quem já recebeu antes da falha.

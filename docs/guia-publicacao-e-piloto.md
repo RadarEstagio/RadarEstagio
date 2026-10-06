@@ -29,7 +29,7 @@ Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloud
   foi recriada com o mesmo destino de antes, e o teste de entrega chegou. O Resend como "Verified"
   no painel não foi reconferido.
 - **Supabase.** O Site URL é `https://radarestagio.com`, e os Redirect URLs levam
-  `https://radarestagio.com/**`, `http://localhost:8000/**` e, por enquanto, o `pages.dev`. O secret
+  `https://radarestagio.com/**` e `http://localhost:8000/**` (conferido em 05/10). O secret
   `URL_DA_LANDING` está em `https://radarestagio.com`: a `ir` redireciona token inexistente e
   chamada sem token para o domínio novo. O GitHub Actions não tem `URL_DA_LANDING`.
 - **Cadastro no domínio novo.** O Igor confirmou o cadastro com a confirmação do e-mail voltando
@@ -50,8 +50,8 @@ Conferido por terminal (`curl`, `dig`, `whois`) e pelos painéis, na conta Cloud
   `/privacidade`, `www` (301), o MX do e-mail e a `ir` (302 para o domínio novo) seguem
   respondendo, com os 4 checks verdes na `main`.
 - **Ainda aberto.** Forma de pagamento da conta do grupo para a renovação; zona antiga na conta
-  pessoal, que não se apaga até ficar no estado "Moved"; o `pages.dev` ainda consta nos Redirect
-  URLs do Supabase, e só o Igor o tira no painel.
+  pessoal, que não se apaga até ficar no estado "Moved". Os Redirect URLs do Supabase já estavam
+  sem o `pages.dev` em 05/10.
 
 Conferido no ambiente remoto em 06/09, nesta revisão:
 
@@ -222,7 +222,7 @@ Em **Authentication → URL Configuration**, preencha:
 | Campo | Valor |
 |---|---|
 | Site URL | `https://radarestagio.com`, sem barra no final e sem curinga (desde 03/10/2026) |
-| Redirect URLs | `https://radarestagio.com/**`; o `https://radarestagio.pages.dev/**` sai quando o Pages antigo for apagado |
+| Redirect URLs | `https://radarestagio.com/**`; o `www` não entra, porque redireciona com 301 para o domínio |
 | Desenvolvimento local | `http://localhost:8000/**` |
 
 O site manda `emailRedirectTo` com a própria origem (`window.location.origin`), então a origem
