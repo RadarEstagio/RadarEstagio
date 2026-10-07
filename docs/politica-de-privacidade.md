@@ -43,7 +43,8 @@ cadastro. Por isso, não tratamos esse histórico como informação irreversivel
 As propriedades dos eventos são destinadas a informações sobre o uso do produto, sem campos
 de texto livre para dados pessoais.
 
-O navegador guarda dados da sessão de acesso e um identificador local usado nas métricas.
+O navegador guarda dados da sessão de acesso e um identificador local usado nas métricas. Se
+você troca o tema no botão do site, a escolha entre claro e escuro também fica guardada nele.
 O fluxo de cadastro também pode manter temporariamente um perfil pendente no dispositivo.
 Provedores de hospedagem, autenticação e proteção contra abuso processam dados técnicos das
 requisições, como endereço IP e informações do navegador, conforme a configuração de cada
