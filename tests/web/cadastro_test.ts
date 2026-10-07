@@ -3905,6 +3905,56 @@ Deno.test("curso sugere os cursos do catálogo conforme a pessoa digita, sem exi
   }
 });
 
+function clicarNaArea(a: ReturnType<typeof app>, area: string) {
+  a.w.document.querySelector(`.areas-track li:not([aria-hidden]) [data-area="${area}"]`).click();
+}
+
+Deno.test("clicar numa área da faixa abre o cadastro com os cursos daquela área", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "saude");
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#curso").value, "");
+    assert.deepEqual(cursosNaLista(a), ["Enfermagem", "Fisioterapia", "Nutrição", "Farmácia", "Educação Física"]);
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "cta_cadastro_aberto" &&
+        ((payload as Payload).propriedades as Payload)?.origem === "faixa_de_areas"
+      ),
+      true,
+    );
+    assert.deepEqual(await digitarCurso(a, "direito"), ["Direito"]);
+  } finally { a.close(); }
+});
+
+Deno.test("área com um único curso já preenche o curso no cadastro", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "direito");
+    await settle();
+    assert.equal(a.w.document.querySelector("#curso").value, "Direito");
+  } finally { a.close(); }
+});
+
+Deno.test("abrir o cadastro pelo hero depois de uma área volta a mostrar todos os cursos", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "saude");
+    await settle();
+    a.w.document.querySelector("#close-dialog").click();
+    a.w.document.querySelector('[data-event-origin="hero"]').click();
+    await settle();
+    a.w.document.querySelector("#mostrar-cursos").click();
+    await settle();
+    assert.deepEqual([...cursosNaLista(a)].sort(), [...cursosDoCatalogo].sort());
+  } finally { a.close(); }
+});
+
 Deno.test("setinha abre todos os cursos do catálogo e o clique preenche o curso", async () => {
   const a = app();
   try {

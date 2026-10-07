@@ -161,6 +161,7 @@ const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
 const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
+let cursosDaAreaEscolhida = null;
 
 function ativarSecaoDaConta(linkAtivo) {
   accountNavLinks.forEach((link) => {
@@ -1662,8 +1663,29 @@ chamadasDeLogin.forEach((button) => {
   });
 });
 
+async function abrirCadastroPelaArea(nomeDaArea) {
+  if (!usuarioAutenticado) void registerEvent("cta_cadastro_aberto", { origem: "faixa_de_areas" });
+  const catalogo = await carregarAreas();
+  const area = catalogo?.areas.find((candidata) => candidata.nome === nomeDaArea);
+  cursosDaAreaEscolhida = area?.cursos_sugeridos.map((nome) => ({ nome, busca: textoDeBusca(nome) })) ?? null;
+  await openSignup();
+  if (!dialog.open || currentStep !== PASSO_MOMENTO || campoDeCurso.value.trim() || !cursosDaAreaEscolhida) return;
+  if (cursosDaAreaEscolhida.length === 1) {
+    campoDeCurso.value = cursosDaAreaEscolhida[0].nome;
+    campoDeCurso.dispatchEvent(new Event("change", { bubbles: true }));
+    return;
+  }
+  botaoDeCursos.click();
+}
+
+trilhaDeAreas?.addEventListener("click", (event) => {
+  const botao = event.target.closest("[data-area]");
+  if (botao) void abrirCadastroPelaArea(botao.dataset.area);
+});
+
 chamadasDeCadastro.forEach((button) => {
   button.addEventListener("click", () => {
+    cursosDaAreaEscolhida = null;
     if (!usuarioAutenticado) {
       void registerEvent("cta_cadastro_aberto", {
         origem: button.dataset.eventOrigin ?? "desconhecida",
@@ -1882,7 +1904,8 @@ ligarListaDeOpcoes({
   botao: botaoDeCursos,
   lista: listaDeCursos,
   carregar: carregarCursos,
-  sugestoes: (texto) => opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
+  sugestoes: (texto) =>
+    (!textoDeBusca(texto) && cursosDaAreaEscolhida) || opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
   valorDaLista: cursoDaLista,
   conteudoDaOpcao: (curso) => [curso.nome],
   semResultado: "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.",
