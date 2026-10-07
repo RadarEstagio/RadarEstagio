@@ -353,7 +353,10 @@ def test_faixa_abaixo_do_hero_mostra_as_areas_e_nao_marcas():
     assert "O Radar atende estudantes de todas estas áreas" in faixa
     assert "<span>ADZUNA</span>" not in faixa
     assert "<span>GEMINI</span>" not in faixa
-    assert "min-height: calc(100svh - var(--altura-do-cabecalho) - var(--espaco-da-frase-das-areas))" in css
+    assert (
+        "min-height: calc(100svh - var(--altura-do-cabecalho) - var(--espaco-da-frase-das-areas))"
+        in css
+    )
     reduzida = css[css.index("@media (prefers-reduced-motion: reduce)") :]
     assert ".areas-track { animation: none !important;" in reduzida
 
