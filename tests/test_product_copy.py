@@ -65,6 +65,19 @@ def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
     assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
 
 
+def test_landing_termos_e_privacidade_comecam_no_tema_claro_ou_no_escolhido():
+    script = (
+        '<script>document.documentElement.dataset.tema = "claro"; '
+        'try { if (localStorage.getItem("radar-tema") === "escuro") '
+        'document.documentElement.dataset.tema = "escuro"; } catch {}</script>'
+    )
+
+    for pagina in ("web/index.html", "web/termos.html", "web/privacidade.html"):
+        html = (RAIZ / pagina).read_text()
+        assert script in html, pagina
+        assert "prefers-color-scheme" not in html, pagina
+
+
 def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
     css = (RAIZ / "web/assets/styles.css").read_text()
 

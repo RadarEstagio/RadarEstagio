@@ -267,7 +267,7 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
   } finally { a.close(); }
 });
 
-Deno.test("tema fica direto no cabeçalho e começa como o tema claro do sistema", () => {
+Deno.test("tema fica direto no cabeçalho e começa no claro", () => {
   const a = app();
   try {
     const raiz = a.w.document.documentElement;
@@ -309,37 +309,46 @@ Deno.test("tema e login são controles separados com ações independentes", asy
   }
 });
 
-Deno.test("tema escuro do sistema é aplicado no head, antes da aplicação carregar", () => {
+Deno.test("site começa no claro mesmo com o sistema no escuro", () => {
   const a = app({ temaDoSistema: "escuro" });
   try {
-    const scriptsDoHead = [...a.w.document.head.querySelectorAll("script:not([src])")];
-    assert.ok(scriptsDoHead.some((elemento) => elemento.textContent.includes("prefers-color-scheme: dark")));
-    assert.equal(a.temaAntesDoApp, "escuro");
-    assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
-    assert.equal(a.w.document.querySelector("#theme-toggle").getAttribute("aria-pressed"), "true");
+    assert.equal(a.temaAntesDoApp, "claro");
+    assert.equal(a.w.document.documentElement.dataset.tema, "claro");
+    assert.equal(a.w.document.querySelector("#theme-toggle").getAttribute("aria-pressed"), "false");
   } finally {
     a.close();
   }
 });
 
-Deno.test("tema salvo antigo não sobrescreve o tema do sistema ao reabrir", () => {
-  const claro = app({ armazenado: { "radar-tema": "escuro" } });
-  const escuro = app({ armazenado: { "radar-tema": "claro" }, temaDoSistema: "escuro" });
+Deno.test("tema escolhido no botão é guardado e volta ao recarregar, antes da aplicação carregar", () => {
+  const primeira = app();
+  let guardado = "";
   try {
-    assert.equal(claro.temaAntesDoApp, "claro");
-    assert.equal(escuro.temaAntesDoApp, "escuro");
+    primeira.w.document.querySelector("#theme-toggle").click();
+    guardado = primeira.w.localStorage.getItem("radar-tema") ?? "";
+    assert.equal(guardado, "escuro");
   } finally {
-    claro.close();
-    escuro.close();
+    primeira.close();
+  }
+  const recarregada = app({ armazenado: { "radar-tema": guardado } });
+  try {
+    const scriptsDoHead = [...recarregada.w.document.head.querySelectorAll("script:not([src])")];
+    assert.ok(scriptsDoHead.some((elemento) => elemento.textContent.includes('localStorage.getItem("radar-tema")')));
+    assert.equal(recarregada.temaAntesDoApp, "escuro");
+    assert.equal(recarregada.w.document.querySelector("#theme-toggle").getAttribute("aria-pressed"), "true");
+    recarregada.w.document.querySelector("#theme-toggle").click();
+    assert.equal(recarregada.w.localStorage.getItem("radar-tema"), "claro");
+  } finally {
+    recarregada.close();
   }
 });
 
-Deno.test("tema do sistema e botão funcionam com o armazenamento bloqueado", () => {
+Deno.test("tema começa no claro e o botão funciona com o armazenamento bloqueado", () => {
   const a = app({ armazenamentoBloqueado: true, temaDoSistema: "escuro" });
   try {
-    assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
-    a.w.document.querySelector("#theme-toggle").click();
     assert.equal(a.w.document.documentElement.dataset.tema, "claro");
+    a.w.document.querySelector("#theme-toggle").click();
+    assert.equal(a.w.document.documentElement.dataset.tema, "escuro");
     assert.deepEqual(a.erros.map((erro) => erro.message), []);
   } finally {
     a.close();
