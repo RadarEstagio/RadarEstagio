@@ -241,6 +241,21 @@ async function carregarAreas() {
   return catalogoDeAreas;
 }
 
+const COPIAS_DA_FAIXA_DE_AREAS = 6;
+const trilhaDeAreas = document.querySelector("[data-areas-track]");
+
+if (trilhaDeAreas) {
+  const areasDaFaixa = [...trilhaDeAreas.children];
+  for (let copia = 1; copia < COPIAS_DA_FAIXA_DE_AREAS; copia += 1) {
+    for (const area of areasDaFaixa) {
+      const repetida = area.cloneNode(true);
+      repetida.setAttribute("aria-hidden", "true");
+      repetida.querySelector("button").tabIndex = -1;
+      trilhaDeAreas.append(repetida);
+    }
+  }
+}
+
 async function carregarCursos() {
   const catalogo = await carregarAreas();
   avisoDeCursos.hidden = Boolean(catalogo);

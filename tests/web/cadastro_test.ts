@@ -281,6 +281,21 @@ Deno.test("na tela larga, o chat ao lado do título anima sem esperar a rolagem"
   } finally { a.close(); }
 });
 
+Deno.test("faixa abaixo do hero mostra cada área do catálogo uma vez para o leitor de tela", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const nomesDoCatalogo = areasJson.areas.map((area: { nome: string }) => area.nome);
+    const acessiveis = [...doc.querySelectorAll(".areas-track li:not([aria-hidden]) [data-area]")];
+    const copias = [...doc.querySelectorAll('.areas-track li[aria-hidden="true"] [data-area]')];
+    assert.deepEqual(acessiveis.map((botao) => botao.dataset.area), nomesDoCatalogo);
+    assert.equal(acessiveis.every((botao) => botao.querySelector(".area-name").textContent.trim()), true);
+    assert.equal(copias.length, nomesDoCatalogo.length * 5);
+    assert.equal(copias.every((botao) => botao.tabIndex === -1), true);
+  } finally { a.close(); }
+});
+
 Deno.test("tema fica direto no cabeçalho e começa como o tema claro do sistema", () => {
   const a = app();
   try {
