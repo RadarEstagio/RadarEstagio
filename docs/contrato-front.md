@@ -385,3 +385,31 @@ da landing no tema claro. Agora usam os tokens do site (`--paper`, `--surface`, 
 `--line`, `--accent-text`) e o mesmo script de `index.html`, que lê `prefers-color-scheme` e grava
 `data-tema` na raiz antes de pintar. Como o tema não é lembrado entre páginas (ver acima), quem
 alterna o botão na landing e abre os Termos volta ao tema do sistema.
+
+### Hero lado a lado e faixa de áreas (07/10/2026).
+
+Na tela larga, o hero empilhado deixava o chat abaixo da dobra. A partir de 981 px, título e chat
+dividem a tela, e a animação da mensagem começa ao carregar, porque o chat já aparece sem rolar;
+abaixo disso o hero continua empilhado e a animação segue esperando 90 px de rolagem. O hero ocupa a
+altura da janela menos o cabeçalho e o espaço da frase da faixa, de modo que só a frase fique acima
+da dobra e os ícones apareçam ao rolar. Em janela com menos de ~775 px de altura útil, o chat não cabe junto da frase.
+
+A faixa "Fontes e tecnologias do Radar" (Adzuna, Gemini, Telegram) saiu: falava com quem constrói o
+produto, e a atribuição da Adzuna já está em cada vaga do chat e na FAQ. No lugar, uma fila de
+ícones das áreas do catálogo, sem nome visível; o nome aparece ao passar o mouse ou focar pelo
+teclado, e só a passagem sobre um ícone pausa a fila. Não há logos de empresas: sem parceria, logo
+daria a entender uma que não existe. A frase diz "todas estas áreas", não "todas as áreas", porque
+cursos como Medicina não caem em nenhuma.
+
+As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
+catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
+abrir o formulário. `test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo` prende a lista
+a `domain/areas.py`; área nova no catálogo exige o ícone na faixa. O JavaScript repete a lista até
+cada metade da fila passar da largura de qualquer tela, com as cópias fora do leitor de tela e do
+Tab; com duas cópias só, a fila acabava antes da borda direita.
+
+Clicar numa área abre o cadastro com a lista de cursos restrita aos `cursos_sugeridos` dela. Não
+preenche um curso, porque quase toda área tem vários; área de um curso só (Direito) já vem
+preenchida. Rascunho com curso não é sobrescrito, digitar volta a buscar em todos os cursos e as
+outras chamadas de cadastro limpam a restrição. O clique registra `cta_cadastro_aberto` com origem
+`faixa_de_areas`.
