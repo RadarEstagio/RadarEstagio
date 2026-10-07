@@ -383,5 +383,17 @@ Supabase precisa da conferência, e teste que clica num controle da conta precis
 As páginas `termos.html` e `privacidade.html` eram sempre escuras, com tokens próprios, e destoavam
 da landing no tema claro. Agora usam os tokens do site (`--paper`, `--surface`, `--ink`, `--muted`,
 `--line`, `--accent-text`) e o mesmo script de `index.html`, que lê `prefers-color-scheme` e grava
-`data-tema` na raiz antes de pintar. Como o tema não é lembrado entre páginas (ver acima), quem
-alterna o botão na landing e abre os Termos volta ao tema do sistema.
+`data-tema` na raiz antes de pintar. Desde 07/10/2026 esse script lê o tema guardado (ver abaixo),
+então os Termos abrem no tema escolhido na landing.
+
+### Tema claro por padrão e escolha lembrada (07/10/2026).
+
+Desde 16/09 o site seguia o tema do sistema a cada abertura e não guardava o botão, para uma
+escolha antiga não passar por cima do sistema. O efeito era o F5 desfazer a escolha: com o sistema
+no escuro, trocar para o claro e recarregar voltava ao escuro. Agora o site começa sempre no claro,
+que rende mais leitura para quem tem visão normal (resumo da Nielsen Norman Group), e o botão grava
+`radar-tema` no `localStorage`. O script do `head` da landing, dos Termos e da Privacidade lê a
+chave antes da primeira pintura, então a escolha vale ao recarregar, entre páginas e em visitas
+futuras. Com o armazenamento bloqueado, o site fica no claro e o botão vale só durante a visita.
+A chave tem o mesmo nome da usada até 16/09, então quem escolheu o escuro antes volta a vê-lo.
+A Política diz que a escolha fica no navegador.
