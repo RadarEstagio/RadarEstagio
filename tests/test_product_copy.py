@@ -62,7 +62,19 @@ def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
     assert 'class="hero-demo is-waiting"' in html
     assert ".hero-demo.is-waiting .chat-typing { opacity: 1; }" in css
     assert "const ROLAGEM_MINIMA_ATE_CHAT = 90;" in javascript
-    assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
+    assert "if (!heroLadoALado && window.scrollY < ROLAGEM_MINIMA_ATE_CHAT) return;" in javascript
+
+
+def test_hero_poe_o_titulo_a_esquerda_e_o_chat_a_direita_na_tela_larga():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    tela_larga = css[css.index("@media (min-width: 981px) {") :]
+    tela_larga = tela_larga[: tela_larga.index("\n}\n")]
+
+    assert "grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr)" in tela_larga
+    assert "text-align: left;" in tela_larga
+    assert ".hero-demo { justify-self: end;" in tela_larga
+    assert 'window.matchMedia?.("(min-width: 981px)")' in javascript
 
 
 def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():

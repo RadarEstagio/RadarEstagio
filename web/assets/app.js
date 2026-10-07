@@ -14,17 +14,20 @@ botaoDoTema.addEventListener("click", () => {
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const ROLAGEM_MINIMA_ATE_CHAT = 90;
+const heroLadoALado = window.matchMedia?.("(min-width: 981px)").matches;
 
 if (demonstracaoDoChat && !reduzirMovimento) {
   const reproduzirChatAoRolar = () => {
     const limitesDoChat = demonstracaoDoChat.getBoundingClientRect();
     const chatEntrouNaAreaUtil = limitesDoChat.top <= window.innerHeight * 0.82 && limitesDoChat.bottom >= 0;
-    if (window.scrollY < ROLAGEM_MINIMA_ATE_CHAT || !chatEntrouNaAreaUtil) return;
+    if (!heroLadoALado && window.scrollY < ROLAGEM_MINIMA_ATE_CHAT) return;
+    if (!chatEntrouNaAreaUtil) return;
     demonstracaoDoChat.classList.remove("is-waiting");
     demonstracaoDoChat.classList.add("is-playing");
     window.removeEventListener("scroll", reproduzirChatAoRolar);
   };
   window.addEventListener("scroll", reproduzirChatAoRolar, { passive: true });
+  reproduzirChatAoRolar();
 } else if (demonstracaoDoChat) {
   demonstracaoDoChat.classList.remove("is-waiting");
   demonstracaoDoChat.classList.add("is-playing");

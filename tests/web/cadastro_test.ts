@@ -87,6 +87,7 @@ function app(
     referrer = "",
     key = "",
     temaDoSistema = "claro",
+    telaLarga = false,
     armazenamentoBloqueado = false,
     erroDaSessao = null,
     erroDoPerfil = null,
@@ -98,6 +99,7 @@ function app(
     referrer?: string;
     key?: string;
     temaDoSistema?: "claro" | "escuro";
+    telaLarga?: boolean;
     armazenamentoBloqueado?: boolean;
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
@@ -116,7 +118,8 @@ function app(
     beforeParse: (janela: TestWindow) => {
       Object.defineProperty(janela, "matchMedia", {
         value: (consulta: string) => ({
-          matches: consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro",
+          matches: (consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro") ||
+            (consulta === "(min-width: 981px)" && telaLarga),
           media: consulta,
         }),
       });
@@ -264,6 +267,17 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.ok(demo.querySelector(".chat-feedback"));
     assert.equal(demo.querySelector(".chat-composer-field").textContent.trim(), "Mensagem");
     assert.equal(demo.querySelectorAll(".chat-composer-icon").length, 2);
+  } finally { a.close(); }
+});
+
+Deno.test("na tela larga, o chat ao lado do título anima sem esperar a rolagem", async () => {
+  const a = app({ telaLarga: true });
+  try {
+    await settle();
+    const demo = a.w.document.querySelector("[data-chat-demo]");
+    assert.equal(a.w.scrollY, 0);
+    assert.equal(demo.classList.contains("is-waiting"), false);
+    assert.equal(demo.classList.contains("is-playing"), true);
   } finally { a.close(); }
 });
 
