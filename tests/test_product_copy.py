@@ -71,6 +71,15 @@ def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
     assert ".hero > .hero-grid { background: none; animation: none; }" in css
 
 
+def test_chat_do_hero_nao_tem_ondas_animadas_ao_fundo():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert "orbit" not in html
+    assert "orbit" not in css
+    assert "@keyframes ondular" not in css
+
+
 def test_marca_leva_ao_topo_pelo_hero_e_nao_pelo_cabecalho_grudado():
     html = (RAIZ / "web/index.html").read_text()
     css = (RAIZ / "web/assets/styles.css").read_text()
