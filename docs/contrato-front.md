@@ -244,6 +244,10 @@ visita inteira se um rótulo fugir disso, então
 mudar a normalização exige mudar a migration e `tests/web/origem_da_visita_test.ts` juntos. A
 função não lê nem grava armazenamento. Detalhe e leitura no [relatório](metricas.md).
 
+Os cabeçalhos de resposta do site vivem em `web/_headers` e são decisão de publicação: o que cada
+um protege, o que ficou de fora e como conferir depois do deploy estão no
+[guia](guia-publicacao-e-piloto.md), seção 4.
+
 Não alterar schema pelo painel nem ampliar grants para contornar um erro do frontend.
 Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
 
@@ -478,7 +482,19 @@ ou desligar o bloqueador, e a mensagem de configuração voltou a valer só para
 Medimos a alternativa de servir o arquivo do próprio domínio, que o Workers já faria: são 218.610
 bytes (54 KiB em gzip) sobre os 364 KiB do `web/`, a versão passaria a subir à mão com o arquivo
 baixado e conferido no lugar da linha única do `index.html` que
-`test_cliente_supabase_tem_versao_fixa` prende, e a troca de origem do script mexeria no que a
-branch `fix/acessibilidade-e-cabecalhos` está definindo nos cabeçalhos. Por isso ficou o CDN.
+`test_cliente_supabase_tem_versao_fixa` prende, e a troca de origem do script mexeria no que os
+cabeçalhos de segurança do `web/_headers` definem. Por isso ficou o CDN.
 Limite aceito: sem o CDN o cadastro e o login continuam impossíveis; o que muda é a mensagem dizer
 o que a pessoa pode fazer.
+### Cada grupo de opção do cadastro anuncia a própria pergunta (08/10/2026).
+
+"Modalidade preferida" e "Áreas de interesse" tinham o rótulo num `<span>` solto, sem `fieldset`,
+sem `legend` e sem `role` com `aria-labelledby`. O grupo mais próximo de cada opção era o
+`<fieldset>` da etapa, então o leitor de tela anunciava "Onde as vagas devem chegar?" e a pessoa
+ouvia "Remoto, botão de opção, 1 de 4" sem nunca ouvir a pergunta. Os dois passaram a usar o padrão
+que o `#campo-pcd` já tinha: o `<span>` do rótulo ganhou `id` e o `.option-grid` ganhou
+`aria-labelledby` apontando para ele, com `role="radiogroup"` nos rádios da modalidade e
+`role="group"` nas caixas das áreas, que não são rádios. O `<small>` das áreas ficou fora do nome e
+sem `aria-describedby`: ele explica a consequência da escolha, não a pergunta. O teste calcula o
+nome acessível a partir do grupo mais próximo da opção, de modo que o rótulo da etapa não passe por
+nome do grupo; grupo de opção novo no cadastro precisa de `role` e rótulo próprios.
