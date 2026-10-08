@@ -21,6 +21,13 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Esconder o perfil do log
+        run: |
+          perfil=$(jq -r '.inputs.perfil // ""' "$GITHUB_EVENT_PATH")
+          if [ -n "$perfil" ]; then
+            echo "::add-mask::$perfil"
+          fi
+
       - name: Baixar o repositório
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -38,13 +45,13 @@ jobs:
       - name: Executar o radar
         timeout-minutes: 28
         run: |
-          if [ -n "$PERFIL" ]; then
-            uv run --no-dev python -m radar rodar --perfil "$PERFIL"
+          perfil=$(jq -r '.inputs.perfil // ""' "$GITHUB_EVENT_PATH")
+          if [ -n "$perfil" ]; then
+            uv run --no-dev python -m radar rodar --perfil "$perfil"
           else
             uv run --no-dev python -m radar rodar
           fi
         env:
-          PERFIL: ${{ inputs.perfil }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

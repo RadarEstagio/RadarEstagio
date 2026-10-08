@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import Usuario
 from radar.domain.ports import Repositorio
 
@@ -15,7 +16,10 @@ def usuarios_a_atender(
         return ativos
     pendentes = repositorio.entregas_imediatas_pendentes(apenas_o_perfil)
     if apenas_o_perfil not in pendentes:
-        logger.warning("perfil %s já atendido, inativo ou sem Telegram vinculado", apenas_o_perfil)
+        logger.warning(
+            "perfil %s já atendido, inativo ou sem Telegram vinculado",
+            trecho_do_id(apenas_o_perfil),
+        )
     return [usuario for usuario in repositorio.listar_ativos() if usuario.id in pendentes]
 
 
@@ -35,7 +39,8 @@ class RepositorioDaEntregaImediata(RepositorioDosAtendidos):
     def pode_entregar(self, usuario: Usuario) -> bool:
         if usuario.id not in self._repositorio.entregas_imediatas_pendentes(usuario.id):
             logger.warning(
-                "perfil %s deixou de ter entrega imediata pendente durante a execução", usuario.id
+                "perfil %s deixou de ter entrega imediata pendente durante a execução",
+                trecho_do_id(usuario.id),
             )
             return False
         return self._repositorio.pode_entregar(usuario)

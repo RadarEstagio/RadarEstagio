@@ -38,6 +38,7 @@ from radar.cota import (
     reserva_do_diario,
     uso_da_adzuna,
 )
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
@@ -64,6 +65,7 @@ from radar.storage.factory import (
     abrir_repositorio_de_metricas,
     abrir_repositorio_em_memoria,
 )
+from radar.storage.postgres import LIMITE_DO_PLANO_EM_BYTES
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
@@ -288,7 +290,9 @@ def executar_fluxo(
         ativos = repositorio.listar_ativos()
         usuarios_da_coleta = usuarios_a_atender(repositorio, ativos, apenas_o_perfil)
         if apenas_o_perfil is not None and not usuarios_da_coleta:
-            print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
+            print(
+                f"Perfil {trecho_do_id(apenas_o_perfil)} sem entrega a fazer; coleta não executada"
+            )
             return
         reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
         cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
@@ -358,6 +362,8 @@ def executar_fluxo(
             adzuna_esgotada=cota.esgotada,
             coletas_incompletas=coletor.incompletas,
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
+            banco_em_bytes=tamanho_do_banco_para_o_resumo(repositorio),
+            banco_limite=LIMITE_DO_PLANO_EM_BYTES,
             usuarios_sem_mensagem_por_falha=resumo.usuarios_sem_mensagem_por_falha,
             mensagens_seguradas_por_falta_de_extracao=(
                 resumo.mensagens_seguradas_por_falta_de_extracao
@@ -391,6 +397,14 @@ def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | N
         return repositorio.eventos_do_site_nas_ultimas_24_horas()
     except ErroDeArmazenamento as erro:
         logger.warning("Eventos do site não puderam ser lidos para o resumo: %s", erro)
+        return None
+
+
+def tamanho_do_banco_para_o_resumo(repositorio: Repositorio) -> int | None:
+    try:
+        return repositorio.tamanho_do_banco()
+    except ErroDeArmazenamento as erro:
+        logger.warning("Tamanho do banco não pôde ser lido para o resumo: %s", erro)
         return None
 
 

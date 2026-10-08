@@ -230,7 +230,11 @@ aceita em evento web (`0023`).
 
 A `landing_visualizada` leva `pagina` (20 caracteres), `host` (30) e, quando existem,
 `referrer_dominio` (36), `utm_source` (20), `utm_medium` (16) e `utm_campaign` (20) (`0032`); o
-banco recusa qualquer outra chave nesse evento. `propriedadesDaVisita` só envia o hostname do
+banco recusa qualquer outra chave nesse evento. Desde a `0034` (08/10/2026) o banco também cobra
+o formato da `pagina`, que era a única da lista sem regra: texto que comece por `/`, com no
+máximo 20 caracteres, em `[A-Za-z0-9._:/-]`. É o `pathname` do navegador cortado em 20, então
+maiúscula e `:` passam e o corte do `app.js` deixou de ser a única barreira; mudar o corte ou
+deixar de cortar exige mudar a migration junto. `propriedadesDaVisita` só envia o hostname do
 `document.referrer`, sem `www`, sem o do próprio site (com ou sem `www` nos dois lados) e nunca
 com caminho ou query, e normaliza os rótulos (minúsculas, `[a-z0-9._-]`): o check recusa a
 visita inteira se um rótulo fugir disso, então
