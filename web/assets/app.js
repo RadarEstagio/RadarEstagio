@@ -14,17 +14,20 @@ botaoDoTema.addEventListener("click", () => {
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const ROLAGEM_MINIMA_ATE_CHAT = 90;
+const heroLadoALado = window.matchMedia?.("(min-width: 981px)").matches;
 
 if (demonstracaoDoChat && !reduzirMovimento) {
   const reproduzirChatAoRolar = () => {
     const limitesDoChat = demonstracaoDoChat.getBoundingClientRect();
     const chatEntrouNaAreaUtil = limitesDoChat.top <= window.innerHeight * 0.82 && limitesDoChat.bottom >= 0;
-    if (window.scrollY < ROLAGEM_MINIMA_ATE_CHAT || !chatEntrouNaAreaUtil) return;
+    if (!heroLadoALado && window.scrollY < ROLAGEM_MINIMA_ATE_CHAT) return;
+    if (!chatEntrouNaAreaUtil) return;
     demonstracaoDoChat.classList.remove("is-waiting");
     demonstracaoDoChat.classList.add("is-playing");
     window.removeEventListener("scroll", reproduzirChatAoRolar);
   };
   window.addEventListener("scroll", reproduzirChatAoRolar, { passive: true });
+  reproduzirChatAoRolar();
 } else if (demonstracaoDoChat) {
   demonstracaoDoChat.classList.remove("is-waiting");
   demonstracaoDoChat.classList.add("is-playing");
@@ -158,6 +161,7 @@ const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
 const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
+let cursosDaAreaEscolhida = null;
 
 function ativarSecaoDaConta(linkAtivo) {
   accountNavLinks.forEach((link) => {
@@ -236,6 +240,21 @@ async function carregarAreas() {
     if (resposta.ok) catalogoDeAreas = await resposta.json();
   } catch {}
   return catalogoDeAreas;
+}
+
+const COPIAS_DA_FAIXA_DE_AREAS = 6;
+const trilhaDeAreas = document.querySelector("[data-areas-track]");
+
+if (trilhaDeAreas) {
+  const areasDaFaixa = [...trilhaDeAreas.children];
+  for (let copia = 1; copia < COPIAS_DA_FAIXA_DE_AREAS; copia += 1) {
+    for (const area of areasDaFaixa) {
+      const repetida = area.cloneNode(true);
+      repetida.setAttribute("aria-hidden", "true");
+      repetida.querySelector("button").tabIndex = -1;
+      trilhaDeAreas.append(repetida);
+    }
+  }
 }
 
 async function carregarCursos() {
@@ -1644,8 +1663,29 @@ chamadasDeLogin.forEach((button) => {
   });
 });
 
+async function abrirCadastroPelaArea(nomeDaArea) {
+  if (!usuarioAutenticado) void registerEvent("cta_cadastro_aberto", { origem: "faixa_de_areas" });
+  const catalogo = await carregarAreas();
+  const area = catalogo?.areas.find((candidata) => candidata.nome === nomeDaArea);
+  cursosDaAreaEscolhida = area?.cursos_sugeridos.map((nome) => ({ nome, busca: textoDeBusca(nome) })) ?? null;
+  await openSignup();
+  if (!dialog.open || currentStep !== PASSO_MOMENTO || campoDeCurso.value.trim() || !cursosDaAreaEscolhida) return;
+  if (cursosDaAreaEscolhida.length === 1) {
+    campoDeCurso.value = cursosDaAreaEscolhida[0].nome;
+    campoDeCurso.dispatchEvent(new Event("change", { bubbles: true }));
+    return;
+  }
+  botaoDeCursos.click();
+}
+
+trilhaDeAreas?.addEventListener("click", (event) => {
+  const botao = event.target.closest("[data-area]");
+  if (botao) void abrirCadastroPelaArea(botao.dataset.area);
+});
+
 chamadasDeCadastro.forEach((button) => {
   button.addEventListener("click", () => {
+    cursosDaAreaEscolhida = null;
     if (!usuarioAutenticado) {
       void registerEvent("cta_cadastro_aberto", {
         origem: button.dataset.eventOrigin ?? "desconhecida",
@@ -1864,7 +1904,8 @@ ligarListaDeOpcoes({
   botao: botaoDeCursos,
   lista: listaDeCursos,
   carregar: carregarCursos,
-  sugestoes: (texto) => opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
+  sugestoes: (texto) =>
+    (!textoDeBusca(texto) && cursosDaAreaEscolhida) || opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
   valorDaLista: cursoDaLista,
   conteudoDaOpcao: (curso) => [curso.nome],
   semResultado: "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.",

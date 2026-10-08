@@ -62,13 +62,34 @@ def test_demo_do_chat_aguarda_rolagem_enquanto_exibe_digitacao():
     assert 'class="hero-demo is-waiting"' in html
     assert ".hero-demo.is-waiting .chat-typing { opacity: 1; }" in css
     assert "const ROLAGEM_MINIMA_ATE_CHAT = 90;" in javascript
-    assert "window.scrollY < ROLAGEM_MINIMA_ATE_CHAT" in javascript
+    assert "if (!heroLadoALado && window.scrollY < ROLAGEM_MINIMA_ATE_CHAT) return;" in javascript
+
+
+def test_hero_poe_o_titulo_a_esquerda_e_o_chat_a_direita_na_tela_larga():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    tela_larga = css[css.index("@media (min-width: 981px) {") :]
+    tela_larga = tela_larga[: tela_larga.index("\n}\n")]
+
+    assert "grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr)" in tela_larga
+    assert "text-align: left;" in tela_larga
+    assert ".hero-demo { justify-self: end;" in tela_larga
+    assert 'window.matchMedia?.("(min-width: 981px)")' in javascript
 
 
 def test_hero_da_landing_nao_tem_halo_verde_ao_fundo():
     css = (RAIZ / "web/assets/styles.css").read_text()
 
     assert ".hero > .hero-grid { background: none; animation: none; }" in css
+
+
+def test_chat_do_hero_nao_tem_ondas_animadas_ao_fundo():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+
+    assert "orbit" not in html
+    assert "orbit" not in css
+    assert "@keyframes ondular" not in css
 
 
 def test_marca_leva_ao_topo_pelo_hero_e_nao_pelo_cabecalho_grudado():
@@ -314,16 +335,30 @@ SELO_DA_ADZUNA = (
 )
 
 
-def test_site_nao_cita_a_gupy_e_a_faixa_de_fontes_volta_sem_ela():
+def test_site_nao_cita_a_gupy():
     html = (RAIZ / "web/index.html").read_text()
-    faixa = html[html.index('class="proof-strip"') :]
-    faixa = faixa[: faixa.index("</section>")]
 
     assert "gupy" not in html.lower()
-    assert "Fontes e tecnologias do Radar" in faixa
-    assert "<span>ADZUNA</span><span>GEMINI</span><span>TELEGRAM</span>" in faixa
     assert "Gupy" not in (RAIZ / "web/privacidade.html").read_text()
     assert "Gupy" not in (RAIZ / "docs/politica-de-privacidade.md").read_text()
+
+
+def test_faixa_abaixo_do_hero_mostra_as_areas_e_nao_marcas():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    faixa = html[html.index('class="areas-strip"') :]
+    faixa = faixa[: faixa.index("</section>")]
+
+    assert "proof-strip" not in html
+    assert "O Radar atende estudantes de todas estas áreas" in faixa
+    assert "<span>ADZUNA</span>" not in faixa
+    assert "<span>GEMINI</span>" not in faixa
+    assert (
+        "min-height: calc(100svh - var(--altura-do-cabecalho) - var(--espaco-da-frase-das-areas))"
+        in css
+    )
+    reduzida = css[css.index("@media (prefers-reduced-motion: reduce)") :]
+    assert ".areas-track { animation: none !important;" in reduzida
 
 
 def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():

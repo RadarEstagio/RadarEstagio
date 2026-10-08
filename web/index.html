@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20260913-excluir-sem-perfil" />
+    <link rel="stylesheet" href="assets/styles.css?v=20261007-faixa-de-areas" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20260916-tema-do-sistema" defer></script>
+    <script src="assets/app.js?v=20261007-cadastro-pela-area" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -75,8 +75,6 @@
           </div>
 
           <div class="hero-demo is-waiting" data-chat-demo role="group" aria-label="Simulação de recomendações chegando no Telegram">
-            <div class="orbit orbit-one" aria-hidden="true"></div>
-            <div class="orbit orbit-two" aria-hidden="true"></div>
             <div class="telegram-chat">
               <header class="chat-header">
                 <div class="bot-avatar"><span class="radar-mark radar-mark-small" aria-hidden="true"><i></i></span></div>
@@ -121,10 +119,23 @@
         </div>
       </section>
 
-      <section class="proof-strip" aria-label="Fontes e ferramentas do Radar">
-        <div class="container proof-inner">
-          <p><strong>Fontes e tecnologias do Radar</strong></p>
-          <div class="proof-items"><span>ADZUNA</span><span>GEMINI</span><span>TELEGRAM</span></div>
+      <section class="areas-strip" aria-labelledby="areas-strip-title">
+        <p class="areas-strip-title" id="areas-strip-title">O Radar atende estudantes de todas estas áreas</p>
+        <div class="areas-marquee">
+          <ul class="areas-track" data-areas-track>
+            <li><button class="area-button" type="button" data-area="computacao"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg></span><span class="area-name">Computação</span></button></li>
+            <li><button class="area-button" type="button" data-area="direito"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg></span><span class="area-name">Direito</span></button></li>
+            <li><button class="area-button" type="button" data-area="administracao"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span><span class="area-name">Administração</span></button></li>
+            <li><button class="area-button" type="button" data-area="financas"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg></span><span class="area-name">Finanças</span></button></li>
+            <li><button class="area-button" type="button" data-area="marketing"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span><span class="area-name">Marketing</span></button></li>
+            <li><button class="area-button" type="button" data-area="pessoas"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="area-name">Recursos humanos</span></button></li>
+            <li><button class="area-button" type="button" data-area="comercial"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span><span class="area-name">Comercial</span></button></li>
+            <li><button class="area-button" type="button" data-area="logistica"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></span><span class="area-name">Logística</span></button></li>
+            <li><button class="area-button" type="button" data-area="engenharias"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/></svg></span><span class="area-name">Engenharias</span></button></li>
+            <li><button class="area-button" type="button" data-area="saude"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg></span><span class="area-name">Saúde</span></button></li>
+            <li><button class="area-button" type="button" data-area="educacao"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M22 10v6"/><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span><span class="area-name">Educação</span></button></li>
+            <li><button class="area-button" type="button" data-area="turismo"><span class="area-tile"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span><span class="area-name">Turismo</span></button></li>
+          </ul>
         </div>
       </section>
 
