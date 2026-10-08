@@ -11,6 +11,7 @@ const pausada = "00000000-0000-4000-8000-000000000005";
 const sessaoDaExcluida = "00000000-0000-4000-8000-00000000000a";
 const sessaoDeQuemFica = "00000000-0000-4000-8000-00000000000b";
 const sessaoDividida = "00000000-0000-4000-8000-00000000000c";
+const sessaoDeVisitante = "00000000-0000-4000-8000-00000000000d";
 
 async function consulta(nome: string): Promise<string> {
   const fonte = await Deno.readTextFile(new URL("../../radar/storage/postgres.py", import.meta.url));
@@ -93,7 +94,17 @@ async function perfilDe(db: PGlite, id: string): Promise<string> {
     .id;
 }
 
+async function sessaoDoCadastroDe(db: PGlite, id: string, sessao: string): Promise<void> {
+  await db.query(
+    `update eventos_produto set sessao_id = $2
+     where user_id = $1 and origem = 'banco'
+       and nome in ('conta_criada', 'email_confirmado', 'perfil_salvo') and sessao_id is null`,
+    [id, sessao],
+  );
+}
+
 async function historicoDa(db: PGlite, id: string, sessao: string): Promise<void> {
+  await sessaoDoCadastroDe(db, id, sessao);
   const perfil = await perfilDe(db, id);
   const vaga = (await db.query<{ id: number }>("select id from vagas limit 1")).rows[0].id;
   await db.query(
@@ -217,7 +228,7 @@ Deno.test("conta ativa e conta pausada não são tocadas pelo apagamento", async
   }
 });
 
-Deno.test("o navegador dividido perde os eventos sem dono, não os de quem fica", async () => {
+Deno.test("o navegador dividido com outra conta mantém os eventos sem dono", async () => {
   const db = await banco();
   try {
     await conta(db, vencida);
@@ -233,10 +244,32 @@ Deno.test("o navegador dividido perde os eventos sem dono, não os de quem fica"
 
     assert.equal(await apagarContasExcluidas(db, 60), 1);
 
-    assert.equal(await anonimosDa(db, sessaoDividida), 0);
+    assert.equal(await anonimosDa(db, sessaoDividida), 2);
     assert.equal(await eventosDa(db, ativa), daAtiva);
     assert.equal(await anonimosDa(db, sessaoDeQuemFica), 1);
     assert.equal(await eventosDa(db, naCarencia), daCarencia);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a conta excluída não leva os eventos anônimos de uma sessão alheia", async () => {
+  const db = await banco();
+  try {
+    await conta(db, vencida);
+    await historicoDa(db, vencida, sessaoDaExcluida);
+    await db.query(
+      `insert into eventos_produto(nome, origem, sessao_id, user_id) values
+         ('landing_visualizada', 'web', $1, null),
+         ('cta_cadastro_aberto', 'web', $1, $2)`,
+      [sessaoDeVisitante, vencida],
+    );
+    await excluidaHaMaisDe(db, vencida, 61);
+
+    assert.equal(await apagarContasExcluidas(db, 60), 1);
+
+    assert.equal(await anonimosDa(db, sessaoDeVisitante), 1);
+    assert.equal(await anonimosDa(db, sessaoDaExcluida), 0);
   } finally {
     await db.close();
   }

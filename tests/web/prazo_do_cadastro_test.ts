@@ -165,6 +165,30 @@ Deno.test("conta sem confirmar 30 dias depois do último link some com o cadastr
   }
 });
 
+Deno.test("a conta não confirmada não leva os eventos anônimos da sessão de outra conta", async () => {
+  const db = await banco();
+  try {
+    await contaCriadaHa(db, semConfirmar, 31, sessaoDeQuemFica);
+    await contaCriadaHa(db, confirmada, 90, sessaoDeQuemFica);
+    await db.query("update auth.users set email_confirmed_at = now() - interval '89 days' where id = $1", [
+      confirmada,
+    ]);
+    await db.query(
+      "insert into eventos_produto(nome, origem, sessao_id) values ('landing_visualizada', 'web', $1)",
+      [sessaoDeQuemFica],
+    );
+
+    const apagadas = await db.query(await consulta("SQL_APAGAR_CONTAS_NAO_CONFIRMADAS"), [30]);
+
+    assert.equal(apagadas.affectedRows, 1);
+    assert.equal(await contar(db, "auth.users where id = $1", [semConfirmar]), 0);
+    assert.equal(await contar(db, "perfis where user_id = $1", [confirmada]), 1);
+    assert.equal(await anonimosDa(db, sessaoDeQuemFica), 1);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("conta sem confirmar que já tem perfil não é apagada pelo prazo do cadastro", async () => {
   const db = await banco();
   try {

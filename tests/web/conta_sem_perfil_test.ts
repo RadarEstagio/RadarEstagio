@@ -9,6 +9,34 @@ const outraSemPerfil = "00000000-0000-4000-8000-000000000002";
 const comPerfil = "00000000-0000-4000-8000-000000000003";
 const sessaoDaConta = "00000000-0000-4000-8000-00000000000a";
 const sessaoDaOutraConta = "00000000-0000-4000-8000-00000000000b";
+const sessaoDeVisitante = "00000000-0000-4000-8000-00000000000c";
+
+function cadastro(sessao: string) {
+  return {
+    perfil: {
+      curso: "Direito",
+      periodo: 3,
+      habilidades: ["Contratos"],
+      cidade: "Rio de Janeiro, RJ",
+      modalidade: "presencial",
+      areas_de_interesse: [],
+    },
+    aceitou_termos: true,
+    aceita_emails: false,
+    versao_dos_termos: "2026-09-05",
+    sessao_id: sessao,
+  };
+}
+
+async function confirmadaSemPerfil(db: PGlite, id: string, sessao: string): Promise<void> {
+  await db.query(
+    `insert into auth.users(id, email, raw_user_meta_data, confirmation_sent_at)
+     values ($1, $2, $3, now() - interval '10 minutes')`,
+    [id, `${id}@x.com`, { cadastro_radar: cadastro(sessao) }],
+  );
+  await db.query("update auth.users set confirmation_sent_at = now() where id = $1", [id]);
+  await db.query("update auth.users set email_confirmed_at = now() where id = $1", [id]);
+}
 
 async function banco(): Promise<PGlite> {
   const db = new PGlite();
@@ -37,10 +65,11 @@ async function banco(): Promise<PGlite> {
     if (entrada.name.endsWith(".sql")) nomes.push(entrada.name);
   }
   for (const nome of nomes.sort()) await db.exec(await Deno.readTextFile(new URL(nome, MIGRACOES)));
+  await confirmadaSemPerfil(db, semPerfil, sessaoDaConta);
+  await confirmadaSemPerfil(db, outraSemPerfil, sessaoDaOutraConta);
   await db.query(
-    `insert into auth.users(id, email, email_confirmed_at) values
-       ($1, 'sem-perfil@x.com', now()), ($2, 'outra@x.com', now()), ($3, 'com-perfil@x.com', now())`,
-    [semPerfil, outraSemPerfil, comPerfil],
+    "insert into auth.users(id, email, email_confirmed_at) values ($1, 'com-perfil@x.com', now())",
+    [comPerfil],
   );
   await db.query(
     `insert into perfis(user_id, curso, periodo, habilidades, cidade, modalidade)
@@ -52,8 +81,10 @@ async function banco(): Promise<PGlite> {
        ('landing_visualizada', 'web', $1, null),
        ('cta_cadastro_aberto', 'web', $1, $3),
        ('landing_visualizada', 'web', $2, null),
-       ('cta_cadastro_aberto', 'web', $2, $4)`,
-    [sessaoDaConta, sessaoDaOutraConta, semPerfil, outraSemPerfil],
+       ('cta_cadastro_aberto', 'web', $2, $4),
+       ('landing_visualizada', 'web', $5, null),
+       ('cta_cadastro_aberto', 'web', $5, null)`,
+    [sessaoDaConta, sessaoDaOutraConta, semPerfil, outraSemPerfil, sessaoDeVisitante],
   );
   return db;
 }
@@ -61,6 +92,10 @@ async function banco(): Promise<PGlite> {
 async function contar(db: PGlite, deOnde: string, parametros: unknown[] = []): Promise<number> {
   const resultado = await db.query<{ n: number }>(`select count(*)::int n from ${deOnde}`, parametros);
   return resultado.rows[0].n;
+}
+
+async function anonimosDa(db: PGlite, sessao: string): Promise<number> {
+  return await contar(db, "eventos_produto where sessao_id = $1 and user_id is null", [sessao]);
 }
 
 async function comoUsuario<T>(db: PGlite, id: string | null, acao: () => Promise<T>): Promise<T> {
@@ -88,6 +123,44 @@ Deno.test("conta confirmada sem perfil é apagada na hora, com os eventos dela",
       1,
     );
     assert.equal(await contar(db, "auth.users where id = $1", [comPerfil]), 1);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a conta sem perfil não leva os eventos anônimos de uma sessão alheia", async () => {
+  const db = await banco();
+  try {
+    await comoUsuario(db, semPerfil, () =>
+      db.query(
+        "insert into eventos_produto(nome, sessao_id, user_id) values ('landing_visualizada', $1, $2)",
+        [sessaoDeVisitante, semPerfil],
+      ));
+
+    await comoUsuario(db, semPerfil, () => db.exec(`select ${FUNCAO}`));
+
+    assert.equal(await contar(db, "auth.users where id = $1", [semPerfil]), 0);
+    assert.equal(await anonimosDa(db, sessaoDeVisitante), 2);
+    assert.equal(await anonimosDa(db, sessaoDaConta), 0);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a sessão que outra conta também declarou fica com os eventos anônimos", async () => {
+  const db = await banco();
+  try {
+    await db.query(
+      `update eventos_produto set sessao_id = $2
+       where user_id = $1 and origem = 'banco' and nome = 'conta_criada'`,
+      [outraSemPerfil, sessaoDaConta],
+    );
+
+    await comoUsuario(db, semPerfil, () => db.exec(`select ${FUNCAO}`));
+
+    assert.equal(await contar(db, "auth.users where id = $1", [semPerfil]), 0);
+    assert.equal(await anonimosDa(db, sessaoDaConta), 1);
+    assert.ok(await contar(db, "eventos_produto where user_id = $1", [outraSemPerfil]) > 0);
   } finally {
     await db.close();
   }
