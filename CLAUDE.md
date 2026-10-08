@@ -149,6 +149,8 @@ valem ao mexer no `app.js`:
   de dona limpa tudo.
 - **Curso, cidade e habilidade têm o mesmo teto do banco no `maxlength`**, e habilidade digitada
   nunca é separada por vírgula.
+- **Curso que o catálogo não reconhece nunca apaga área salva**, e sair da conta limpa o que a
+  conta desenhou, inclusive o `href` do Telegram, que leva o `token_vinculo`.
 
 ## Regras do projeto (obrigatórias)
 

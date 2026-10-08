@@ -94,6 +94,7 @@ const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.
 const MENSAGEM_ENTREGAS_JA_MUDARAM = "As entregas já tinham mudado em outro lugar. Nada foi alterado; a tela mostra o estado atual.";
 const MENSAGEM_CONTA_INDISPONIVEL = "Não conseguimos carregar sua conta. Confira sua conexão e entre de novo.";
 const MENSAGEM_SESSAO_MUDOU = "Sua sessão mudou. Entre de novo para continuar.";
+const MENSAGEM_CADASTRO_NAO_CARREGOU = "Não conseguimos carregar o cadastro. Recarregue a página; se continuar assim, tente outra rede ou desligue o bloqueador de conteúdo.";
 const COLUNAS_DO_PERFIL = "user_id,curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,pessoa_com_deficiencia,telegram_chat_id,token_vinculo,ativo,motivo_pausa,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos";
 const DIAS_ATE_APAGAR = 60;
 const VERSAO_DOS_TERMOS = "2026-10-05";
@@ -580,7 +581,7 @@ function areasDeInteresseDoFormulario(data) {
   const marcadas = data.getAll("areas");
   if (!catalogoDeAreas) return [...areasSalvas];
   const area = areaDoCurso(data.get("curso") ?? "", catalogoDeAreas);
-  if (!area) return [];
+  if (!area) return [...areasSalvas];
   const permitidas = new Set(area.subareas.map((subarea) => subarea.valor));
   return marcadas.filter((valor) => permitidas.has(valor));
 }
@@ -597,11 +598,13 @@ async function montarHabilidadesDoCurso() {
     || identidade !== identidadeDoFormulario
     || (form.elements.curso?.value ?? "") !== cursoSolicitado
   ) return;
+  const pickerTinhaOFoco = picker.contains(document.activeElement);
   if (!catalogo) {
     picker.replaceChildren();
     aviso.hidden = false;
     avisoDeCursoNaoReconhecido.hidden = true;
     renderSkills();
+    devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
     return;
   }
   aviso.hidden = true;
@@ -617,6 +620,12 @@ async function montarHabilidadesDoCurso() {
     return botao;
   }));
   renderSkills();
+  devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
+}
+
+function devolverOFocoAsHabilidades(picker, pickerTinhaOFoco) {
+  if (!pickerTinhaOFoco || picker.contains(document.activeElement)) return;
+  (picker.querySelector("button") ?? document.querySelector("#custom-skill")).focus();
 }
 
 function avisarCursoNaoReconhecido(curso) {
@@ -646,7 +655,8 @@ const mensagensValidacao = {
 function getClient() {
   if (radarClient) return radarClient;
   const config = window.RADAR_CONFIG;
-  if (!window.supabase?.createClient || !config?.supabaseUrl || !config?.supabasePublishableKey) {
+  if (!window.supabase?.createClient) throw validationError(MENSAGEM_CADASTRO_NAO_CARREGOU);
+  if (!config?.supabaseUrl || !config?.supabasePublishableKey) {
     throw new Error(
       "O cadastro ainda não foi configurado. Informe a chave pública do Supabase em web/config.js.",
     );
@@ -1440,6 +1450,14 @@ function esconderConta() {
   fecharConfirmacao(false);
   accountState.hidden = true;
   saidaSemPerfil.hidden = true;
+}
+
+function esquecerContaMostrada() {
+  contaMostrada = null;
+  document.querySelector("#account-summary").textContent = "";
+  document.querySelector("#account-skills").replaceChildren();
+  document.querySelector("#account-emails").checked = false;
+  telegramLink.removeAttribute("href");
 }
 
 function pedirConfirmacao(acao) {
@@ -2275,6 +2293,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   mostrarChamadaDeConta(false);
   closeSignup();
   limparRascunhoDoCadastro();
+  esquecerContaMostrada();
   resetDialogView();
   setAuthMode("login");
   showStep(PASSO_CONTA);
