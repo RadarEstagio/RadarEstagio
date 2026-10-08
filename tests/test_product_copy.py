@@ -125,7 +125,7 @@ def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
         "não cobre todo o mercado",
         "até sete recomendações",
         "Dias sem vaga podem acontecer",
-        "candidatura continua sendo sua",
+        "a candidatura fica com você",
         "Preciso vincular o Telegram?",
         "Posso pausar ou apagar minha conta?",
     ):
@@ -137,7 +137,7 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
 
     assert "Chegue antes" not in html
     assert "você poderá editar depois" not in html
-    assert "Vagas mais claras" in html
+    assert "Direto no Telegram" in html
 
 
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
