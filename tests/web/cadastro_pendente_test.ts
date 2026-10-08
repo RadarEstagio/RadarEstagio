@@ -152,3 +152,58 @@ Deno.test("conta já confirmada não perde o perfil se o horário do link mudar"
     await db.close();
   }
 });
+
+function cadastroComCampoDeOutraEpoca() {
+  const antigo = cadastro(true);
+  return { ...antigo, perfil: { ...antigo.perfil, cidades_aceitas: ["Rio de Janeiro, RJ"] } };
+}
+
+function cadastroComVersaoImpossivel() {
+  return { ...cadastro(true), versao_dos_termos: "0000-00-00" };
+}
+
+async function pendenteDeixaDeValidar(db: PGlite, cadastroInvalido: unknown) {
+  await db.query("update cadastros_pendentes set cadastro = $2 where user_id = $1", [
+    pessoa,
+    cadastroInvalido,
+  ]);
+  await assert.rejects(() =>
+    db.query(
+      "select validar_cadastro_radar(cadastro) from cadastros_pendentes where user_id = $1",
+      [pessoa],
+    )
+  );
+}
+
+async function confirmadaNoAuth(db: PGlite): Promise<boolean> {
+  return (await db.query<{ confirmada: boolean }>(
+    "select email_confirmed_at is not null confirmada from auth.users where id = $1",
+    [pessoa],
+  )).rows[0].confirmada;
+}
+
+for (
+  const [caso, cadastroInvalido] of [
+    ["campo que a validação não aceita mais", cadastroComCampoDeOutraEpoca()],
+    ["versão dos termos impossível", cadastroComVersaoImpossivel()],
+  ] as const
+) {
+  Deno.test(`pendente com ${caso} não trava a confirmação do e-mail`, async () => {
+    const db = await banco();
+    try {
+      await criarConta(db, true);
+      await pendenteDeixaDeValidar(db, cadastroInvalido);
+
+      await confirmar(db);
+
+      assert.equal(await confirmadaNoAuth(db), true);
+      assert.equal(await contar(db, "cadastros_pendentes"), 0);
+      assert.equal(await contar(db, "perfis"), 0);
+
+      await comoPessoa(db, () => db.query("select concluir_meu_cadastro($1)", [cadastro(null)]));
+      assert.equal(await respostaNoPerfil(db), null);
+    } finally {
+      await db.close();
+    }
+  });
+}
