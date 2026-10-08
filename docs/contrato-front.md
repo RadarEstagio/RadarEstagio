@@ -447,3 +447,13 @@ Política passou a nomear cada endereço, e o jsDelivr entrou na lista de infrae
 Brasil. O carregamento continua igual: mudou só o que o texto declara. Servir as fontes e a
 biblioteca do próprio domínio tiraria esses três endereços do caminho, e fica para quando houver
 motivo além da privacidade, porque hoje o site é publicado sem passo de build.
+
+Dois testes de `tests/test_product_copy.py` seguram o que a auditoria de 07/10 encontrou.
+`test_politica_nomeia_todo_host_que_o_site_contata_ao_carregar` junta os hosts dos `<link>`,
+`<script>`, `<img>` e `<iframe>` das três páginas e das atribuições de `src`, de URL e das
+chamadas de `fetch` do `app.js` e do `config.js`, e exige o nome de cada um nos dois arquivos da
+Política: host novo no site quebra o teste até alguém decidir como declará-lo.
+`test_paginas_legais_repetem_frase_a_frase_o_proprio_markdown` compara os parágrafos do HTML com
+os do Markdown frase a frase, nos Termos e na Política, porque entre 04/10 e 07/10 o HTML da
+Política teve uma frase a mais que o Markdown. A comparação cobre só os parágrafos: os rótulos
+dos itens divergem de propósito, porque no HTML eles são título e no Markdown abrem a frase.
