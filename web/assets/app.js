@@ -261,6 +261,46 @@ if (trilhaDeAreas) {
   }
 }
 
+const VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO = 16;
+const AJUSTE_DA_VELOCIDADE_POR_SEGUNDO = 6;
+const MAIOR_INTERVALO_ENTRE_QUADROS_EM_SEGUNDOS = 0.1;
+let areaApontada = null;
+
+function apontarArea(botao) {
+  if (botao === areaApontada) return;
+  areaApontada?.classList.remove("is-apontada");
+  botao?.classList.add("is-apontada");
+  areaApontada = botao;
+}
+
+if (trilhaDeAreas && !reduzirMovimento) {
+  const faixaVisivel = trilhaDeAreas.parentElement;
+  const primeiraArea = trilhaDeAreas.children[0];
+  const primeiraRepeticao = trilhaDeAreas.children[trilhaDeAreas.children.length / COPIAS_DA_FAIXA_DE_AREAS];
+  let deslocamento = 0;
+  let velocidade = VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO;
+  let instanteAnterior = null;
+
+  faixaVisivel.addEventListener("pointermove", (event) => apontarArea(event.target.closest(".area-button")));
+  faixaVisivel.addEventListener("pointerleave", () => apontarArea(null));
+
+  const avancarFaixa = (instante) => {
+    const segundos = instanteAnterior === null
+      ? 0
+      : Math.min((instante - instanteAnterior) / 1000, MAIOR_INTERVALO_ENTRE_QUADROS_EM_SEGUNDOS);
+    instanteAnterior = instante;
+    const faixaParada = areaApontada || trilhaDeAreas.querySelector(".area-button:focus-visible");
+    const velocidadeDesejada = faixaParada ? 0 : VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO;
+    velocidade += (velocidadeDesejada - velocidade) * Math.min(1, segundos * AJUSTE_DA_VELOCIDADE_POR_SEGUNDO);
+    const larguraDeUmaVolta = primeiraRepeticao.offsetLeft - primeiraArea.offsetLeft;
+    deslocamento += velocidade * segundos;
+    if (larguraDeUmaVolta > 0) deslocamento %= larguraDeUmaVolta;
+    trilhaDeAreas.style.transform = `translate3d(${-deslocamento}px, 0, 0)`;
+    requestAnimationFrame(avancarFaixa);
+  };
+  requestAnimationFrame(avancarFaixa);
+}
+
 async function carregarCursos() {
   const catalogo = await carregarAreas();
   avisoDeCursos.hidden = Boolean(catalogo);
