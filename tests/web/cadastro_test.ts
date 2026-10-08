@@ -93,6 +93,7 @@ function app(
     erroDaSessao = null,
     erroDoPerfil = null,
     armazenado = {},
+    bibliotecaCarregada = true,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -106,6 +107,7 @@ function app(
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
     armazenado?: Record<string, string>;
+    bibliotecaCarregada?: boolean;
   } = {},
 ) {
   const erros: Error[] = [];
@@ -225,7 +227,7 @@ function app(
     telegramBot: "bot",
     turnstileSiteKey: key,
   };
-  w.supabase = { createClient: () => client };
+  if (bibliotecaCarregada) w.supabase = { createClient: () => client };
   w.eval(script);
   return {
     w,
@@ -1380,6 +1382,18 @@ Deno.test("falha de rede ao abrir minha conta leva ao login, não ao começo do 
     assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     assert.match(doc.querySelector("#form-message").textContent, CONTA_INDISPONIVEL);
+  } finally { a.close(); }
+});
+
+Deno.test("supabase-js que não carrega avisa do carregamento, sem culpar a configuração", async () => {
+  const a = app({ bibliotecaCarregada: false });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(mensagem.includes("config.js"), false);
+    assert.equal(mensagem.includes("chave pública"), false);
+    assert.match(mensagem, /Recarregue a página/);
   } finally { a.close(); }
 });
 
