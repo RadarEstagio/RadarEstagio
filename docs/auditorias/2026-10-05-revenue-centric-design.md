@@ -64,7 +64,7 @@ para saber se foi divulgação, a troca de domínio ou a própria equipe.
 | RCD-05 | Valor só depois de três trocas de contexto | Aberto; 3 dos 8 perfis nunca vincularam o Telegram |
 | RCD-06 | Conta sem nada acumulado | Aberto |
 | RCD-07 | Trabalho episódico | Aberto; depende de RCD-01 e RCD-05 |
-| RCD-08 | Promessa maior que a prova | Aberto: "100% automático" e "Vagas que atendem seu perfil" (`web/index.html:72-73`), faixa "ADZUNA GEMINI TELEGRAM" (`:127`), "todos os dias de manhã" (`vinculo.ts:25,32`) |
+| RCD-08 | Promessa maior que a prova | Parcial (07/10): saíram "100% automático" e a faixa "ADZUNA GEMINI TELEGRAM", e o bot já não promete "todos os dias de manhã" (#131); falta "Vagas que atendem seu perfil" (`web/index.html`) |
 | RCD-09 | Bot responde "use o botão do site" a tudo | Aberto (`vinculo.ts:34`) |
 | RCD-10 | ICP difuso | Sem decisão registrada |
 | RCD-11 | Nada diferencia de um alerta gratuito | Aberto |
