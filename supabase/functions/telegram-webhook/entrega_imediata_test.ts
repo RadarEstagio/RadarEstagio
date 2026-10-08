@@ -12,14 +12,26 @@ Deno.test("fora da janela a entrega imediata e liberada", () => {
   assertEquals(dentroDaJanelaDoDiario(new Date("2026-09-05T23:59:00Z")), false);
 });
 
-function disparar(token: string | null, resposta: () => Response): Promise<boolean> {
+interface ChamadaDoDispatch {
+  url: string;
+  opcoes: RequestInit;
+}
+
+function disparar(
+  token: string | null,
+  resposta: () => Response,
+  chamadas: ChamadaDoDispatch[] = [],
+): Promise<boolean> {
   const consolaOriginal = [console.warn, console.error];
   console.warn = () => {};
   console.error = () => {};
   return dispararEntregaImediata(
     "perfil",
     token,
-    (() => Promise.resolve(resposta())) as typeof fetch,
+    ((url: string, opcoes: RequestInit) => {
+      chamadas.push({ url, opcoes });
+      return Promise.resolve(resposta());
+    }) as typeof fetch,
   )
     .finally(() => {
       [console.warn, console.error] = consolaOriginal;
@@ -37,4 +49,21 @@ Deno.test("o disparo diz se saiu: sem token, com recusa do GitHub ou falha de re
     }),
     false,
   );
+});
+
+Deno.test("o disparo pede o diário do repositório da organização só para o perfil vinculado", async () => {
+  const chamadas: ChamadaDoDispatch[] = [];
+
+  assertEquals(await disparar("t", () => new Response(null, { status: 204 }), chamadas), true);
+
+  assertEquals(chamadas.length, 1);
+  assertEquals(
+    chamadas[0].url,
+    "https://api.github.com/repos/RadarEstagio/RadarEstagio/actions/workflows/radar-diario.yml/dispatches",
+  );
+  assertEquals(chamadas[0].opcoes.method, "POST");
+  assertEquals(JSON.parse(String(chamadas[0].opcoes.body)), {
+    ref: "main",
+    inputs: { perfil: "perfil" },
+  });
 });
