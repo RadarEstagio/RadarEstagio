@@ -103,6 +103,10 @@ def test_sem_banco_nao_ha_eventos_do_site_para_o_resumo():
     assert RepositorioEmMemoria([]).eventos_do_site_nas_ultimas_24_horas() is None
 
 
+def test_sem_banco_nao_ha_tamanho_para_o_resumo():
+    assert RepositorioEmMemoria([]).tamanho_do_banco() is None
+
+
 def test_modo_local_nao_tem_historico_de_vagas_sem_extracao():
     repositorio = RepositorioDoModoLocal([])
 

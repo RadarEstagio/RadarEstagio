@@ -64,6 +64,7 @@ from radar.storage.factory import (
     abrir_repositorio_de_metricas,
     abrir_repositorio_em_memoria,
 )
+from radar.storage.postgres import LIMITE_DO_PLANO_EM_BYTES
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
@@ -358,6 +359,8 @@ def executar_fluxo(
             adzuna_esgotada=cota.esgotada,
             coletas_incompletas=coletor.incompletas,
             eventos_do_site=eventos_do_site_para_o_resumo(repositorio),
+            banco_em_bytes=tamanho_do_banco_para_o_resumo(repositorio),
+            banco_limite=LIMITE_DO_PLANO_EM_BYTES,
             usuarios_sem_mensagem_por_falha=resumo.usuarios_sem_mensagem_por_falha,
             mensagens_seguradas_por_falta_de_extracao=(
                 resumo.mensagens_seguradas_por_falta_de_extracao
@@ -391,6 +394,14 @@ def eventos_do_site_para_o_resumo(repositorio: Repositorio) -> EventosDoSite | N
         return repositorio.eventos_do_site_nas_ultimas_24_horas()
     except ErroDeArmazenamento as erro:
         logger.warning("Eventos do site não puderam ser lidos para o resumo: %s", erro)
+        return None
+
+
+def tamanho_do_banco_para_o_resumo(repositorio: Repositorio) -> int | None:
+    try:
+        return repositorio.tamanho_do_banco()
+    except ErroDeArmazenamento as erro:
+        logger.warning("Tamanho do banco não pôde ser lido para o resumo: %s", erro)
         return None
 
 

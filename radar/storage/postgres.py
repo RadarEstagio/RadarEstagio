@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 RECUSAS_POR_AREA_PARA_DESCONTAR = 2
 MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS = 3
 ESPACO_DA_TRAVA_DE_ATENDIMENTO = 4242
+LIMITE_DO_PLANO_EM_BYTES = 500 * 1024 * 1024
 FALHAS_AO_GRAVAR_TEXTO = (psycopg.Error, UnicodeEncodeError)
 FALHAS_AO_LER_O_PERFIL = (TypeError, ValueError)
 CARACTERES_DO_TRECHO_DO_ID = 8
@@ -360,6 +361,10 @@ SQL_EVENTOS_DO_SITE_NAS_ULTIMAS_24_HORAS = """
            )::int as horas_no_teto
     from eventos_do_site_por_hora
     where hora > date_trunc('hour', now(), 'UTC') - interval '24 hours'
+"""
+
+SQL_TAMANHO_DO_BANCO = """
+    select pg_database_size(current_database()) as em_bytes
 """
 
 SQL_FUNIL_DA_COORTE = Path(__file__).with_name("metricas.sql").read_text()
@@ -702,6 +707,15 @@ class RepositorioPostgres:
                 f"Falha ao ler os eventos do site: {descrever(erro)}"
             ) from erro
         return EventosDoSite(**linha)
+
+    def tamanho_do_banco(self) -> int:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(SQL_TAMANHO_DO_BANCO).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler o tamanho do banco: {descrever(erro)}"
+            ) from erro
 
     def fonte_tem_registro_no_dia(self, fonte: str, dia: date) -> bool:
         try:
