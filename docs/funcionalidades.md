@@ -27,7 +27,8 @@ na fonte; não há promessa de contratação ou cobertura de todos os anúncios.
 O cartão é um exemplo fictício identificado como ilustrativo, com nota, requisitos a
 conferir e diferenciais que a vaga cita. “Publicada hoje” é texto estático desse exemplo, escolhido na revisão de 08/09
 para evitar data fixa envelhecida; não é data de anúncio real nem consulta dinâmica.
-Marcas identificam fontes e tecnologias, não parceiros. A FAQ usa `details/summary` nativo
+Abaixo do hero, uma faixa mostra as 12 áreas do catálogo como ícones; clicar numa abre o
+cadastro com os cursos dela. A landing não exibe marcas de empresas. A FAQ usa `details/summary` nativo
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
 Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. O

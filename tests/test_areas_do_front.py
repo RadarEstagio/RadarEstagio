@@ -1,13 +1,23 @@
 import json
+import re
 from pathlib import Path
 
 from radar.domain.areas import AREAS, area_do_curso, catalogo_do_site, normalizar_curso
 
 ARQUIVO = Path(__file__).parent.parent / "web/assets/areas.json"
+LANDING = Path(__file__).parent.parent / "web/index.html"
 
 
 def test_o_catalogo_do_site_e_o_mesmo_do_backend():
     assert json.loads(ARQUIVO.read_text()) == catalogo_do_site()
+
+
+def test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo():
+    html = LANDING.read_text()
+    faixa = html[html.index("data-areas-track") :]
+    faixa = faixa[: faixa.index("</ul>")]
+
+    assert re.findall(r'data-area="([a-z_]+)"', faixa) == [area.nome for area in AREAS]
 
 
 def test_a_normalizacao_de_cursos_do_site_bate_com_o_backend():

@@ -87,6 +87,7 @@ function app(
     referrer = "",
     key = "",
     temaDoSistema = "claro",
+    telaLarga = false,
     armazenamentoBloqueado = false,
     erroDaSessao = null,
     erroDoPerfil = null,
@@ -98,6 +99,7 @@ function app(
     referrer?: string;
     key?: string;
     temaDoSistema?: "claro" | "escuro";
+    telaLarga?: boolean;
     armazenamentoBloqueado?: boolean;
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
@@ -116,7 +118,8 @@ function app(
     beforeParse: (janela: TestWindow) => {
       Object.defineProperty(janela, "matchMedia", {
         value: (consulta: string) => ({
-          matches: consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro",
+          matches: (consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro") ||
+            (consulta === "(min-width: 981px)" && telaLarga),
           media: consulta,
         }),
       });
@@ -264,6 +267,32 @@ Deno.test("demonstração do Telegram anima a chegada de duas vagas", async () =
     assert.ok(demo.querySelector(".chat-feedback"));
     assert.equal(demo.querySelector(".chat-composer-field").textContent.trim(), "Mensagem");
     assert.equal(demo.querySelectorAll(".chat-composer-icon").length, 2);
+  } finally { a.close(); }
+});
+
+Deno.test("na tela larga, o chat ao lado do título anima sem esperar a rolagem", async () => {
+  const a = app({ telaLarga: true });
+  try {
+    await settle();
+    const demo = a.w.document.querySelector("[data-chat-demo]");
+    assert.equal(a.w.scrollY, 0);
+    assert.equal(demo.classList.contains("is-waiting"), false);
+    assert.equal(demo.classList.contains("is-playing"), true);
+  } finally { a.close(); }
+});
+
+Deno.test("faixa abaixo do hero mostra cada área do catálogo uma vez para o leitor de tela", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const nomesDoCatalogo = areasJson.areas.map((area: { nome: string }) => area.nome);
+    const acessiveis = [...doc.querySelectorAll(".areas-track li:not([aria-hidden]) [data-area]")];
+    const copias = [...doc.querySelectorAll('.areas-track li[aria-hidden="true"] [data-area]')];
+    assert.deepEqual(acessiveis.map((botao) => botao.dataset.area), nomesDoCatalogo);
+    assert.equal(acessiveis.every((botao) => botao.querySelector(".area-name").textContent.trim()), true);
+    assert.equal(copias.length, nomesDoCatalogo.length * 5);
+    assert.equal(copias.every((botao) => botao.tabIndex === -1), true);
   } finally { a.close(); }
 });
 
@@ -3883,6 +3912,56 @@ Deno.test("curso sugere os cursos do catálogo conforme a pessoa digita, sem exi
   } finally {
     a.close();
   }
+});
+
+function clicarNaArea(a: ReturnType<typeof app>, area: string) {
+  a.w.document.querySelector(`.areas-track li:not([aria-hidden]) [data-area="${area}"]`).click();
+}
+
+Deno.test("clicar numa área da faixa abre o cadastro com os cursos daquela área", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "saude");
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#curso").value, "");
+    assert.deepEqual(cursosNaLista(a), ["Enfermagem", "Fisioterapia", "Nutrição", "Farmácia", "Educação Física"]);
+    assert.equal(
+      a.calls.some(([name, , payload]) =>
+        name === "insert" && (payload as Payload)?.nome === "cta_cadastro_aberto" &&
+        ((payload as Payload).propriedades as Payload)?.origem === "faixa_de_areas"
+      ),
+      true,
+    );
+    assert.deepEqual(await digitarCurso(a, "direito"), ["Direito"]);
+  } finally { a.close(); }
+});
+
+Deno.test("área com um único curso já preenche o curso no cadastro", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "direito");
+    await settle();
+    assert.equal(a.w.document.querySelector("#curso").value, "Direito");
+  } finally { a.close(); }
+});
+
+Deno.test("abrir o cadastro pelo hero depois de uma área volta a mostrar todos os cursos", async () => {
+  const a = app();
+  try {
+    await settle();
+    clicarNaArea(a, "saude");
+    await settle();
+    a.w.document.querySelector("#close-dialog").click();
+    a.w.document.querySelector('[data-event-origin="hero"]').click();
+    await settle();
+    a.w.document.querySelector("#mostrar-cursos").click();
+    await settle();
+    assert.deepEqual([...cursosNaLista(a)].sort(), [...cursosDoCatalogo].sort());
+  } finally { a.close(); }
 });
 
 Deno.test("setinha abre todos os cursos do catálogo e o clique preenche o curso", async () => {
