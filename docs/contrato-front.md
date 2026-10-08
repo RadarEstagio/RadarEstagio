@@ -433,3 +433,17 @@ chave antes da primeira pintura, então a escolha vale ao recarregar, entre pág
 futuras. Com o armazenamento bloqueado, o site fica no claro e o botão vale só durante a visita.
 A chave tem o mesmo nome da usada até 16/09, então quem escolheu o escuro antes volta a vê-lo.
 A Política diz que a escolha fica no navegador.
+
+### Os endereços que o navegador contata ao abrir uma página (08/10/2026).
+
+A Política nomeava Supabase, Telegram, Resend, GitHub Actions, Adzuna e Cloudflare, e o Google
+só como Gemini, mas toda abertura de página manda endereço IP e informações do navegador para
+quatro endereços que o texto não citava: `fonts.googleapis.com` e `fonts.gstatic.com`, pelo
+`<link>` de fontes que a landing, os Termos e a Privacidade carregam; `cdn.jsdelivr.net`, pelo
+`<script>` da biblioteca do Supabase, só na landing; e `challenges.cloudflare.com`, pelo script
+que o `setupCaptcha()` injeta em cada carregamento da landing, não apenas ao abrir o cadastro.
+Como isso acontece antes de existir conta e também nas próprias páginas legais, a seção 4 da
+Política passou a nomear cada endereço, e o jsDelivr entrou na lista de infraestrutura fora do
+Brasil. O carregamento continua igual: mudou só o que o texto declara. Servir as fontes e a
+biblioteca do próprio domínio tiraria esses três endereços do caminho, e fica para quando houver
+motivo além da privacidade, porque hoje o site é publicado sem passo de build.
