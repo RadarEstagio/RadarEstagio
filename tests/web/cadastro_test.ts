@@ -315,14 +315,14 @@ function deslocamentoDaFaixa(a: ReturnType<typeof app>) {
   return Number(transform.match(/translate3d\((-?[\d.]+)px/)?.[1] ?? 0);
 }
 
-Deno.test("faixa de áreas anda a 25 px por segundo", async () => {
+Deno.test("faixa de áreas anda a 16 px por segundo", async () => {
   const a = app();
   try {
     await settle();
     a.passarQuadros(1);
     const inicio = deslocamentoDaFaixa(a);
     a.passarQuadros(60, 1000 / 60);
-    assert.ok(Math.abs(inicio - deslocamentoDaFaixa(a) - 25) < 0.01);
+    assert.ok(Math.abs(inicio - deslocamentoDaFaixa(a) - 16) < 0.01);
   } finally { a.close(); }
 });
 
