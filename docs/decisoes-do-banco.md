@@ -334,6 +334,61 @@ guardar, e o banco o cobra.
   check não deixa um `utm_source` ter, para os dois nunca se somarem. `utm_medium` e `utm_campaign`
   ficam gravados e ainda sem relatório.
 
+## Grant largo e a pagina sem regra (08/10/2026, `0034`)
+
+Dois achados médios da auditoria de 07/10/2026, resolvidos na mesma migration porque os dois são
+barreira que o banco deveria cobrar e não cobrava.
+
+- **`vagas`, `envios` e `avaliacoes` ficaram com o grant padrão do Supabase.** Todas as outras
+  tabelas receberam `revoke all` explícito; essas três seguiram com `arwdDxtm` para `anon` e
+  `authenticated`, confirmado em produção. A barreira que a [arquitetura](arquitetura.md) descreve
+  — RLS ligada e nenhuma policy — bloqueia `select`, `insert`, `update` e `delete`, mas
+  **`TRUNCATE` é a única operação DML que o PostgreSQL não submete a RLS**, então esse caminho
+  passava. Não havia caminho alcançável, porque o PostgREST não emite `TRUNCATE`, e é essa
+  ausência de uso que permite revogar o grant inteiro em vez de só o `TRUNCATE`. O custo de
+  errar era desproporcional ao de corrigir: perder `envios` apagaria o histórico que evita
+  reenvio, invalidaria os tokens que a `ir` lê e derrubaria o funil. Medido na reprodução: pela
+  chave pública, `truncate envios` e `truncate avaliacoes` passavam; `truncate vagas` já falhava
+  na chave estrangeira, e `cascade` falhava em `eventos_produto`, cujo grant a `0005` tirou.
+- **As sequências `vagas_id_seq`, `avaliacoes_id_seq` e `eventos_produto_id_seq` tinham grant que
+  ninguém usa.** As três colunas são `generated always as identity`, e o `nextval` dessa forma
+  roda por dentro, sem conferir privilégio. A `0005` chegou a conceder `usage, select` na
+  `eventos_produto_id_seq`, por precaução que a coluna dispensa; o teste prova que a visita
+  continua entrando como `anon` depois de a sequência ficar sem grant.
+- **`pagina` era a única propriedade da visita sem regra.** A `0032` fechou `host`,
+  `referrer_dominio`, `utm_source`, `utm_medium` e `utm_campaign` e deixou livre justamente a
+  chave que sempre existe: passavam número, booleano, objeto, lista, `<script>`, caminho com
+  query e texto de 243 caracteres, porque só o envelope de 256 bytes da `0023` segurava. O corte
+  em 20 caracteres existia apenas no JavaScript, enquanto este documento e o
+  [contrato frontend](contrato-front.md) afirmavam que o banco cobrava.
+- **O formato é `^/[A-Za-z0-9._:/-]{0,19}$`**, com tipo, tamanho e conjunto de caracteres no
+  espírito das irmãs. A barra inicial é obrigatória porque o valor é o `pathname` do navegador, e
+  `/` e `:` entram no conjunto porque é caminho, não rótulo: o `metricas.sql` reconhece a sessão
+  local por `(^|/)web/`, `^/(Users|home|private|…)/` e `^/[A-Za-z]:`, e um check que recusasse o
+  caminho de Windows faria a visita inteira ser perdida e a sessão da equipe contar como
+  estudante. Maiúscula continua valendo, porque o site **não** normaliza `pagina` como normaliza
+  os rótulos, e caminho é sensível a caixa: minúscula obrigatória exigiria mexer no `app.js`
+  junto e, até o deploy, derrubaria a visita toda por causa de um campo. O que a lista fechada
+  quer recusar continua recusado: URL com token, e-mail e texto digitado não têm `?`, `=`, `@`,
+  `%`, `#`, `<`, `>` nem espaço no conjunto, e nada começa por `/` sem ser caminho.
+- **Medição em produção (08/10/2026).** 324 visitas entre 31/08 e 08/10, todas com `pagina` e
+  todas em texto. Abaixo de 20 caracteres há três valores distintos — `/` (275), `/index.html`
+  (22) e `/web/index.html` (15), 312 linhas —, todos dentro do formato novo. As outras 12 linhas
+  têm de 40 a 121 caracteres e vêm de páginas abertas do disco em 09/09 e 30/09, antes de o corte
+  de 20 entrar no site em 05/10: **essas 12 violariam a regra nova**, e é por isso que o check é
+  `not valid`, como os da `0023` e da `0032`. Nada atualiza linha de visita, então elas ficam
+  como estão; se um dia alguma for atualizada, o `update` falha e a linha precisa ser corrigida
+  antes. O site publicado hoje não produz valor recusado, porque corta em 20 e os prefixos locais
+  sobrevivem ao corte.
+- **Ordem de publicação.** A `0034` pode ir ao banco antes ou depois do merge, e o certo é antes:
+  ela só tira grant que ninguém usa e acrescenta check `not valid`, nada no site nem no `radar/`
+  depende do que saiu. O job entra como `postgres` pela `DATABASE_URL` e as Edge Functions `ir` e
+  `telegram-webhook` usam a chave de serviço, papéis que a migration não toca; o site só escreve
+  `perfis` e `eventos_produto`. `baixar_meus_dados()` lê `avaliacoes` e `envios`, mas é
+  `security definer`, então segue lendo sem o grant de `authenticated`. Invertendo a ordem nada
+  quebra: até a migration ser aplicada, o banco continua aceitando `pagina` fora de formato e
+  mantendo o grant — o risco segue o de hoje, nem maior nem menor.
+
 ## Contas da equipe fora do funil (proposta de 05/10/2026)
 
 **Proposta, sem migration e sem marca gravada em produção.** A coorte e a aquisição misturam
