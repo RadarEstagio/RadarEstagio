@@ -38,6 +38,7 @@ from radar.cota import (
     reserva_do_diario,
     uso_da_adzuna,
 )
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
@@ -288,7 +289,9 @@ def executar_fluxo(
         ativos = repositorio.listar_ativos()
         usuarios_da_coleta = usuarios_a_atender(repositorio, ativos, apenas_o_perfil)
         if apenas_o_perfil is not None and not usuarios_da_coleta:
-            print(f"Perfil {apenas_o_perfil} sem entrega a fazer; coleta não executada")
+            print(
+                f"Perfil {trecho_do_id(apenas_o_perfil)} sem entrega a fazer; coleta não executada"
+            )
             return
         reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
         cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
