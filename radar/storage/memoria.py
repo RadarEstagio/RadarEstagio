@@ -130,6 +130,9 @@ class RepositorioEmMemoria:
     def eventos_do_site_nas_ultimas_24_horas(self) -> None:
         return None
 
+    def tamanho_do_banco(self) -> None:
+        return None
+
 
 class RepositorioDoModoLocal(RepositorioEmMemoria):
     def registrar_vagas_sem_extracao(
