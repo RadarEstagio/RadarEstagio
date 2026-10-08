@@ -1,3 +1,4 @@
+import html as marcacao_html
 import re
 from pathlib import Path
 
@@ -423,3 +424,96 @@ def test_politica_de_privacidade_diz_a_carencia_da_conta_excluida():
         texto = " ".join((RAIZ / arquivo).read_text().split())
 
         assert f"O prazo de {carencia} dias permite cancelar o pedido" in texto, arquivo
+
+
+DOCUMENTOS_LEGAIS = (
+    ("docs/politica-de-privacidade.md", "web/privacidade.html"),
+    ("docs/termos-de-uso.md", "web/termos.html"),
+)
+
+PAGINAS_DO_SITE = ("web/index.html", "web/privacidade.html", "web/termos.html")
+
+CODIGO_DO_SITE = ("web/assets/app.js", "web/config.js")
+
+FORNECEDOR_DE_CADA_HOST = {
+    "fonts.googleapis.com": "fonts.googleapis.com",
+    "fonts.gstatic.com": "fonts.gstatic.com",
+    "cdn.jsdelivr.net": "cdn.jsdelivr.net",
+    "challenges.cloudflare.com": "challenges.cloudflare.com",
+    "xrhvjwemmylwbqgluebc.supabase.co": "Supabase",
+}
+
+
+def _frases(bloco: str) -> list[str]:
+    texto = " ".join(bloco.split())
+    return [frase for frase in re.split(r"(?<=[.!?])\s+(?=[A-ZÀ-Ý“])", texto) if frase]
+
+
+def _frases_do_markdown(arquivo: str) -> list[str]:
+    linhas = (RAIZ / arquivo).read_text().splitlines()
+    primeira_secao = next(indice for indice, linha in enumerate(linhas) if linha.startswith("## "))
+    blocos: list[str] = []
+    bloco: list[str] = []
+    for linha in linhas[primeira_secao:]:
+        if not linha.strip() or linha.startswith("## ") or linha.startswith("- "):
+            if bloco:
+                blocos.append(" ".join(bloco))
+            bloco = []
+        if linha.strip() and not linha.startswith("## "):
+            bloco.append(re.sub(r"^- \*\*[^*]+[.:]\*\*\s*", "", linha))
+    if bloco:
+        blocos.append(" ".join(bloco))
+    sem_marcacao = [
+        re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", texto).replace("**", "").replace("`", "")
+        for texto in blocos
+    ]
+    return [frase for texto in sem_marcacao for frase in _frases(texto)]
+
+
+def _frases_do_html(arquivo: str) -> list[str]:
+    pagina = (RAIZ / arquivo).read_text()
+    paragrafos = [
+        marcacao_html.unescape(re.sub(r"<[^>]+>", "", paragrafo))
+        for secao in re.findall(r'<section class="legal-section">(.*?)</section>', pagina, re.S)
+        for paragrafo in re.findall(r"<p>(.*?)</p>", secao, re.S)
+    ]
+    return [frase for paragrafo in paragrafos for frase in _frases(paragrafo)]
+
+
+def _inicial_minuscula(frase: str) -> str:
+    return frase[0].lower() + frase[1:]
+
+
+def _hosts_contatados_pelo_site() -> set[str]:
+    hosts: set[str] = set()
+    for pagina in PAGINAS_DO_SITE:
+        marcacao = (RAIZ / pagina).read_text()
+        for elemento in re.findall(r"<(?:link|script|img|iframe)\b[^>]*>", marcacao):
+            hosts |= set(re.findall(r'(?:src|href)="https://([^/"]+)', elemento))
+    for arquivo in CODIGO_DO_SITE:
+        codigo = (RAIZ / arquivo).read_text()
+        hosts |= set(re.findall(r'(?:\.src|Url|fetch\()\s*[:=]?\s*"https://([^/"]+)', codigo))
+    return hosts
+
+
+def test_paginas_legais_repetem_frase_a_frase_o_proprio_markdown():
+    for arquivo, pagina in DOCUMENTOS_LEGAIS:
+        do_markdown = [_inicial_minuscula(frase) for frase in _frases_do_markdown(arquivo)]
+        da_pagina = [_inicial_minuscula(frase) for frase in _frases_do_html(pagina)]
+
+        assert do_markdown, arquivo
+        assert do_markdown == da_pagina, pagina
+
+
+def test_politica_nomeia_todo_host_que_o_site_contata_ao_carregar():
+    politica = {
+        arquivo: " ".join((RAIZ / arquivo).read_text().split())
+        for arquivo in ("docs/politica-de-privacidade.md", "web/privacidade.html")
+    }
+    hosts = _hosts_contatados_pelo_site()
+
+    assert hosts
+    for host in hosts:
+        assert host in FORNECEDOR_DE_CADA_HOST, host
+        for arquivo, texto in politica.items():
+            assert FORNECEDOR_DE_CADA_HOST[host] in texto, (arquivo, host)

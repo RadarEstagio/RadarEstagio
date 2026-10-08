@@ -127,14 +127,24 @@ Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.
 - Descrição do serviço, dados, fornecedores e retenção de 60 dias: mantidas como estavam.
 - Bases legais por finalidade e condições de processamento internacional, logs e backups:
   redigidas em 08/09/2026 (seções 3, 4 e 6 da Política), sem passagem pendente.
-- **Vigência:** versão `2026-10-02`, em vigor desde 02/10/2026, nos dois HTML, nos dois Markdown
-  e em `VERSAO_DOS_TERMOS` de `web/assets/app.js`. O aviso de rascunho saiu das páginas. O banco
-  só aceita a versão como data (`AAAA-MM-DD`), e cada conta guarda a que aceitou. Contas que
-  aceitaram `2026-09-05` continuam válidas: o piloto ainda não começou e não há aceite a renovar.
+- **Vigência:** em vigor hoje está a versão `2026-10-08`, desde 08/10/2026, nos dois HTML, nos
+  dois Markdown e em `VERSAO_DOS_TERMOS` de `web/assets/app.js`; a revisão de 02/10 entrou como
+  `2026-10-02`, e as versões seguintes estão nos itens abaixo. O aviso de rascunho saiu das
+  páginas. O banco só aceita a versão como data (`AAAA-MM-DD`), e cada conta guarda a que
+  aceitou. Contas que aceitaram `2026-09-05` continuam válidas: o piloto ainda não começou e não
+  há aceite a renovar.
 - **Versão `2026-10-05`:** a Política passa a dizer que a equipe lê as mensagens enviadas ao bot,
   encaminhadas ao chat de operação pela `telegram-webhook`, com a base legal (art. 7º, V) e o que
   a exclusão da conta não apaga. Os Termos só trocam a data. Contas que aceitaram `2026-10-02`
   continuam válidas: nenhuma finalidade nova exige consentimento.
+- **Versão `2026-10-08`:** a Política passa a nomear os endereços que o navegador contata ao
+  abrir qualquer página — `fonts.googleapis.com`, `fonts.gstatic.com`, `cdn.jsdelivr.net` e
+  `challenges.cloudflare.com` — e inclui o jsDelivr na infraestrutura fora do Brasil; o porquê
+  está no [contrato frontend](contrato-front.md). Os Termos só trocam a data. Contas que
+  aceitaram `2026-10-05` continuam válidas, pela mesma regra das versões anteriores: nenhuma
+  finalidade nova exige consentimento, o tratamento descrito já acontecia e o que mudou foi a
+  transparência sobre ele. O texto de 07/10 sobre o tema guardado no navegador entrou sem trocar
+  a versão, e esta corrige isso: mudança de texto legal muda a versão.
 
 ### Responsabilidades combinadas (02/10/2026)
 
@@ -149,10 +159,12 @@ Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.
   transferir para quem continuar ou deixar o domínio expirar com aviso no site.
 
 Para alterar uma versão futura, no mesmo commit: nova data nos dois HTML (`legal-updated` e o
-parágrafo final da seção de mudanças), nos dois Markdown e em `VERSAO_DOS_TERMOS`. Confiram os
-controles reais descritos no [contrato frontend](contrato-front.md).
+parágrafo final da seção de mudanças), nos dois Markdown, em `VERSAO_DOS_TERMOS`, na linha de
+vigência acima, em `docs/README.md` e no item desta seção no [plano geral](plano-geral.md).
+Confiram os controles reais descritos no [contrato frontend](contrato-front.md).
 
-**Concluído em 02/10/2026:** texto final em vigor, contato ativo e responsabilidades registradas.
+**Concluído em 02/10/2026:** textos em vigor, hoje na versão `2026-10-08`, contato ativo e
+responsabilidades registradas.
 
 ## 3. Configurar Resend e SMTP — pode preparar agora
 
@@ -529,7 +541,8 @@ inválido sem corrigir dados pessoais por suposição nem apenas adiar a valida�
 
 - A definir: acesso e aprovação da equipe para publicar a branch e conferir Cloudflare Pages.
 - A definir: aplicação remota de `0018` e `0019`, conferência de RLS/grants e `migration list`.
-- A definir: Redirect URLs, SMTP/Resend e Turnstile. Textos legais vigentes desde 02/10/2026.
+- A definir: Redirect URLs, SMTP/Resend e Turnstile. Textos legais em vigor na versão
+  `2026-10-08` (ver seção 2).
 - A definir: conta/Telegram de teste e confirmação do cron-job.org. Igor acompanha
   `contato@radarestagio.com` desde 02/10/2026.
 - A definir: domínio público final e autorização para qualquer relato de uso.

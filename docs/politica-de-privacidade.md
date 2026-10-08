@@ -1,6 +1,6 @@
 # Política de Privacidade — Radar de Estágio
 
-**Versão 2026-10-05 · Em vigor desde 05/10/2026.**
+**Versão 2026-10-08 · Em vigor desde 08/10/2026.**
 
 Este texto é o mesmo de `web/privacidade.html`, revisado por Igor, Ian e Miguel, e descreve o
 tratamento de dados no piloto.
@@ -46,9 +46,10 @@ de texto livre para dados pessoais.
 O navegador guarda dados da sessão de acesso e um identificador local usado nas métricas. Se
 você troca o tema no botão do site, a escolha entre claro e escuro também fica guardada nele.
 O fluxo de cadastro também pode manter temporariamente um perfil pendente no dispositivo.
-Provedores de hospedagem, autenticação e proteção contra abuso processam dados técnicos das
-requisições, como endereço IP e informações do navegador, conforme a configuração de cada
-serviço.
+Os serviços que hospedam o site, autenticam a conta, protegem o cadastro contra abuso e
+entregam as fontes e a biblioteca de cada página processam dados técnicos das requisições,
+como endereço IP e informações do navegador, conforme a configuração de cada serviço; a
+seção 4 nomeia cada um.
 
 ## 3. Finalidades, bases legais e escolhas
 
@@ -95,10 +96,17 @@ abaixo.
   termos de busca, incluindo a cidade dos perfis presenciais ou híbridos, sem identificador
   individual do estudante.
 - **Hospedagem e proteção do site.** A Cloudflare processa o tráfego do site e dados técnicos
-  de verificação contra abuso pelo Turnstile.
+  de verificação contra abuso pelo Turnstile, que o navegador carrega de
+  challenges.cloudflare.com em cada abertura da landing.
+- **Fontes e biblioteca carregadas pelo navegador.** Toda página busca as fontes do Google
+  Fonts em fonts.googleapis.com e fonts.gstatic.com, e a landing busca a biblioteca de acesso
+  ao Supabase no CDN jsDelivr, em cdn.jsdelivr.net. Isso acontece em cada carregamento,
+  inclusive nestes documentos e antes de você ter uma conta, e esses serviços recebem o
+  endereço IP e as informações do navegador; não enviamos a eles dados da sua conta nem do
+  seu perfil.
 
 O banco de dados e a autenticação ficam em um projeto do Supabase na região de São Paulo.
-Cloudflare, Telegram, Google, GitHub, Resend e Adzuna são empresas com infraestrutura fora do
+Cloudflare, Telegram, Google, GitHub, Resend, Adzuna e jsDelivr mantêm infraestrutura fora do
 Brasil, então parte dos dados descritos acima pode ser transferida internacionalmente. Essas
 transferências se apoiam nas hipóteses do artigo 33 da LGPD, em especial na necessidade de
 executar o serviço que você pediu e nas cláusulas contratuais e políticas de privacidade
@@ -165,6 +173,6 @@ não inclui senhas, hashes, tokens de acesso ou credenciais dos serviços.
 
 ## 8. Atualizações
 
-Esta é a versão 2026-10-05, em vigor desde 05/10/2026. Alterações relevantes serão informadas
+Esta é a versão 2026-10-08, em vigor desde 08/10/2026. Alterações relevantes serão informadas
 no site, com a nova versão e a data de vigência. Novas finalidades que exijam consentimento
 terão uma escolha específica apresentada antes do início desse uso.

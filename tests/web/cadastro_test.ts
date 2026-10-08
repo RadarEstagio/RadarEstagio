@@ -800,7 +800,7 @@ Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha loca
     assert.equal(signup.options.data.cadastro_radar.aceita_emails, false);
     assert.equal(
       signup.options.data.cadastro_radar.versao_dos_termos,
-      "2026-10-05",
+      "2026-10-08",
     );
     assert.equal(a.w.localStorage.getItem("radar-perfil-pendente"), null);
     assert.equal(
