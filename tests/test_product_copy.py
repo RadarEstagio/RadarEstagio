@@ -408,6 +408,13 @@ def test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado():
         ), arquivo
 
 
+def test_faq_da_landing_diz_o_prazo_para_cancelar_a_exclusao():
+    carencia = Settings.model_fields["dias_ate_apagar_conta_excluida"].default
+    html = " ".join((RAIZ / "web/index.html").read_text().split())
+
+    assert f"você tem {carencia} dias para cancelar antes que isso vire definitivo" in html
+
+
 def test_politica_de_privacidade_diz_a_carencia_da_conta_excluida():
     carencia = Settings.model_fields["dias_ate_apagar_conta_excluida"].default
 
