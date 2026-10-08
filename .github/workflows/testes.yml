@@ -59,6 +59,14 @@ jobs:
         working-directory: supabase/functions/telegram-webhook
         run: deno test
 
+      - name: Conferir os tipos da telegram-webhook
+        working-directory: supabase/functions/telegram-webhook
+        run: deno check index.ts
+
       - name: Rodar os testes da ir
         working-directory: supabase/functions/ir
         run: deno test
+
+      - name: Conferir os tipos da ir
+        working-directory: supabase/functions/ir
+        run: deno check index.ts
