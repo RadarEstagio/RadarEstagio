@@ -1450,6 +1450,14 @@ function esconderConta() {
   saidaSemPerfil.hidden = true;
 }
 
+function esquecerContaMostrada() {
+  contaMostrada = null;
+  document.querySelector("#account-summary").textContent = "";
+  document.querySelector("#account-skills").replaceChildren();
+  document.querySelector("#account-emails").checked = false;
+  telegramLink.removeAttribute("href");
+}
+
 function pedirConfirmacao(acao) {
   const configuracoes = {
     desvincular: {
@@ -2283,6 +2291,7 @@ document.querySelector("#logout-account").addEventListener("click", async () => 
   mostrarChamadaDeConta(false);
   closeSignup();
   limparRascunhoDoCadastro();
+  esquecerContaMostrada();
   resetDialogView();
   setAuthMode("login");
   showStep(PASSO_CONTA);

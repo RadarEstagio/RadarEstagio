@@ -743,6 +743,36 @@ Deno.test("sair da conta com o armazenamento bloqueado volta ao site", async () 
   }
 });
 
+Deno.test("sair da conta nao deixa perfil nem token do Telegram no DOM", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: {
+      ...profile,
+      token_vinculo: "token-de-uso-unico",
+      aceita_emails: true,
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#telegram-link").href.includes("token-de-uso-unico"), true);
+    doc.querySelector("#success-account").click();
+    await settle();
+    assert.equal(doc.querySelector("#account-summary").textContent.includes("Computação"), true);
+    assert.equal(doc.querySelector("#account-skills").childElementCount, 1);
+    doc.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(doc.querySelector("#account-summary").textContent, "");
+    assert.equal(doc.querySelector("#account-skills").childElementCount, 0);
+    assert.equal(doc.querySelector("#account-emails").checked, false);
+    assert.equal(doc.querySelector("#telegram-link").hasAttribute("href"), false);
+    assert.equal(doc.documentElement.innerHTML.includes("token-de-uso-unico"), false);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha localmente", async () => {
   const a = app();
   try {
