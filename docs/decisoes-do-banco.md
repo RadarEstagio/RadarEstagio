@@ -221,6 +221,83 @@ confere as linhas antigas, mas barra `update` futuro de linha web antiga maior q
 nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
 dos limites.
 
+## O resumo mede o tamanho do banco (08/10/2026)
+
+A `0023` já dizia que banco cheio no plano gratuito fica só leitura e que isso para cadastro,
+vínculo e diário, mas o único limite que existia era o dos eventos do site. `pg_database_size`
+não era consultado em lugar nenhum do `radar/`, então ninguém sabia a que distância do teto o
+banco estava sem abrir o painel. O resumo de operação passa a trazer uma linha —
+`Tamanho do banco: 19,3 MB de 500,0 MB (4%)` — e um aviso a partir de
+`PROPORCAO_DE_ALERTA_DO_BANCO`, 70% dos 500 MB do plano. A consulta é
+`SQL_TAMANHO_DO_BANCO`, o limite é `LIMITE_DO_PLANO_EM_BYTES` e a leitura que falha só gera
+aviso no log, como a dos eventos do site: capacidade é sensor, não motivo para derrubar a
+execução. Sem migration: o papel que o job já usa lê `pg_database_size`.
+
+**Medição de 08/10/2026 em produção**, só leitura. Banco com 20.237.459 bytes, 19,3 MB dos
+500 MB do plano, 3,9%. `vagas` tem 2.586 linhas em 5.944 kB (2.354 bytes por linha com índices
+e TOAST), `avaliacoes` 3.179 linhas em 1.288 kB (415 bytes por linha), `envios` 927 linhas em
+232 kB e `eventos_produto` 613 linhas em 272 kB. `vagas` e `avaliacoes` somadas são 7.232 kB,
+36,6% do banco; os outros 12 MB são a base fixa do projeto (`auth`, catálogos, schemas do
+Supabase) e não encolhem com retenção nenhuma. De 29/09 a 08/10, com 4 perfis ativos, entraram
+70 vagas e 94 avaliações por dia, cerca de 0,2 MB por dia. Nesse ritmo o aviso de 70% chegaria
+em ~1.650 dias e o teto em ~2.400.
+
+**Por que 70% e não os 80% da cota da Adzuna.** O que importa aqui não é a proporção, é quantos
+dias sobram entre o aviso e o banco só leitura. `avaliacoes` escala com usuário, não com
+calendário: são ~23 avaliações por perfil por dia, então o cenário de divulgação que a própria
+`0023` usa (150 contas) dá ~3.500 avaliações (1,4 MB) e ~560 eventos (0,25 MB) por dia, perto de
+1,9 MB por dia — 350 MB em ~6 meses e 500 MB em ~9. A 70%, os 150 MB restantes são ~79 dias para
+decidir entre podar, mudar de plano ou pagar; a 80%, os 100 MB seriam ~53. E sob o abuso contínuo
+que a `0023` mediu (~35 MB por dia) os mesmos 150 MB são ~4 dias, mais de uma execução diária,
+que é o mínimo para o aviso chegar antes do teto. Hoje, a 3,9%, o limiar não toca sozinho.
+
+**Retenção de `vagas` e `avaliacoes` fica fora (08/10/2026).** A janela mais larga que o sistema
+usa é de 30 dias (`SQL_VAGAS_ENVIADAS_RECENTES`, as respostas de `SQL_ULTIMA_RESPOSTA_POR_VAGA`,
+`SQL_VAGAS_ENCERRADAS`, `SQL_AREAS_RECUSADAS` e a coorte do `metricas.sql`). Apagar vaga com
+`coletada_em` fora dela hoje tiraria 415 das 2.586 vagas, 16% da tabela e 606 kB de linhas: 3%
+do banco e 0,12% do plano. O que isso custaria, medido:
+
+- **A cascata não para nas avaliações.** `envios.vaga_id` é `on delete cascade` desde a `0001`,
+  então as 415 vagas levariam 305 avaliações **e 156 envios**. 15 desses envios são dos últimos
+  30 dias, dentro da coorte do `metricas.sql`, que conta entregas, aberturas, úteis e
+  irrelevantes a partir de `envios`: o funil perderia entrega já medida e `vagas_enviadas` cairia
+  sem nada ter mudado no produto.
+- **`eventos_produto.vaga_id` é `on delete set null`** (`0005`): 8 eventos ficariam sem vaga, 2
+  deles dos últimos 30 dias. `SQL_VAGAS_ENCERRADAS` e `SQL_AREAS_RECUSADAS` juntam evento e
+  `vagas`, então uma marcação de "Vaga encerrada" dentro da janela deixaria de tirar a vaga de
+  todos, e a subárea recusada deixaria de descontar o fator de interesse.
+- **O dedupe depende de `vagas`, não só de `envios`.** `ids_ja_enviadas` é vitalício e lê
+  `(fonte, id_externo)` de `vagas` junto com `envios`; a chave da duplicata mora em `vagas` e o
+  `envios` cascateia. Apagar a vaga apaga o par, não só o anúncio. Na prática a reentrega é
+  improvável — nenhuma vaga fora de 30 dias foi extraída na última semana, a Adzuna só devolve
+  anúncio com até `DIAS_RECENTES` dias e o maior intervalo medido entre coleta e extração foi de
+  8 dias — mas `coletada_em` não é atualizado no `on conflict` do `SQL_GUARDAR_VAGA`, então a
+  janela mede a primeira coleta, não a circulação.
+- **A exportação do titular encolhe.** `baixar_meus_dados()` (`0015`) devolve `avaliacoes` e
+  `envios` do dono; o perfil mais afetado perderia 209 das suas 896 avaliações, 23%. A política
+  de privacidade permite que o anúncio público permaneça no catálogo, então isso é capacidade e
+  não privacidade, mas é histórico que a pessoa hoje consegue baixar.
+- **`delete` não devolve espaço ao disco.** Linha apagada só fica morta e reutilizável dentro da
+  própria tabela; `pg_database_size` não cai sem `VACUUM FULL`, que trava a tabela. Retenção
+  atrasaria o crescimento, nunca seria a alavanca para destravar um banco já cheio.
+- **A variante conservadora rende menos ainda.** Apagar só vaga fora de 30 dias sem avaliação,
+  envio nem evento são 144 linhas e 148 kB, 0,03% do plano, e deixaria no catálogo as outras 342
+  vagas sem vínculo algum.
+
+Decisão: fica só o sensor. 0,12% do plano não paga 156 envios, o funil de 30 dias e 23% da
+exportação de um titular. Revisitar quando o aviso dos 70% chegar, ou antes se `vagas` e
+`avaliacoes` passarem de 100 MB. O pré-requisito para a retenção valer é trocar o
+`on delete cascade` de `envios.vaga_id` por `(fonte, id_externo)` guardado em `envios`, para o
+dedupe e o funil sobreviverem ao catálogo.
+
+Limites aceitos: `pg_database_size` mede o banco inteiro, inclusive `auth` e catálogos, e não é
+o mesmo número que o painel cobra como disco, que inclui WAL e overhead — o sensor serve para a
+tendência e o aviso, não para auditar o plano. Os 500 MB são constante no código: plano novo
+exige mexer em `LIMITE_DO_PLANO_EM_BYTES`. A leitura acontece uma vez por execução diária, então
+pico que enche o banco entre duas execuções não é visto antes de encher, e é para isso que existe
+o teto por hora da `0023`. E leitura que falha tira a linha do resumo sem dizer nada ali: o
+motivo fica só no log.
+
 ## Origem da visita tem lista de propriedades (05/10/2026, `0032`)
 
 Nenhuma `landing_visualizada` dizia de onde a pessoa veio (RCD-04), e o banco só limitava o
