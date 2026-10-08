@@ -17,7 +17,8 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
-    assert "100% automático" in html
+    assert "Busca automática todo dia" in html
+    assert "100% automático" not in html
     assert "Vagas que atendem seu perfil" in html
     assert "Pare de procurar estágio" not in html
     assert "A IA compara" not in html
@@ -124,7 +125,7 @@ def test_faq_cobre_fontes_telegram_ausencia_candidatura_e_conta():
         "não cobre todo o mercado",
         "até sete recomendações",
         "Dias sem vaga podem acontecer",
-        "candidatura continua sendo sua",
+        "a candidatura fica com você",
         "Preciso vincular o Telegram?",
         "Posso pausar ou apagar minha conta?",
     ):
@@ -136,7 +137,7 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
 
     assert "Chegue antes" not in html
     assert "você poderá editar depois" not in html
-    assert "Vagas mais claras" in html
+    assert "Direto no Telegram" in html
 
 
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
@@ -405,6 +406,13 @@ def test_politica_de_privacidade_diz_os_prazos_do_cadastro_nao_confirmado():
             f"é apagada {DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA} dias depois do último link enviado"
             in texto
         ), arquivo
+
+
+def test_faq_da_landing_diz_o_prazo_para_cancelar_a_exclusao():
+    carencia = Settings.model_fields["dias_ate_apagar_conta_excluida"].default
+    html = " ".join((RAIZ / "web/index.html").read_text().split())
+
+    assert f"você tem {carencia} dias para cancelar antes que isso vire definitivo" in html
 
 
 def test_politica_de_privacidade_diz_a_carencia_da_conta_excluida():
