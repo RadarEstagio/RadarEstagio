@@ -14,6 +14,7 @@ from radar.domain.models import (
 )
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
+    PROPORCAO_DE_ALERTA_DO_BANCO,
     SEPARADOR_ENTRE_VAGAS,
     dividir_em_mensagens,
     formatar_falha_da_execucao,
@@ -768,6 +769,58 @@ def test_resumo_avisa_quando_os_eventos_do_site_chegaram_ao_teto(horas: int, tex
 
 def test_resumo_sem_eventos_do_site_conhecidos_nao_mostra_a_linha():
     assert "Eventos do site" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
+
+
+def test_resumo_mostra_o_tamanho_do_banco():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        banco_em_bytes=20_237_459,
+        banco_limite=524_288_000,
+    )
+
+    assert "Tamanho do banco: 19,3 MB de 500,0 MB (4%)" in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_avisa_quando_o_banco_passa_do_limiar_do_plano():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        banco_em_bytes=367_001_600,
+        banco_limite=524_288_000,
+    )
+
+    assert "Tamanho do banco: 350,0 MB de 500,0 MB (70%)" in texto
+    assert f"⚠️ Banco passou de {PROPORCAO_DE_ALERTA_DO_BANCO:.0%} do limite do plano" in texto
+
+
+def test_resumo_abaixo_do_limiar_do_banco_nao_avisa():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        banco_em_bytes=366_000_000,
+        banco_limite=524_288_000,
+    )
+
+    assert "Tamanho do banco:" in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_sem_tamanho_do_banco_conhecido_nao_mostra_a_linha():
+    assert "Tamanho do banco" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 
 
 def abertura(

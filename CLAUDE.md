@@ -256,8 +256,8 @@ mexer em coleta, pré-filtro, extração, pontuação ou mensagem, ler a seção
 
 - **Não ajustar peso da nota sem `vaga_irrelevante` real.** Pesos em `matching/avaliacoes.py`.
 - **Ausência não é veto.** Requisito ausente do perfil vale como incerteza, e lista vazia de
-  habilidades significa "não informou". Requisito com nível exige que o perfil declare nível
-  igual ou maior.
+  habilidades significa "não informou". Requisito de nível básico é atendido pela habilidade
+  declarada sem nível; de intermediário para cima, o perfil precisa declarar nível igual ou maior.
 - **Computação não compara habilidade por palavras** (nem perfil nem vaga); família explícita
   decide sozinha o requisito que nomeia. Office, idiomas e soft skills ficam fora da cobertura
   só em computação. SQL e os bancos relacionais se atendem nos dois sentidos.
@@ -338,6 +338,11 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
   última hora e teto por hora de 2.400 para visitantes e 900 para contas; acima disso o insert
   falha com `PT429`. Abertura, pausa e vínculo repetidos são descartados pelo gatilho da `0028`,
   ficando a primeira ocorrência.
+- **O resumo mostra o tamanho do banco** e avisa a partir de 70% dos 500 MB do plano
+  (`LIMITE_DO_PLANO_EM_BYTES`); leitura que falha só vira aviso no log. **Não há retenção em
+  `vagas` nem em `avaliacoes`**: apagar vaga fora da janela cascateia `envios` e derruba dedupe,
+  funil e exportação do titular por 0,12% do plano. A medição e a decisão estão em
+  `docs/decisoes-do-banco.md`.
 - **Tabela e sequência novas nascem com `GRANT ALL` do Supabase, e `TRUNCATE` é a única DML fora
   da RLS**: toda migration que as cria faz `revoke all` de `anon` e `authenticated` (a `0034`
   fechou `vagas`, `envios` e `avaliacoes`). Propriedade nova de evento web tem regra de tipo,

@@ -408,6 +408,16 @@ class BancoSemATabelaDosEventosDoSite(RepositorioEmMemoria):
         raise ErroDeArmazenamento("relation eventos_do_site_por_hora does not exist")
 
 
+class BancoQueInformaOTamanho(RepositorioEmMemoria):
+    def tamanho_do_banco(self) -> int:
+        return 367_001_600
+
+
+class BancoQueRecusaLerOTamanho(RepositorioEmMemoria):
+    def tamanho_do_banco(self) -> int:
+        raise ErroDeArmazenamento("permission denied for function pg_database_size")
+
+
 class BancoComUmPerfilIlegivel(RepositorioEmMemoria):
     def listar_ativos(self) -> list[Usuario]:
         self.perfis_ilegiveis = 1
@@ -534,6 +544,33 @@ def test_corpo_do_gemini_que_nao_e_json_nao_derruba_o_job_nem_perde_o_que_ja_ext
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
     assert "Requisições ao avaliador: 2" in resumo
     assert "⚠️ Vagas sem extração (cota ou avaliador fora): 2" in resumo
+
+
+def test_resumo_de_operacao_mostra_o_tamanho_do_banco(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoQueInformaOTamanho([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Tamanho do banco: 350,0 MB de 500,0 MB (70%)" in resumo
+    assert "⚠️ Banco passou de 70% do limite do plano" in resumo
+
+
+def test_falha_ao_ler_o_tamanho_do_banco_so_avisa_no_log(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    httpx_mock.add_response(url=url_da_pagina(1), json={"results": pagina_cheia()["results"][:3]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_de_teste(), cliente_http, BancoQueRecusaLerOTamanho([]))
+
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Vagas coletadas: 3" in resumo
+    assert "Tamanho do banco" not in resumo
+    assert "pg_database_size" in caplog.text
 
 
 def test_falha_ao_ler_os_eventos_do_site_so_avisa_no_log(

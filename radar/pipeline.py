@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from radar.domain.datas import data_local
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import (
     AberturaSemResposta,
     ChaveDaVaga,
@@ -81,7 +82,9 @@ class RevalidacaoDeDestinatarios:
             return self.repositorio.pode_entregar(usuario)
         except ErroDeArmazenamento as erro:
             self.falhas.add(usuario.id)
-            logger.warning("destinatário %s não pôde ser revalidado: %s", usuario.id, erro)
+            logger.warning(
+                "destinatário %s não pôde ser revalidado: %s", trecho_do_id(usuario.id), erro
+            )
             return False
 
 
@@ -209,7 +212,9 @@ def executar(
         except Exception:
             erros_inesperados.add(usuario.id)
             registro.mensagem_perdida(usuario)
-            logger.exception("usuário %s ficou sem mensagem por erro inesperado", usuario.id)
+            logger.exception(
+                "usuário %s ficou sem mensagem por erro inesperado", trecho_do_id(usuario.id)
+            )
             continue
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
@@ -263,10 +268,16 @@ def perguntar_sobre_as_aberturas_de_ontem(
                 registro.enviadas.add(usuario.id)
         except (ErroDeNotificacao, ErroDeArmazenamento) as erro:
             registro.com_falha.add(usuario.id)
-            logger.warning("usuário %s ficou sem a pergunta do dia seguinte: %s", usuario.id, erro)
+            logger.warning(
+                "usuário %s ficou sem a pergunta do dia seguinte: %s",
+                trecho_do_id(usuario.id),
+                erro,
+            )
         except Exception:
             registro.com_falha.add(usuario.id)
-            logger.exception("usuário %s ficou sem a pergunta do dia seguinte", usuario.id)
+            logger.exception(
+                "usuário %s ficou sem a pergunta do dia seguinte", trecho_do_id(usuario.id)
+            )
     return registro
 
 
@@ -294,7 +305,7 @@ def liberar_a_pergunta(
     except ErroDeArmazenamento as erro:
         logger.warning(
             "usuário %s: a pergunta não saiu e a reserva ficou, então não volta hoje: %s",
-            usuario.id,
+            trecho_do_id(usuario.id),
             erro,
         )
 
@@ -362,7 +373,9 @@ def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -
         return usuarios
     escolhidos = [usuario for usuario in usuarios if usuario.id == apenas_o_perfil]
     if not escolhidos:
-        logger.warning("perfil %s não está ativo ou não tem Telegram vinculado", apenas_o_perfil)
+        logger.warning(
+            "perfil %s não está ativo ou não tem Telegram vinculado", trecho_do_id(apenas_o_perfil)
+        )
     return escolhidos
 
 
@@ -391,7 +404,9 @@ def ids_ja_enviadas_ou_nenhum(repositorio: Repositorio, usuario: Usuario) -> set
     try:
         return repositorio.ids_ja_enviadas(usuario)
     except ErroDeArmazenamento as erro:
-        logger.warning("envios do usuário %s não puderam ser lidos: %s", usuario.id, erro)
+        logger.warning(
+            "envios do usuário %s não puderam ser lidos: %s", trecho_do_id(usuario.id), erro
+        )
         return set()
 
 
@@ -492,7 +507,7 @@ def atender_usuario(
     try:
         repositorio.travar_atendimento(usuario)
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        logger.warning("usuário %s ficou sem mensagem: %s", trecho_do_id(usuario.id), erro)
         registro.mensagem_perdida(usuario)
         return None
     try:
@@ -511,7 +526,7 @@ def atender_usuario(
             coleta_incompleta,
         )
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        logger.warning("usuário %s ficou sem mensagem: %s", trecho_do_id(usuario.id), erro)
         registro.mensagem_perdida(usuario)
         return None
     finally:
@@ -549,7 +564,7 @@ def atender_usuario_travado(
     selecionadas = selecionar(novas, parametros.quantidade, parametros.nota_minima)
     logger.info(
         "usuário %s: %d candidatas, %d avaliadas agora, %d enviadas",
-        usuario.id,
+        trecho_do_id(usuario.id),
         len(candidatas),
         len(novas),
         len(selecionadas),
@@ -562,7 +577,7 @@ def atender_usuario_travado(
     ):
         logger.warning(
             "usuário %s ficou sem mensagem: %d das %d vagas pendentes estão sem extração",
-            usuario.id,
+            trecho_do_id(usuario.id),
             sem_extracao,
             len(candidatas),
         )
@@ -570,7 +585,8 @@ def atender_usuario_travado(
         return None
     if not selecionadas and coleta_incompleta:
         logger.warning(
-            "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta", usuario.id
+            "usuário %s ficou sem mensagem: a coleta de hoje veio incompleta",
+            trecho_do_id(usuario.id),
         )
         registro.mensagem_segurada_pela_coleta_incompleta(usuario)
         return None
@@ -592,7 +608,7 @@ def atender_usuario_travado(
         entregues = recomendacoes_entregues(pergunta.texto, selecionadas, erro.partes_entregues)
         logger.warning(
             "usuário %s recebeu %d das %d vagas: %s",
-            usuario.id,
+            trecho_do_id(usuario.id),
             len(entregues),
             len(selecionadas),
             erro,
@@ -647,7 +663,9 @@ def gravar_envios(
     except ErroDeArmazenamento as erro:
         registro.envio_nao_gravado(usuario)
         logger.warning(
-            "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
+            "usuário %s: mensagem enviada, mas o envio não foi gravado: %s",
+            trecho_do_id(usuario.id),
+            erro,
         )
 
 
@@ -657,7 +675,9 @@ def gravar_avaliacoes(
     try:
         repositorio.guardar_avaliacoes(usuario, novas, modelo)
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s: avaliações não foram gravadas: %s", usuario.id, erro)
+        logger.warning(
+            "usuário %s: avaliações não foram gravadas: %s", trecho_do_id(usuario.id), erro
+        )
 
 
 def registrar_atendimento(repositorio: Repositorio, usuario: Usuario) -> None:
@@ -665,7 +685,9 @@ def registrar_atendimento(repositorio: Repositorio, usuario: Usuario) -> None:
         repositorio.marcar_entregas_imediatas_atendidas([usuario.id])
     except ErroDeArmazenamento as erro:
         logger.warning(
-            "usuário %s: entrega imediata não foi marcada como atendida: %s", usuario.id, erro
+            "usuário %s: entrega imediata não foi marcada como atendida: %s",
+            trecho_do_id(usuario.id),
+            erro,
         )
 
 
@@ -684,7 +706,7 @@ def avisar_que_nao_houve_vaga(
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
-        logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
+        logger.warning("usuário %s ficou sem a mensagem do dia: %s", trecho_do_id(usuario.id), erro)
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
         if not isinstance(erro, DestinatarioRecusouAMensagem):
             registro.mensagem_perdida(usuario)
@@ -697,11 +719,13 @@ def avisar_que_nao_houve_vaga(
 
 
 def registrar_silencio_avisado(repositorio: Repositorio, usuario: Usuario, dias: int) -> None:
-    logger.info("usuário %s avisado de %d dias sem recomendação", usuario.id, dias)
+    logger.info("usuário %s avisado de %d dias sem recomendação", trecho_do_id(usuario.id), dias)
     try:
         repositorio.registrar_aviso_de_silencio(usuario)
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s: aviso de silêncio não foi gravado: %s", usuario.id, erro)
+        logger.warning(
+            "usuário %s: aviso de silêncio não foi gravado: %s", trecho_do_id(usuario.id), erro
+        )
 
 
 def dias_de_silencio_a_relatar(usuario: Usuario, agora: datetime, limite: int) -> int | None:
@@ -726,7 +750,10 @@ def pausar_se_o_destinatario_recusou(
     falhas_ate_pausar: int,
 ) -> None:
     if not isinstance(erro, DestinatarioRecusouAMensagem):
-        logger.info("falha temporária de entrega do usuário %s não conta para a pausa", usuario.id)
+        logger.info(
+            "falha temporária de entrega do usuário %s não conta para a pausa",
+            trecho_do_id(usuario.id),
+        )
         return
     pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
 
@@ -740,9 +767,13 @@ def pausar_apos_falhas_seguidas(
             return
         repositorio.pausar(usuario)
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s: falha de envio não registrada: %s", usuario.id, erro)
+        logger.warning(
+            "usuário %s: falha de envio não registrada: %s", trecho_do_id(usuario.id), erro
+        )
         return
-    logger.warning("usuário %s pausado após %d falhas seguidas de envio", usuario.id, falhas)
+    logger.warning(
+        "usuário %s pausado após %d falhas seguidas de envio", trecho_do_id(usuario.id), falhas
+    )
 
 
 def selecionar(
