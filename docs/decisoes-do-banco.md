@@ -463,3 +463,58 @@ e o link `/?conta`. Se não acha, a resposta de vínculo de sempre.
   enviadas ao bot, e a mudança de texto legal muda a versão. Até lá, publicar a função é decisão
   de quem revisar o PR. Não há limite por pessoa: quem está vinculado pode encher o chat de
   operação, e o primeiro sinal de abuso pede um teto por perfil por hora.
+
+## O tratamento da requisição das funções sai do index (08/10/2026)
+
+A auditoria de 07/10 mediu que o `index.ts` das duas Edge Functions não era importado por teste
+nenhum (`grep -rn "index.ts"` nos testes dava zero) e que o CI só rodava `deno test`, nunca
+`deno check`. Os módulos ao lado (`vinculo.ts`, `processar_vinculo.ts`, `feedback.ts`,
+`navegacao.ts`) tinham teste; o que ficava fora era justamente a camada que decide se a
+requisição entra: o 401 do `TELEGRAM_WEBHOOK_SECRET`, o 405, a consulta ao banco com os filtros
+de privacidade e a rotação do token. Quinze mutações aplicadas em cópia fora do repositório
+passaram com a suíte inteira verde: apagar o 401 e invertê-lo; aceitar outro método na
+`telegram-webhook`; tirar a rotação do `token_vinculo`, o `.is("excluida_em", null)` do vínculo,
+o `.is("entrega_imediata_disparada_em", null)` da reivindicação e o `podeProcessarInteracao` do
+feedback; trocar o dono do repositório ou o workflow do disparo e tirar o `inputs.perfil` dele;
+aceitar POST na `ir`, deixar `URL_DA_LANDING` de ser obrigatória e fazer o `HEAD` gravar
+`vaga_aberta`; e referenciar um símbolo inexistente nos dois `index.ts`.
+
+A correção é organização, não lógica: o tratamento da requisição virou
+`criarTratadorDoWebhook` (`telegram-webhook/servidor.ts`) e `criarTratadorDoRedirecionador`
+(`ir/servidor.ts`), que recebem as dependências por parâmetro — cliente do Supabase, variáveis
+de ambiente, e na `telegram-webhook` também o relógio, o `fetch` e o disparo da entrega
+imediata. O `index.ts` ficou só com a fiação e o `Deno.serve`. Os corpos das funções não
+mudaram: a conferência foi `diff` linha a linha contra a versão publicada, e a única diferença
+são as dependências que antes vinham de `fetch`, `new Date()` e `Deno.env.get` globais.
+`URL_DA_LANDING` continua lida uma vez e derrubando a `ir` no carregamento; `TELEGRAM_CHAT_ID` e
+`URL_DA_LANDING` continuam lidas a cada requisição na `telegram-webhook`, porque quem recebe é
+um objeto com `get`, não os valores.
+
+Os testes novos (`servidor_test.ts` nas duas funções) montam o banco e o Telegram como dublês em
+memória, então nada sai da máquina: 401 sem cabeçalho e com segredo errado, 200 com o segredo
+certo (que mata a inversão), 405 em cinco métodos, token rotacionado que não deixa o link vazado
+vincular outro chat, conta marcada para exclusão que não recebe o `chat_id`, perfil com disparo
+anterior que não reivindica de novo, chat alheio que não vota no envio de outra pessoa; e na
+`ir`, 405 fora de GET e HEAD, `HEAD` que navega sem registrar abertura, token ausente,
+malformado ou desconhecido indo para a landing, e a recusa de subir sem `URL_DA_LANDING`. O
+teste do disparo, que já capturava o `fetch`, passou a afirmar a URL inteira
+(`RadarEstagio/RadarEstagio`, `radar-diario.yml`) e o corpo `{ ref: "main", inputs: { perfil } }`
+— sem o input, o vínculo de uma pessoa dispararia o diário inteiro para todos. Das quinze
+mutações, treze passam a morrer no `deno test` e duas, as do símbolo inexistente, no
+`deno check index.ts` que o CI ganhou por função; `tests/test_workflows.py` cobra os dois
+comandos em toda pasta de `supabase/functions` com `index.ts`, para função nova não entrar sem
+eles. `deno lint` ficou fora: ele recusa `jsr:` em linha, que é como a Supabase importa, e as 38
+queixas de hoje são todas `require-await` de dublê de teste.
+
+Limites: o dublê do banco aplica `eq` e `is` sobre linhas em memória e não é o PostgREST, então
+ele prova o filtro que a consulta pede, não o que o Postgres faria com ele (constraint,
+`security definer` e gatilho continuam só nos testes de `tests/web/`); a fiação do `index.ts`
+segue sem teste de comportamento, porque importá-lo sobe um servidor, e o que a protege é o
+`deno check`; e a ordem no `index.ts` da `ir` mudou, porque o cliente do Supabase agora é criado
+antes da conferência da landing — com `URL_DA_LANDING` ausente a função continua não subindo,
+mas se `SUPABASE_URL` também faltasse o erro nomearia o cliente, e não a landing.
+Publicação: sem migration e sem mudança de comportamento, mas **as duas funções mudam de
+arquivo**, então as duas precisam de deploy manual (`supabase functions deploy telegram-webhook` e
+`supabase functions deploy ir`), em qualquer ordem e sem janela, porque nenhuma depende da outra
+nem do banco. Enquanto não forem publicadas, o que roda é o código de hoje, idêntico em
+comportamento.

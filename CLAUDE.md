@@ -372,6 +372,12 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
   dos botões de feedback antes de chegarem à função. Ao re-registrar o webhook, sempre
   repassar os dois tipos. Botão de mensagem do `testar-local` nunca funciona: o token do
   envio não é gravado no banco no modo local.
+- **O tratamento da requisição das Edge Functions fica em `servidor.ts`** (08/10/2026), com as
+  dependências recebidas por parâmetro (cliente do Supabase, variáveis de ambiente, relógio,
+  `fetch`); o `index.ts` é só a fiação e o `Deno.serve`, e teste nenhum o importa. Comportamento
+  novo da função entra com teste em `servidor_test.ts`, e o CI roda `deno test` e
+  `deno check index.ts` por função, cobrados em `tests/test_workflows.py`. Por quê:
+  `docs/decisoes-do-banco.md`.
 - **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
   atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
   do clique deixa de valer depois do vínculo.
