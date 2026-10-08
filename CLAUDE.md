@@ -338,6 +338,11 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
   última hora e teto por hora de 2.400 para visitantes e 900 para contas; acima disso o insert
   falha com `PT429`. Abertura, pausa e vínculo repetidos são descartados pelo gatilho da `0028`,
   ficando a primeira ocorrência.
+- **O resumo mostra o tamanho do banco** e avisa a partir de 70% dos 500 MB do plano
+  (`LIMITE_DO_PLANO_EM_BYTES`); leitura que falha só vira aviso no log. **Não há retenção em
+  `vagas` nem em `avaliacoes`**: apagar vaga fora da janela cascateia `envios` e derruba dedupe,
+  funil e exportação do titular por 0,12% do plano. A medição e a decisão estão em
+  `docs/decisoes-do-banco.md`.
 - **Os textos e as listas do perfil têm teto no banco** (`0025`), validados: curso 200, cidade
   120, cada habilidade 100 e listas de 50 itens, em uma dimensão só (`0031`). Perfil fora do teto
   faz o `db push` falhar inteiro.
