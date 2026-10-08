@@ -3386,6 +3386,42 @@ Deno.test("trocar o curso na edicao descarta as areas do curso antigo no payload
 });
 
 
+Deno.test("trocar o curso por um nome fora do catalogo preserva as areas salvas", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: {
+      ...profile,
+      telegram_chat_id: "123",
+      areas_de_interesse: ["desenvolvimento_web"],
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const form = doc.querySelector("#signup-form");
+    form.elements.curso.value = "Curso Que Ninguem Tem";
+    doc.querySelector("#next-step").click();
+    await settle();
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(doc.querySelector("#campo-areas").hidden, true);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].curso, "Curso Que Ninguem Tem");
+    assert.deepEqual(
+      Array.from(update[2].areas_de_interesse as string[]),
+      ["desenvolvimento_web"],
+    );
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("habilidades sugeridas acompanham o curso digitado", async () => {
   for (const [curso, esperada, indevida] of [
     ["Direito", "Redação", "Python"],

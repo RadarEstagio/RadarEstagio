@@ -580,7 +580,7 @@ function areasDeInteresseDoFormulario(data) {
   const marcadas = data.getAll("areas");
   if (!catalogoDeAreas) return [...areasSalvas];
   const area = areaDoCurso(data.get("curso") ?? "", catalogoDeAreas);
-  if (!area) return [];
+  if (!area) return [...areasSalvas];
   const permitidas = new Set(area.subareas.map((subarea) => subarea.valor));
   return marcadas.filter((valor) => permitidas.has(valor));
 }
