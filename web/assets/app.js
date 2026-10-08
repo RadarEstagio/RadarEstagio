@@ -597,11 +597,13 @@ async function montarHabilidadesDoCurso() {
     || identidade !== identidadeDoFormulario
     || (form.elements.curso?.value ?? "") !== cursoSolicitado
   ) return;
+  const pickerTinhaOFoco = picker.contains(document.activeElement);
   if (!catalogo) {
     picker.replaceChildren();
     aviso.hidden = false;
     avisoDeCursoNaoReconhecido.hidden = true;
     renderSkills();
+    devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
     return;
   }
   aviso.hidden = true;
@@ -617,6 +619,12 @@ async function montarHabilidadesDoCurso() {
     return botao;
   }));
   renderSkills();
+  devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
+}
+
+function devolverOFocoAsHabilidades(picker, pickerTinhaOFoco) {
+  if (!pickerTinhaOFoco || picker.contains(document.activeElement)) return;
+  (picker.querySelector("button") ?? document.querySelector("#custom-skill")).focus();
 }
 
 function avisarCursoNaoReconhecido(curso) {

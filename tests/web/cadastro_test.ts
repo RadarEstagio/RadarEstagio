@@ -3498,6 +3498,26 @@ Deno.test("resposta assíncrona de curso anterior não substitui o curso atual",
   }
 });
 
+Deno.test("avancar para habilidades deixa o foco na etapa, nao no corpo da pagina", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector(".js-open-signup").click();
+    await settle();
+    const form = doc.querySelector("#signup-form");
+    form.elements.curso.value = "Computação";
+    form.elements.periodo.value = "3";
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.activeElement.dataset.skill, "Python");
+    await settle();
+    assert.notEqual(doc.activeElement, doc.body);
+    assert.equal(doc.querySelector("#skill-picker").contains(doc.activeElement), true);
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("sair da conta nao deixa as areas de interesse da pessoa anterior no proximo cadastro", async () => {
   const a = app({
     session: { user },
