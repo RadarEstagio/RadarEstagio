@@ -338,6 +338,11 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
   última hora e teto por hora de 2.400 para visitantes e 900 para contas; acima disso o insert
   falha com `PT429`. Abertura, pausa e vínculo repetidos são descartados pelo gatilho da `0028`,
   ficando a primeira ocorrência.
+- **Tabela e sequência novas nascem com `GRANT ALL` do Supabase, e `TRUNCATE` é a única DML fora
+  da RLS**: toda migration que as cria faz `revoke all` de `anon` e `authenticated` (a `0034`
+  fechou `vagas`, `envios` e `avaliacoes`). Propriedade nova de evento web tem regra de tipo,
+  formato e tamanho no banco, não só corte no JavaScript: a lista da `0032` e o formato da
+  `pagina` na `0034` valem por insert, e mexer no site exige mexer na migration junto.
 - **Os textos e as listas do perfil têm teto no banco** (`0025`), validados: curso 200, cidade
   120, cada habilidade 100 e listas de 50 itens, em uma dimensão só (`0031`). Perfil fora do teto
   faz o `db push` falhar inteiro.
