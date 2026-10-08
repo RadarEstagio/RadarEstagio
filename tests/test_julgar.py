@@ -162,8 +162,8 @@ def test_relatorio_mede_relevancia_concordancia_e_reprovadas_com_nota_alta():
 
     assert "Juiz: juiz-x — 5 de 5 entregas dos últimos 7 dias julgadas" in texto
     assert "Relevantes segundo o juiz: 3/5 (60%)" in texto
-    assert "Engenharia de Software (00000000): 2/4 relevantes" in texto
-    assert "Direito (00000000): 1/1 relevantes" in texto
+    assert "Engenharia de Software (...00000000...): 2/4 relevantes" in texto
+    assert "Direito (...00000000...): 1/1 relevantes" in texto
     assert "outra_area" in texto and "nenhum" in texto
     assert "1/3 concordam (33%)" in texto
     assert "discorda: Estágio 2 · pessoa disse vaga_irrelevante · juiz relevante" in texto

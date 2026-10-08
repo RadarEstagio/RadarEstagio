@@ -14,6 +14,15 @@ def test_execucoes_do_radar_esperam_a_anterior_em_vez_de_rodar_juntas():
     assert inicio < linhas.index("jobs:")
 
 
+def test_perfil_da_entrega_imediata_e_mascarado_no_primeiro_passo_do_job():
+    conteudo = WORKFLOW.read_text()
+    passos = conteudo.split("      - name: ")
+
+    assert "::add-mask::" in passos[1]
+    assert "${{ inputs." not in conteudo
+    assert 'rodar --perfil "$perfil"' in conteudo
+
+
 def test_codigo_de_saida_do_radar_derruba_o_passo_e_dispara_o_aviso():
     conteudo = WORKFLOW.read_text()
 

@@ -153,6 +153,32 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   ("Organização", "Gestão", "Processos") atende toda atividade que a contém, e requisito de uma
   palavra ("redes", "segurança") é atendido por habilidade que a contenha ("Redes sociais",
   "Segurança do trabalho"); o pré-filtro corta a maior parte desses cruzamentos entre áreas.
+- **Requisito de nível básico é atendido pela habilidade declarada sem nível** (08/10/2026).
+  `_satisfeita` só dava o requisito por atendido com `nivel_do_perfil >= exigencia.nivel`, e
+  habilidade sem nível vale `NIVEL_NAO_INFORMADO`, então o pedido mais fraco que um anúncio pode
+  fazer era o único inatendível para quem declara a habilidade. É estrutural, não descuido de
+  quem cadastra: nenhuma das 73 habilidades sugeridas traz nível, o site não tem campo para
+  declarar um e, nos 4 perfis ativos, 0 de 33 habilidades dizem o nível. Quem tem Excel tirava 98
+  na vaga que pede "Excel" e 64 na que pede "Excel básico" — a mesma nota da que pede "Excel
+  avançado" —, e a mensagem mandava "Requisitos a conferir no seu perfil: Excel básico", nomeando
+  o que a pessoa cadastrou. Agora `exigencia.nivel <= NIVEL_BASICO` vale como requisito sem
+  nível, e "noções de", "iniciante" e a faixa "básico/intermediário", que já valia pelo menor,
+  entram pela mesma porta. **Intermediário e avançado seguem exigindo nível declarado**: a regra
+  de 08/09, de que "Excel" no perfil não comprova "Excel avançado", não muda. Medido no banco,
+  nas 2.149 vagas com extração `7efdbc95`: 133 das 6.609 citações de requisito pedem nível
+  básico, em 99 vagas, e as mais frequentes são "Excel básico" (25), "Pacote Office básico" (23)
+  e "inglês básico" (18). Nos 4 perfis ativos, 81 de 6.447 pares sobem de 1 a 34 pontos, nenhum
+  cai, nenhum requisito atendido desaparece, 2 passam da nota mínima e o top 7 muda em 20 dos 132
+  pares perfil-dia de 33 dias de coleta, 13 deles do perfil de Administração; nos 12 perfis do
+  catálogo, 178 de 25.788 sobem e nenhum cai. Nas 396 vagas que pedem nível intermediário ou
+  maior, nenhum desses requisitos passou a ser atendido. Conferidos à mão: a vaga que pede só
+  "Excel básico" e "digitação" vai de 59 a 86; a que pede "Pacote Office básico", "Excel básico"
+  e "comunicação" vai de 73 a 95; e "programação básica", que a família já atendia por qualquer
+  linguagem, leva a vaga da EPE de 64 a 83. Limites aceitos: a nota sobe para quem declara a
+  habilidade sem comprovar nada, porque não existe onde comprovar; requisito básico que a vaga
+  repete com nível maior continua valendo pelo maior, pela regra de requisito repetido; e um
+  anúncio que escreva "básico" para enfeitar uma exigência real deixa de ser penalizado. A regra
+  é só da nota: o prompt não muda e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 - **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
   de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
   `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do
@@ -557,7 +583,9 @@ falhava antes da correção:
   requisito com nível exige que o perfil declare o seu (Igor, 08/09 à noite: "Excel" no perfil
   não comprova "Excel avançado"). A lista na mensagem virou "Requisitos a conferir no seu
   perfil". No corpus antigo (só computação) apenas 4 de 202 extrações citam nível; em Direito e
-  Administração é o padrão.
+  Administração é o padrão. **O nível básico deixou de exigir declaração em 08/10/2026**, porque
+  o cadastro não tem campo de nível e o pedido mais fraco do anúncio virava o único inatendível;
+  o porquê e a medição estão em "Requisito de nível básico", na seção de pontuação.
 - **Falha parcial virava "nenhuma vaga compatível".** O silêncio só valia quando nenhuma
   candidata tinha extração; com parte extraída e nada acima da nota mínima, o usuário recebia
   uma conclusão que o sistema não podia tirar. Qualquer candidata sem extração segura a mensagem
