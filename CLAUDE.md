@@ -256,8 +256,8 @@ mexer em coleta, pré-filtro, extração, pontuação ou mensagem, ler a seção
 
 - **Não ajustar peso da nota sem `vaga_irrelevante` real.** Pesos em `matching/avaliacoes.py`.
 - **Ausência não é veto.** Requisito ausente do perfil vale como incerteza, e lista vazia de
-  habilidades significa "não informou". Requisito com nível exige que o perfil declare nível
-  igual ou maior.
+  habilidades significa "não informou". Requisito de nível básico é atendido pela habilidade
+  declarada sem nível; de intermediário para cima, o perfil precisa declarar nível igual ou maior.
 - **Computação não compara habilidade por palavras** (nem perfil nem vaga); família explícita
   decide sozinha o requisito que nomeia. Office, idiomas e soft skills ficam fora da cobertura
   só em computação. SQL e os bancos relacionais se atendem nos dois sentidos.
