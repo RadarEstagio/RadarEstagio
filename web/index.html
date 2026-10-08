@@ -426,13 +426,13 @@
                   <p class="catalog-notice" id="cities-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.</p>
                   <small>Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
                 </div>
-                <div class="field field-full"><span>Modalidade preferida</span><div class="option-grid">
+                <div class="field field-full"><span id="rotulo-modalidade">Modalidade preferida</span><div class="option-grid" role="radiogroup" aria-labelledby="rotulo-modalidade">
                   <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>
                   <label><input type="radio" name="modalidade" value="hibrido" /><span>Híbrido</span></label>
                   <label><input type="radio" name="modalidade" value="presencial" /><span>Presencial</span></label>
                   <label><input type="radio" name="modalidade" value="indiferente" /><span>Indiferente</span></label>
                 </div></div>
-                <div class="field field-full" id="campo-areas" hidden><span>Áreas de interesse (opcional)</span><div class="option-grid" id="grade-de-areas"></div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
+                <div class="field field-full" id="campo-areas" hidden><span id="rotulo-areas">Áreas de interesse (opcional)</span><div class="option-grid" id="grade-de-areas" role="group" aria-labelledby="rotulo-areas"></div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
                 <div class="field field-full" id="campo-pcd"><span id="rotulo-pcd">Você é pessoa com deficiência (PCD)? (opcional)</span><div class="option-grid option-grid-tres" role="radiogroup" aria-labelledby="rotulo-pcd" aria-describedby="ajuda-pcd">
                   <label><input type="radio" name="pessoa_com_deficiencia" value="sim" /><span>Sim</span></label>
                   <label><input type="radio" name="pessoa_com_deficiencia" value="nao" /><span>Não</span></label>

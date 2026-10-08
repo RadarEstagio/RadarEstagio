@@ -4230,6 +4230,39 @@ Deno.test("catálogo de áreas já carregado não some quando um pedido anterior
   }
 });
 
+function nomeAcessivelDoGrupo(opcao: ReturnType<TestWindow["document"]["querySelector"]>) {
+  const grupo = opcao.closest('[role="radiogroup"], [role="group"], fieldset');
+  assert.ok(grupo, "a opção não está dentro de nenhum grupo");
+  const referencias = grupo.getAttribute("aria-labelledby");
+  if (referencias) {
+    return referencias.split(/\s+/)
+      .map((id: string) => grupo.ownerDocument.getElementById(id)?.textContent?.trim() ?? "")
+      .join(" ");
+  }
+  const rotulo = grupo.getAttribute("aria-label");
+  if (rotulo) return rotulo.trim();
+  return grupo.querySelector("legend")?.textContent?.trim() ?? "";
+}
+
+Deno.test("cada grupo de opção do cadastro anuncia a própria pergunta", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    const perguntas = {
+      modalidade: "Modalidade preferida",
+      areas: "Áreas de interesse (opcional)",
+      pessoa_com_deficiencia: "Você é pessoa com deficiência (PCD)? (opcional)",
+    };
+    for (const [campo, pergunta] of Object.entries(perguntas)) {
+      const opcao = form.querySelector(`input[name="${campo}"]`);
+      assert.ok(opcao, `o campo ${campo} não tem opções na tela`);
+      assert.equal(nomeAcessivelDoGrupo(opcao), pergunta, campo);
+    }
+  } finally {
+    a.close();
+  }
+});
+
 function respostaSobreDeficiencia(form: { querySelector: (seletor: string) => { value: string } | null }) {
   return form.querySelector('input[name="pessoa_com_deficiencia"]:checked')?.value ?? "nenhuma marcada";
 }
