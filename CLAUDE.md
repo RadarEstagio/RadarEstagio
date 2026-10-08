@@ -328,8 +328,12 @@ O porquê de cada decisão de schema, migration e webhook, com as medições, es
   `DIAS_ATE_APAGAR_CONTA_EXCLUIDA` (60 dias). A sessão não é encerrada ao pedir: sem ela a pessoa
   não voltaria para cancelar. Conta confirmada **sem perfil** usa
   `apagar_minha_conta_sem_perfil()` (`0024`) e é apagada na hora.
+- **A sessão de uma conta é a que o banco atribuiu** (`0035`): apagamento só leva eventos anônimos
+  de sessão vinda de evento com `origem = 'banco'` e sem evento de outro `user_id`, nas três
+  consultas. Nunca escolher sessão pelo `sessao_id` que o navegador gravou.
 - **Cadastro que não confirma o e-mail tem prazo** (`0030`): todo link novo descarta o cadastro
-  pendente, e o job apaga o pendente com 2 dias e a conta não confirmada com 30.
+  pendente, e o job apaga o pendente com 2 dias e a conta não confirmada com 30. Pendente que não
+  valida mais é descartado na confirmação, sem derrubá-la (`0035`).
 - **Conferir `supabase migration list --linked` depois de aplicar e antes do próximo push.** SQL
   rodado fora do CLI não entra no histórico e quebra o push seguinte no primeiro `add column`.
 - **NUL e surrogate solto saem na entrada**, nos modelos (`domain/texto.py`): o Postgres recusa
