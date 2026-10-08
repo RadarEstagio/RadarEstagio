@@ -93,6 +93,7 @@ function app(
     erroDaSessao = null,
     erroDoPerfil = null,
     armazenado = {},
+    bibliotecaCarregada = true,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -106,6 +107,7 @@ function app(
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
     armazenado?: Record<string, string>;
+    bibliotecaCarregada?: boolean;
   } = {},
 ) {
   const erros: Error[] = [];
@@ -225,7 +227,7 @@ function app(
     telegramBot: "bot",
     turnstileSiteKey: key,
   };
-  w.supabase = { createClient: () => client };
+  if (bibliotecaCarregada) w.supabase = { createClient: () => client };
   w.eval(script);
   return {
     w,
@@ -738,6 +740,36 @@ Deno.test("sair da conta com o armazenamento bloqueado volta ao site", async () 
     assert.ok(a.calls.some(([nome]) => nome === "logout"));
     assert.equal(a.w.document.querySelector("#account-page").hidden, true);
     assert.equal(a.w.document.querySelector("#landing-page").hidden, false);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("sair da conta nao deixa perfil nem token do Telegram no DOM", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: {
+      ...profile,
+      token_vinculo: "token-de-uso-unico",
+      aceita_emails: true,
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.equal(doc.querySelector("#telegram-link").href.includes("token-de-uso-unico"), true);
+    doc.querySelector("#success-account").click();
+    await settle();
+    assert.equal(doc.querySelector("#account-summary").textContent.includes("Computação"), true);
+    assert.equal(doc.querySelector("#account-skills").childElementCount, 1);
+    doc.querySelector("#logout-account").click();
+    await settle();
+    assert.equal(doc.querySelector("#account-summary").textContent, "");
+    assert.equal(doc.querySelector("#account-skills").childElementCount, 0);
+    assert.equal(doc.querySelector("#account-emails").checked, false);
+    assert.equal(doc.querySelector("#telegram-link").hasAttribute("href"), false);
+    assert.equal(doc.documentElement.innerHTML.includes("token-de-uso-unico"), false);
   } finally {
     a.close();
   }
@@ -1350,6 +1382,18 @@ Deno.test("falha de rede ao abrir minha conta leva ao login, não ao começo do 
     assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
     assert.equal(doc.querySelector(".form-step.is-active").dataset.step, "1");
     assert.match(doc.querySelector("#form-message").textContent, CONTA_INDISPONIVEL);
+  } finally { a.close(); }
+});
+
+Deno.test("supabase-js que não carrega avisa do carregamento, sem culpar a configuração", async () => {
+  const a = app({ bibliotecaCarregada: false });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const mensagem = doc.querySelector("#form-message").textContent;
+    assert.equal(mensagem.includes("config.js"), false);
+    assert.equal(mensagem.includes("chave pública"), false);
+    assert.match(mensagem, /Recarregue a página/);
   } finally { a.close(); }
 });
 
@@ -3386,6 +3430,42 @@ Deno.test("trocar o curso na edicao descarta as areas do curso antigo no payload
 });
 
 
+Deno.test("trocar o curso por um nome fora do catalogo preserva as areas salvas", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: {
+      ...profile,
+      telegram_chat_id: "123",
+      areas_de_interesse: ["desenvolvimento_web"],
+    } as unknown as Profile,
+  });
+  try {
+    await settle();
+    a.w.setAuthMode("login");
+    const doc = a.w.document;
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    const form = doc.querySelector("#signup-form");
+    form.elements.curso.value = "Curso Que Ninguem Tem";
+    doc.querySelector("#next-step").click();
+    await settle();
+    doc.querySelector("#next-step").click();
+    await settle();
+    assert.equal(doc.querySelector("#campo-areas").hidden, true);
+    form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
+    await settle();
+    const update = called(a.calls, "update");
+    assert.equal(update[2].curso, "Curso Que Ninguem Tem");
+    assert.deepEqual(
+      Array.from(update[2].areas_de_interesse as string[]),
+      ["desenvolvimento_web"],
+    );
+  } finally {
+    a.close();
+  }
+});
+
 Deno.test("habilidades sugeridas acompanham o curso digitado", async () => {
   for (const [curso, esperada, indevida] of [
     ["Direito", "Redação", "Python"],
@@ -3457,6 +3537,26 @@ Deno.test("resposta assíncrona de curso anterior não substitui o curso atual",
     const sugeridas = [...a.w.document.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
     assert.equal(sugeridas.includes("Python"), true);
     assert.equal(sugeridas.includes("Redação"), false);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("avancar para habilidades deixa o foco na etapa, nao no corpo da pagina", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    doc.querySelector(".js-open-signup").click();
+    await settle();
+    const form = doc.querySelector("#signup-form");
+    form.elements.curso.value = "Computação";
+    form.elements.periodo.value = "3";
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.activeElement.dataset.skill, "Python");
+    await settle();
+    assert.notEqual(doc.activeElement, doc.body);
+    assert.equal(doc.querySelector("#skill-picker").contains(doc.activeElement), true);
   } finally {
     a.close();
   }
@@ -4225,6 +4325,39 @@ Deno.test("catálogo de áreas já carregado não some quando um pedido anterior
       throw new Error("offline");
     };
     assert.ok(await a.w.carregarAreas(), "o catálogo carregado virou nulo");
+  } finally {
+    a.close();
+  }
+});
+
+function nomeAcessivelDoGrupo(opcao: ReturnType<TestWindow["document"]["querySelector"]>) {
+  const grupo = opcao.closest('[role="radiogroup"], [role="group"], fieldset');
+  assert.ok(grupo, "a opção não está dentro de nenhum grupo");
+  const referencias = grupo.getAttribute("aria-labelledby");
+  if (referencias) {
+    return referencias.split(/\s+/)
+      .map((id: string) => grupo.ownerDocument.getElementById(id)?.textContent?.trim() ?? "")
+      .join(" ");
+  }
+  const rotulo = grupo.getAttribute("aria-label");
+  if (rotulo) return rotulo.trim();
+  return grupo.querySelector("legend")?.textContent?.trim() ?? "";
+}
+
+Deno.test("cada grupo de opção do cadastro anuncia a própria pergunta", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    const perguntas = {
+      modalidade: "Modalidade preferida",
+      areas: "Áreas de interesse (opcional)",
+      pessoa_com_deficiencia: "Você é pessoa com deficiência (PCD)? (opcional)",
+    };
+    for (const [campo, pergunta] of Object.entries(perguntas)) {
+      const opcao = form.querySelector(`input[name="${campo}"]`);
+      assert.ok(opcao, `o campo ${campo} não tem opções na tela`);
+      assert.equal(nomeAcessivelDoGrupo(opcao), pergunta, campo);
+    }
   } finally {
     a.close();
   }

@@ -13,6 +13,9 @@ VERSAO_DE_CADA_ACAO = {
 }
 
 LINHA_COM_USES = re.compile(r"^\s*(?:-\s+)?uses:\s*(.*?)\s*$")
+INICIO_DO_BLOCO_DE_ENV = re.compile(r"^(\s*)env:\s*$")
+INTERPOLACAO_DE_INPUT = "${{ inputs."
+PEDIDO_DE_MASCARA = "::add-mask::"
 ACAO_FIXADA_POR_HASH = re.compile(r"[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}")
 ACAO_LOCAL = re.compile(r"\./[\w./-]+")
 VERSAO_FIXA = re.compile(r"\d+\.\d+\.\d+")
@@ -96,6 +99,33 @@ def entradas_de_cada_uso(workflow, acao):
         )
         usos.append(entradas_do_passo(linhas[inicio:fim], coluna))
     return usos
+
+
+def linhas_de_env_com_input(linhas):
+    coluna_do_env = None
+    encontradas = []
+    for numero, linha in enumerate(linhas):
+        inicio = INICIO_DO_BLOCO_DE_ENV.match(linha)
+        if inicio:
+            coluna_do_env = len(inicio.group(1))
+            continue
+        if coluna_do_env is not None and (not linha.strip() or recuo(linha) <= coluna_do_env):
+            coluna_do_env = None
+        if coluna_do_env is not None and INTERPOLACAO_DE_INPUT in linha:
+            encontradas.append(numero)
+    return encontradas
+
+
+def inputs_em_env_sem_mascara(workflow):
+    linhas = workflow.read_text().splitlines()
+    mascara = next(
+        (numero for numero, linha in enumerate(linhas) if PEDIDO_DE_MASCARA in linha), None
+    )
+    return [
+        linhas[numero].strip()
+        for numero in linhas_de_env_com_input(linhas)
+        if mascara is None or mascara > numero
+    ]
 
 
 def acoes_fora_da_regra(workflow):
@@ -203,6 +233,50 @@ def test_checkout_de_workflow_com_segredos_nao_deixa_o_token_no_git():
         for checkout, persistencia in persistencia_de_cada_checkout.items()
         if persistencia != "false"
     } == {}
+
+
+def test_nenhum_env_de_workflow_recebe_input_do_dispatch_sem_mascara():
+    fora_da_regra = {
+        workflow.name: linhas
+        for workflow in workflows()
+        if (linhas := inputs_em_env_sem_mascara(workflow))
+    }
+
+    assert fora_da_regra == {}
+
+
+@pytest.mark.parametrize(
+    ("passos", "fora_da_regra"),
+    [
+        (
+            "      - run: ./radar\n        env:\n          PERFIL: ${{ inputs.perfil }}\n",
+            ["PERFIL: ${{ inputs.perfil }}"],
+        ),
+        (
+            '      - run: echo "::add-mask::$(cat perfil)"\n'
+            "      - run: ./radar\n"
+            "        env:\n"
+            "          PERFIL: ${{ inputs.perfil }}\n",
+            [],
+        ),
+        (
+            "      - run: ./radar\n"
+            "        env:\n"
+            "          PERFIL: ${{ inputs.perfil }}\n"
+            '      - run: echo "::add-mask::$(cat perfil)"\n',
+            ["PERFIL: ${{ inputs.perfil }}"],
+        ),
+        ("      - run: ./radar --perfil ${{ inputs.perfil }}\n", []),
+        ('      - run: ./radar\n        env:\n          DIAS: "5"\n', []),
+    ],
+)
+def test_regra_do_env_olha_so_o_bloco_de_env_e_exige_a_mascara_antes(
+    tmp_path, passos, fora_da_regra
+):
+    workflow = tmp_path / "exemplo.yml"
+    workflow.write_text(f"on: workflow_dispatch\n\njobs:\n  a:\n    steps:\n{passos}")
+
+    assert inputs_em_env_sem_mascara(workflow) == fora_da_regra
 
 
 def test_setup_uv_instala_um_numero_fixo_de_versao_do_uv():

@@ -1018,6 +1018,48 @@ def test_requisito_sem_nivel_aceita_habilidade_conhecida():
     assert resultado.requisitos_nao_atendidos == []
 
 
+@pytest.mark.parametrize(
+    "exigida",
+    ["Excel básico", "Excel iniciante", "Noções de Excel", "Conhecimento básico em Excel"],
+)
+def test_requisito_de_nivel_basico_e_atendido_por_habilidade_sem_nivel(exigida: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica([exigida]), perfil_de_direito(["Excel", "Redação"])
+    )
+
+    assert resultado.requisitos_atendidos == [exigida]
+    assert resultado.requisitos_nao_atendidos == []
+
+
+def test_requisito_de_nivel_basico_vale_a_mesma_nota_do_requisito_sem_nivel():
+    estudante = perfil_de_direito(["Excel", "Redação"])
+
+    sem_nivel = pontuar(vaga(), extracao_juridica(["Excel"]), estudante)
+    com_nivel_basico = pontuar(vaga(), extracao_juridica(["Excel básico"]), estudante)
+
+    assert com_nivel_basico.nota == sem_nivel.nota
+
+
+def test_requisito_composto_de_nivel_basico_e_atendido_por_habilidades_sem_nivel():
+    resultado = pontuar(
+        vaga(),
+        extracao_juridica(["Inglês e Espanhol básicos"]),
+        perfil_de_direito(["Inglês", "Espanhol"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Inglês e Espanhol básicos"]
+
+
+@pytest.mark.parametrize("exigida", ["Excel intermediário", "Excel avançado"])
+def test_requisito_acima_do_basico_ainda_exige_nivel_declarado(exigida: str):
+    resultado = pontuar(
+        vaga(), extracao_juridica([exigida]), perfil_de_direito(["Excel", "Redação"])
+    )
+
+    assert resultado.requisitos_atendidos == []
+    assert resultado.requisitos_nao_atendidos == [exigida]
+
+
 def test_requisito_generico_e_atendido_por_habilidade_especifica_da_familia():
     resultado = pontuar(
         vaga(),
@@ -1373,7 +1415,7 @@ def test_forma_que_nao_e_banco_relacional_fica_fora_da_classe(forma: str):
     [
         ("Azure SQL Database", ["SQL Server avançado", "Azure SQL Database"]),
         ("Consultas SQL", ["SQL avançado", "Consultas SQL"]),
-        ("Linguagem SQL", ["SQL básico", "Linguagem SQL"]),
+        ("Linguagem SQL", ["SQL intermediário", "Linguagem SQL"]),
         ("Microsoft SQL Server", ["SQL Server intermediário", "Microsoft SQL Server"]),
         ("Postgre", ["PostgreSQL avançado", "Postgre"]),
         ("Oracle DB", ["Oracle Database avançado", "Oracle DB"]),
@@ -1876,8 +1918,8 @@ def test_parte_com_nivel_proprio_nao_herda_o_da_ultima():
 def test_parte_do_perfil_sem_nivel_nao_herda_o_da_primeira():
     resultado = pontuar(
         vaga(),
-        extracao_juridica(["Espanhol básico"]),
-        perfil_de_direito(["Inglês básico e Espanhol"]),
+        extracao_juridica(["Espanhol intermediário"]),
+        perfil_de_direito(["Inglês intermediário e Espanhol"]),
     )
 
     assert resultado.requisitos_atendidos == []

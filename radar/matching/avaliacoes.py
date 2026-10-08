@@ -121,8 +121,9 @@ QUALIFICADORES_DE_HABILIDADE = re.compile(
 )
 COMPLEMENTO_ENTRE_PARENTESES = re.compile(r"\([^)]*\)")
 NIVEL_NAO_INFORMADO = 0
+NIVEL_BASICO = 1
 PADROES_DE_NIVEL = (
-    (re.compile(r"\b(?:basic[oa]s?|iniciantes?|nocoes)\b"), 1),
+    (re.compile(r"\b(?:basic[oa]s?|iniciantes?|nocoes)\b"), NIVEL_BASICO),
     (re.compile(r"\bintermediari[oa]s?\b"), 2),
     (re.compile(r"\b(?:avancad[oa]s?|fluentes?|nativ[oa]s?|dominio)\b"), 3),
 )
@@ -733,7 +734,7 @@ def _satisfeita(
     nivel_do_perfil = _nivel_no_perfil(nome, exigencia.palavras, habilidades_do_perfil)
     if nivel_do_perfil is None:
         return False
-    return exigencia.nivel == NIVEL_NAO_INFORMADO or nivel_do_perfil >= exigencia.nivel
+    return exigencia.nivel <= NIVEL_BASICO or nivel_do_perfil >= exigencia.nivel
 
 
 def _nivel_no_perfil(
