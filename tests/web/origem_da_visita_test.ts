@@ -178,14 +178,94 @@ Deno.test("os outros eventos do site seguem sem lista de propriedades", async ()
   }
 });
 
+Deno.test("a pagina da visita é um caminho em texto, e não qualquer valor", async () => {
+  const db = await bancoComAsMigracoes();
+  try {
+    const recusadas = [
+      { pagina: 12345 },
+      { pagina: 0 },
+      { pagina: true },
+      { pagina: null },
+      { pagina: { caminho: "/" } },
+      { pagina: ["/"] },
+      { pagina: "" },
+      { pagina: "index.html" },
+      { pagina: "/" + "a".repeat(20) },
+      { pagina: "x".repeat(243) },
+      { pagina: "<script>alert(1)</script>" },
+      { pagina: "/?token=abc123" },
+      { pagina: "/busca?q=estagio" },
+      { pagina: "/pagina#topo" },
+      { pagina: "https://radarestagio.com/" },
+      { pagina: "voce@email.com" },
+      { pagina: "/uma pagina" },
+      { pagina: "/caminho%2Fx" },
+    ];
+
+    for (const propriedades of recusadas) {
+      assert.equal(
+        await visitar(db, propriedades),
+        CHECK_VIOLADO,
+        JSON.stringify(propriedades),
+      );
+    }
+
+    for (
+      const pagina of [
+        "/",
+        "/index.html",
+        "/privacidade.html",
+        "/termos.html",
+        "/web/index.html",
+        "/" + "a".repeat(19),
+      ]
+    ) {
+      assert.equal(await visitar(db, { pagina }), null, pagina);
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a pagina cortada em 20 ainda diz que a visita veio de uma página local", async () => {
+  const db = await bancoComAsMigracoes();
+  try {
+    const locaisDoMetricasSql = [
+      "/web/index.html",
+      "/Users/igorcarvalho/",
+      "/home/estudante/radar",
+      "/private/tmp/claude-",
+      "/C:/radar/web/index",
+    ];
+
+    for (const pagina of locaisDoMetricasSql) {
+      const cortada = Array.from(pagina).slice(0, 20).join("");
+      assert.equal(await visitar(db, { pagina: cortada }), null, cortada);
+      const { rows } = await db.query<{ local: boolean }>(
+        `select $1 ~ '(^|/)web/' or $1 ~ '^/(Users|home|private|tmp|var|mnt|Volumes|opt)/'
+           or $1 ~ '^/[A-Za-z]:' local`,
+        [cortada],
+      );
+      assert.equal(rows[0].local, true, cortada);
+    }
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("a lista da origem não revalida as visitas já gravadas", async () => {
   const db = await bancoComAsMigracoes();
   try {
-    const { rows } = await db.query<{ convalidated: boolean }>(
-      "select convalidated from pg_constraint where conname = 'origem_da_visita_permitida'",
-    );
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].convalidated, false);
+    for (
+      const restricao of ["origem_da_visita_permitida", "pagina_da_visita_permitida"]
+    ) {
+      const { rows } = await db.query<{ convalidated: boolean }>(
+        "select convalidated from pg_constraint where conname = $1",
+        [restricao],
+      );
+      assert.equal(rows.length, 1, restricao);
+      assert.equal(rows[0].convalidated, false, restricao);
+    }
   } finally {
     await db.close();
   }
