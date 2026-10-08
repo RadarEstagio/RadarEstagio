@@ -408,6 +408,14 @@ a `domain/areas.py`; área nova no catálogo exige o ícone na faixa. O JavaScri
 cada metade da fila passar da largura de qualquer tela, com as cópias fora do leitor de tela e do
 Tab; com duas cópias só, a fila acabava antes da borda direita.
 
+A fila anda por JavaScript, a 16 px por segundo, e não por `@keyframes` (08/10/2026). Com a animação em CSS, a pausa
+dependia de `:hover`, que cada navegador atualiza de um jeito: no Safari, um ícone que chegava sob o
+cursor parado travava a fila sozinho; no Chrome, ele passava sem parar e a fila parava de repente no
+movimento seguinte; nos dois, a parada era seca. O loop em `requestAnimationFrame` só considera o
+ícone apontado quando o mouse se mexe (`pointermove`), desacelera e acelera em vez de parar seco e
+para também com o foco do teclado. Os testes do site guardam os quadros do `requestAnimationFrame` e
+os rodam com `passarQuadros`.
+
 Clicar numa área abre o cadastro com a lista de cursos restrita aos `cursos_sugeridos` dela. Não
 preenche um curso, porque quase toda área tem vários; área de um curso só (Direito) já vem
 preenchida. Rascunho com curso não é sobrescrito, digitar volta a buscar em todos os cursos e as
