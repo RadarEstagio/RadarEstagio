@@ -274,6 +274,83 @@ confere as linhas antigas, mas barra `update` futuro de linha web antiga maior q
 nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
 dos limites.
 
+## O resumo mede o tamanho do banco (08/10/2026)
+
+A `0023` já dizia que banco cheio no plano gratuito fica só leitura e que isso para cadastro,
+vínculo e diário, mas o único limite que existia era o dos eventos do site. `pg_database_size`
+não era consultado em lugar nenhum do `radar/`, então ninguém sabia a que distância do teto o
+banco estava sem abrir o painel. O resumo de operação passa a trazer uma linha —
+`Tamanho do banco: 19,3 MB de 500,0 MB (4%)` — e um aviso a partir de
+`PROPORCAO_DE_ALERTA_DO_BANCO`, 70% dos 500 MB do plano. A consulta é
+`SQL_TAMANHO_DO_BANCO`, o limite é `LIMITE_DO_PLANO_EM_BYTES` e a leitura que falha só gera
+aviso no log, como a dos eventos do site: capacidade é sensor, não motivo para derrubar a
+execução. Sem migration: o papel que o job já usa lê `pg_database_size`.
+
+**Medição de 08/10/2026 em produção**, só leitura. Banco com 20.237.459 bytes, 19,3 MB dos
+500 MB do plano, 3,9%. `vagas` tem 2.586 linhas em 5.944 kB (2.354 bytes por linha com índices
+e TOAST), `avaliacoes` 3.179 linhas em 1.288 kB (415 bytes por linha), `envios` 927 linhas em
+232 kB e `eventos_produto` 613 linhas em 272 kB. `vagas` e `avaliacoes` somadas são 7.232 kB,
+36,6% do banco; os outros 12 MB são a base fixa do projeto (`auth`, catálogos, schemas do
+Supabase) e não encolhem com retenção nenhuma. De 29/09 a 08/10, com 4 perfis ativos, entraram
+70 vagas e 94 avaliações por dia, cerca de 0,2 MB por dia. Nesse ritmo o aviso de 70% chegaria
+em ~1.650 dias e o teto em ~2.400.
+
+**Por que 70% e não os 80% da cota da Adzuna.** O que importa aqui não é a proporção, é quantos
+dias sobram entre o aviso e o banco só leitura. `avaliacoes` escala com usuário, não com
+calendário: são ~23 avaliações por perfil por dia, então o cenário de divulgação que a própria
+`0023` usa (150 contas) dá ~3.500 avaliações (1,4 MB) e ~560 eventos (0,25 MB) por dia, perto de
+1,9 MB por dia — 350 MB em ~6 meses e 500 MB em ~9. A 70%, os 150 MB restantes são ~79 dias para
+decidir entre podar, mudar de plano ou pagar; a 80%, os 100 MB seriam ~53. E sob o abuso contínuo
+que a `0023` mediu (~35 MB por dia) os mesmos 150 MB são ~4 dias, mais de uma execução diária,
+que é o mínimo para o aviso chegar antes do teto. Hoje, a 3,9%, o limiar não toca sozinho.
+
+**Retenção de `vagas` e `avaliacoes` fica fora (08/10/2026).** A janela mais larga que o sistema
+usa é de 30 dias (`SQL_VAGAS_ENVIADAS_RECENTES`, as respostas de `SQL_ULTIMA_RESPOSTA_POR_VAGA`,
+`SQL_VAGAS_ENCERRADAS`, `SQL_AREAS_RECUSADAS` e a coorte do `metricas.sql`). Apagar vaga com
+`coletada_em` fora dela hoje tiraria 415 das 2.586 vagas, 16% da tabela e 606 kB de linhas: 3%
+do banco e 0,12% do plano. O que isso custaria, medido:
+
+- **A cascata não para nas avaliações.** `envios.vaga_id` é `on delete cascade` desde a `0001`,
+  então as 415 vagas levariam 305 avaliações **e 156 envios**. 15 desses envios são dos últimos
+  30 dias, dentro da coorte do `metricas.sql`, que conta entregas, aberturas, úteis e
+  irrelevantes a partir de `envios`: o funil perderia entrega já medida e `vagas_enviadas` cairia
+  sem nada ter mudado no produto.
+- **`eventos_produto.vaga_id` é `on delete set null`** (`0005`): 8 eventos ficariam sem vaga, 2
+  deles dos últimos 30 dias. `SQL_VAGAS_ENCERRADAS` e `SQL_AREAS_RECUSADAS` juntam evento e
+  `vagas`, então uma marcação de "Vaga encerrada" dentro da janela deixaria de tirar a vaga de
+  todos, e a subárea recusada deixaria de descontar o fator de interesse.
+- **O dedupe depende de `vagas`, não só de `envios`.** `ids_ja_enviadas` é vitalício e lê
+  `(fonte, id_externo)` de `vagas` junto com `envios`; a chave da duplicata mora em `vagas` e o
+  `envios` cascateia. Apagar a vaga apaga o par, não só o anúncio. Na prática a reentrega é
+  improvável — nenhuma vaga fora de 30 dias foi extraída na última semana, a Adzuna só devolve
+  anúncio com até `DIAS_RECENTES` dias e o maior intervalo medido entre coleta e extração foi de
+  8 dias — mas `coletada_em` não é atualizado no `on conflict` do `SQL_GUARDAR_VAGA`, então a
+  janela mede a primeira coleta, não a circulação.
+- **A exportação do titular encolhe.** `baixar_meus_dados()` (`0015`) devolve `avaliacoes` e
+  `envios` do dono; o perfil mais afetado perderia 209 das suas 896 avaliações, 23%. A política
+  de privacidade permite que o anúncio público permaneça no catálogo, então isso é capacidade e
+  não privacidade, mas é histórico que a pessoa hoje consegue baixar.
+- **`delete` não devolve espaço ao disco.** Linha apagada só fica morta e reutilizável dentro da
+  própria tabela; `pg_database_size` não cai sem `VACUUM FULL`, que trava a tabela. Retenção
+  atrasaria o crescimento, nunca seria a alavanca para destravar um banco já cheio.
+- **A variante conservadora rende menos ainda.** Apagar só vaga fora de 30 dias sem avaliação,
+  envio nem evento são 144 linhas e 148 kB, 0,03% do plano, e deixaria no catálogo as outras 342
+  vagas sem vínculo algum.
+
+Decisão: fica só o sensor. 0,12% do plano não paga 156 envios, o funil de 30 dias e 23% da
+exportação de um titular. Revisitar quando o aviso dos 70% chegar, ou antes se `vagas` e
+`avaliacoes` passarem de 100 MB. O pré-requisito para a retenção valer é trocar o
+`on delete cascade` de `envios.vaga_id` por `(fonte, id_externo)` guardado em `envios`, para o
+dedupe e o funil sobreviverem ao catálogo.
+
+Limites aceitos: `pg_database_size` mede o banco inteiro, inclusive `auth` e catálogos, e não é
+o mesmo número que o painel cobra como disco, que inclui WAL e overhead — o sensor serve para a
+tendência e o aviso, não para auditar o plano. Os 500 MB são constante no código: plano novo
+exige mexer em `LIMITE_DO_PLANO_EM_BYTES`. A leitura acontece uma vez por execução diária, então
+pico que enche o banco entre duas execuções não é visto antes de encher, e é para isso que existe
+o teto por hora da `0023`. E leitura que falha tira a linha do resumo sem dizer nada ali: o
+motivo fica só no log.
+
 ## Origem da visita tem lista de propriedades (05/10/2026, `0032`)
 
 Nenhuma `landing_visualizada` dizia de onde a pessoa veio (RCD-04), e o banco só limitava o
@@ -309,6 +386,61 @@ guardar, e o banco o cobra.
   pelo aplicativo de origem; é leitura de canal, não de pessoa. O rótulo tem parênteses, que o
   check não deixa um `utm_source` ter, para os dois nunca se somarem. `utm_medium` e `utm_campaign`
   ficam gravados e ainda sem relatório.
+
+## Grant largo e a pagina sem regra (08/10/2026, `0034`)
+
+Dois achados médios da auditoria de 07/10/2026, resolvidos na mesma migration porque os dois são
+barreira que o banco deveria cobrar e não cobrava.
+
+- **`vagas`, `envios` e `avaliacoes` ficaram com o grant padrão do Supabase.** Todas as outras
+  tabelas receberam `revoke all` explícito; essas três seguiram com `arwdDxtm` para `anon` e
+  `authenticated`, confirmado em produção. A barreira que a [arquitetura](arquitetura.md) descreve
+  — RLS ligada e nenhuma policy — bloqueia `select`, `insert`, `update` e `delete`, mas
+  **`TRUNCATE` é a única operação DML que o PostgreSQL não submete a RLS**, então esse caminho
+  passava. Não havia caminho alcançável, porque o PostgREST não emite `TRUNCATE`, e é essa
+  ausência de uso que permite revogar o grant inteiro em vez de só o `TRUNCATE`. O custo de
+  errar era desproporcional ao de corrigir: perder `envios` apagaria o histórico que evita
+  reenvio, invalidaria os tokens que a `ir` lê e derrubaria o funil. Medido na reprodução: pela
+  chave pública, `truncate envios` e `truncate avaliacoes` passavam; `truncate vagas` já falhava
+  na chave estrangeira, e `cascade` falhava em `eventos_produto`, cujo grant a `0005` tirou.
+- **As sequências `vagas_id_seq`, `avaliacoes_id_seq` e `eventos_produto_id_seq` tinham grant que
+  ninguém usa.** As três colunas são `generated always as identity`, e o `nextval` dessa forma
+  roda por dentro, sem conferir privilégio. A `0005` chegou a conceder `usage, select` na
+  `eventos_produto_id_seq`, por precaução que a coluna dispensa; o teste prova que a visita
+  continua entrando como `anon` depois de a sequência ficar sem grant.
+- **`pagina` era a única propriedade da visita sem regra.** A `0032` fechou `host`,
+  `referrer_dominio`, `utm_source`, `utm_medium` e `utm_campaign` e deixou livre justamente a
+  chave que sempre existe: passavam número, booleano, objeto, lista, `<script>`, caminho com
+  query e texto de 243 caracteres, porque só o envelope de 256 bytes da `0023` segurava. O corte
+  em 20 caracteres existia apenas no JavaScript, enquanto este documento e o
+  [contrato frontend](contrato-front.md) afirmavam que o banco cobrava.
+- **O formato é `^/[A-Za-z0-9._:/-]{0,19}$`**, com tipo, tamanho e conjunto de caracteres no
+  espírito das irmãs. A barra inicial é obrigatória porque o valor é o `pathname` do navegador, e
+  `/` e `:` entram no conjunto porque é caminho, não rótulo: o `metricas.sql` reconhece a sessão
+  local por `(^|/)web/`, `^/(Users|home|private|…)/` e `^/[A-Za-z]:`, e um check que recusasse o
+  caminho de Windows faria a visita inteira ser perdida e a sessão da equipe contar como
+  estudante. Maiúscula continua valendo, porque o site **não** normaliza `pagina` como normaliza
+  os rótulos, e caminho é sensível a caixa: minúscula obrigatória exigiria mexer no `app.js`
+  junto e, até o deploy, derrubaria a visita toda por causa de um campo. O que a lista fechada
+  quer recusar continua recusado: URL com token, e-mail e texto digitado não têm `?`, `=`, `@`,
+  `%`, `#`, `<`, `>` nem espaço no conjunto, e nada começa por `/` sem ser caminho.
+- **Medição em produção (08/10/2026).** 324 visitas entre 31/08 e 08/10, todas com `pagina` e
+  todas em texto. Abaixo de 20 caracteres há três valores distintos — `/` (275), `/index.html`
+  (22) e `/web/index.html` (15), 312 linhas —, todos dentro do formato novo. As outras 12 linhas
+  têm de 40 a 121 caracteres e vêm de páginas abertas do disco em 09/09 e 30/09, antes de o corte
+  de 20 entrar no site em 05/10: **essas 12 violariam a regra nova**, e é por isso que o check é
+  `not valid`, como os da `0023` e da `0032`. Nada atualiza linha de visita, então elas ficam
+  como estão; se um dia alguma for atualizada, o `update` falha e a linha precisa ser corrigida
+  antes. O site publicado hoje não produz valor recusado, porque corta em 20 e os prefixos locais
+  sobrevivem ao corte.
+- **Ordem de publicação.** A `0034` pode ir ao banco antes ou depois do merge, e o certo é antes:
+  ela só tira grant que ninguém usa e acrescenta check `not valid`, nada no site nem no `radar/`
+  depende do que saiu. O job entra como `postgres` pela `DATABASE_URL` e as Edge Functions `ir` e
+  `telegram-webhook` usam a chave de serviço, papéis que a migration não toca; o site só escreve
+  `perfis` e `eventos_produto`. `baixar_meus_dados()` lê `avaliacoes` e `envios`, mas é
+  `security definer`, então segue lendo sem o grant de `authenticated`. Invertendo a ordem nada
+  quebra: até a migration ser aplicada, o banco continua aceitando `pagina` fora de formato e
+  mantendo o grant — o risco segue o de hoje, nem maior nem menor.
 
 ## Contas da equipe fora do funil (proposta de 05/10/2026)
 
@@ -516,3 +648,48 @@ e o link `/?conta`. Se não acha, a resposta de vínculo de sempre.
   enviadas ao bot, e a mudança de texto legal muda a versão. Até lá, publicar a função é decisão
   de quem revisar o PR. Não há limite por pessoa: quem está vinculado pode encher o chat de
   operação, e o primeiro sinal de abuso pede um teto por perfil por hora.
+
+## Identificador de perfil não vai inteiro ao log (08/10/2026)
+
+O repositório é público e o log do Actions também, então qualquer visitante lia no job diário o
+`id` de `perfis` de quem estava sendo atendido. A auditoria de 17/09 já apontava isso como grave
+(é o que motivou o `trecho_do_id` da `0031`, na seção "Listas do perfil em uma dimensão"), e a de
+07/10 o encontrou aberto: 27 escritas do `radar/` mandavam o id inteiro, entre elas as 8 de
+"usuário %s" do `pipeline.py`, a trava não liberada do `storage/postgres.py`, as duas da
+`entrega_imediata.py` e o `print` de "Perfil ... sem entrega a fazer" do `__main__.py`.
+
+- **Um lugar só decide a forma do identificador.** `trecho_do_id` saiu do `storage/postgres.py`
+  para `domain/identificadores.py`, porque agora o pipeline, a CLI, a entrega imediata e o
+  relatório do juiz também o usam e nenhum deles deve depender do driver do banco. Ele devolve os
+  8 primeiros caracteres entre reticências (`...a1b2c3d4...`), então a mensagem diz sozinha que o
+  identificador está cortado e nenhum texto de log precisou mudar — só a forma do id.
+- **8 caracteres continuam servindo.** São 4 bilhões de combinações: acham a linha no banco de
+  quem já tem acesso a ele (`where id::text like '...%'`), com colisão improvável nos perfis que
+  existem, e não identificam ninguém para quem só tem o log. Mais curto começaria a casar com
+  várias linhas; mais longo não acrescenta diagnóstico e aproxima o id inteiro, que é o que a
+  auditoria proíbe. Nenhum hash novo: o trecho já resolve e um hash não se procura no banco.
+- **O input do workflow era o pior caso.** `radar-diario.yml` recebia o id em
+  `env: PERFIL: ${{ inputs.perfil }}`; como input de `workflow_dispatch` não é segredo, o runner
+  imprimia o bloco `env:` sem máscara e o id vazava em **toda** entrega imediata, inclusive nas
+  bem-sucedidas. Agora o primeiro passo do job lê o id de `$GITHUB_EVENT_PATH` com `jq` e registra
+  `::add-mask::`, que vale pelo resto do job; o passo do radar lê o payload do mesmo jeito e segue
+  chamando `rodar --perfil`. Mascarar num passo que recebesse o input por `env:` não resolveria:
+  esse passo imprimiria o valor antes de a máscara existir. E o id não viaja por `GITHUB_ENV`
+  porque isso daria a quem dispara o job uma forma de escrever outras variáveis de ambiente no
+  passo que tem os segredos de produção.
+- **Testes que cobram as duas pontas.** `tests/test_id_no_log.py` percorre o AST do `radar/` e
+  recusa `logger`/`print` que receba `usuario.id` ou `apenas_o_perfil` fora de `trecho_do_id`,
+  mais os casos por `caplog` da entrega imediata e da seleção do perfil;
+  `tests/test_workflows.py` recusa `${{ inputs.` dentro de bloco `env:` sem máscara registrada
+  antes, em qualquer workflow.
+
+Limites aceitos: a máscara cobre o log do job, não o que a página da execução mostra sobre o
+disparo — conferir numa execução real antes de considerar o id fora de alcance público. O resumo
+de operação nunca mostrou identificador, e o relatório do juiz, que mostrava os mesmos 8
+caracteres por conta própria, passou a usar a função; o chat de operação continua recebendo o id
+do perfil na mensagem livre encaminhada, que é privado da equipe. A
+descrição de erro do Telegram vai ao log como o Telegram a escreveu: se um dia ela citar o
+destinatário, o `chat_id` entra no log por esse caminho. Os arquivos de rotulagem do `julgar` e
+do `gabarito` continuam gravando `perfil_id` inteiro: são locais e não versionados, mas um deles
+commitado vaza o id. Os logs do Supabase e do Cloudflare não entram nessa regra porque são
+privados das contas; a `telegram-webhook` não escreve o id no `console`, só o status do disparo.

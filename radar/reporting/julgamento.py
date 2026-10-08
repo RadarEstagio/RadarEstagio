@@ -2,6 +2,7 @@ from collections import Counter
 from statistics import median
 
 from radar.domain.datas import data_local
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import (
     ChaveDaEntrega,
     EntregaJulgada,
@@ -80,7 +81,7 @@ def linhas_gerais(julgadas: list[EntregaJulgada]) -> list[str]:
 def linhas_por_perfil(julgadas: list[EntregaJulgada]) -> list[str]:
     grupos: dict[str, list[EntregaJulgada]] = {}
     for item in julgadas:
-        chave = f"{item.entrega.perfil.curso} ({str(item.entrega.perfil_id)[:8]})"
+        chave = f"{item.entrega.perfil.curso} ({trecho_do_id(item.entrega.perfil_id)})"
         grupos.setdefault(chave, []).append(item)
     return [
         f"  {chave}: {sum(i.julgamento.relevante for i in itens)}/{len(itens)} relevantes"

@@ -38,6 +38,8 @@ ACAO_DE_AINDA_VOU_VER = "ainda_vou_ver"
 FONTE_ADZUNA = "adzuna"
 URL_DA_ADZUNA = "https://www.adzuna.com.br"
 PROPORCAO_DE_ALERTA_DA_COTA = 0.8
+PROPORCAO_DE_ALERTA_DO_BANCO = 0.7
+BYTES_POR_MEGABYTE = 1024 * 1024
 ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
 ROTULOS_DE_MOTIVO = {
@@ -150,6 +152,10 @@ def formatar_milhar(numero: int) -> str:
     return f"{numero:,}".replace(",", ".")
 
 
+def formatar_megabytes(quantidade_de_bytes: int) -> str:
+    return f"{quantidade_de_bytes / BYTES_POR_MEGABYTE:.1f} MB".replace(".", ",")
+
+
 def formatar_resumo_da_execucao(
     momento: datetime,
     usuarios: int,
@@ -169,6 +175,8 @@ def formatar_resumo_da_execucao(
     adzuna_esgotada: bool = False,
     coletas_incompletas: dict[str, str] | None = None,
     eventos_do_site: EventosDoSite | None = None,
+    banco_em_bytes: int | None = None,
+    banco_limite: int | None = None,
     usuarios_sem_mensagem_por_falha: int = 0,
     mensagens_seguradas_por_falta_de_extracao: int = 0,
     mensagens_seguradas_pela_coleta_incompleta: int = 0,
@@ -233,6 +241,8 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Coleta da {escape(rotulo_fonte(fonte))} incompleta: {escape(motivo)}")
     if eventos_do_site is not None:
         linhas.extend(linhas_dos_eventos_do_site(eventos_do_site))
+    if banco_em_bytes is not None and banco_limite:
+        linhas.extend(linhas_do_tamanho_do_banco(banco_em_bytes, banco_limite))
     return "\n".join(linhas)
 
 
@@ -244,6 +254,16 @@ def linhas_dos_eventos_do_site(eventos: EventosDoSite) -> list[str]:
     if eventos.horas_no_teto:
         horas = "1 hora" if eventos.horas_no_teto == 1 else f"{eventos.horas_no_teto} horas"
         linhas.append(f"⚠️ Eventos do site chegaram ao teto em {horas} das últimas 24 h")
+    return linhas
+
+
+def linhas_do_tamanho_do_banco(em_bytes: int, limite: int) -> list[str]:
+    linhas = [
+        f"Tamanho do banco: {formatar_megabytes(em_bytes)} de {formatar_megabytes(limite)} "
+        f"({round(100 * em_bytes / limite)}%)"
+    ]
+    if em_bytes >= PROPORCAO_DE_ALERTA_DO_BANCO * limite:
+        linhas.append(f"⚠️ Banco passou de {PROPORCAO_DE_ALERTA_DO_BANCO:.0%} do limite do plano")
     return linhas
 
 

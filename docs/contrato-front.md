@@ -20,7 +20,8 @@ O cadastro coleta o perfil antes de `signUp`. Envia em `options.data.cadastro_ra
 As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `assets/areas.json`
 (arquivo gerado a partir de `radar/domain/areas.py`), descobre a área do curso digitado e monta
 só as subáreas dela. Curso sem área conhecida esconde o campo em vez de oferecer opções de outra
-formação. O banco recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
+formação, e o envio repete as áreas já salvas em vez de gravar lista vazia (08/10/2026). O banco
+recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
 A área sai de `normalizarCurso`, que espelha `normalizar_curso` com os prefixos, sufixos,
 sinônimos, genéricos e abreviações do `areas.json`; `tests/fixtures/cursos_normalizados.json`
 trava a paridade. Com o catálogo carregado e o curso sem área, a etapa de habilidades abre com um
@@ -133,7 +134,9 @@ legadas. Foi escolhido o limite nativo para texto e erro explícito para quantid
 apagar uma seleção sem explicação. Remover a proteção do site deixaria a recusa só no banco.
 
 Logout e troca de conta limpam interesses e dados de perfil em memória; respostas pendentes
-do catálogo não podem restaurar outra sessão. Ao editar a mesma conta, seleções existentes
+do catálogo não podem restaurar outra sessão. Sair da conta também limpa o que a conta desenhou na
+tela — resumo, habilidades, preferência de e-mails e o `href` do botão do Telegram — e devolve
+`contaMostrada` a nulo (08/10/2026). Ao editar a mesma conta, seleções existentes
 devem ser preservadas. Fechar o diálogo de cadastro (Esc, X, clique fora ou voltar) não limpa: o
 rascunho fica na memória da página, sem armazenamento, e reabre na mesma etapa, sem senha nem e-mail
 e só para a mesma dona, o usuário da sessão ou o visitante. Qualquer troca de dona limpa tudo,
@@ -236,7 +239,11 @@ aceita em evento web (`0023`).
 
 A `landing_visualizada` leva `pagina` (20 caracteres), `host` (30) e, quando existem,
 `referrer_dominio` (36), `utm_source` (20), `utm_medium` (16) e `utm_campaign` (20) (`0032`); o
-banco recusa qualquer outra chave nesse evento. `propriedadesDaVisita` só envia o hostname do
+banco recusa qualquer outra chave nesse evento. Desde a `0034` (08/10/2026) o banco também cobra
+o formato da `pagina`, que era a única da lista sem regra: texto que comece por `/`, com no
+máximo 20 caracteres, em `[A-Za-z0-9._:/-]`. É o `pathname` do navegador cortado em 20, então
+maiúscula e `:` passam e o corte do `app.js` deixou de ser a única barreira; mudar o corte ou
+deixar de cortar exige mudar a migration junto. `propriedadesDaVisita` só envia o hostname do
 `document.referrer`, sem `www`, sem o do próprio site (com ou sem `www` nos dois lados) e nunca
 com caminho ou query, e normaliza os rótulos (minúsculas, `[a-z0-9._-]`): o check recusa a
 visita inteira se um rótulo fugir disso, então
@@ -441,3 +448,45 @@ chave antes da primeira pintura, então a escolha vale ao recarregar, entre pág
 futuras. Com o armazenamento bloqueado, o site fica no claro e o botão vale só durante a visita.
 A chave tem o mesmo nome da usada até 16/09, então quem escolheu o escuro antes volta a vê-lo.
 A Política diz que a escolha fica no navegador.
+
+### Perda de dado na conta, foco e queda do CDN (08/10/2026).
+
+Quatro achados médios da auditoria de 07/10/2026, todos em `web/assets/app.js`.
+
+**Curso fora do catálogo não apaga as áreas salvas.** `areasDeInteresseDoFormulario` devolvia lista
+vazia quando `areaDoCurso` não reconhecia o curso: quem editava o perfil e trocava o curso por um
+nome que o catálogo não conhece via o campo de áreas sumir da tela e o `update` gravar lista vazia,
+sem aviso. Agora esse caminho repete as áreas salvas, como o caminho sem catálogo carregado já
+fazia, e a linha "curso/alias ausente … não deve apagar seleção do usuário" da tabela de
+elegibilidade passa a valer nos dois. Trocar por outra área reconhecida continua descartando as
+subáreas que a área nova não oferece. Limite aceito: quem desmarcou uma subárea e só depois trocou
+o curso por um desconhecido volta a gravar a lista salva, não a desmarcação; o banco aceita, porque
+valida cada valor contra o catálogo inteiro e não contra a área do curso.
+
+**Avançar para as habilidades não joga o foco no `<body>`.** `showStep` foca o primeiro controle da
+etapa, e a continuação assíncrona de `montarHabilidadesDoCurso()` trocava os filhos do
+`#skill-picker` logo depois, destruindo o elemento focado: quem usa teclado ou leitor de tela
+voltava ao topo do documento a cada avanço. Agora o foco que estava dentro do picker volta para a
+primeira sugestão nova, ou para o campo de habilidade digitada quando o curso não tem sugestões. As
+outras etapas não precisam disso porque não trocam o conteúdo depois do `showStep`.
+
+**Sair da conta apaga o que a conta desenhou.** O handler escondia os painéis e deixava no DOM o
+resumo do perfil, as habilidades, a preferência de e-mails e, no `href` do `#telegram-link`, o
+`token_vinculo` de quem ainda não tinha vinculado. O token é de uso único, então em navegador
+compartilhado quem o lesse no fonte ligaria o próprio Telegram àquela conta. `esquecerContaMostrada()`
+limpa os quatro e devolve `contaMostrada` a nulo. A limpeza fica no handler de sair e não em
+`esconderConta()` porque `prepareMissingProfile` grava o `contaMostrada` antes de chamar
+`resetDialogView()`, e limpar ali tiraria a conferência de sessão da conta sem perfil.
+
+**Falha de carregamento deixou de virar erro de configuração.** O `supabase-js` vem do jsDelivr, e
+`getClient` tratava biblioteca ausente e configuração ausente na mesma mensagem, que manda informar
+a chave pública em `web/config.js` — um arquivo que está certo e que o estudante não tem como
+editar. A biblioteca ausente ganhou mensagem própria, que pede recarregar a página e trocar de rede
+ou desligar o bloqueador, e a mensagem de configuração voltou a valer só para a configuração.
+Medimos a alternativa de servir o arquivo do próprio domínio, que o Workers já faria: são 218.610
+bytes (54 KiB em gzip) sobre os 364 KiB do `web/`, a versão passaria a subir à mão com o arquivo
+baixado e conferido no lugar da linha única do `index.html` que
+`test_cliente_supabase_tem_versao_fixa` prende, e a troca de origem do script mexeria no que a
+branch `fix/acessibilidade-e-cabecalhos` está definindo nos cabeçalhos. Por isso ficou o CDN.
+Limite aceito: sem o CDN o cadastro e o login continuam impossíveis; o que muda é a mensagem dizer
+o que a pessoa pode fazer.

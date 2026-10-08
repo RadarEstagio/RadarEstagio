@@ -2,7 +2,7 @@ import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -12,6 +12,7 @@ import radar.__main__ as cli
 from radar.collectors.adzuna import LIMITE_POR_DIA, URL_BUSCA, CotaDaAdzuna
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import reserva_do_diario
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import ExtracaoDaVaga, Perfil, Usuario, Vaga
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.entrega_imediata import (
@@ -285,6 +286,23 @@ def test_entrega_imediata_sem_ninguem_a_atender_nem_abre_a_cota(
 
     assert "reserva" not in capturado
     assert "sem entrega a fazer" in capsys.readouterr().out
+
+
+def test_perfil_sem_entrega_a_fazer_sai_na_tela_so_pelo_trecho_do_id(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    sem_entrega = VINCULADO.model_copy(update={"id": uuid4()})
+    repositorio = RepositorioComMarcas([sem_entrega], atendidos=[sem_entrega.id])
+    interceptar_execucao(monkeypatch)
+
+    with cliente_sem_rede() as cliente:
+        cli.executar_fluxo(settings_de_teste(), cliente, repositorio, sem_entrega.id)
+
+    saida = capsys.readouterr().out
+    assert "sem entrega a fazer" in saida
+    assert str(sem_entrega.id) not in saida
+    assert sem_entrega.id.hex not in saida
+    assert trecho_do_id(sem_entrega.id) in saida
 
 
 def test_coleta_que_falha_deixa_a_entrega_imediata_para_a_execucao_seguinte(
