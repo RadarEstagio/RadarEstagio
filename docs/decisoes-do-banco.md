@@ -463,3 +463,48 @@ e o link `/?conta`. Se não acha, a resposta de vínculo de sempre.
   enviadas ao bot, e a mudança de texto legal muda a versão. Até lá, publicar a função é decisão
   de quem revisar o PR. Não há limite por pessoa: quem está vinculado pode encher o chat de
   operação, e o primeiro sinal de abuso pede um teto por perfil por hora.
+
+## Identificador de perfil não vai inteiro ao log (08/10/2026)
+
+O repositório é público e o log do Actions também, então qualquer visitante lia no job diário o
+`id` de `perfis` de quem estava sendo atendido. A auditoria de 17/09 já apontava isso como grave
+(é o que motivou o `trecho_do_id` da `0031`, na seção "Listas do perfil em uma dimensão"), e a de
+07/10 o encontrou aberto: 27 escritas do `radar/` mandavam o id inteiro, entre elas as 8 de
+"usuário %s" do `pipeline.py`, a trava não liberada do `storage/postgres.py`, as duas da
+`entrega_imediata.py` e o `print` de "Perfil ... sem entrega a fazer" do `__main__.py`.
+
+- **Um lugar só decide a forma do identificador.** `trecho_do_id` saiu do `storage/postgres.py`
+  para `domain/identificadores.py`, porque agora o pipeline, a CLI, a entrega imediata e o
+  relatório do juiz também o usam e nenhum deles deve depender do driver do banco. Ele devolve os
+  8 primeiros caracteres entre reticências (`...a1b2c3d4...`), então a mensagem diz sozinha que o
+  identificador está cortado e nenhum texto de log precisou mudar — só a forma do id.
+- **8 caracteres continuam servindo.** São 4 bilhões de combinações: acham a linha no banco de
+  quem já tem acesso a ele (`where id::text like '...%'`), com colisão improvável nos perfis que
+  existem, e não identificam ninguém para quem só tem o log. Mais curto começaria a casar com
+  várias linhas; mais longo não acrescenta diagnóstico e aproxima o id inteiro, que é o que a
+  auditoria proíbe. Nenhum hash novo: o trecho já resolve e um hash não se procura no banco.
+- **O input do workflow era o pior caso.** `radar-diario.yml` recebia o id em
+  `env: PERFIL: ${{ inputs.perfil }}`; como input de `workflow_dispatch` não é segredo, o runner
+  imprimia o bloco `env:` sem máscara e o id vazava em **toda** entrega imediata, inclusive nas
+  bem-sucedidas. Agora o primeiro passo do job lê o id de `$GITHUB_EVENT_PATH` com `jq` e registra
+  `::add-mask::`, que vale pelo resto do job; o passo do radar lê o payload do mesmo jeito e segue
+  chamando `rodar --perfil`. Mascarar num passo que recebesse o input por `env:` não resolveria:
+  esse passo imprimiria o valor antes de a máscara existir. E o id não viaja por `GITHUB_ENV`
+  porque isso daria a quem dispara o job uma forma de escrever outras variáveis de ambiente no
+  passo que tem os segredos de produção.
+- **Testes que cobram as duas pontas.** `tests/test_id_no_log.py` percorre o AST do `radar/` e
+  recusa `logger`/`print` que receba `usuario.id` ou `apenas_o_perfil` fora de `trecho_do_id`,
+  mais os casos por `caplog` da entrega imediata e da seleção do perfil;
+  `tests/test_workflows.py` recusa `${{ inputs.` dentro de bloco `env:` sem máscara registrada
+  antes, em qualquer workflow.
+
+Limites aceitos: a máscara cobre o log do job, não o que a página da execução mostra sobre o
+disparo — conferir numa execução real antes de considerar o id fora de alcance público. O resumo
+de operação nunca mostrou identificador, e o relatório do juiz, que mostrava os mesmos 8
+caracteres por conta própria, passou a usar a função; o chat de operação continua recebendo o id
+do perfil na mensagem livre encaminhada, que é privado da equipe. A
+descrição de erro do Telegram vai ao log como o Telegram a escreveu: se um dia ela citar o
+destinatário, o `chat_id` entra no log por esse caminho. Os arquivos de rotulagem do `julgar` e
+do `gabarito` continuam gravando `perfil_id` inteiro: são locais e não versionados, mas um deles
+commitado vaza o id. Os logs do Supabase e do Cloudflare não entram nessa regra porque são
+privados das contas; a `telegram-webhook` não escreve o id no `console`, só o status do disparo.
