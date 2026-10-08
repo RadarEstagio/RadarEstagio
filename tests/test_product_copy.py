@@ -371,7 +371,8 @@ def test_faixa_abaixo_do_hero_mostra_as_areas_e_nao_marcas():
         in css
     )
     reduzida = css[css.index("@media (prefers-reduced-motion: reduce)") :]
-    assert ".areas-track { animation: none !important;" in reduzida
+    assert ".areas-track { flex-wrap: wrap;" in reduzida
+    assert "deslizar-areas" not in css
 
 
 def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():

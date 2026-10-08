@@ -88,6 +88,7 @@ function app(
     key = "",
     temaDoSistema = "claro",
     telaLarga = false,
+    movimentoReduzido = false,
     armazenamentoBloqueado = false,
     erroDaSessao = null,
     erroDoPerfil = null,
@@ -100,6 +101,7 @@ function app(
     key?: string;
     temaDoSistema?: "claro" | "escuro";
     telaLarga?: boolean;
+    movimentoReduzido?: boolean;
     armazenamentoBloqueado?: boolean;
     erroDaSessao?: Error | null;
     erroDoPerfil?: Error | null;
@@ -119,7 +121,8 @@ function app(
       Object.defineProperty(janela, "matchMedia", {
         value: (consulta: string) => ({
           matches: (consulta === "(prefers-color-scheme: dark)" && temaDoSistema === "escuro") ||
-            (consulta === "(min-width: 981px)" && telaLarga),
+            (consulta === "(min-width: 981px)" && telaLarga) ||
+            (consulta === "(prefers-reduced-motion: reduce)" && movimentoReduzido),
           media: consulta,
         }),
       });
@@ -138,9 +141,19 @@ function app(
   const w = dom.window;
   const temaAntesDoApp = w.document.documentElement.dataset.tema;
   w.scrollTo = () => {};
+  let quadrosPendentes: ((timestamp: number) => void)[] = [];
+  let instanteDoQuadro = 0;
   w.requestAnimationFrame = (callback: (timestamp: number) => void) => {
-    callback(0);
-    return 1;
+    quadrosPendentes.push(callback);
+    return quadrosPendentes.length;
+  };
+  const passarQuadros = (quantidade: number, milissegundosPorQuadro = 16) => {
+    for (let quadro = 0; quadro < quantidade; quadro += 1) {
+      const agora = quadrosPendentes;
+      quadrosPendentes = [];
+      instanteDoQuadro += milissegundosPorQuadro;
+      for (const callback of agora) callback(instanteDoQuadro);
+    }
   };
   w.fetch = async (caminho: string) => ({
     ok: Object.hasOwn(catalogos, String(caminho)),
@@ -222,6 +235,7 @@ function app(
     client,
     close: () => w.close(),
     authEvent: (event: string) => authCallback(event),
+    passarQuadros,
   };
 }
 
@@ -293,6 +307,54 @@ Deno.test("faixa abaixo do hero mostra cada área do catálogo uma vez para o le
     assert.equal(acessiveis.every((botao) => botao.querySelector(".area-name").textContent.trim()), true);
     assert.equal(copias.length, nomesDoCatalogo.length * 5);
     assert.equal(copias.every((botao) => botao.tabIndex === -1), true);
+  } finally { a.close(); }
+});
+
+function deslocamentoDaFaixa(a: ReturnType<typeof app>) {
+  const transform = a.w.document.querySelector(".areas-track").style.transform;
+  return Number(transform.match(/translate3d\((-?[\d.]+)px/)?.[1] ?? 0);
+}
+
+Deno.test("faixa de áreas anda a 25 px por segundo", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.passarQuadros(1);
+    const inicio = deslocamentoDaFaixa(a);
+    a.passarQuadros(60, 1000 / 60);
+    assert.ok(Math.abs(inicio - deslocamentoDaFaixa(a) - 25) < 0.01);
+  } finally { a.close(); }
+});
+
+Deno.test("faixa desacelera até parar quando o mouse se mexe sobre um ícone e volta quando ele sai", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.passarQuadros(30);
+    const doc = a.w.document;
+    const icone = doc.querySelector(".areas-track li:not([aria-hidden]) .area-button");
+    icone.querySelector(".area-tile").dispatchEvent(new a.w.Event("pointermove", { bubbles: true }));
+    assert.equal(icone.classList.contains("is-apontada"), true);
+    const aoEntrar = deslocamentoDaFaixa(a);
+    a.passarQuadros(2);
+    assert.notEqual(deslocamentoDaFaixa(a), aoEntrar);
+    a.passarQuadros(120);
+    const parada = deslocamentoDaFaixa(a);
+    a.passarQuadros(60);
+    assert.ok(Math.abs(deslocamentoDaFaixa(a) - parada) < 0.01);
+    doc.querySelector(".areas-marquee").dispatchEvent(new a.w.Event("pointerleave"));
+    assert.equal(icone.classList.contains("is-apontada"), false);
+    a.passarQuadros(120);
+    assert.ok(deslocamentoDaFaixa(a) < parada - 1);
+  } finally { a.close(); }
+});
+
+Deno.test("com movimento reduzido a faixa de áreas fica parada", async () => {
+  const a = app({ movimentoReduzido: true });
+  try {
+    await settle();
+    a.passarQuadros(60);
+    assert.equal(a.w.document.querySelector(".areas-track").style.transform, "");
   } finally { a.close(); }
 });
 
