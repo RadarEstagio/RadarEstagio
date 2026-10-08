@@ -1,4 +1,5 @@
 const botaoDoTema = document.querySelector("#theme-toggle");
+const CHAVE_DO_TEMA = "radar-tema";
 
 function mostrarTema(tema) {
   document.documentElement.dataset.tema = tema;
@@ -9,6 +10,9 @@ mostrarTema(document.documentElement.dataset.tema === "escuro" ? "escuro" : "cla
 botaoDoTema.addEventListener("click", () => {
   const tema = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
   mostrarTema(tema);
+  try {
+    localStorage.setItem(CHAVE_DO_TEMA, tema);
+  } catch {}
 });
 
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#17201a" />
-    <script>document.documentElement.dataset.tema = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";</script>
+    <script>document.documentElement.dataset.tema = "claro"; try { if (localStorage.getItem("radar-tema") === "escuro") document.documentElement.dataset.tema = "escuro"; } catch {}</script>
     <meta name="robots" content="noindex" />
     <title>Termos de Uso — Radar de Estágio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

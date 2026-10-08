@@ -31,10 +31,9 @@ Abaixo do hero, uma faixa mostra as 12 áreas do catálogo como ícones; clicar 
 cadastro com os cursos dela. A landing não exibe marcas de empresas. A FAQ usa `details/summary` nativo
 e explica cobertura, vínculo, dias sem vaga, candidatura e controles da conta.
 
-Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. A
-escolha vale para o cadastro e a página da conta durante a visita; ao abrir o site de novo, o
-tema inicial acompanha o modo claro ou escuro do sistema. Termos e Privacidade mantêm o próprio
-visual escuro.
+Um botão no cabeçalho alterna entre tema claro e escuro, com sol no claro e lua no escuro. O
+site começa no claro, e a escolha do botão fica guardada no navegador: vale ao recarregar, ao
+voltar outro dia e também nos Termos e na Privacidade.
 
 ### Conta e acesso
 

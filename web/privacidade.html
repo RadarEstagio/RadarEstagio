@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#17201a" />
-    <script>document.documentElement.dataset.tema = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";</script>
+    <script>document.documentElement.dataset.tema = "claro"; try { if (localStorage.getItem("radar-tema") === "escuro") document.documentElement.dataset.tema = "escuro"; } catch {}</script>
     <meta name="robots" content="noindex" />
     <title>Política de Privacidade — Radar de Estágio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -42,8 +42,8 @@ Para assuntos de privacidade e pedidos sobre seus dados: <a href="mailto:contato
 cadastro. Por isso, não tratamos esse histórico como informação irreversivelmente anônima.
 As propriedades dos eventos são destinadas a informações sobre o uso do produto, sem campos
 de texto livre para dados pessoais.</p>
-<p>O navegador guarda dados da sessão de acesso e um identificador local usado nas métricas. O
-tema inicial acompanha a preferência de aparência informada pelo navegador.
+<p>O navegador guarda dados da sessão de acesso e um identificador local usado nas métricas. Se
+você troca o tema no botão do site, a escolha entre claro e escuro também fica guardada nele.
 O fluxo de cadastro também pode manter temporariamente um perfil pendente no dispositivo.
 Provedores de hospedagem, autenticação e proteção contra abuso processam dados técnicos das
 requisições, como endereço IP e informações do navegador, conforme a configuração de cada
