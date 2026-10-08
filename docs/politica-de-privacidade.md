@@ -1,6 +1,6 @@
 # Política de Privacidade — Radar de Estágio
 
-**Versão 2026-10-05 · Em vigor desde 05/10/2026.**
+**Versão 2026-10-08 · Em vigor desde 08/10/2026.**
 
 Este texto é o mesmo de `web/privacidade.html`, revisado por Igor, Ian e Miguel, e descreve o
 tratamento de dados no piloto.
@@ -173,6 +173,6 @@ não inclui senhas, hashes, tokens de acesso ou credenciais dos serviços.
 
 ## 8. Atualizações
 
-Esta é a versão 2026-10-05, em vigor desde 05/10/2026. Alterações relevantes serão informadas
+Esta é a versão 2026-10-08, em vigor desde 08/10/2026. Alterações relevantes serão informadas
 no site, com a nova versão e a data de vigência. Novas finalidades que exijam consentimento
 terão uma escolha específica apresentada antes do início desse uso.

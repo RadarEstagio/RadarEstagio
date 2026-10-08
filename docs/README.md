@@ -25,7 +25,7 @@ validação com usuários são estados diferentes.
 - [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
   no plano geral, e o que virou regra, na arquitetura e no `CLAUDE.md`.
 - [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): versão
-  `2026-10-05`, em vigor desde 05/10/2026; manter iguais aos HTML e a `VERSAO_DOS_TERMOS`.
+  `2026-10-08`, em vigor desde 08/10/2026; manter iguais aos HTML e a `VERSAO_DOS_TERMOS`.
 - [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
   [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
   decisões externas ainda abertos, com dados ausentes explicitados.

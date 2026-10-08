@@ -135,6 +135,14 @@ Igor, Ian e Miguel são os responsáveis pelos dados nos [Termos](../web/termos.
   encaminhadas ao chat de operação pela `telegram-webhook`, com a base legal (art. 7º, V) e o que
   a exclusão da conta não apaga. Os Termos só trocam a data. Contas que aceitaram `2026-10-02`
   continuam válidas: nenhuma finalidade nova exige consentimento.
+- **Versão `2026-10-08`:** a Política passa a nomear os endereços que o navegador contata ao
+  abrir qualquer página — `fonts.googleapis.com`, `fonts.gstatic.com`, `cdn.jsdelivr.net` e
+  `challenges.cloudflare.com` — e inclui o jsDelivr na infraestrutura fora do Brasil; o porquê
+  está no [contrato frontend](contrato-front.md). Os Termos só trocam a data. Contas que
+  aceitaram `2026-10-05` continuam válidas, pela mesma regra das versões anteriores: nenhuma
+  finalidade nova exige consentimento, o tratamento descrito já acontecia e o que mudou foi a
+  transparência sobre ele. O texto de 07/10 sobre o tema guardado no navegador entrou sem trocar
+  a versão, e esta corrige isso: mudança de texto legal muda a versão.
 
 ### Responsabilidades combinadas (02/10/2026)
 
