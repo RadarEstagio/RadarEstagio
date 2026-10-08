@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 PASTA_DOS_WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
+PASTA_DAS_FUNCOES_EDGE = Path(__file__).parent.parent / "supabase/functions"
 
 VERSAO_DE_CADA_ACAO = {
     "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": "v7.0.1",
@@ -16,6 +17,7 @@ LINHA_COM_USES = re.compile(r"^\s*(?:-\s+)?uses:\s*(.*?)\s*$")
 ACAO_FIXADA_POR_HASH = re.compile(r"[\w.-]+/[\w.-]+(?:/[\w./-]+)?@[0-9a-f]{40}")
 ACAO_LOCAL = re.compile(r"\./[\w./-]+")
 VERSAO_FIXA = re.compile(r"\d+\.\d+\.\d+")
+COMANDOS_DE_CADA_FUNCAO_EDGE = ["deno test", "deno check index.ts"]
 NIVEIS_SO_DE_LEITURA = {"read", "none"}
 PERMISSOES_EM_LINHA_SO_DE_LEITURA = {"read-all", "{}"}
 
@@ -96,6 +98,39 @@ def entradas_de_cada_uso(workflow, acao):
         )
         usos.append(entradas_do_passo(linhas[inicio:fim], coluna))
     return usos
+
+
+def passos_do_workflow(workflow):
+    linhas = workflow.read_text().splitlines()
+    inicios = [i for i, linha in enumerate(linhas) if linha.lstrip().startswith("- ")]
+    limites = [*inicios[1:], len(linhas)]
+    return [linhas[inicio:fim] for inicio, fim in zip(inicios, limites, strict=True)]
+
+
+def entradas_com_nome(passo, nomes):
+    entradas = {}
+    for linha in passo:
+        nome, _, valor = linha.strip().removeprefix("- ").partition(":")
+        if nome in nomes:
+            entradas[nome] = sem_aspas(valor)
+    return entradas
+
+
+def comandos_por_diretorio(workflow):
+    comandos = {}
+    for passo in passos_do_workflow(workflow):
+        entradas = entradas_com_nome(passo, {"working-directory", "run"})
+        if "working-directory" in entradas and "run" in entradas:
+            comandos.setdefault(entradas["working-directory"], []).append(entradas["run"])
+    return comandos
+
+
+def funcoes_edge():
+    return sorted(
+        f"supabase/functions/{pasta.name}"
+        for pasta in PASTA_DAS_FUNCOES_EDGE.iterdir()
+        if (pasta / "index.ts").exists()
+    )
 
 
 def acoes_fora_da_regra(workflow):
@@ -229,3 +264,21 @@ def test_dependabot_propoe_em_pr_as_versoes_novas_das_acoes_depois_de_uma_espera
     assert 'directory: "/"' in linhas
     assert "cooldown:" in linhas
     assert "groups:" in linhas
+
+
+def test_ci_roda_os_testes_e_a_checagem_de_tipos_de_cada_funcao_edge():
+    comandos = {
+        diretorio: lista
+        for workflow in workflows()
+        for diretorio, lista in comandos_por_diretorio(workflow).items()
+    }
+
+    assert funcoes_edge()
+    assert {
+        funcao: [
+            comando
+            for comando in COMANDOS_DE_CADA_FUNCAO_EDGE
+            if comando not in comandos.get(funcao, [])
+        ]
+        for funcao in funcoes_edge()
+    } == {funcao: [] for funcao in funcoes_edge()}
