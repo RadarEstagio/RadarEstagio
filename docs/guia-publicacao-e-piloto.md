@@ -211,6 +211,51 @@ Redirect Rules** (modelo "Redirect from WWW to root", 301, preservando a query).
 Edge Certificates**, ligue "Always Use HTTPS" e deixe o HSTS desligado. Não altere os MX e os TXT
 do e-mail.
 
+### Cabeçalhos de resposta do site (08/10/2026)
+
+Até 07/10 o site respondia sem nenhum cabeçalho de segurança: `curl -I https://radarestagio.com`
+devolvia só `content-type`, `cache-control`, `nel`, `report-to`, `server`, `cf-ray` e `alt-svc`.
+O Workers com arquivos estáticos lê `web/_headers`, que não vai para o ar como arquivo, e ele passa
+a mandar em `/*`:
+
+| Cabeçalho | Valor | O que protege |
+|---|---|---|
+| `X-Frame-Options` | `DENY` | Clickjacking: sem ele, qualquer origem embutia o site num iframe e cobria o painel da conta, que tem "Excluir conta" a um clique e a confirmação desenhada na própria página |
+| `Content-Security-Policy` | `frame-ancestors 'none'` | A mesma proteção, na forma que os navegadores atuais leem; só restringe quem pode embutir o site, nunca o que a página carrega |
+| `X-Content-Type-Options` | `nosniff` | Impede o navegador de adivinhar o tipo de uma resposta e tratar `assets/areas.json` ou `assets/cidades.json` como script ou HTML |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | A URL de confirmação e a de recuperação do Auth, com o que vem na query, deixam de sair no `Referer` para o Google Fonts, o jsDelivr e o Turnstile; a origem continua indo nos links da Adzuna, que a atribuição pede |
+
+Nada embute o site hoje, então `DENY` não custa nada: o widget do Turnstile é um iframe **dentro**
+da nossa página, e `frame-ancestors` restringe o contrário disso.
+
+Ficou de fora, com o porquê:
+
+- **A CSP que restringe carregamento** (`script-src`, `style-src`, `connect-src`, `font-src`,
+  `frame-src`). As origens que a página usa hoje, conferidas no código: `'self'` (`config.js`,
+  `assets/app.js`, `assets/styles.css`, `assets/areas.json`, `assets/cidades.json`,
+  `assets/adzuna-logo.png`), `https://cdn.jsdelivr.net` (o `@supabase/supabase-js@2.116.0` do
+  `index.html`), `https://challenges.cloudflare.com` (o `turnstile/v0/api.js` que o `app.js`
+  injeta, mais o iframe do widget), `https://fonts.googleapis.com` (folha) com
+  `https://fonts.gstatic.com` (arquivos das fontes) e o host do Supabase que está no
+  `web/config.js`. Três coisas seguram a lista: o script de tema no `<head>` das três páginas é
+  inline, o que obriga `'unsafe-inline'` — e com ele a CSP deixa de barrar o XSS, que é o motivo
+  dela — ou um hash que quebra calado a cada edição daquela linha; o Turnstile não dá para
+  exercitar numa cópia local, porque o `config.js` local vai sem site key e o widget nem carrega,
+  então o que ele injeta só apareceria em produção, onde um erro de CSP derruba login, cadastro e
+  recuperação de senha de uma vez; e o host do Supabase mora no `config.js` enquanto a CSP moraria
+  no `_headers`, de modo que trocar de projeto passaria a exigir os dois arquivos juntos. O
+  caminho é publicar antes como `Content-Security-Policy-Report-Only`, abrir login, cadastro e
+  recuperação no site publicado e ler o console, e só então trocar para o cabeçalho que bloqueia.
+- **HSTS**, que segue desligado pela decisão registrada acima, com "Always Use HTTPS" ligado no
+  lugar.
+
+**Conferir depois do deploy**, porque o `_headers` só vale quando o Workers publica:
+`curl -I https://radarestagio.com`, `/termos` e `/privacidade` têm de trazer os quatro cabeçalhos,
+e `curl -I https://radarestagio.com/_headers` tem de responder 404. Se o arquivo for servido como
+texto e os cabeçalhos não aparecerem, a versão do wrangler do build não leu o `_headers`.
+`tests/test_cabecalhos_do_site.py` só garante o arquivo no repositório; quem responde é a
+publicação.
+
 **Concluído quando:** início, Termos e Privacidade abrem em HTTPS, inclusive no celular, e uma
 mudança na `main` publica sozinha, o que foi exercitado em 03/10 com o PR #120. A publicação sozinha não libera
 o piloto: os bloqueadores da seção 9 continuam valendo.

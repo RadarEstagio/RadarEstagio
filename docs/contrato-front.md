@@ -237,6 +237,10 @@ visita inteira se um rótulo fugir disso, então
 mudar a normalização exige mudar a migration e `tests/web/origem_da_visita_test.ts` juntos. A
 função não lê nem grava armazenamento. Detalhe e leitura no [relatório](metricas.md).
 
+Os cabeçalhos de resposta do site vivem em `web/_headers` e são decisão de publicação: o que cada
+um protege, o que ficou de fora e como conferir depois do deploy estão no
+[guia](guia-publicacao-e-piloto.md), seção 4.
+
 Não alterar schema pelo painel nem ampliar grants para contornar um erro do frontend.
 Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
 
@@ -433,3 +437,16 @@ chave antes da primeira pintura, então a escolha vale ao recarregar, entre pág
 futuras. Com o armazenamento bloqueado, o site fica no claro e o botão vale só durante a visita.
 A chave tem o mesmo nome da usada até 16/09, então quem escolheu o escuro antes volta a vê-lo.
 A Política diz que a escolha fica no navegador.
+
+### Cada grupo de opção do cadastro anuncia a própria pergunta (08/10/2026).
+
+"Modalidade preferida" e "Áreas de interesse" tinham o rótulo num `<span>` solto, sem `fieldset`,
+sem `legend` e sem `role` com `aria-labelledby`. O grupo mais próximo de cada opção era o
+`<fieldset>` da etapa, então o leitor de tela anunciava "Onde as vagas devem chegar?" e a pessoa
+ouvia "Remoto, botão de opção, 1 de 4" sem nunca ouvir a pergunta. Os dois passaram a usar o padrão
+que o `#campo-pcd` já tinha: o `<span>` do rótulo ganhou `id` e o `.option-grid` ganhou
+`aria-labelledby` apontando para ele, com `role="radiogroup"` nos rádios da modalidade e
+`role="group"` nas caixas das áreas, que não são rádios. O `<small>` das áreas ficou fora do nome e
+sem `aria-describedby`: ele explica a consequência da escolha, não a pergunta. O teste calcula o
+nome acessível a partir do grupo mais próximo da opção, de modo que o rótulo da etapa não passe por
+nome do grupo; grupo de opção novo no cadastro precisa de `role` e rótulo próprios.
