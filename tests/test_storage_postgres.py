@@ -537,9 +537,9 @@ def test_apagar_conta_nao_leva_junto_o_evento_de_quem_dividiu_o_navegador(
     dono = conexao.execute("select user_id from perfis where id = %s", (usuario.id,)).fetchone()[0]
     conexao.execute(
         "insert into eventos_produto (nome, origem, sessao_id, user_id) values "
-        "('landing_vista', 'site', %s, null), "
-        "('landing_vista', 'site', %s, %s), "
-        "('landing_vista', 'site', %s, %s)",
+        "('landing_visualizada', 'web', %s, null), "
+        "('conta_criada', 'banco', %s, %s), "
+        "('conta_criada', 'banco', %s, %s)",
         (sessao, sessao, dono, sessao, outro),
     )
     conexao.execute(
@@ -549,18 +549,12 @@ def test_apagar_conta_nao_leva_junto_o_evento_de_quem_dividiu_o_navegador(
 
     repositorio.apagar_contas_excluidas(60)
 
-    assert (
-        conexao.execute(
-            "select count(*) from eventos_produto where sessao_id = %s", (sessao,)
-        ).fetchone()[0]
-        == 1
-    )
-    assert (
-        conexao.execute(
-            "select user_id from eventos_produto where sessao_id = %s", (sessao,)
-        ).fetchone()[0]
-        == outro
-    )
+    restantes = conexao.execute(
+        "select user_id from eventos_produto where sessao_id = %s order by user_id nulls first",
+        (sessao,),
+    ).fetchall()
+
+    assert [linha[0] for linha in restantes] == [None, outro]
 
 
 def test_excluir_conta_sem_sessao_falha_em_vez_de_apagar_qualquer_coisa(

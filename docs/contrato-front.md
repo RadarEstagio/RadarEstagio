@@ -1,6 +1,6 @@
 # Contrato entre o site e o radar
 
-Atualizado até a migration `0032` em 05/10/2026, junto com `web/assets/app.js`.
+Atualizado até a migration `0035` em 08/10/2026, junto com `web/assets/app.js`.
 O frontend usa Supabase Auth, tabelas e RPCs autorizadas. Não chama uma API Python do Radar.
 A referência executável é o [app.js](../web/assets/app.js); o schema é definido pelo
 [histórico de migrations](../supabase/migrations/).
@@ -35,7 +35,9 @@ avisa e a digitação vale.
 
 O banco valida o payload e preserva cópia em `cadastros_pendentes`, sem acesso direto pelo
 navegador. Na confirmação, cria o perfil com os dados e aceite registrados. O retorno consulta
-sessão e banco, inclusive quando a confirmação ocorre em outro aparelho.
+sessão e banco, inclusive quando a confirmação ocorre em outro aparelho. Cópia que não valida mais
+não trava a confirmação (`0035`): o banco a descarta, confirma o e-mail e a pessoa chega em
+"Complete seu perfil", como no link reenviado.
 
 A cópia só vale para o primeiro link. `signUp` repetido com e-mail ainda não confirmado não regrava
 o cadastro nem a senha no Auth, só reenvia o link, e todo link novo (esse `signUp` ou
@@ -165,7 +167,11 @@ exige novo vínculo. O job executa a limpeza após a carência configurada de 60
 
 Conta confirmada sem perfil não tem o que marcar. `apagar_minha_conta_sem_perfil()` (`0024`) apaga
 na hora o usuário do Auth, com os eventos e o cadastro pendente por cascata, e os eventos anônimos
-das sessões dele. Recusa conta com perfil (`55000`) e chamada sem sessão (`42501`); só
+das sessões dele. Sessão dele é a que o banco atribuiu pelo `sessao_id` do cadastro, em evento com
+`origem = 'banco'`, e nunca a que tem evento de outra conta (`0035`): escrever `sessao_id` em
+evento de funil não dá a ninguém os eventos anônimos de outro navegador. O job usa a mesma regra
+nas contas excluídas e nas não confirmadas. Recusa conta com perfil (`55000`) e chamada sem
+sessão (`42501`); só
 `authenticated` executa. O site a oferece sob o formulário de completar o perfil e, depois dela,
 encerra a sessão local.
 
@@ -263,7 +269,9 @@ Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
   durante 60 dias. Cancelar exige vincular o Telegram novamente. O atendimento de pedidos
   de eliminação imediata precisa ser definido pelos responsáveis no guia de publicação.
 - Não há limpeza automática de contas abandonadas. A limpeza de sessão anônima deve atingir
-  somente dados sem proprietário, preservando outras contas do mesmo navegador.
+  somente dados sem proprietário, preservando outras contas do mesmo navegador. Desde a `0035`
+  a sessão vem do que o banco atribuiu à conta, não do que o navegador gravou no evento, e
+  navegador com duas contas fica com os eventos sem dono.
 
 ## Decisões e pós-mortems do site
 

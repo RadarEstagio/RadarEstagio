@@ -270,8 +270,15 @@ SQL_SESSOES_DAS_CONTAS_EXCLUIDAS = """
     from eventos_produto e
     join perfis p on p.user_id = e.user_id
     where e.sessao_id is not null
+      and e.origem = 'banco'
       and p.excluida_em is not null
       and p.excluida_em < now() - make_interval(days => %(dias)s)
+      and not exists (
+        select 1 from eventos_produto alheio
+        where alheio.sessao_id = e.sessao_id
+          and alheio.user_id is not null
+          and alheio.user_id <> e.user_id
+      )
 """
 
 SQL_APAGAR_EVENTOS_ANONIMOS = """
@@ -309,6 +316,13 @@ SQL_APAGAR_CONTAS_NAO_CONFIRMADAS = """
           from eventos_produto e
           join vencidas v on v.id = e.user_id
           where e.sessao_id is not null
+            and e.origem = 'banco'
+            and not exists (
+              select 1 from eventos_produto alheio
+              where alheio.sessao_id = e.sessao_id
+                and alheio.user_id is not null
+                and alheio.user_id <> e.user_id
+            )
         )
     )
     delete from auth.users

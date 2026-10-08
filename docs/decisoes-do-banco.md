@@ -104,6 +104,59 @@ já o descreve; invertida, nada quebra, porque o SQL do job não depende da `003
 do push: `select count(*) from auth.identities where identity_data ? 'cadastro_radar'` deve dar
 zero. Se a `0030` subir antes da `0028` ou da `0029`, o push delas pede `--include-all`.
 
+## Cadastro pendente inválido e sessões do apagamento (08/10/2026, `0035`)
+
+Dois achados médios da auditoria de 07/10/2026, os dois reproduzidos em PGlite antes da correção.
+
+**Um cadastro pendente que deixa de validar travava a confirmação do e-mail para sempre.** O ramo
+de confirmação de `processar_cadastro_radar` (`0014`) chamava `criar_perfil_do_cadastro` →
+`validar_cadastro_radar` sem `begin … exception`, e o gatilho é `after update of
+email_confirmed_at`: a exceção desfazia o `update` inteiro, então a pessoa clicava no link e
+recebia erro do GoTrue, em toda tentativa, sem saída. Acontece com pendente gravado antes de a
+validação ser apertada — foi o caso da `0025`, que passou a recusar campo desconhecido, e da
+`0026`, que passou a cobrar o tipo de `pessoa_com_deficiencia`. Agora a criação do perfil roda
+dentro de `begin … exception when others`: falhando, o pendente é descartado e a confirmação
+passa, e quem confirma cai em "Complete seu perfil" e preenche de novo com
+`concluir_meu_cadastro`. É o caminho que a `0030` já escolheu para o link reenviado, e o custo
+aceito é o mesmo: a pessoa preenche o formulário outra vez. O tratamento é `when others` porque
+as validações erram com códigos diferentes — `22023` no campo desconhecido e `22008` numa versão
+dos termos como `0000-00-00` —, e cada aperto novo da validação traria outro; `when others` não
+engole cancelamento de consulta nem `assert`. Limite aceito: uma falha passageira na criação do
+perfil (lock, serialização) também descarta o pendente, porque o gatilho só roda uma vez e não há
+retentativa; e nada é registrado, então o sinal é a pessoa cair em "Complete seu perfil".
+
+**A função que apaga conta sem perfil escolhia as sessões pelo que o chamador gravou.**
+`apagar_minha_conta_sem_perfil()` (`0024`) apagava os eventos anônimos das sessões vindas de
+`select sessao_id from eventos_produto where user_id = <dono>`, e `sessao_id` é coluna que
+`authenticated` grava, com a policy da `0005` exigindo só que não seja nula. Reproduzido: uma
+conta sem perfil grava um evento de funil com o `sessao_id` de outra pessoa e, ao se apagar, leva
+junto os eventos anônimos daquela sessão. A mesma forma estava em
+`SQL_SESSOES_DAS_CONTAS_EXCLUIDAS` e dentro de `SQL_APAGAR_CONTAS_NAO_CONFIRMADAS`
+(`radar/storage/postgres.py`), usadas pelo job com 60 e 30 dias. A única barreira era o
+`sessao_id` ser um UUID inadivinhável guardado no navegador. Agora as três consultas só olham
+sessões de eventos com `origem = 'banco'`, as que `processar_cadastro_radar` e
+`criar_perfil_do_cadastro` atribuem a partir do `sessao_id` do cadastro, e descartam a sessão que
+tenha evento de outro `user_id`: com duas contas no mesmo navegador não há como saber de quem são
+os eventos sem dono, e o contrato do site já manda a limpeza anônima atingir "somente dados sem
+proprietário, preservando outras contas do mesmo navegador". O que continua valendo: a conta
+apagada leva os próprios eventos anônimos, e os eventos de quem fica nunca são tocados.
+
+Medido em 07/10/2026, só leitura: 37 eventos com `origem = 'banco'`, 21 com sessão e 7 sessões
+distintas; 1 conta tem sessão só em evento `web`, nenhuma sessão tem mais de um dono, 0 cadastros
+pendentes e 0 contas sem perfil; 151 eventos anônimos vivem em sessões que também têm dono.
+Limites: aquela 1 conta é anterior à atribuição do `sessao_id` pelo banco, então o apagamento
+dela já não encontra sessão nenhuma e deixa os eventos anônimos do navegador para trás; quem
+souber o `sessao_id` de um visitante **sem conta** e o declarar no próprio `signUp` ainda faz o
+banco atribuí-lo, porque a validação não tem como conferir de quem é a sessão, e o descarte por
+`user_id` alheio só protege sessão que já tem conta; duas contas excluídas no mesmo navegador
+guardam os eventos anônimos de lá para sempre. Os testes do apagamento e do prazo passaram a
+montar a sessão como o banco monta (`tests/web/apagamento_de_contas_test.ts`,
+`prazo_do_cadastro_test.ts`, `conta_sem_perfil_test.ts` e `cadastro_pendente_test.ts`), e o
+`tests/test_storage_postgres.py`, que só roda com `DATABASE_URL_TESTE`, foi ajustado junto.
+Publicação: `db push` da `0035` antes do merge, porque a correção da confirmação é só no banco e o
+site não muda; o SQL do job vem no mesmo merge e não depende dela. Invertida, nada quebra. Se a
+`0035` subir antes da `0034`, o push dela pede `--include-all`.
+
 ## SQL aplicado fora do CLI não entra no histórico de migrations (06/09/2026)
 
 As `0014`–`0016`
