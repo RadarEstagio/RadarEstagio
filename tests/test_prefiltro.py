@@ -1175,3 +1175,56 @@ def test_quem_nao_e_pcd_continua_recebendo_vaga_afirmativa_ou_inclusiva(descrica
     nao_e_pcd = perfil().model_copy(update={"pessoa_com_deficiencia": False})
 
     assert motivo_do_descarte(vaga(descricao=descricao), nao_e_pcd) is None
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "ESTAGIARIO EM ADMINISTRAÇÃO - RJ",
+        "Estágio em Administração",
+        "Estágio em Administração de Empresas",
+        "Estágio em Finanças",
+        "Estágio em Economia",
+        "Estágio em Gestão de Pessoas",
+        "Estágio em Arquitetura",
+    ],
+)
+def test_descarta_titulo_que_nomeia_outra_area_pelo_substantivo(titulo: str):
+    assert fora_da_area_do_curso(vaga(titulo=titulo), perfil())
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Administração de Banco de Dados",
+        "Estágio em Administração de Redes",
+        "Estágio em Administração de Sistemas",
+        "Estágio em Arquitetura de Software",
+        "Estágio em Arquitetura de Dados",
+    ],
+)
+def test_mantem_titulo_de_computacao_que_usa_a_palavra_de_outra_area(titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil())
+
+
+@pytest.mark.parametrize(
+    ("curso", "titulo"),
+    [
+        ("Administração", "Estágio em Administração"),
+        ("Ciências Econômicas", "Estágio em Economia"),
+        ("Arquitetura e Urbanismo", "Estágio em Arquitetura"),
+    ],
+)
+def test_substantivo_da_propria_area_nao_descarta(curso: str, titulo: str):
+    assert not fora_da_area_do_curso(vaga(titulo=titulo), perfil(curso=curso))
+
+
+def test_vaga_de_administracao_que_cita_dados_e_ia_nao_vai_para_computacao():
+    descricao = (
+        "Apoiar na análise de dados do quadro de associados. Atualizar planilhas e "
+        "relatórios gerenciais. Colaborar em iniciativas de automação de processos e "
+        "criação de agentes de IA. Formação Acadêmica: Não informado."
+    )
+    da_vaga = vaga(titulo="ESTAGIARIO EM ADMINISTRAÇÃO - RJ", descricao=descricao)
+    assert motivo_do_descarte(da_vaga, perfil()) == "fora_da_area_do_curso"
+    assert not fora_da_area_do_curso(da_vaga, perfil(curso="Administração"))
