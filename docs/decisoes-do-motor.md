@@ -246,6 +246,24 @@ Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é 
 compilado inclui automaticamente os nomes de curso e os rótulos de subárea da área — "Estágio em
 Engenharia de Alimentos" e "Produção de Material Didático" contam sem lista extra.
 
+**As duas listas divergiram (09/10/2026).** Ser estreito não é o mesmo que esquecer o nome da
+área. O `exclusao` de administração tinha só o adjetivo (`administrativ[ao]`), enquanto o
+`titulo` tinha também o substantivo, então "ESTAGIARIO EM ADMINISTRAÇÃO" não era reconhecido
+como de outra área e a decisão caía para a descrição. Uma vaga administrativa que pede "análise
+de dados" e "criação de agentes de IA" passa por vaga de computação nesse teste: foi assim que a
+vaga da COCARI chegou a um perfil de Engenharia de Software em 06/10 com nota 58 — a descrição
+diz "Formação Acadêmica: Não informado", então o curso fica PARCIAL (teto 75) em vez de
+INCOMPATÍVEL (teto 35, abaixo da nota mínima). A mesma falta valia para finanças, economia,
+gestão de pessoas e arquitetura. O substantivo entra no `exclusao` com negativa para os sentidos
+de computação: administração de banco de dados, de redes, de sistemas e de servidores seguem
+passando, e arquitetura de software, de dados e de soluções também. Medido nas 2.704 vagas do
+banco contra os 5 perfis ativos: 88 pares mudam, **todos** no sentido de descartar, e nenhuma
+vaga passa a ser entregue. Perdas por perfil: Engenharia de Software 25 de 1.162, Ciências
+Econômicas 33 de 434, Direito 2 de 344 e Administração **0 de 1.277** — quem é da área continua
+recebendo. Limite aceito: "Estágio em Administração de Servidores" já era descartado para
+computação antes desta mudança, porque o `titulo` de computação não conhece "servidores";
+"serviço social" segue sem área dona no catálogo.
+
 Precedência do pré-filtro (`fora_da_area_do_curso`, revista em 08/09/2026 à noite):
 1. Descrição que cita o curso do perfil **com contexto de formação** ("cursando X", "estudantes
    de X", "aceita X", "cursos: X") ou que abre a qualquer formação mantém. Sem o contexto, "terá

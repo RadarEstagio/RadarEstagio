@@ -204,7 +204,11 @@ AREAS = (
             r"|gestao(?! de (?:pessoas|trafego|redes sociais|marketing|conteudo)\b)|planejamento"
             r"|pmo|secretariado|processos gerenciais|projetos|processos e qualidade"
         ),
-        exclusao=r"back[- ]?office|processos administrativos|administrativ[ao]",
+        exclusao=(
+            r"back[- ]?office|processos administrativos|administrativ[ao]"
+            r"|administracao(?! de (?:banco de dados|bancos de dados|redes|sistemas"
+            r"|servidores|ti)\b)"
+        ),
         descricao=(
             r"rotinas administrativas|processos administrativos|area administrativa"
             r"|apoio administrativo|suporte administrativo|assistente administrativ[ao]"
@@ -253,7 +257,10 @@ AREAS = (
             r"|contas a (?:pagar|receber)|investimentos?|mercado de capitais|tributari[ao]"
             r"|compliance"
         ),
-        exclusao=r"financeir[ao]|contabil|contabilidade|atuari\w*|auditoria",
+        exclusao=(
+            r"financeir[ao]|contabil|contabilidade|atuari\w*|auditoria|financas"
+            r"|economi\w*"
+        ),
         descricao=(
             r"(?<!auxilio )(?<!apoio )(?<!ajuda )financeir[ao]|contabil|contabilidade|fiscal"
             r"|controladoria|tesouraria|auditoria|economia|conciliacao bancaria|contas a pagar"
@@ -357,7 +364,7 @@ AREAS = (
         ),
         exclusao=(
             r"recursos humanos|rh|recrutamento e selecao|r&s|people|psicologia"
-            r"|treinamento e desenvolvimento"
+            r"|treinamento e desenvolvimento|gestao de pessoas"
         ),
         descricao=(
             r"recursos humanos|recrutamento e selecao|departamento pessoal|gestao de pessoas"
@@ -500,7 +507,8 @@ AREAS = (
             r"ambiental|manufatura"
             r"|producao(?! de conteudo| audiovisual| editorial| de material| de eventos"
             r"| (?:de )?videos?)"
-            r"|arquitetura e urbanismo|design de interiores|embalagens"
+            r"|arquitetura(?! de (?:software|sistemas|solucoes|dados|redes"
+            r"|informacao|ti)\b)|design de interiores|embalagens"
         ),
         descricao=(
             r"engenharia (?:civil|mecanica|eletrica|quimica|ambiental|de producao)|manufatura"
