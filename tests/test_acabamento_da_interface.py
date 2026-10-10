@@ -47,3 +47,15 @@ def test_link_de_texto_responde_ao_hover_com_a_cor_da_propria_letra():
     css = ler_css()
 
     assert ".text-link:hover { border-bottom-color: currentColor; }" in css
+
+
+def test_troca_de_tema_desliga_as_transicoes_ate_o_estilo_novo_assentar():
+    css = ler_css()
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert ".sem-transicao *:not(.theme-icon-sun, .theme-icon-moon)" in css
+    assert "transition: none !important" in css
+    assert 'raiz.classList.add("sem-transicao");' in javascript
+    assert "void raiz.offsetHeight;" in javascript
+    assert 'raiz.classList.remove("sem-transicao")' in javascript
+    assert "trocarTemaSemTransicao(tema);" in javascript

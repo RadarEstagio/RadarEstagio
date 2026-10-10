@@ -6,10 +6,18 @@ function mostrarTema(tema) {
   botaoDoTema.setAttribute("aria-pressed", String(tema === "escuro"));
 }
 
+function trocarTemaSemTransicao(tema) {
+  const raiz = document.documentElement;
+  raiz.classList.add("sem-transicao");
+  mostrarTema(tema);
+  void raiz.offsetHeight;
+  requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove("sem-transicao")));
+}
+
 mostrarTema(document.documentElement.dataset.tema === "escuro" ? "escuro" : "claro");
 botaoDoTema.addEventListener("click", () => {
   const tema = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
-  mostrarTema(tema);
+  trocarTemaSemTransicao(tema);
   try {
     localStorage.setItem(CHAVE_DO_TEMA, tema);
   } catch {}

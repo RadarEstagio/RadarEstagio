@@ -142,6 +142,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .theme-toggle { display: grid; flex: 0 0 auto; width: 48px; height: 48px; padding: 0; place-items: center; color: var(--ink-soft); cursor: pointer; transition: background-color 150ms ease-out; }
 .theme-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
 :root[data-tema="escuro"] .theme-icon-sun, :root:not([data-tema="escuro"]) .theme-icon-moon { display: none; }
+.sem-transicao *:not(.theme-icon-sun, .theme-icon-moon), .sem-transicao *::before, .sem-transicao *::after { transition: none !important; }
 @media (hover: hover) {
   .desktop-nav a:hover, .header-login:hover, .theme-toggle:hover { color: var(--accent-deep-text); background: var(--nav-hover); }
   .header-actions > .button:hover { border-color: var(--accent-deep); background: var(--accent-deep); transform: none; }
