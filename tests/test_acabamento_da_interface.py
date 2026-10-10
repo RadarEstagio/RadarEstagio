@@ -59,3 +59,18 @@ def test_troca_de_tema_desliga_as_transicoes_ate_o_estilo_novo_assentar():
     assert "void raiz.offsetHeight;" in javascript
     assert 'raiz.classList.remove("sem-transicao")' in javascript
     assert "trocarTemaSemTransicao(tema);" in javascript
+
+
+def test_icones_que_trocam_de_estado_fazem_cross_fade_em_vez_de_sumir_por_display():
+    css = ler_css()
+
+    assert ".theme-toggle svg { grid-area: 1 / 1;" in css
+    assert (
+        ':root:not([data-tema="escuro"]) .theme-icon-moon { opacity: 0; scale: .25; '
+        "filter: blur(4px); }" in css
+    )
+    assert ".theme-icon-moon { display: none; }" not in css
+    assert '.faq-list summary::before { content: "+"; }' in css
+    assert '.faq-list summary::after { content: "\\00d7";' in css
+    assert ".faq-list details[open] summary::before { opacity: 0; scale: .25;" in css
+    assert ".faq-list details[open] summary::after { opacity: 1; scale: 1;" in css
