@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
@@ -74,3 +75,27 @@ def test_icones_que_trocam_de_estado_fazem_cross_fade_em_vez_de_sumir_por_displa
     assert '.faq-list summary::after { content: "\\00d7";' in css
     assert ".faq-list details[open] summary::before { opacity: 0; scale: .25;" in css
     assert ".faq-list details[open] summary::after { opacity: 1; scale: 1;" in css
+
+
+def test_profundidade_vem_do_anel_de_sombra_e_nao_de_borda_com_cor_fixa():
+    css = ler_css()
+    tema_escuro = css[css.index(':root[data-tema="escuro"] {') : css.index("* { box-sizing")]
+
+    assert "--shadow-border: 0 0 0 1px oklch(0 0 0 / 0.06)," in css
+    assert "--shadow-border: 0 0 0 1px oklch(1 0 0 / 0.08);" in tema_escuro
+    assert "rgba(23, 32, 26, 0.08)" not in css
+    assert "rgba(23, 32, 26, .1)" not in css
+    for seletor in (".benefit-card", ".area-tile", ".how-layout", ".account-row"):
+        inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
+        regra = css[inicio:].split("}", 1)[0]
+        assert "border: 1px solid transparent;" in regra, seletor
+        assert "var(--shadow-border)" in regra, seletor
+
+
+def test_alto_contraste_devolve_a_borda_aos_cards_que_perderam_a_cor():
+    css = ler_css()
+    alto_contraste = css[css.index("@media (forced-colors: active) {") :].split("\n}", 1)[0]
+
+    for seletor in (".telegram-chat", ".area-tile", ".benefit-card", ".how-layout", ".account-row"):
+        assert seletor in alto_contraste, seletor
+    assert "border-color: CanvasText;" in alto_contraste
