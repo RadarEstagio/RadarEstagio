@@ -532,3 +532,9 @@ def test_politica_nomeia_todo_host_que_o_site_contata_ao_carregar():
         assert host in FORNECEDOR_DE_CADA_HOST, host
         for arquivo, texto in politica.items():
             assert FORNECEDOR_DE_CADA_HOST[host] in texto, (arquivo, host)
+
+
+def test_landing_nao_usa_garimpar():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "garimp" not in html.lower()
