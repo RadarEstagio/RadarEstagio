@@ -420,6 +420,11 @@ teclado, e só a passagem sobre um ícone pausa a fila. Não há logos de empres
 daria a entender uma que não existe. A frase diz "todas estas áreas", não "todas as áreas", porque
 cursos como Medicina não caem em nenhuma.
 
+As vagas do chat de exemplo levam a atribuição em texto, "Jobs by Adzuna" com os dois links, como
+a mensagem real do Telegram (`ATRIBUICAO_DA_ADZUNA`), e não o selo com o logo (09/10/2026): o logo
+de 23 px no meio de um balão de 11 px quebrava a leitura e mostrava algo que o Telegram nunca envia.
+O selo fica na resposta da FAQ sobre a origem das vagas.
+
 As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
 catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
 abrir o formulário. `test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo` prende a lista
