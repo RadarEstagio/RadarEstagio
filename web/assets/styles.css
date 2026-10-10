@@ -439,7 +439,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .consent-fields a { text-decoration: underline; }
 .password-field { position: relative; display: block; width: 100%; }
 .password-field input { min-width: 0; padding-inline-end: 58px; }
-.password-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 9px; color: var(--ink-soft); background: transparent; cursor: pointer; }
+.password-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 8px; color: var(--ink-soft); background: transparent; cursor: pointer; }
 .password-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 .password-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
 .password-eye-slash { opacity: 0; transition: opacity 120ms ease; }
@@ -496,11 +496,11 @@ p, h1, h2, h3 { margin-top: 0; }
 .field .catalog-notice { margin: 0; }
 .combobox { position: relative; }
 .combobox input { padding-inline-end: 52px; }
-.combobox-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 9px; color: var(--ink-soft); background: transparent; cursor: pointer; }
+.combobox-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 8px; color: var(--ink-soft); background: transparent; cursor: pointer; }
 .combobox-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: transform 160ms ease; }
 .combobox-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 .combobox-options { position: absolute; z-index: 5; inset-inline: 0; inset-block-start: calc(100% + 6px); max-height: 280px; margin: 0; padding: 6px; overflow-y: auto; overscroll-behavior: contain; list-style: none; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 14px 36px rgba(23, 32, 26, .14); }
-.combobox-options li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; }
+.combobox-options li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 6px; color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; }
 .combobox-options li span + span { color: var(--muted); font-size: 12px; font-weight: 700; }
 .combobox-options li[aria-selected="true"] { background: var(--paper); }
 .combobox-options li[aria-disabled="true"] { color: var(--muted); font-size: 13px; cursor: default; }

@@ -99,3 +99,19 @@ def test_alto_contraste_devolve_a_borda_aos_cards_que_perderam_a_cor():
     for seletor in (".telegram-chat", ".area-tile", ".benefit-card", ".how-layout", ".account-row"):
         assert seletor in alto_contraste, seletor
     assert "border-color: CanvasText;" in alto_contraste
+
+
+def raio_da_regra(css: str, seletor: str) -> int:
+    inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
+    regra = css[inicio:].split("}", 1)[0]
+    return int(re.search(r"border-radius: (\d+)px", regra).group(1))
+
+
+def test_raio_interno_e_o_externo_menos_o_recuo_nas_listas_e_nos_campos():
+    css = ler_css()
+
+    assert raio_da_regra(css, ".combobox-options") == 12
+    assert raio_da_regra(css, ".combobox-options li") == 12 - 6
+    assert raio_da_regra(css, ".field input, .field select") == 12
+    assert raio_da_regra(css, ".password-toggle") == 12 - 4
+    assert raio_da_regra(css, ".combobox-toggle") == 12 - 4
