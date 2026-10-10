@@ -420,6 +420,11 @@ teclado, e só a passagem sobre um ícone pausa a fila. Não há logos de empres
 daria a entender uma que não existe. A frase diz "todas estas áreas", não "todas as áreas", porque
 cursos como Medicina não caem em nenhuma.
 
+As vagas do chat de exemplo levam a atribuição em texto, "Jobs by Adzuna" com os dois links, como
+a mensagem real do Telegram (`ATRIBUICAO_DA_ADZUNA`), e não o selo com o logo (09/10/2026): o logo
+de 23 px no meio de um balão de 11 px quebrava a leitura e mostrava algo que o Telegram nunca envia.
+O selo fica na resposta da FAQ sobre a origem das vagas.
+
 As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
 catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
 abrir o formulário. `test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo` prende a lista
@@ -529,3 +534,18 @@ Política: host novo no site quebra o teste até alguém decidir como declará-l
 os do Markdown frase a frase, nos Termos e na Política, porque entre 04/10 e 07/10 o HTML da
 Política teve uma frase a mais que o Markdown. A comparação cobre só os parágrafos: os rótulos
 dos itens divergem de propósito, porque no HTML eles são título e no Markdown abrem a frase.
+
+### As seções do meio mostram em vez de numerar (10/10/2026).
+
+O bloco quase preto que juntava benefícios e passos pesava a leitura, e os cartões "01, 02, 03"
+repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção tem um formato próprio:
+"Por que usar o Radar" compara procurar sozinho com usar o Radar; "Como funciona" segue uma jornada
+marcada por quando cada coisa acontece ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"),
+com miniaturas do perfil, de um radar varrendo e da notificação; e "Antes de chegar até você" peneira
+seis vagas ilustrativas para um perfil de exemplo. Cada destino da peneira corresponde a uma regra que
+o motor aplica de verdade (duplicata, `fora_da_area_do_curso`, `exige_anos_de_experiencia`,
+`localizacao_incompativel` e requisito a conferir); exemplo novo só entra se houver regra por trás.
+
+A animação de entrada depende do script. O HTML chega com `data-revelar` vazio, e só o `app.js`
+o troca por `aguardando`, quando há `IntersectionObserver` e a pessoa não pediu movimento reduzido;
+o CSS só esconde sob `[data-revelar="aguardando"]`. Se o script não carregar, tudo aparece pronto.

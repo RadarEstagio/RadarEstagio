@@ -377,15 +377,30 @@ def test_faixa_abaixo_do_hero_mostra_as_areas_e_nao_marcas():
     assert "deslizar-areas" not in css
 
 
-def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
+def test_fonte_da_faq_leva_o_selo_jobs_by_adzuna():
     html = (RAIZ / "web/index.html").read_text()
     css = (RAIZ / "web/assets/styles.css").read_text()
+    faq = html[html.index('id="faq"') :]
 
-    assert html.count(SELO_DA_ADZUNA) == 3
+    assert html.count(SELO_DA_ADZUNA) == 1
+    assert SELO_DA_ADZUNA in faq
     assert "Fonte: Adzuna" not in html
     assert ".jobs-by-adzuna { display: inline-flex; align-items: center; gap: 4px;" in css
     assert "min-width: 116px; min-height: 23px;" in css
     assert (RAIZ / "web/assets/adzuna-logo.png").exists()
+
+
+def test_vagas_de_exemplo_do_chat_levam_a_atribuicao_em_texto_como_no_telegram():
+    html = (RAIZ / "web/index.html").read_text()
+    chat = html[html.index('class="telegram-chat"') :]
+    chat = chat[: chat.index("chat-message-footer")]
+    atribuicao = (
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by '
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Adzuna</a>'
+    )
+
+    assert chat.count(atribuicao) == 2
+    assert "adzuna-logo.png" not in chat
 
 
 def test_card_de_precos_nao_promete_duas_fontes_de_vagas():
@@ -517,3 +532,9 @@ def test_politica_nomeia_todo_host_que_o_site_contata_ao_carregar():
         assert host in FORNECEDOR_DE_CADA_HOST, host
         for arquivo, texto in politica.items():
             assert FORNECEDOR_DE_CADA_HOST[host] in texto, (arquivo, host)
+
+
+def test_landing_nao_usa_garimpar():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "garimp" not in html.lower()

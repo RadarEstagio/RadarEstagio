@@ -68,6 +68,12 @@ type Call =
   | ["update", string, Payload]
   | ["rpc", string, Payload];
 type AuthCallback = (event: string) => void;
+type ElementoDaPagina = InstanceType<TestWindow["Element"]>;
+type ObservadorFalso = {
+  callback: (entradas: { target: ElementoDaPagina; isIntersecting: boolean }[], observador: unknown) => void;
+  observados: Set<ElementoDaPagina>;
+  instancia: unknown;
+};
 type TestWindow = InstanceType<typeof JSDOM>["window"];
 
 function called<K extends Call[0]>(
@@ -94,6 +100,7 @@ function app(
     erroDoPerfil = null,
     armazenado = {},
     bibliotecaCarregada = true,
+    observaInterseccao = false,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -108,9 +115,11 @@ function app(
     erroDoPerfil?: Error | null;
     armazenado?: Record<string, string>;
     bibliotecaCarregada?: boolean;
+    observaInterseccao?: boolean;
   } = {},
 ) {
   const erros: Error[] = [];
+  const observadores: ObservadorFalso[] = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.sendTo(console, { omitJSDOMErrors: true });
   virtualConsole.on("jsdomError", (erro: Error) => erros.push(erro));
@@ -129,6 +138,22 @@ function app(
         }),
       });
       for (const [chave, valor] of Object.entries(armazenado)) janela.localStorage.setItem(chave, valor);
+      if (observaInterseccao) {
+        Object.defineProperty(janela, "IntersectionObserver", {
+          value: class {
+            constructor(callback: ObservadorFalso["callback"]) {
+              observadores.push({ callback, observados: new Set(), instancia: this });
+            }
+            observe(elemento: ElementoDaPagina) {
+              observadores.at(-1)?.observados.add(elemento);
+            }
+            unobserve(elemento: ElementoDaPagina) {
+              for (const observador of observadores) observador.observados.delete(elemento);
+            }
+            disconnect() {}
+          },
+        });
+      }
       if (armazenamentoBloqueado) {
         for (const armazenamento of ["localStorage", "sessionStorage"]) {
           Object.defineProperty(janela, armazenamento, {
@@ -238,6 +263,13 @@ function app(
     close: () => w.close(),
     authEvent: (event: string) => authCallback(event),
     passarQuadros,
+    entrarNaTela: (elemento: ElementoDaPagina) => {
+      for (const observador of observadores) {
+        if (!observador.observados.has(elemento)) continue;
+        observador.callback([{ target: elemento, isIntersecting: true }], observador.instancia);
+      }
+    },
+    observados: () => observadores.flatMap((observador) => [...observador.observados]),
   };
 }
 
@@ -357,6 +389,38 @@ Deno.test("com movimento reduzido a faixa de áreas fica parada", async () => {
     await settle();
     a.passarQuadros(60);
     assert.equal(a.w.document.querySelector(".areas-track").style.transform, "");
+  } finally { a.close(); }
+});
+
+Deno.test("sem IntersectionObserver as seções que se revelam nunca ficam escondidas", () => {
+  const a = app();
+  try {
+    const blocos = [...a.w.document.querySelectorAll("[data-revelar]")];
+    assert.equal(blocos.length, 3);
+    for (const bloco of blocos) assert.equal(bloco.getAttribute("data-revelar"), "");
+  } finally { a.close(); }
+});
+
+Deno.test("seção que se revela espera entrar na tela e depois para de ser observada", () => {
+  const a = app({ observaInterseccao: true });
+  try {
+    const [comparacao, jornada, peneira] = a.w.document.querySelectorAll("[data-revelar]");
+    assert.equal(a.observados().length, 3);
+    for (const bloco of [comparacao, jornada, peneira]) assert.equal(bloco.getAttribute("data-revelar"), "aguardando");
+    a.entrarNaTela(peneira);
+    assert.equal(peneira.getAttribute("data-revelar"), "visto");
+    assert.equal(comparacao.getAttribute("data-revelar"), "aguardando");
+    assert.equal(a.observados().includes(peneira), false);
+  } finally { a.close(); }
+});
+
+Deno.test("com movimento reduzido as seções aparecem prontas, sem esperar a rolagem", () => {
+  const a = app({ observaInterseccao: true, movimentoReduzido: true });
+  try {
+    assert.equal(a.observados().length, 0);
+    for (const bloco of a.w.document.querySelectorAll("[data-revelar]")) {
+      assert.equal(bloco.getAttribute("data-revelar"), "");
+    }
   } finally { a.close(); }
 });
 

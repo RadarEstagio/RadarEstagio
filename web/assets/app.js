@@ -6,10 +6,18 @@ function mostrarTema(tema) {
   botaoDoTema.setAttribute("aria-pressed", String(tema === "escuro"));
 }
 
+function trocarTemaSemTransicao(tema) {
+  const raiz = document.documentElement;
+  raiz.classList.add("sem-transicao");
+  mostrarTema(tema);
+  void raiz.offsetHeight;
+  requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove("sem-transicao")));
+}
+
 mostrarTema(document.documentElement.dataset.tema === "escuro" ? "escuro" : "claro");
 botaoDoTema.addEventListener("click", () => {
   const tema = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
-  mostrarTema(tema);
+  trocarTemaSemTransicao(tema);
   try {
     localStorage.setItem(CHAVE_DO_TEMA, tema);
   } catch {}
@@ -35,6 +43,22 @@ if (demonstracaoDoChat && !reduzirMovimento) {
 } else if (demonstracaoDoChat) {
   demonstracaoDoChat.classList.remove("is-waiting");
   demonstracaoDoChat.classList.add("is-playing");
+}
+
+const blocosQueSeRevelam = document.querySelectorAll("[data-revelar]");
+
+if (blocosQueSeRevelam.length && !reduzirMovimento && "IntersectionObserver" in window) {
+  const observadorDeRevelacao = new IntersectionObserver((entradas) => {
+    for (const entrada of entradas) {
+      if (!entrada.isIntersecting) continue;
+      entrada.target.dataset.revelar = "visto";
+      observadorDeRevelacao.unobserve(entrada.target);
+    }
+  }, { rootMargin: "0px 0px -18% 0px" });
+  for (const bloco of blocosQueSeRevelam) {
+    bloco.dataset.revelar = "aguardando";
+    observadorDeRevelacao.observe(bloco);
+  }
 }
 
 const dialog = document.querySelector("#signup-dialog");
