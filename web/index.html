@@ -145,55 +145,98 @@
             <p class="eyebrow">Por que usar o Radar</p>
             <h2 id="benefits-title">Procurar estágio <span class="continuacao">não deveria ser um segundo emprego.</span></h2>
           </div>
-          <div class="benefit-grid">
-            <article class="benefit-card"><span class="card-index">01</span><div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></div><h3>Busca diária</h3><p>Todo dia o Radar busca vagas novas na Adzuna, que reúne anúncios de vários sites, e você só abre as que valem a pena.</p></article>
-            <article class="benefit-card"><span class="card-index">02</span><div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></div><h3>Compatibilidade explicada</h3><p>A mensagem de cada vaga mostra a nota de 0 a 100, o que você já atende e o que ainda falta conferir no seu perfil.</p></article>
-            <article class="benefit-card"><span class="card-index">03</span><div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg></div><h3>Direto no Telegram</h3><p>As recomendações chegam numa conversa com o bot do Radar, e você se candidata pelo link de cada vaga.</p></article>
+          <div class="comparison" data-revelar>
+            <article class="comparison-card comparison-sozinho">
+              <h3>Procurando sozinho</h3>
+              <ul class="comparison-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Abrir site por site, todo dia</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Ler a mesma vaga publicada em vários lugares</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Descobrir no fim que ela pede outro curso</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Ficar na dúvida se vale se candidatar</li>
+              </ul>
+            </article>
+            <div class="comparison-ponte" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></div>
+            <article class="comparison-card comparison-radar">
+              <h3>Com o Radar</h3>
+              <ul class="comparison-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Direto no Telegram, sem garimpar site por site</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Cada vaga uma vez só, sem repetição</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Só o que combina com o seu curso e a sua cidade</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Nota de 0 a 100 e o motivo de cada vaga</li>
+              </ul>
+            </article>
           </div>
         </div>
       </section>
 
       <section class="how section" id="como-funciona" aria-labelledby="how-title">
         <div class="container">
-          <div class="how-layout">
-            <div class="how-copy">
-              <p class="eyebrow">Como funciona</p>
-              <h2 id="how-title">Você preenche o perfil uma vez, <span class="continuacao">e o Radar procura todo dia.</span></h2>
-              <p>Do perfil à recomendação em três passos, sem abrir dezenas de abas todo dia.</p>
-              <button class="text-link js-open-signup" data-event-origin="como_funciona" data-rotulo-conta="Minha conta" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
-            </div>
-            <ol class="steps">
-              <li><span class="step-number">01</span><div><h3>Cadastre seu perfil</h3><p>Informe curso, período, habilidades, cidade e preferência de modalidade.</p></div></li>
-              <li><span class="step-number">02</span><div><h3>O Radar monitora</h3><p>O Radar busca vagas novas, tira as repetidas e compara cada uma com o seu perfil.</p></div></li>
-              <li><span class="step-number">03</span><div><h3>Você recebe as melhores</h3><p>Até sete oportunidades chegam no Telegram com nota, pontos positivos e alertas.</p></div></li>
-            </ol>
+          <div class="section-heading how-heading">
+            <p class="eyebrow">Como funciona</p>
+            <h2 id="how-title">Você preenche uma vez. <span class="continuacao">O Radar procura todo dia.</span></h2>
+          </div>
+          <ol class="journey" data-revelar>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="mini-perfil">
+                  <span class="mini-perfil-titulo">Seu perfil</span>
+                  <span class="mini-chip">Ciência da Computação</span><span class="mini-chip">5º período</span><span class="mini-chip">Recife</span><span class="mini-chip">Híbrido</span><span class="mini-chip">Python</span><span class="mini-chip">SQL</span>
+                </div>
+              </div>
+              <p class="journey-quando">Uma vez só</p>
+              <h3>Você conta o que procura</h3>
+              <p>Curso, período, cidade, habilidades e se prefere presencial, híbrido ou remoto.</p>
+            </li>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="radar-tela"><span class="radar-varredura"></span><i class="radar-ponto"></i><i class="radar-ponto"></i><i class="radar-ponto"></i></div>
+              </div>
+              <p class="journey-quando">Todo dia, sozinho</p>
+              <h3>O Radar garimpa as vagas</h3>
+              <p>Ele lê as vagas novas, tira as repetidas e compara cada uma com o seu perfil.</p>
+            </li>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="mini-notificacao">
+                  <span class="mini-notificacao-icone"><svg viewBox="0 0 24 24" focusable="false"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6 0 1.9l4.6 1.5 1.8 5.6c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7l3-15.4c.2-1-.8-1.8-1.9-1.5Z"></path></svg></span>
+                  <span class="mini-notificacao-texto"><strong>📡 Radar de Estágio</strong><span>Desenvolvimento back-end</span><span>⭐ Nota 83/100</span></span>
+                  <time>07:23</time>
+                </div>
+              </div>
+              <p class="journey-quando">De manhã, no celular</p>
+              <h3>As melhores chegam até você</h3>
+              <p>Até sete vagas no Telegram, cada uma com a nota, o que você já atende e o que vale conferir.</p>
+            </li>
+          </ol>
+          <div class="how-action">
+            <button class="button button-primary js-open-signup" data-event-origin="como_funciona" data-rotulo-conta="Minha conta" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
           </div>
         </div>
       </section>
 
       <section class="transparency section" aria-labelledby="transparency-title">
-        <div class="container">
-          <div class="transparency-heading">
-            <div class="transparency-copy">
-              <p class="eyebrow">Antes de chegar até você</p>
-              <h2 id="transparency-title">Como o Radar escolhe<br /><span class="continuacao">o que te mandar.</span></h2>
-            </div>
-            <p class="transparency-lead">O Radar cruza cada anúncio com o seu perfil e deixa de fora o que não combina com você.</p>
+        <div class="container peneira-layout">
+          <div class="transparency-copy">
+            <p class="eyebrow">Antes de chegar até você</p>
+            <h2 id="transparency-title">O Radar peneira. <span class="continuacao">Você só vê o que vale a pena.</span></h2>
+            <p class="transparency-lead">Uma vaga não chega só por ter “estágio” no título. O Radar compara curso, período, habilidades, cidade e modalidade, e deixa de fora o que não combina com você.</p>
+            <ul class="peneira-regras">
+              <li><strong>Repetida não volta.</strong> A mesma vaga em outro site, ou uma que você já recebeu, não chega de novo.</li>
+              <li><strong>Dúvida vira alerta.</strong> Se o anúncio pede algo que você não tem, ou não diz um requisito, a mensagem avisa o que conferir.</li>
+            </ul>
           </div>
-          <ul class="filter-principles">
-            <li>
-              <h3>Vaga repetida <br />não chega duas vezes.</h3>
-              <p>A mesma vaga pode ser publicada mais de uma vez, por sites ou empresas diferentes. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
-            </li>
-            <li>
-              <h3>O que entra <br />na comparação.</h3>
-              <p>Curso, período, habilidades, cidade e modalidade. Uma vaga não chega até você só por ter “estágio” no título.</p>
-            </li>
-            <li>
-              <h3>Quando falta informação, <br />a mensagem avisa.</h3>
-              <p>Se a vaga pede algo que você não tem, ou se o anúncio deixa um requisito em aberto, a recomendação mostra isso como alerta ou como requisito a conferir.</p>
-            </li>
-          </ul>
+          <figure class="peneira" data-revelar>
+            <figcaption class="peneira-perfil"><span>Exemplo ilustrativo com o perfil</span><strong>Ciência da Computação · Recife · Híbrido</strong></figcaption>
+            <ul class="peneira-lista">
+              <li class="peneira-vaga vaga-chega"><span class="peneira-anuncio"><strong>Desenvolvimento back-end</strong><span>Recife · Híbrido</span></span><span class="peneira-veredito">Chega com nota 83</span></li>
+              <li class="peneira-vaga vaga-fora"><span class="peneira-anuncio"><strong>Desenvolvimento back-end</strong><span>A mesma vaga, em outro site</span></span><span class="peneira-veredito">Repetida, fica de fora</span></li>
+              <li class="peneira-vaga vaga-fora"><span class="peneira-anuncio"><strong>Assistente jurídico</strong><span>Recife · Presencial</span></span><span class="peneira-veredito">Outra área, fica de fora</span></li>
+              <li class="peneira-vaga vaga-fora"><span class="peneira-anuncio"><strong>Analista de dados</strong><span>Pede 2 anos de experiência</span></span><span class="peneira-veredito">Pede experiência, fica de fora</span></li>
+              <li class="peneira-vaga vaga-fora"><span class="peneira-anuncio"><strong>Suporte de TI</strong><span>Manaus · Presencial</span></span><span class="peneira-veredito">Longe de você, fica de fora</span></li>
+              <li class="peneira-vaga vaga-alerta"><span class="peneira-anuncio"><strong>Dados e BI</strong><span>Remoto · O anúncio não diz o período</span></span><span class="peneira-veredito">Chega com alerta</span></li>
+            </ul>
+            <p class="peneira-resultado">Das seis, <strong>duas chegam no seu Telegram</strong>, e cada uma explica o porquê.</p>
+          </figure>
         </div>
       </section>
 
