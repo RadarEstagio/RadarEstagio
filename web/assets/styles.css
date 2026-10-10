@@ -331,7 +331,8 @@ p, h1, h2, h3 { margin-top: 0; }
 
 .faq-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 80px; align-items: start; }
 .faq-intro p { max-width: 440px; margin: 26px 0 0; color: var(--ink-soft); font-size: 15px; line-height: 1.7; }
-.faq-list { overflow: hidden; border: 1px solid var(--rail); border-radius: var(--radius-md); background: var(--surface); }
+.faq-list { interpolate-size: allow-keywords; overflow: hidden; border: 1px solid var(--rail); border-radius: var(--radius-md); background: var(--surface); }
+.faq-list details { transition: background-color 300ms ease-out; }
 .faq-list details + details { border-top: 1px solid var(--line); }
 .faq-list details[open] { background: var(--paper); }
 .faq-list summary { display: flex; align-items: flex-start; gap: 16px; padding: 22px 26px; list-style: none; font-size: 16px; font-weight: 600; line-height: 1.45; cursor: pointer; }
@@ -342,6 +343,8 @@ p, h1, h2, h3 { margin-top: 0; }
 .faq-list details::details-content { block-size: 0; overflow: hidden; transition: block-size 300ms cubic-bezier(.2, .7, .3, 1), content-visibility 300ms allow-discrete; }
 .faq-list details[open]::details-content { block-size: auto; }
 .faq-list details p { margin: 0; padding: 0 26px 26px 58px; color: var(--ink-soft); font-size: 14px; line-height: 1.75; }
+.faq-list details[open] p { animation: resposta-surgir 320ms cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes resposta-surgir { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
 
 .final-cta { padding-top: 32px; padding-bottom: 80px; border-top: 0; }
