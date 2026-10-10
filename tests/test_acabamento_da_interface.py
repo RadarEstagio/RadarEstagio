@@ -115,3 +115,20 @@ def test_raio_interno_e_o_externo_menos_o_recuo_nas_listas_e_nos_campos():
     assert raio_da_regra(css, ".field input, .field select") == 12
     assert raio_da_regra(css, ".password-toggle") == 12 - 4
     assert raio_da_regra(css, ".combobox-toggle") == 12 - 4
+
+
+def test_icones_decorativos_sao_svg_com_a_cor_do_texto_e_nao_glifos_de_fonte():
+    html = (RAIZ / "web/index.html").read_text()
+    css = ler_css()
+
+    for glifo in "⌁✦↗":
+        assert glifo not in html, glifo
+    assert html.count('class="card-icon" aria-hidden="true"><svg') == 3
+    assert '<span aria-hidden="true">✓</span>' not in html
+    assert '<div class="success-icon" aria-hidden="true"><svg' in html
+    assert 'aria-label="Fechar cadastro"><svg' in html
+    assert 'aria-label="Fechar confirmação"><svg' in html
+    for seletor in (".card-icon svg", ".trust-list svg", ".plan li svg"):
+        inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
+        assert "stroke: currentColor;" in css[inicio:].split("}", 1)[0], seletor
+    assert ".success-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor;" in css
