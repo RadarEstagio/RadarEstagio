@@ -45,6 +45,22 @@ if (demonstracaoDoChat && !reduzirMovimento) {
   demonstracaoDoChat.classList.add("is-playing");
 }
 
+const blocosQueSeRevelam = document.querySelectorAll("[data-revelar]");
+
+if (blocosQueSeRevelam.length && !reduzirMovimento && "IntersectionObserver" in window) {
+  const observadorDeRevelacao = new IntersectionObserver((entradas) => {
+    for (const entrada of entradas) {
+      if (!entrada.isIntersecting) continue;
+      entrada.target.dataset.revelar = "visto";
+      observadorDeRevelacao.unobserve(entrada.target);
+    }
+  }, { rootMargin: "0px 0px -18% 0px" });
+  for (const bloco of blocosQueSeRevelam) {
+    bloco.dataset.revelar = "aguardando";
+    observadorDeRevelacao.observe(bloco);
+  }
+}
+
 const dialog = document.querySelector("#signup-dialog");
 const accountPage = document.querySelector("#account-page");
 const accountContent = document.querySelector("#account-content");
