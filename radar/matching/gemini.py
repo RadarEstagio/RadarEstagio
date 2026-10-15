@@ -107,10 +107,6 @@ def tempo_de_espera(mensagem: str | None) -> float | None:
     return float(encontrado.group(1)) if encontrado else None
 
 
-def interpretar_resposta(texto: str | None) -> ExtracoesDeVagas:
-    return validar_json(texto, ExtracoesDeVagas)
-
-
 def validar_json[T: BaseModel](texto: str | None, formato: type[T]) -> T:
     if not texto:
         raise ErroDeAvaliacao("Gemini devolveu resposta vazia")
