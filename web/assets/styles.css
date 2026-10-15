@@ -647,7 +647,7 @@ p, h1, h2, h3 { margin-top: 0; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .chat-typing { display: none; }
   .chat-message, .chat-feedback { opacity: 1 !important; transform: none !important; }
-  .areas-track { flex-wrap: wrap; justify-content: center; width: auto; padding-inline: 16px; }
+  .areas-track { flex-wrap: wrap; justify-content: center; width: auto; padding-inline: 16px; row-gap: 44px; }
   .areas-track li[aria-hidden="true"] { display: none; }
   .areas-marquee { -webkit-mask-image: none; mask-image: none; }
 }

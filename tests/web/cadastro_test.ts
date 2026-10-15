@@ -360,6 +360,50 @@ Deno.test("faixa de áreas anda a 16 px por segundo", async () => {
   } finally { a.close(); }
 });
 
+function eventoDePonteiro(a: ReturnType<typeof app>, tipo: string, pointerType: string) {
+  const evento = new a.w.Event(tipo, { bubbles: true });
+  Object.defineProperty(evento, "pointerType", { value: pointerType });
+  return evento;
+}
+
+Deno.test("toque num ícone da faixa mostra o nome e para a faixa até tocar fora", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.passarQuadros(30);
+    const doc = a.w.document;
+    const icones = [...doc.querySelectorAll(".areas-track li:not([aria-hidden]) .area-button")];
+    icones[0].querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), true);
+    doc.querySelector(".areas-marquee").dispatchEvent(eventoDePonteiro(a, "pointerleave", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), true);
+    a.passarQuadros(120);
+    const parada = deslocamentoDaFaixa(a);
+    a.passarQuadros(60);
+    assert.ok(Math.abs(deslocamentoDaFaixa(a) - parada) < 0.01);
+    icones[1].querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), false);
+    assert.equal(icones[1].classList.contains("is-apontada"), true);
+    doc.querySelector("main").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[1].classList.contains("is-apontada"), false);
+    a.passarQuadros(120);
+    assert.ok(deslocamentoDaFaixa(a) < parada - 1);
+  } finally { a.close(); }
+});
+
+Deno.test("toque num ícone da faixa mostra o nome também com movimento reduzido", async () => {
+  const a = app({ movimentoReduzido: true });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const icone = doc.querySelector(".areas-track li:not([aria-hidden]) .area-button");
+    icone.querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icone.classList.contains("is-apontada"), true);
+    doc.querySelector("main").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icone.classList.contains("is-apontada"), false);
+  } finally { a.close(); }
+});
+
 Deno.test("faixa desacelera até parar quando o mouse se mexe sobre um ícone e volta quando ele sai", async () => {
   const a = app();
   try {
@@ -4162,6 +4206,25 @@ Deno.test("clicar numa área da faixa abre o cadastro com os cursos daquela áre
       true,
     );
     assert.deepEqual(await digitarCurso(a, "direito"), ["Direito"]);
+  } finally { a.close(); }
+});
+
+Deno.test("no toque, o primeiro toque numa área só mostra o nome e o segundo abre o cadastro", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const botao = doc.querySelector('.areas-track li:not([aria-hidden]) [data-area="saude"]');
+    const dialogo = doc.querySelector("#signup-dialog");
+    botao.dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    botao.click();
+    await settle();
+    assert.equal(dialogo.open, false);
+    assert.equal(botao.classList.contains("is-apontada"), true);
+    botao.dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    botao.click();
+    await settle();
+    assert.equal(dialogo.open, true);
   } finally { a.close(); }
 });
 

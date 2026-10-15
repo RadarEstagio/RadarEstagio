@@ -167,3 +167,10 @@ def test_conteudo_que_se_revela_so_some_enquanto_o_script_espera_a_rolagem():
     for linha in css.splitlines():
         if "opacity: 0;" in linha and "[data-revelar" in linha:
             assert linha.startswith('[data-revelar="aguardando"]'), linha
+
+
+def test_nome_da_area_cabe_entre_as_linhas_quando_a_faixa_quebra_com_movimento_reduzido():
+    css = ler_css()
+    movimento_reduzido = css[css.index("@media (prefers-reduced-motion: reduce) {") :].split("\n}", 1)[0]
+
+    assert "row-gap: 44px;" in movimento_reduzido

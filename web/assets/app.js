@@ -290,6 +290,7 @@ const VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO = 16;
 const AJUSTE_DA_VELOCIDADE_POR_SEGUNDO = 6;
 const MAIOR_INTERVALO_ENTRE_QUADROS_EM_SEGUNDOS = 0.1;
 let areaApontada = null;
+let toqueSoMostrouONomeDaArea = false;
 
 function apontarArea(botao) {
   if (botao === areaApontada) return;
@@ -298,16 +299,32 @@ function apontarArea(botao) {
   areaApontada = botao;
 }
 
-if (trilhaDeAreas && !reduzirMovimento) {
+if (trilhaDeAreas) {
   const faixaVisivel = trilhaDeAreas.parentElement;
+  faixaVisivel.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "touch") apontarArea(event.target.closest(".area-button"));
+  });
+  faixaVisivel.addEventListener("pointerleave", (event) => {
+    if (event.pointerType !== "touch") apontarArea(null);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch") return;
+    const botao = event.target.closest(".area-button");
+    const alvo = botao && faixaVisivel.contains(botao) ? botao : null;
+    toqueSoMostrouONomeDaArea = Boolean(alvo) && alvo !== areaApontada;
+    apontarArea(alvo);
+  });
+  document.addEventListener("pointercancel", () => {
+    toqueSoMostrouONomeDaArea = false;
+  });
+}
+
+if (trilhaDeAreas && !reduzirMovimento) {
   const primeiraArea = trilhaDeAreas.children[0];
   const primeiraRepeticao = trilhaDeAreas.children[trilhaDeAreas.children.length / COPIAS_DA_FAIXA_DE_AREAS];
   let deslocamento = 0;
   let velocidade = VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO;
   let instanteAnterior = null;
-
-  faixaVisivel.addEventListener("pointermove", (event) => apontarArea(event.target.closest(".area-button")));
-  faixaVisivel.addEventListener("pointerleave", () => apontarArea(null));
 
   const avancarFaixa = (instante) => {
     const segundos = instanteAnterior === null
@@ -1765,6 +1782,10 @@ async function abrirCadastroPelaArea(nomeDaArea) {
 }
 
 trilhaDeAreas?.addEventListener("click", (event) => {
+  if (toqueSoMostrouONomeDaArea) {
+    toqueSoMostrouONomeDaArea = false;
+    return;
+  }
   const botao = event.target.closest("[data-area]");
   if (botao) void abrirCadastroPelaArea(botao.dataset.area);
 });
