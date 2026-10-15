@@ -20,6 +20,23 @@ def test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo():
     assert re.findall(r'data-area="([a-z_]+)"', faixa) == [area.nome for area in AREAS]
 
 
+def test_cada_area_da_faixa_tem_sua_ilustracao_leve_e_sem_texto_alternativo():
+    html = LANDING.read_text()
+    faixa = html[html.index("data-areas-track") :]
+    faixa = faixa[: faixa.index("</ul>")]
+
+    for area in AREAS:
+        arquivo = LANDING.parent / f"assets/areas/{area.nome}.webp"
+        conteudo = arquivo.read_bytes()
+        assert conteudo[:4] == b"RIFF" and conteudo[8:12] == b"WEBP", area.nome
+        assert len(conteudo) <= 12 * 1024, area.nome
+        assert (
+            f'<span class="area-tile"><img src="assets/areas/{area.nome}.webp" alt="" '
+            f'width="144" height="144" decoding="async"></span>'
+        ) in faixa, area.nome
+    assert "<svg" not in faixa
+
+
 def test_a_normalizacao_de_cursos_do_site_bate_com_o_backend():
     arquivo = Path(__file__).parent / "fixtures/cursos_normalizados.json"
     esperado = json.loads(arquivo.read_text())
