@@ -274,12 +274,13 @@ p, h1, h2, h3 { margin-top: 0; }
 .areas-track li { flex: 0 0 auto; }
 .area-button { position: relative; display: grid; padding: 0; border: 0; color: inherit; background: none; font: inherit; cursor: pointer; }
 .area-button:focus-visible { outline: none; }
-.area-tile { display: grid; width: 56px; height: 56px; place-items: center; border: 1px solid var(--line); border-radius: 16px; color: var(--muted); background: var(--surface); box-shadow: var(--shadow); transition: color 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out; }
-.area-tile svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.area-tile { display: grid; width: 64px; height: 64px; place-items: center; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); transition: border-color 150ms ease-out; }
+.area-tile img { display: block; width: 52px; height: 52px; transition: transform 150ms ease-out; }
 .area-button:focus-visible .area-tile { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 .area-name { position: absolute; inset-block-start: calc(100% + 8px); inset-inline-start: 50%; padding: 4px 10px; border-radius: 999px; color: var(--surface); background: var(--ink); font-size: 12px; font-weight: 500; white-space: nowrap; opacity: 0; transform: translate(-50%, -4px); pointer-events: none; transition: opacity 150ms ease-out, transform 150ms ease-out; }
 .area-button.is-apontada .area-name, .area-button:focus-visible .area-name { opacity: 1; transform: translate(-50%, 0); }
-.area-button.is-apontada .area-tile, .area-button:focus-visible .area-tile { color: var(--white); border-color: var(--accent-emphasis); background: var(--accent-emphasis); }
+.area-button.is-apontada .area-tile, .area-button:focus-visible .area-tile { border-color: var(--accent-emphasis); }
+.area-button.is-apontada .area-tile img, .area-button:focus-visible .area-tile img { transform: scale(1.08); }
 
 .section-heading { max-width: 780px; margin-bottom: 76px; }
 .section-heading h2, .frame-head h2, .transparency-copy h2, .final-card h2, .faq-intro h2 { margin-bottom: 0; font-size: clamp(32px, 3.2vw, 46px); font-weight: 600; line-height: 1.16; letter-spacing: -.018em; text-wrap: balance; }
