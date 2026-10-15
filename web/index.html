@@ -431,6 +431,7 @@
                     <input id="curso" name="curso" required minlength="2" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cursos" aria-describedby="courses-catalog-notice ajuda-curso" autocomplete="off" placeholder="Digite ou escolha seu curso" />
                     <button type="button" class="combobox-toggle" id="mostrar-cursos" tabindex="-1" aria-label="Mostrar cursos" aria-controls="lista-de-cursos" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cursos" role="listbox" aria-label="Cursos" hidden></ul>
+                    <p class="sr-only" id="contagem-de-cursos" role="status"></p>
                   </div>
                   <p class="catalog-notice" id="courses-catalog-notice" role="status"></p>
                   <small id="ajuda-curso">Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
@@ -471,6 +472,7 @@
                     <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" aria-describedby="cities-catalog-notice ajuda-cidade" autocomplete="off" placeholder="Digite e escolha sua cidade" />
                     <button type="button" class="combobox-toggle" id="mostrar-cidades" tabindex="-1" aria-label="Mostrar cidades" aria-controls="lista-de-cidades" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cidades" role="listbox" aria-label="Cidades" hidden></ul>
+                    <p class="sr-only" id="contagem-de-cidades" role="status"></p>
                   </div>
                   <p class="catalog-notice" id="cities-catalog-notice" role="status"></p>
                   <small id="ajuda-cidade">Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>

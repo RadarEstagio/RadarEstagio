@@ -4214,6 +4214,34 @@ function teclarNoCurso(a: ReturnType<typeof app>, key: string) {
   );
 }
 
+Deno.test("a lista de cursos anuncia quantas sugestões sobraram e limpa ao fechar", async () => {
+  const a = app();
+  try {
+    await abrirMomento(a);
+    const contagem = a.w.document.querySelector("#contagem-de-cursos");
+    assert.equal(contagem.getAttribute("role"), "status");
+    const encontrados = await digitarCurso(a, "engenharia");
+    assert.equal(contagem.textContent, `${encontrados.length} sugestões`);
+    await digitarCurso(a, "direito");
+    assert.equal(contagem.textContent, "1 sugestão");
+    await digitarCurso(a, "xyzxyz");
+    assert.equal(contagem.textContent, "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.");
+    teclarNoCurso(a, "Escape");
+    assert.equal(contagem.textContent, "");
+  } finally { a.close(); }
+});
+
+Deno.test("a lista de cidades anuncia quantas sugestões sobraram", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    const contagem = a.w.document.querySelector("#contagem-de-cidades");
+    const encontradas = await digitarCidade(a, "rio");
+    assert.equal(contagem.textContent, `${encontradas.length} sugestões`);
+    assert.equal(form.elements.cidade.getAttribute("aria-expanded"), "true");
+  } finally { a.close(); }
+});
+
 Deno.test("curso sugere os cursos do catálogo conforme a pessoa digita, sem exigir acento", async () => {
   const a = app();
   try {

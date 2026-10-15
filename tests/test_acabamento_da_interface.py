@@ -245,3 +245,13 @@ def test_aviso_do_catalogo_vazio_nao_ocupa_espaco():
 
     assert ".catalog-notice:empty { margin: 0; }" in css
     assert ".form-message:empty { margin: 0; padding: 0; }" in css
+
+
+def test_texto_so_para_leitor_de_tela_sai_do_fluxo_sem_ser_escondido_por_display():
+    css = ler_css()
+    inicio = re.search(r"^\.sr-only \{", css, re.MULTILINE).start()
+    regra = css[inicio:].split("}", 1)[0]
+
+    assert "position: absolute;" in regra
+    assert "clip-path: inset(50%);" in regra
+    assert "display: none" not in regra

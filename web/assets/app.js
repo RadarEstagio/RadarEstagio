@@ -436,7 +436,7 @@ function conteudoDaOpcaoDeCidade(cidade) {
   return [nome, uf];
 }
 
-function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaLista, conteudoDaOpcao, semResultado }) {
+function ligarListaDeOpcoes({ campo, botao, lista, contagem, carregar, sugestoes, valorDaLista, conteudoDaOpcao, semResultado }) {
   let destacada = -1;
 
   function opcoes() {
@@ -466,6 +466,9 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
     lista.replaceChildren(
       ...(encontradas.length > 0 ? encontradas.map(criarOpcao) : [criarAvisoSemResultado()]),
     );
+    contagem.textContent = encontradas.length === 0
+      ? semResultado
+      : `${encontradas.length} ${encontradas.length === 1 ? "sugestão" : "sugestões"}`;
     destacada = -1;
     campo.removeAttribute("aria-activedescendant");
     lista.hidden = false;
@@ -481,6 +484,7 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
 
   function fechar() {
     lista.hidden = true;
+    contagem.textContent = "";
     destacada = -1;
     campo.removeAttribute("aria-activedescendant");
     campo.setAttribute("aria-expanded", "false");
@@ -2000,6 +2004,7 @@ ligarListaDeOpcoes({
   campo: campoDeCidade,
   botao: botaoDeCidades,
   lista: listaDeCidades,
+  contagem: document.querySelector("#contagem-de-cidades"),
   carregar: carregarCidades,
   sugestoes: (texto) => opcoesParecidas(catalogoDeCidades, texto, MAXIMO_DE_CIDADES_SUGERIDAS),
   valorDaLista: cidadeDaLista,
@@ -2016,6 +2021,7 @@ ligarListaDeOpcoes({
   campo: campoDeCurso,
   botao: botaoDeCursos,
   lista: listaDeCursos,
+  contagem: document.querySelector("#contagem-de-cursos"),
   carregar: carregarCursos,
   sugestoes: (texto) =>
     (!textoDeBusca(texto) && cursosDaAreaEscolhida) || opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),
