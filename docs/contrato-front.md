@@ -554,10 +554,16 @@ O bloco quase preto que juntava benefícios e passos pesava a leitura, e os cart
 repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção tem um formato próprio:
 "Por que usar o Radar" compara procurar sozinho com usar o Radar; "Como funciona" segue uma jornada
 marcada por quando cada coisa acontece ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"),
-com miniaturas do perfil, de um radar varrendo e da notificação; e "Antes de chegar até você" peneira
-seis vagas ilustrativas para um perfil de exemplo. Cada destino da peneira corresponde a uma regra que
-o motor aplica de verdade (duplicata, `fora_da_area_do_curso`, `exige_anos_de_experiencia`,
-`localizacao_incompativel` e requisito a conferir); exemplo novo só entra se houver regra por trás.
+com miniaturas do perfil, de um radar varrendo e da notificação.
+
+Em 15/10/2026 saiu a terceira seção, "Antes de chegar até você", que peneirava seis vagas
+ilustrativas para um perfil de exemplo. Ela repetia a mensagem das outras duas (só chega vaga
+compatível), e a lista com um selo por destino pedia leitura atenta na primeira olhada. O que só ela
+dizia foi para dois lugares: o aviso do que conferir virou item do cartão "Com o Radar", e o que fica
+de fora (outra área, anos de experiência, distância e vaga repetida) foi para a resposta do FAQ
+sobre como o Radar decide. Cada caso citado ali corresponde a uma regra que o motor aplica
+(`fora_da_area_do_curso`, `exige_anos_de_experiencia`, `localizacao_incompativel` e o histórico);
+caso novo só entra no texto se houver regra por trás.
 
 A animação de entrada depende do script. O HTML chega com `data-revelar` vazio, e só o `app.js`
 o troca por `aguardando`, quando há `IntersectionObserver` e a pessoa não pediu movimento reduzido;
