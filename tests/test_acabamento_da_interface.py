@@ -171,6 +171,8 @@ def test_conteudo_que_se_revela_so_some_enquanto_o_script_espera_a_rolagem():
 
 def test_nome_da_area_cabe_entre_as_linhas_quando_a_faixa_quebra_com_movimento_reduzido():
     css = ler_css()
-    movimento_reduzido = css[css.index("@media (prefers-reduced-motion: reduce) {") :].split("\n}", 1)[0]
+    movimento_reduzido = css[css.index("@media (prefers-reduced-motion: reduce) {") :].split(
+        "\n}", 1
+    )[0]
 
     assert "row-gap: 44px;" in movimento_reduzido
