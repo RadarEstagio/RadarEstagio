@@ -433,6 +433,11 @@ deixou manchas nas partes brancas. Trocar a cor de novo é regerar as imagens e 
 sem mexer em HTML nem CSS. No tema escuro o verde do objeto tem menos contraste com o tile do que
 tinha o azul; se incomodar, o ajuste é o fundo do tile, não as imagens.
 
+As vagas do chat de exemplo levam a atribuição em texto, "Jobs by Adzuna" com os dois links, como
+a mensagem real do Telegram (`ATRIBUICAO_DA_ADZUNA`), e não o selo com o logo (09/10/2026): o logo
+de 23 px no meio de um balão de 11 px quebrava a leitura e mostrava algo que o Telegram nunca envia.
+O selo fica na resposta da FAQ sobre a origem das vagas.
+
 As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
 catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
 abrir o formulário. `test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo` prende a lista
@@ -542,3 +547,58 @@ Política: host novo no site quebra o teste até alguém decidir como declará-l
 os do Markdown frase a frase, nos Termos e na Política, porque entre 04/10 e 07/10 o HTML da
 Política teve uma frase a mais que o Markdown. A comparação cobre só os parágrafos: os rótulos
 dos itens divergem de propósito, porque no HTML eles são título e no Markdown abrem a frase.
+
+### As seções do meio mostram em vez de numerar (10/10/2026).
+
+O bloco quase preto que juntava benefícios e passos pesava a leitura, e os cartões "01, 02, 03"
+repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção tem um formato próprio:
+"Por que usar o Radar" compara procurar sozinho com usar o Radar; "Como funciona" segue uma jornada
+marcada por quando cada coisa acontece ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"),
+com miniaturas do perfil, de um radar varrendo e da notificação.
+
+Em 15/10/2026 saiu a terceira seção, "Antes de chegar até você", que peneirava seis vagas
+ilustrativas para um perfil de exemplo. Ela repetia a mensagem das outras duas (só chega vaga
+compatível), e a lista com um selo por destino pedia leitura atenta na primeira olhada. O que só ela
+dizia foi para dois lugares: o aviso do que conferir virou item do cartão "Com o Radar", e o que fica
+de fora (outra área, anos de experiência, distância e vaga repetida) foi para a resposta do FAQ
+sobre como o Radar decide. Cada caso citado ali corresponde a uma regra que o motor aplica
+(`fora_da_area_do_curso`, `exige_anos_de_experiencia`, `localizacao_incompativel` e o histórico);
+caso novo só entra no texto se houver regra por trás.
+
+A animação de entrada depende do script. O HTML chega com `data-revelar` vazio, e só o `app.js`
+o troca por `aguardando`, quando há `IntersectionObserver` e a pessoa não pediu movimento reduzido;
+o CSS só esconde sob `[data-revelar="aguardando"]`. Se o script não carregar, tudo aparece pronto.
+
+### Acessibilidade do cadastro e da faixa de áreas (14/10/2026).
+
+Revisão feita só pelo código, sem navegador nem leitor de tela, e as correções seguem a mesma
+limitação. O que ficou valendo:
+
+- **A faixa de áreas não ganhou botão de pausar.** No toque não existe hover, então o nome do ícone
+  nunca aparecia. O primeiro toque aponta a área e para a faixa, o segundo abre o cadastro, e tocar
+  fora solta. `pointerType === "touch"` não limpa a área no `pointerleave`, que o toque dispara ao
+  levantar o dedo. Com movimento reduzido a faixa quebra em linhas e o nome também aparece.
+- **Alto contraste.** O sistema apaga fundo e sombra, então opção marcada, habilidade escolhida,
+  seção ativa da conta e sugestão destacada usam `Highlight` e `HighlightText` no último
+  `@media (forced-colors: active)` do CSS, que precisa ficar depois das regras que sobrescreve.
+- **O carregamento do botão gira mesmo com movimento reduzido**: é feedback de estado, não
+  decoração.
+- **Alvo de toque de 44px** em fechar, chips de habilidade e botões de ajuda do acesso, com
+  `touch-action: manipulation` nos controles. Os botões de mostrar senha e cursos ficaram em 40px
+  porque cabem dentro do campo de 49px.
+- **Aviso do catálogo é região que já existe**: os quatro avisos (`#courses-catalog-notice`,
+  `#cities-catalog-notice`, `#skills-catalog-notice` e `#curso-nao-reconhecido`) ficam no DOM sem
+  `hidden`, vazios, e o texto entra depois. Aviso novo segue o mesmo padrão.
+- **A lista de cursos e a de cidades anunciam a quantidade** em `#contagem-de-cursos` e
+  `#contagem-de-cidades`, que usam `.sr-only` e limpam ao fechar.
+- **A dica de curso, cidade e habilidade é `aria-describedby` do campo**, e o erro do campo soma à
+  dica em vez de trocá-la (`descricaoOriginalDoCampoComErro`).
+- **Trocar de seção na conta leva o foco ao `#account-title`**, só por ação da pessoa; a carga
+  inicial não rouba o foco.
+- **Link com `target="_blank"` avisa no nome**: `aria-label` com "(abre em outra aba)" nos da Adzuna
+  e do Telegram, e texto visível nos de privacidade e termos. `test_acabamento_da_interface.py`
+  cobra a regra para todo link novo.
+- **O campo de período usa `min-height`**, para crescer com o tamanho da letra do sistema.
+
+Não mudaram: os pares de cor claros de propósito (exemplo dentro dos campos, avisos discretos), que
+ficaram assim por decisão de design e seguem abaixo de 4,5:1.

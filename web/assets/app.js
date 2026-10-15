@@ -6,10 +6,18 @@ function mostrarTema(tema) {
   botaoDoTema.setAttribute("aria-pressed", String(tema === "escuro"));
 }
 
+function trocarTemaSemTransicao(tema) {
+  const raiz = document.documentElement;
+  raiz.classList.add("sem-transicao");
+  mostrarTema(tema);
+  void raiz.offsetHeight;
+  requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove("sem-transicao")));
+}
+
 mostrarTema(document.documentElement.dataset.tema === "escuro" ? "escuro" : "claro");
 botaoDoTema.addEventListener("click", () => {
   const tema = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
-  mostrarTema(tema);
+  trocarTemaSemTransicao(tema);
   try {
     localStorage.setItem(CHAVE_DO_TEMA, tema);
   } catch {}
@@ -35,6 +43,22 @@ if (demonstracaoDoChat && !reduzirMovimento) {
 } else if (demonstracaoDoChat) {
   demonstracaoDoChat.classList.remove("is-waiting");
   demonstracaoDoChat.classList.add("is-playing");
+}
+
+const blocosQueSeRevelam = document.querySelectorAll("[data-revelar]");
+
+if (blocosQueSeRevelam.length && !reduzirMovimento && "IntersectionObserver" in window) {
+  const observadorDeRevelacao = new IntersectionObserver((entradas) => {
+    for (const entrada of entradas) {
+      if (!entrada.isIntersecting) continue;
+      entrada.target.dataset.revelar = "visto";
+      observadorDeRevelacao.unobserve(entrada.target);
+    }
+  }, { rootMargin: "0px 0px -18% 0px" });
+  for (const bloco of blocosQueSeRevelam) {
+    bloco.dataset.revelar = "aguardando";
+    observadorDeRevelacao.observe(bloco);
+  }
 }
 
 const dialog = document.querySelector("#signup-dialog");
@@ -164,6 +188,9 @@ const campoDeCurso = form.elements.curso;
 const botaoDeCursos = document.querySelector("#mostrar-cursos");
 const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
+const AVISO_DE_CURSOS_INDISPONIVEIS = "Não foi possível carregar a lista de cursos agora. Digite o nome do seu curso.";
+const AVISO_DE_CIDADES_INDISPONIVEIS = "Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.";
+const AVISO_DE_HABILIDADES_INDISPONIVEIS = "Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.";
 const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
 let cursosDaAreaEscolhida = null;
@@ -219,13 +246,16 @@ accountNavEntries.forEach(({ link, target }) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     mostrarSecaoDaConta(link);
+    document.querySelector("#account-title").focus({ preventScroll: true });
   });
 });
 
 window.addEventListener("hashchange", () => {
   if (accountPage.hidden || accountState.hidden) return;
   const entrada = accountNavEntries.find(({ link }) => link.hash === window.location.hash);
-  if (entrada) mostrarSecaoDaConta(entrada.link, false);
+  if (!entrada) return;
+  mostrarSecaoDaConta(entrada.link, false);
+  document.querySelector("#account-title").focus({ preventScroll: true });
 });
 
 function normalizarTexto(texto) {
@@ -266,6 +296,7 @@ const VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO = 16;
 const AJUSTE_DA_VELOCIDADE_POR_SEGUNDO = 6;
 const MAIOR_INTERVALO_ENTRE_QUADROS_EM_SEGUNDOS = 0.1;
 let areaApontada = null;
+let toqueSoMostrouONomeDaArea = false;
 
 function apontarArea(botao) {
   if (botao === areaApontada) return;
@@ -274,16 +305,32 @@ function apontarArea(botao) {
   areaApontada = botao;
 }
 
-if (trilhaDeAreas && !reduzirMovimento) {
+if (trilhaDeAreas) {
   const faixaVisivel = trilhaDeAreas.parentElement;
+  faixaVisivel.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "touch") apontarArea(event.target.closest(".area-button"));
+  });
+  faixaVisivel.addEventListener("pointerleave", (event) => {
+    if (event.pointerType !== "touch") apontarArea(null);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch") return;
+    const botao = event.target.closest(".area-button");
+    const alvo = botao && faixaVisivel.contains(botao) ? botao : null;
+    toqueSoMostrouONomeDaArea = Boolean(alvo) && alvo !== areaApontada;
+    apontarArea(alvo);
+  });
+  document.addEventListener("pointercancel", () => {
+    toqueSoMostrouONomeDaArea = false;
+  });
+}
+
+if (trilhaDeAreas && !reduzirMovimento) {
   const primeiraArea = trilhaDeAreas.children[0];
   const primeiraRepeticao = trilhaDeAreas.children[trilhaDeAreas.children.length / COPIAS_DA_FAIXA_DE_AREAS];
   let deslocamento = 0;
   let velocidade = VELOCIDADE_DA_FAIXA_EM_PX_POR_SEGUNDO;
   let instanteAnterior = null;
-
-  faixaVisivel.addEventListener("pointermove", (event) => apontarArea(event.target.closest(".area-button")));
-  faixaVisivel.addEventListener("pointerleave", () => apontarArea(null));
 
   const avancarFaixa = (instante) => {
     const segundos = instanteAnterior === null
@@ -304,7 +351,7 @@ if (trilhaDeAreas && !reduzirMovimento) {
 
 async function carregarCursos() {
   const catalogo = await carregarAreas();
-  avisoDeCursos.hidden = Boolean(catalogo);
+  avisoDeCursos.textContent = catalogo ? "" : AVISO_DE_CURSOS_INDISPONIVEIS;
   if (!catalogo) return null;
   cursosSugeridos ??= [...new Set(catalogo.areas.flatMap((area) => area.cursos_sugeridos))]
     .sort((primeiro, segundo) => primeiro.localeCompare(segundo, "pt-BR"))
@@ -330,7 +377,7 @@ function carregarCidades() {
     .catch(() => null)
     .then((cidades) => {
       carregamentoDeCidades = null;
-      avisoDeCidades.hidden = Array.isArray(cidades);
+      avisoDeCidades.textContent = Array.isArray(cidades) ? "" : AVISO_DE_CIDADES_INDISPONIVEIS;
       if (!Array.isArray(cidades)) return null;
       catalogoDeCidades = cidades.map((nome) => ({
         nome,
@@ -392,7 +439,7 @@ function conteudoDaOpcaoDeCidade(cidade) {
   return [nome, uf];
 }
 
-function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaLista, conteudoDaOpcao, semResultado }) {
+function ligarListaDeOpcoes({ campo, botao, lista, contagem, carregar, sugestoes, valorDaLista, conteudoDaOpcao, semResultado }) {
   let destacada = -1;
 
   function opcoes() {
@@ -422,6 +469,9 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
     lista.replaceChildren(
       ...(encontradas.length > 0 ? encontradas.map(criarOpcao) : [criarAvisoSemResultado()]),
     );
+    contagem.textContent = encontradas.length === 0
+      ? semResultado
+      : `${encontradas.length} ${encontradas.length === 1 ? "sugestão" : "sugestões"}`;
     destacada = -1;
     campo.removeAttribute("aria-activedescendant");
     lista.hidden = false;
@@ -437,6 +487,7 @@ function ligarListaDeOpcoes({ campo, botao, lista, carregar, sugestoes, valorDaL
 
   function fechar() {
     lista.hidden = true;
+    contagem.textContent = "";
     destacada = -1;
     campo.removeAttribute("aria-activedescendant");
     campo.setAttribute("aria-expanded", "false");
@@ -601,13 +652,13 @@ async function montarHabilidadesDoCurso() {
   const pickerTinhaOFoco = picker.contains(document.activeElement);
   if (!catalogo) {
     picker.replaceChildren();
-    aviso.hidden = false;
-    avisoDeCursoNaoReconhecido.hidden = true;
+    aviso.textContent = AVISO_DE_HABILIDADES_INDISPONIVEIS;
+    avisarCursoNaoReconhecido("");
     renderSkills();
     devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
     return;
   }
-  aviso.hidden = true;
+  aviso.textContent = "";
   const area = areaDoCurso(cursoSolicitado, catalogo);
   avisarCursoNaoReconhecido(area ? "" : cursoSolicitado.trim());
   const sugeridas = area?.habilidades ?? [];
@@ -629,7 +680,6 @@ function devolverOFocoAsHabilidades(picker, pickerTinhaOFoco) {
 }
 
 function avisarCursoNaoReconhecido(curso) {
-  avisoDeCursoNaoReconhecido.hidden = !curso;
   avisoDeCursoNaoReconhecido.textContent = curso
     ? `Não reconhecemos o curso “${curso}”. Sem um curso reconhecido, as vagas ficam menos precisas e não há sugestões de habilidades nem áreas de interesse. Se o seu curso aparece na lista de cursos, volte e escolha o nome de lá. Se não aparece, pode continuar.`
     : "";
@@ -642,6 +692,7 @@ function lembrarAreasEscolhidas() {
   });
 }
 let campoComErro = null;
+let descricaoOriginalDoCampoComErro = null;
 const mensagensValidacao = {
   curso: "Informe o nome do seu curso.",
   periodo: "Selecione o período que você está cursando.",
@@ -937,7 +988,9 @@ function humanizeError(error, { profilePending = false, carregandoConta = false 
 function limparErroDoCampo() {
   if (!campoComErro) return;
   campoComErro.removeAttribute("aria-invalid");
-  campoComErro.removeAttribute("aria-describedby");
+  if (descricaoOriginalDoCampoComErro) campoComErro.setAttribute("aria-describedby", descricaoOriginalDoCampoComErro);
+  else campoComErro.removeAttribute("aria-describedby");
+  descricaoOriginalDoCampoComErro = null;
   document.querySelector("#erro-do-campo")?.remove();
   campoComErro = null;
 }
@@ -952,7 +1005,8 @@ function marcarErroNoCampo(campo, mensagem) {
   if (rotuloDeConsentimento) rotuloDeConsentimento.insertAdjacentElement("afterend", aviso);
   else (campo.closest(".field") ?? campo.parentElement).append(aviso);
   campo.setAttribute("aria-invalid", "true");
-  campo.setAttribute("aria-describedby", aviso.id);
+  descricaoOriginalDoCampoComErro = campo.getAttribute("aria-describedby");
+  campo.setAttribute("aria-describedby", [aviso.id, descricaoOriginalDoCampoComErro].filter(Boolean).join(" "));
   campoComErro = campo;
   campo.focus();
 }
@@ -1074,7 +1128,7 @@ function limparRascunhoDoCadastro() {
   esquecerPerfilCarregado();
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = true;
-  document.querySelector("#skills-catalog-notice").hidden = true;
+  document.querySelector("#skills-catalog-notice").textContent = "";
   avisarCursoNaoReconhecido("");
   renderSkills();
 }
@@ -1741,6 +1795,10 @@ async function abrirCadastroPelaArea(nomeDaArea) {
 }
 
 trilhaDeAreas?.addEventListener("click", (event) => {
+  if (toqueSoMostrouONomeDaArea) {
+    toqueSoMostrouONomeDaArea = false;
+    return;
+  }
   const botao = event.target.closest("[data-area]");
   if (botao) void abrirCadastroPelaArea(botao.dataset.area);
 });
@@ -1949,6 +2007,7 @@ ligarListaDeOpcoes({
   campo: campoDeCidade,
   botao: botaoDeCidades,
   lista: listaDeCidades,
+  contagem: document.querySelector("#contagem-de-cidades"),
   carregar: carregarCidades,
   sugestoes: (texto) => opcoesParecidas(catalogoDeCidades, texto, MAXIMO_DE_CIDADES_SUGERIDAS),
   valorDaLista: cidadeDaLista,
@@ -1965,6 +2024,7 @@ ligarListaDeOpcoes({
   campo: campoDeCurso,
   botao: botaoDeCursos,
   lista: listaDeCursos,
+  contagem: document.querySelector("#contagem-de-cursos"),
   carregar: carregarCursos,
   sugestoes: (texto) =>
     (!textoDeBusca(texto) && cursosDaAreaEscolhida) || opcoesParecidas(cursosSugeridos, texto, cursosSugeridos.length),

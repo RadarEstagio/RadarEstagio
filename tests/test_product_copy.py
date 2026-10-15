@@ -16,6 +16,7 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert '<span class="hero-title-secondary">Nós levamos ele até você.</span>' in html
     assert ".hero-title-primary { color: var(--ink); }" in css
     assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
+    assert ".continuacao { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
     assert "Busca automática todo dia" in html
@@ -139,6 +140,24 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
     assert "Chegue antes" not in html
     assert "você poderá editar depois" not in html
     assert "Direto no Telegram" in html
+
+
+def test_cartao_com_o_radar_responde_a_duvida_de_se_candidatar():
+    html = (RAIZ / "web/index.html").read_text()
+    inicio = html.index('class="comparison-card comparison-radar"')
+    cartao = html[inicio:].split("</article>", 1)[0]
+
+    assert "Aviso do que conferir antes de se candidatar" in cartao
+    assert "Curso, período e cidade já conferidos" not in cartao
+
+
+def test_faq_conta_o_que_fica_de_fora_no_lugar_da_secao_da_peneira():
+    html = (RAIZ / "web/index.html").read_text()
+    faq = html[html.index('<section class="faq section"') :].split("</section>", 1)[0]
+
+    assert "Vaga de outra área, que pede anos de experiência ou que fica longe de você" in faq
+    assert "a mesma vaga não chega duas vezes" in faq
+    assert "“requisitos a conferir no seu perfil”" in faq
 
 
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
@@ -344,8 +363,10 @@ def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
 
 SELO_DA_ADZUNA = (
     '<span class="jobs-by-adzuna">'
-    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by '
-    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">'
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+    'aria-label="Jobs (abre em outra aba)">Jobs</a> by '
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+    'aria-label="Adzuna (abre em outra aba)">'
     '<img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>'
 )
 
@@ -377,15 +398,32 @@ def test_faixa_abaixo_do_hero_mostra_as_areas_e_nao_marcas():
     assert "deslizar-areas" not in css
 
 
-def test_vagas_de_exemplo_e_fonte_levam_o_selo_jobs_by_adzuna():
+def test_fonte_da_faq_leva_o_selo_jobs_by_adzuna():
     html = (RAIZ / "web/index.html").read_text()
     css = (RAIZ / "web/assets/styles.css").read_text()
+    faq = html[html.index('id="faq"') :]
 
-    assert html.count(SELO_DA_ADZUNA) == 3
+    assert html.count(SELO_DA_ADZUNA) == 1
+    assert SELO_DA_ADZUNA in faq
     assert "Fonte: Adzuna" not in html
     assert ".jobs-by-adzuna { display: inline-flex; align-items: center; gap: 4px;" in css
     assert "min-width: 116px; min-height: 23px;" in css
     assert (RAIZ / "web/assets/adzuna-logo.png").exists()
+
+
+def test_vagas_de_exemplo_do_chat_levam_a_atribuicao_em_texto_como_no_telegram():
+    html = (RAIZ / "web/index.html").read_text()
+    chat = html[html.index('class="telegram-chat"') :]
+    chat = chat[: chat.index("chat-message-footer")]
+    atribuicao = (
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+        'aria-label="Jobs (abre em outra aba)">Jobs</a> by '
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+        'aria-label="Adzuna (abre em outra aba)">Adzuna</a>'
+    )
+
+    assert chat.count(atribuicao) == 2
+    assert "adzuna-logo.png" not in chat
 
 
 def test_card_de_precos_nao_promete_duas_fontes_de_vagas():
@@ -517,3 +555,9 @@ def test_politica_nomeia_todo_host_que_o_site_contata_ao_carregar():
         assert host in FORNECEDOR_DE_CADA_HOST, host
         for arquivo, texto in politica.items():
             assert FORNECEDOR_DE_CADA_HOST[host] in texto, (arquivo, host)
+
+
+def test_landing_nao_usa_garimpar():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "garimp" not in html.lower()

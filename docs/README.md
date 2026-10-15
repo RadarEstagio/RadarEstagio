@@ -16,6 +16,8 @@ validação com usuários são estados diferentes.
 - [Decisões do banco e das funções](decisoes-do-banco.md): schema, migrations, webhook e resumo
   de operação, com os limites aceitos de cada decisão.
 - [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
+- [Ícones 3D das áreas](ideias-icones-3d-das-areas.md): proposta em análise para trocar os
+  ícones de linha da landing por ilustrações, com objetos, prompt, arquivos e riscos.
 - [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
 - [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina,
   retrato de 08/09.

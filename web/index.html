@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20261008-faixa-suave" />
+    <link rel="stylesheet" href="assets/styles.css?v=20261014-acessibilidade" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20261008-faixa-suave" defer></script>
+    <script src="assets/app.js?v=20261014-acessibilidade" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -69,8 +69,8 @@
               <button class="button button-primary button-large js-open-signup" data-event-origin="hero" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
             </div>
             <ul class="trust-list" aria-label="Diferenciais do Radar">
-              <li><span aria-hidden="true">✓</span> Busca automática todo dia</li>
-              <li><span aria-hidden="true">✓</span> Vagas que atendem seu perfil</li>
+              <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Busca automática todo dia</li>
+              <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Vagas que atendem seu perfil</li>
             </ul>
           </div>
 
@@ -90,7 +90,7 @@
                     <strong class="chat-vacancy-title">1. Estágio em desenvolvimento back-end</strong>
                     <span class="chat-company">Empresa ilustrativa</span>
                     <p>📍 Rio de Janeiro · Híbrido</p>
-                    <p>🏷️ <span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span> · Publicada hoje</p>
+                    <p>🏷️ <a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Jobs (abre em outra aba)">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Adzuna (abre em outra aba)">Adzuna</a> · Publicada hoje</p>
                     <p>⭐ <strong>Nota 83/100</strong></p>
                     <p>✅ <strong>Requisitos atendidos:</strong> Java · SQL</p>
                     <p>🔎 <strong>Requisitos a conferir no seu perfil:</strong> Spring</p>
@@ -100,7 +100,7 @@
                     <strong class="chat-vacancy-title">2. Estágio em marketing e conteúdo</strong>
                     <span class="chat-company">Empresa ilustrativa</span>
                     <p>📍 Recife · Remoto</p>
-                    <p>🏷️ <span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span> · Publicada hoje</p>
+                    <p>🏷️ <a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Jobs (abre em outra aba)">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Adzuna (abre em outra aba)">Adzuna</a> · Publicada hoje</p>
                     <p>⭐ <strong>Nota 79/100</strong></p>
                     <p>✅ <strong>Requisitos atendidos:</strong> Comunicação · Canva</p>
                     <p class="chat-link">🔗 Ver vaga em adzuna.com.br</p>
@@ -139,60 +139,83 @@
         </div>
       </section>
 
-      <section class="how section" id="como-funciona">
+      <section class="benefits section" aria-labelledby="benefits-title">
         <div class="container">
-          <div class="rail-band band-top" aria-hidden="true"></div>
-          <div class="how-frame">
-            <div class="frame-head">
-              <h2>Procurar estágio <span class="continuacao">não deveria ser um segundo emprego.</span></h2>
-            </div>
-            <div class="benefit-grid">
-              <article class="benefit-card"><span class="card-index">01</span><div class="card-icon" aria-hidden="true">⌁</div><h3>Busca diária</h3><p>Todo dia o Radar busca vagas novas na Adzuna, que reúne anúncios de vários sites, e você só abre as que valem a pena.</p></article>
-              <article class="benefit-card"><span class="card-index">02</span><div class="card-icon" aria-hidden="true">✦</div><h3>Compatibilidade explicada</h3><p>A mensagem de cada vaga mostra a nota de 0 a 100, o que você já atende e o que ainda falta conferir no seu perfil.</p></article>
-              <article class="benefit-card"><span class="card-index">03</span><div class="card-icon" aria-hidden="true">↗</div><h3>Direto no Telegram</h3><p>As recomendações chegam numa conversa com o bot do Radar, e você se candidata pelo link de cada vaga.</p></article>
-            </div>
-            <div class="hatch-band" aria-hidden="true"></div>
-            <div class="how-layout">
-              <div class="how-copy">
-                <p class="eyebrow eyebrow-light">Como funciona</p>
-                <h2>Você preenche o perfil uma vez, <span class="continuacao">e o Radar procura todo dia.</span></h2>
-                <p>Do perfil à recomendação em três passos, sem abrir dezenas de abas todo dia.</p>
-                <button class="text-link js-open-signup" data-event-origin="como_funciona" data-rotulo-conta="Minha conta" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
-              </div>
-              <ol class="steps">
-                <li><span class="step-number">01</span><div><h3>Cadastre seu perfil</h3><p>Informe curso, período, habilidades, cidade e preferência de modalidade.</p></div></li>
-                <li><span class="step-number">02</span><div><h3>O Radar monitora</h3><p>O Radar busca vagas novas, tira as repetidas e compara cada uma com o seu perfil.</p></div></li>
-                <li><span class="step-number">03</span><div><h3>Você recebe as melhores</h3><p>Até sete oportunidades chegam no Telegram com nota, pontos positivos e alertas.</p></div></li>
-              </ol>
-            </div>
+          <div class="section-heading">
+            <p class="eyebrow">Por que usar o Radar</p>
+            <h2 id="benefits-title">Procurar estágio <span class="continuacao">não deveria ser um segundo emprego.</span></h2>
           </div>
-          <div class="rail-band band-bottom" aria-hidden="true"></div>
+          <div class="comparison" data-revelar>
+            <article class="comparison-card comparison-sozinho">
+              <h3>Procurando sozinho</h3>
+              <ul class="comparison-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Abrir site por site, todo dia</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Ler vagas que não têm nada a ver com você</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Descobrir no fim que ela pede outro curso</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Ficar na dúvida se vale se candidatar</li>
+              </ul>
+            </article>
+            <div class="comparison-ponte" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></div>
+            <article class="comparison-card comparison-radar">
+              <h3>Com o Radar</h3>
+              <ul class="comparison-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Direto no Telegram, sem procurar site por site</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Só vagas compatíveis com o seu perfil</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Nota de 0 a 100 e o motivo de cada vaga</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12 5 5L20 7"></path></svg>Aviso do que conferir antes de se candidatar</li>
+              </ul>
+            </article>
+          </div>
         </div>
       </section>
 
-      <section class="transparency section" aria-labelledby="transparency-title">
+      <section class="how section" id="como-funciona" aria-labelledby="how-title">
         <div class="container">
-          <div class="transparency-heading">
-            <div class="transparency-copy">
-              <p class="eyebrow">Antes de chegar até você</p>
-              <h2 id="transparency-title">Como o Radar escolhe<br /><span class="continuacao">o que te mandar.</span></h2>
-            </div>
-            <p class="transparency-lead">O Radar cruza cada anúncio com o seu perfil e deixa de fora o que não combina com você.</p>
+          <div class="section-heading how-heading">
+            <p class="eyebrow">Como funciona</p>
+            <h2 id="how-title">Você preenche uma vez. <span class="continuacao">O Radar procura todo dia.</span></h2>
           </div>
-          <ul class="filter-principles">
-            <li>
-              <h3>Vaga repetida <br />não chega duas vezes.</h3>
-              <p>A mesma vaga pode ser publicada mais de uma vez, por sites ou empresas diferentes. O Radar remove duplicatas e consulta o histórico do que já enviou.</p>
+          <ol class="journey" data-revelar>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="mini-perfil">
+                  <p class="mini-perfil-titulo"><span class="mini-perfil-avatar"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>Seu perfil</p>
+                  <dl>
+                    <div class="mini-perfil-linha"><dt>Curso</dt><dd>Ciência da Computação</dd></div>
+                    <div class="mini-perfil-linha"><dt>Período</dt><dd>5º</dd></div>
+                    <div class="mini-perfil-linha"><dt>Cidade</dt><dd>Recife · Híbrido</dd></div>
+                    <div class="mini-perfil-linha"><dt>Habilidades</dt><dd><span class="mini-chip">Python</span><span class="mini-chip">SQL</span></dd></div>
+                  </dl>
+                </div>
+              </div>
+              <p class="journey-quando">Uma vez só</p>
+              <h3>Você conta o que procura</h3>
+              <p>Curso, período, cidade, habilidades e se prefere presencial, híbrido ou remoto.</p>
             </li>
-            <li>
-              <h3>O que entra <br />na comparação.</h3>
-              <p>Curso, período, habilidades, cidade e modalidade. Uma vaga não chega até você só por ter “estágio” no título.</p>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="radar-tela"><span class="radar-varredura"></span><i class="radar-ponto"></i><i class="radar-ponto"></i><i class="radar-ponto"></i></div>
+              </div>
+              <p class="journey-quando">Todo dia, sozinho</p>
+              <h3>O Radar procura por você</h3>
+              <p>Ele lê as vagas novas, tira as repetidas e compara cada uma com o seu perfil.</p>
             </li>
-            <li>
-              <h3>Quando falta informação, <br />a mensagem avisa.</h3>
-              <p>Se a vaga pede algo que você não tem, ou se o anúncio deixa um requisito em aberto, a recomendação mostra isso como alerta ou como requisito a conferir.</p>
+            <li class="journey-stage">
+              <div class="journey-visual" aria-hidden="true">
+                <div class="mini-notificacao">
+                  <span class="mini-notificacao-icone"><svg viewBox="0 0 24 24" focusable="false"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6 0 1.9l4.6 1.5 1.8 5.6c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7l3-15.4c.2-1-.8-1.8-1.9-1.5Z"></path></svg></span>
+                  <span class="mini-notificacao-texto"><strong>📡 Radar de Estágio</strong><span>Desenvolvimento back-end</span><span>⭐ Nota 83/100</span></span>
+                  <time>07:23</time>
+                </div>
+              </div>
+              <p class="journey-quando">De manhã, no celular</p>
+              <h3>As melhores chegam até você</h3>
+              <p>Até sete vagas no Telegram, cada uma com a nota, o que você já atende e o que vale conferir.</p>
             </li>
-          </ul>
+          </ol>
+          <div class="how-action">
+            <button class="button button-primary js-open-signup" data-event-origin="como_funciona" data-rotulo-conta="Minha conta" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
+          </div>
         </div>
       </section>
 
@@ -209,10 +232,10 @@
               <p class="plan-price">R$ 0</p>
               <p class="plan-note">Enquanto validamos o Radar com os primeiros estudantes.</p>
               <ul>
-                <li><span aria-hidden="true">✓</span> Busca diária de vagas na Adzuna</li>
-                <li><span aria-hidden="true">✓</span> Até sete recomendações por dia no Telegram</li>
-                <li><span aria-hidden="true">✓</span> Nota de 0 a 100 com o motivo de cada vaga</li>
-                <li><span aria-hidden="true">✓</span> Pausar, editar ou apagar sua conta quando quiser</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Busca diária de vagas na Adzuna</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Até sete recomendações por dia no Telegram</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Nota de 0 a 100 com o motivo de cada vaga</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Pausar, editar ou apagar sua conta quando quiser</li>
               </ul>
               <button class="button button-primary js-open-signup" data-event-origin="precos" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
             </article>
@@ -222,9 +245,9 @@
               <p class="plan-price">A definir</p>
               <p class="plan-note">O preço sai do que os primeiros usuários disserem que vale a pena.</p>
               <ul>
-                <li><span aria-hidden="true">✓</span> Quem entrar no piloto é avisado antes de qualquer cobrança</li>
-                <li><span aria-hidden="true">✓</span> Nenhum cartão é pedido para começar</li>
-                <li><span aria-hidden="true">✓</span> Você pode sair e apagar seus dados a qualquer momento</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Quem entrar no piloto é avisado antes de qualquer cobrança</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Nenhum cartão é pedido para começar</li>
+                <li><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></span> Você pode sair e apagar seus dados a qualquer momento</li>
               </ul>
               <p class="plan-footnote">Sem data marcada. Enquanto isso, o Radar segue gratuito.</p>
             </article>
@@ -245,7 +268,7 @@
             </details>
             <details>
               <summary>De onde vêm as vagas?</summary>
-              <p>Hoje, as vagas vêm da Adzuna (<span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>), e o Radar remove anúncios repetidos antes de avaliar. A Adzuna não cobre todo o mercado; ele recomenda apenas o que consegue coletar e analisar.</p>
+              <p>Hoje, as vagas vêm da Adzuna (<span class="jobs-by-adzuna"><a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Jobs (abre em outra aba)">Jobs</a> by <a href="https://www.adzuna.com.br" target="_blank" rel="noopener" aria-label="Adzuna (abre em outra aba)"><img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>), e o Radar remove anúncios repetidos antes de avaliar. A Adzuna não cobre todo o mercado; ele recomenda apenas o que consegue coletar e analisar.</p>
             </details>
             <details>
               <summary>Quantas mensagens vou receber?</summary>
@@ -253,7 +276,7 @@
             </details>
             <details>
               <summary>Como o Radar decide que uma vaga combina comigo?</summary>
-              <p>O Radar extrai do anúncio requisitos, curso aceito, período mínimo e modalidade, depois compara esses dados com o seu perfil por regras fixas. A mensagem mostra a nota de 0 a 100, pontos a favor, alertas e “requisitos a conferir no seu perfil” quando falta informação.</p>
+              <p>O Radar lê cada anúncio e compara curso aceito, período mínimo, habilidades, cidade e modalidade com o seu perfil, sempre pelas mesmas regras. Vaga de outra área, que pede anos de experiência ou que fica longe de você não chega, e a mesma vaga não chega duas vezes. Cada recomendação vem com a nota de 0 a 100, os pontos a favor e os “requisitos a conferir no seu perfil” quando o anúncio pede algo que você não informou.</p>
             </details>
             <details>
               <summary>Preciso vincular o Telegram?</summary>
@@ -344,7 +367,7 @@
 
     <dialog class="signup-dialog" id="signup-dialog" aria-labelledby="signup-title">
       <div class="dialog-shell">
-        <button class="dialog-close" id="close-dialog" type="button" aria-label="Fechar cadastro">×</button>
+        <button class="dialog-close" id="close-dialog" type="button" aria-label="Fechar cadastro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
         <div class="dialog-intro">
           <span class="radar-mark radar-mark-dialog" aria-hidden="true"><i></i></span>
           <p class="eyebrow eyebrow-light">Ative seu radar</p>
@@ -379,12 +402,13 @@
                 <div class="field field-full">
                   <label for="curso">Seu curso</label>
                   <div class="combobox">
-                    <input id="curso" name="curso" required minlength="2" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cursos" autocomplete="off" placeholder="Digite ou escolha seu curso" />
+                    <input id="curso" name="curso" required minlength="2" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cursos" aria-describedby="courses-catalog-notice ajuda-curso" autocomplete="off" placeholder="Digite ou escolha seu curso" />
                     <button type="button" class="combobox-toggle" id="mostrar-cursos" tabindex="-1" aria-label="Mostrar cursos" aria-controls="lista-de-cursos" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cursos" role="listbox" aria-label="Cursos" hidden></ul>
+                    <p class="sr-only" id="contagem-de-cursos" role="status"></p>
                   </div>
-                  <p class="catalog-notice" id="courses-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cursos agora. Digite o nome do seu curso.</p>
-                  <small>Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
+                  <p class="catalog-notice" id="courses-catalog-notice" role="status"></p>
+                  <small id="ajuda-curso">Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
                 </div>
                 <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
               </div>
@@ -392,7 +416,7 @@
             <fieldset class="form-step" data-step="3">
               <legend>O que você já sabe usar?</legend>
               <p class="step-help" id="skills-help">Você pode começar pelo curso e pelas preferências. Depois, informe suas habilidades para melhorar as recomendações.</p>
-              <p class="form-message form-message-aviso" id="curso-nao-reconhecido" role="status" hidden></p>
+              <p class="form-message form-message-aviso" id="curso-nao-reconhecido" role="status"></p>
               <div class="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
                 <button type="button" data-skill="Python" aria-pressed="false">Python</button>
                 <button type="button" data-skill="JavaScript" aria-pressed="false">JavaScript</button>
@@ -405,9 +429,9 @@
                 <button type="button" data-skill="Linux" aria-pressed="false">Linux</button>
                 <button type="button" data-skill="Redes" aria-pressed="false">Redes</button>
               </div>
-              <p class="catalog-notice" id="skills-catalog-notice" role="status" hidden>Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.</p>
+              <p class="catalog-notice" id="skills-catalog-notice" role="status"></p>
               <div class="field-grid">
-                <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" maxlength="100" placeholder="Digite uma habilidade e pressione Enter" /><small>Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
+                <div class="field field-full"><label for="custom-skill">Não encontrou alguma?</label><input id="custom-skill" autocomplete="off" maxlength="100" aria-describedby="ajuda-habilidade" placeholder="Digite uma habilidade e pressione Enter" /><small id="ajuda-habilidade">Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small></div>
               </div>
               <div class="selected-skills" id="selected-skills" role="group" aria-label="Habilidades escolhidas" aria-live="polite"></div>
               <button class="text-link skill-empty-action" type="button" id="continue-without-skills">Ainda não quero informar habilidades <span aria-hidden="true">→</span></button>
@@ -419,12 +443,13 @@
                 <div class="field field-full">
                   <label for="cidade">Cidade principal</label>
                   <div class="combobox">
-                    <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" autocomplete="off" placeholder="Digite e escolha sua cidade" />
+                    <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" aria-describedby="cities-catalog-notice ajuda-cidade" autocomplete="off" placeholder="Digite e escolha sua cidade" />
                     <button type="button" class="combobox-toggle" id="mostrar-cidades" tabindex="-1" aria-label="Mostrar cidades" aria-controls="lista-de-cidades" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cidades" role="listbox" aria-label="Cidades" hidden></ul>
+                    <p class="sr-only" id="contagem-de-cidades" role="status"></p>
                   </div>
-                  <p class="catalog-notice" id="cities-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.</p>
-                  <small>Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
+                  <p class="catalog-notice" id="cities-catalog-notice" role="status"></p>
+                  <small id="ajuda-cidade">Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
                 </div>
                 <div class="field field-full"><span id="rotulo-modalidade">Modalidade preferida</span><div class="option-grid" role="radiogroup" aria-labelledby="rotulo-modalidade">
                   <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>
@@ -466,7 +491,7 @@
           </section>
           <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-labelledby="success-title" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><p class="form-message" id="success-message" role="alert"></p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
+            <div class="success-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg></div><p class="eyebrow"><span id="success-kicker">Perfil salvo</span></p><h2 id="success-title" tabindex="-1">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><p class="form-message" id="success-message" role="alert"></p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener" aria-label="Vincular e ativar no Telegram (abre em outra aba)">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Voltar ao site</button></div>
           </section>
           <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
             <div class="account-heading">
@@ -549,7 +574,7 @@
             <div class="account-confirm-header">
               <span class="account-confirm-icon" aria-hidden="true">!</span>
               <div><p>Confirme a ação</p><h2 id="account-confirm-title">Confirmar ação</h2></div>
-              <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação">×</button>
+              <button class="account-confirm-close" type="button" id="account-confirm-close" aria-label="Fechar confirmação"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
             </div>
             <div class="account-confirm-warning"><strong id="account-confirm-warning-title"></strong><p id="account-confirm-warning-copy"></p></div>
             <p id="account-confirm-copy"></p>

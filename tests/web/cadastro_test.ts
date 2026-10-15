@@ -68,6 +68,12 @@ type Call =
   | ["update", string, Payload]
   | ["rpc", string, Payload];
 type AuthCallback = (event: string) => void;
+type ElementoDaPagina = InstanceType<TestWindow["Element"]>;
+type ObservadorFalso = {
+  callback: (entradas: { target: ElementoDaPagina; isIntersecting: boolean }[], observador: unknown) => void;
+  observados: Set<ElementoDaPagina>;
+  instancia: unknown;
+};
 type TestWindow = InstanceType<typeof JSDOM>["window"];
 
 function called<K extends Call[0]>(
@@ -94,6 +100,7 @@ function app(
     erroDoPerfil = null,
     armazenado = {},
     bibliotecaCarregada = true,
+    observaInterseccao = false,
   }: {
     session?: Session | null;
     savedProfile?: Profile | null;
@@ -108,9 +115,11 @@ function app(
     erroDoPerfil?: Error | null;
     armazenado?: Record<string, string>;
     bibliotecaCarregada?: boolean;
+    observaInterseccao?: boolean;
   } = {},
 ) {
   const erros: Error[] = [];
+  const observadores: ObservadorFalso[] = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.sendTo(console, { omitJSDOMErrors: true });
   virtualConsole.on("jsdomError", (erro: Error) => erros.push(erro));
@@ -129,6 +138,22 @@ function app(
         }),
       });
       for (const [chave, valor] of Object.entries(armazenado)) janela.localStorage.setItem(chave, valor);
+      if (observaInterseccao) {
+        Object.defineProperty(janela, "IntersectionObserver", {
+          value: class {
+            constructor(callback: ObservadorFalso["callback"]) {
+              observadores.push({ callback, observados: new Set(), instancia: this });
+            }
+            observe(elemento: ElementoDaPagina) {
+              observadores.at(-1)?.observados.add(elemento);
+            }
+            unobserve(elemento: ElementoDaPagina) {
+              for (const observador of observadores) observador.observados.delete(elemento);
+            }
+            disconnect() {}
+          },
+        });
+      }
       if (armazenamentoBloqueado) {
         for (const armazenamento of ["localStorage", "sessionStorage"]) {
           Object.defineProperty(janela, armazenamento, {
@@ -238,6 +263,13 @@ function app(
     close: () => w.close(),
     authEvent: (event: string) => authCallback(event),
     passarQuadros,
+    entrarNaTela: (elemento: ElementoDaPagina) => {
+      for (const observador of observadores) {
+        if (!observador.observados.has(elemento)) continue;
+        observador.callback([{ target: elemento, isIntersecting: true }], observador.instancia);
+      }
+    },
+    observados: () => observadores.flatMap((observador) => [...observador.observados]),
   };
 }
 
@@ -328,6 +360,50 @@ Deno.test("faixa de áreas anda a 16 px por segundo", async () => {
   } finally { a.close(); }
 });
 
+function eventoDePonteiro(a: ReturnType<typeof app>, tipo: string, pointerType: string) {
+  const evento = new a.w.Event(tipo, { bubbles: true });
+  Object.defineProperty(evento, "pointerType", { value: pointerType });
+  return evento;
+}
+
+Deno.test("toque num ícone da faixa mostra o nome e para a faixa até tocar fora", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.passarQuadros(30);
+    const doc = a.w.document;
+    const icones = [...doc.querySelectorAll(".areas-track li:not([aria-hidden]) .area-button")];
+    icones[0].querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), true);
+    doc.querySelector(".areas-marquee").dispatchEvent(eventoDePonteiro(a, "pointerleave", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), true);
+    a.passarQuadros(120);
+    const parada = deslocamentoDaFaixa(a);
+    a.passarQuadros(60);
+    assert.ok(Math.abs(deslocamentoDaFaixa(a) - parada) < 0.01);
+    icones[1].querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[0].classList.contains("is-apontada"), false);
+    assert.equal(icones[1].classList.contains("is-apontada"), true);
+    doc.querySelector("main").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icones[1].classList.contains("is-apontada"), false);
+    a.passarQuadros(120);
+    assert.ok(deslocamentoDaFaixa(a) < parada - 1);
+  } finally { a.close(); }
+});
+
+Deno.test("toque num ícone da faixa mostra o nome também com movimento reduzido", async () => {
+  const a = app({ movimentoReduzido: true });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const icone = doc.querySelector(".areas-track li:not([aria-hidden]) .area-button");
+    icone.querySelector(".area-tile").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icone.classList.contains("is-apontada"), true);
+    doc.querySelector("main").dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    assert.equal(icone.classList.contains("is-apontada"), false);
+  } finally { a.close(); }
+});
+
 Deno.test("faixa desacelera até parar quando o mouse se mexe sobre um ícone e volta quando ele sai", async () => {
   const a = app();
   try {
@@ -357,6 +433,38 @@ Deno.test("com movimento reduzido a faixa de áreas fica parada", async () => {
     await settle();
     a.passarQuadros(60);
     assert.equal(a.w.document.querySelector(".areas-track").style.transform, "");
+  } finally { a.close(); }
+});
+
+Deno.test("sem IntersectionObserver as seções que se revelam nunca ficam escondidas", () => {
+  const a = app();
+  try {
+    const blocos = [...a.w.document.querySelectorAll("[data-revelar]")];
+    assert.equal(blocos.length, 2);
+    for (const bloco of blocos) assert.equal(bloco.getAttribute("data-revelar"), "");
+  } finally { a.close(); }
+});
+
+Deno.test("seção que se revela espera entrar na tela e depois para de ser observada", () => {
+  const a = app({ observaInterseccao: true });
+  try {
+    const [comparacao, jornada] = a.w.document.querySelectorAll("[data-revelar]");
+    assert.equal(a.observados().length, 2);
+    for (const bloco of [comparacao, jornada]) assert.equal(bloco.getAttribute("data-revelar"), "aguardando");
+    a.entrarNaTela(jornada);
+    assert.equal(jornada.getAttribute("data-revelar"), "visto");
+    assert.equal(comparacao.getAttribute("data-revelar"), "aguardando");
+    assert.equal(a.observados().includes(jornada), false);
+  } finally { a.close(); }
+});
+
+Deno.test("com movimento reduzido as seções aparecem prontas, sem esperar a rolagem", () => {
+  const a = app({ observaInterseccao: true, movimentoReduzido: true });
+  try {
+    assert.equal(a.observados().length, 0);
+    for (const bloco of a.w.document.querySelectorAll("[data-revelar]")) {
+      assert.equal(bloco.getAttribute("data-revelar"), "");
+    }
   } finally { a.close(); }
 });
 
@@ -1096,8 +1204,11 @@ Deno.test("navegação da conta atualiza a seção ativa", async () => {
     const privacy = a.w.document.querySelector('.account-nav a[href="#account-privacy-panel"]');
 
     assert.equal(overview.getAttribute("aria-current"), "location");
+    deliveries.focus();
+    assert.equal(a.w.document.activeElement, deliveries);
     deliveries.click();
     await settle();
+    assert.equal(a.w.document.activeElement.id, "account-title");
     assert.equal(overview.classList.contains("is-active"), false);
     assert.equal(deliveries.classList.contains("is-active"), true);
     assert.equal(deliveries.getAttribute("aria-current"), "location");
@@ -1114,6 +1225,7 @@ Deno.test("navegação da conta atualiza a seção ativa", async () => {
     assert.equal(a.w.document.querySelector("#account-delivery-panel").hidden, true);
     assert.equal(a.w.document.querySelector("#account-privacy-panel").hidden, false);
     assert.equal(a.w.document.querySelector("#account-title").textContent, "Privacidade");
+    assert.equal(a.w.document.activeElement.id, "account-title");
   } finally { a.close(); }
 });
 
@@ -3049,6 +3161,60 @@ Deno.test("a 51ª digitada seguida de Continuar fica na etapa com o aviso, sem s
   }
 });
 
+function descricaoDoCampo(doc: TestWindow["document"], campo: ElementoDaPagina) {
+  return (campo.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean)
+    .map((id: string) => doc.getElementById(id)?.textContent ?? "").join(" | ");
+}
+
+Deno.test("a dica de cada campo do cadastro é lida junto com o campo", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#curso")), /nome que aparece na sua faculdade/);
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#cidade")), /cidades vizinhas também entram/);
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#custom-skill")), /Uma por vez, com até 100/);
+    const rotulo = doc.querySelector('label[for="custom-skill"]');
+    assert.equal(rotulo.textContent.trim(), "Não encontrou alguma?");
+  } finally { a.close(); }
+});
+
+Deno.test("o erro do campo soma à dica e a dica volta quando o erro some", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    form.elements.curso.value = " A ";
+    doc.querySelector("#next-step").click();
+    await settle();
+    const descricaoComErro = descricaoDoCampo(doc, form.elements.curso);
+    assert.match(descricaoComErro, /pelo menos 2 caracteres/);
+    assert.match(descricaoComErro, /nome que aparece na sua faculdade/);
+    form.elements.curso.value = "Computação";
+    form.elements.curso.dispatchEvent(new a.w.Event("input", { bubbles: true }));
+    await settle();
+    assert.equal(doc.querySelector("#erro-do-campo"), null);
+    assert.match(descricaoDoCampo(doc, form.elements.curso), /nome que aparece na sua faculdade/);
+    assert.equal(form.elements.curso.hasAttribute("aria-invalid"), false);
+  } finally { a.close(); }
+});
+
+Deno.test("avisos do catálogo são regiões que já existem vazias, sem hidden", async () => {
+  const a = app();
+  try {
+    await settle();
+    for (const id of ["courses-catalog-notice", "cities-catalog-notice", "skills-catalog-notice", "curso-nao-reconhecido"]) {
+      const aviso = a.w.document.getElementById(id);
+      assert.equal(aviso.hasAttribute("hidden"), false, id);
+      assert.equal(aviso.getAttribute("role"), "status", id);
+      assert.equal(aviso.textContent, "", id);
+    }
+  } finally { a.close(); }
+});
+
 Deno.test("curso com menos de 2 caracteres fica na etapa com aviso e não chega ao banco", async () => {
   const a = app();
   try {
@@ -3509,7 +3675,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     await a.w.montarHabilidadesDoCurso();
     assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
     assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
-    assert.equal(doc.querySelector("#skills-catalog-notice").hidden, false);
+    assert.notEqual(doc.querySelector("#skills-catalog-notice").textContent, "");
     assert.equal(doc.querySelector("#continue-without-skills").hidden, true);
   } finally {
     a.close();
@@ -3984,7 +4150,7 @@ Deno.test("lista de cidades fora do ar avisa e não bloqueia o cadastro", async 
       json: async () => areasJson,
     });
     const form = await abrirPreferencias(a);
-    assert.equal(a.w.document.querySelector("#cities-catalog-notice").hidden, false);
+    assert.notEqual(a.w.document.querySelector("#cities-catalog-notice").textContent, "");
     form.elements.cidade.value = "Recife, PE";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
@@ -4052,6 +4218,34 @@ function teclarNoCurso(a: ReturnType<typeof app>, key: string) {
   );
 }
 
+Deno.test("a lista de cursos anuncia quantas sugestões sobraram e limpa ao fechar", async () => {
+  const a = app();
+  try {
+    await abrirMomento(a);
+    const contagem = a.w.document.querySelector("#contagem-de-cursos");
+    assert.equal(contagem.getAttribute("role"), "status");
+    const encontrados = await digitarCurso(a, "engenharia");
+    assert.equal(contagem.textContent, `${encontrados.length} sugestões`);
+    await digitarCurso(a, "direito");
+    assert.equal(contagem.textContent, "1 sugestão");
+    await digitarCurso(a, "xyzxyz");
+    assert.equal(contagem.textContent, "Nenhum curso da lista com esse nome. Você pode seguir com o que digitou.");
+    teclarNoCurso(a, "Escape");
+    assert.equal(contagem.textContent, "");
+  } finally { a.close(); }
+});
+
+Deno.test("a lista de cidades anuncia quantas sugestões sobraram", async () => {
+  const a = app();
+  try {
+    const form = await abrirPreferencias(a);
+    const contagem = a.w.document.querySelector("#contagem-de-cidades");
+    const encontradas = await digitarCidade(a, "rio");
+    assert.equal(contagem.textContent, `${encontradas.length} sugestões`);
+    assert.equal(form.elements.cidade.getAttribute("aria-expanded"), "true");
+  } finally { a.close(); }
+});
+
 Deno.test("curso sugere os cursos do catálogo conforme a pessoa digita, sem exigir acento", async () => {
   const a = app();
   try {
@@ -4098,6 +4292,25 @@ Deno.test("clicar numa área da faixa abre o cadastro com os cursos daquela áre
       true,
     );
     assert.deepEqual(await digitarCurso(a, "direito"), ["Direito"]);
+  } finally { a.close(); }
+});
+
+Deno.test("no toque, o primeiro toque numa área só mostra o nome e o segundo abre o cadastro", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const botao = doc.querySelector('.areas-track li:not([aria-hidden]) [data-area="saude"]');
+    const dialogo = doc.querySelector("#signup-dialog");
+    botao.dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    botao.click();
+    await settle();
+    assert.equal(dialogo.open, false);
+    assert.equal(botao.classList.contains("is-apontada"), true);
+    botao.dispatchEvent(eventoDePonteiro(a, "pointerdown", "touch"));
+    botao.click();
+    await settle();
+    assert.equal(dialogo.open, true);
   } finally { a.close(); }
 });
 
@@ -4204,12 +4417,12 @@ Deno.test("curso não reconhecido avisa logo na etapa seguinte e não impede o c
     fill(a.w);
     form.elements.curso.value = "Agronomia";
     const aviso = a.w.document.querySelector("#curso-nao-reconhecido");
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     a.w.document.querySelector("#next-step").click();
     await settle();
     assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "3");
     assert.equal(aviso.closest(".form-step").dataset.step, "3");
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     assert.match(aviso.textContent, /“Agronomia”/);
     assert.match(aviso.textContent, /menos precisas/);
     assert.match(aviso.textContent, /lista de cursos, volte e escolha o nome de lá/);
@@ -4235,12 +4448,12 @@ Deno.test("voltar e trocar por um curso reconhecido tira o aviso, mesmo com comp
     form.elements.curso.value = "Curso Que Ninguem Tem";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     doc.querySelector("#previous-step").click();
     form.elements.curso.value = "Direito, UERJ";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     const sugeridas = [...doc.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
     assert.equal(sugeridas.includes("Redação"), true);
   } finally {
@@ -4258,10 +4471,10 @@ Deno.test("entrar pelo cabeçalho limpa o aviso com o curso digitado no rascunho
     form.elements.curso.value = "Agronomia";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     doc.querySelector(".js-open-login").click();
     await settle();
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     assert.equal(aviso.textContent, "");
   } finally {
     a.close();
@@ -4280,8 +4493,8 @@ Deno.test("sem o catálogo de áreas não há como saber o curso e o aviso não 
     form.elements.curso.value = "Agronomia";
     a.w.document.querySelector("#next-step").click();
     await settle();
-    assert.equal(a.w.document.querySelector("#skills-catalog-notice").hidden, false);
-    assert.equal(a.w.document.querySelector("#curso-nao-reconhecido").hidden, true);
+    assert.notEqual(a.w.document.querySelector("#skills-catalog-notice").textContent, "");
+    assert.equal(a.w.document.querySelector("#curso-nao-reconhecido").textContent, "");
   } finally {
     a.close();
   }
@@ -4295,7 +4508,7 @@ Deno.test("lista de cursos fora do ar avisa e não bloqueia o cadastro", async (
       json: async () => cidadesJson,
     });
     const form = await abrirMomento(a);
-    assert.equal(a.w.document.querySelector("#courses-catalog-notice").hidden, false);
+    assert.notEqual(a.w.document.querySelector("#courses-catalog-notice").textContent, "");
     a.w.document.querySelector("#mostrar-cursos").click();
     await settle();
     assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
