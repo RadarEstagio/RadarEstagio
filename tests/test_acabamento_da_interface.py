@@ -134,8 +134,8 @@ def test_icones_decorativos_sao_svg_com_a_cor_do_texto_e_nao_glifos_de_fonte():
     assert html.count('<li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">') == 8
     assert '<span aria-hidden="true">✓</span>' not in html
     assert '<div class="success-icon" aria-hidden="true"><svg' in html
-    assert 'aria-label="Fechar cadastro"><svg' in html
-    assert 'aria-label="Fechar confirmação"><svg' in html
+    assert 'aria-label="Fechar cadastro"><svg viewBox="0 0 24 24" aria-hidden="true"' in html
+    assert 'aria-label="Fechar confirmação"><svg viewBox="0 0 24 24" aria-hidden="true"' in html
     for seletor in (".comparison-list svg", ".trust-list svg", ".plan li svg"):
         inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
         assert "stroke: currentColor;" in css[inicio:].split("}", 1)[0], seletor
