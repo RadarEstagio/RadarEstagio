@@ -193,3 +193,15 @@ def test_alto_contraste_marca_o_que_esta_selecionado_com_as_cores_do_sistema():
     assert "background-color: Highlight;" in selecionados
     assert "color: HighlightText;" in selecionados
     assert "forced-color-adjust: none" not in css
+
+
+def test_carregamento_do_botao_continua_girando_com_movimento_reduzido():
+    css = ler_css()
+    movimento_reduzido = css[css.index("@media (prefers-reduced-motion: reduce) {") :].split(
+        "\n}", 1
+    )[0]
+
+    assert (
+        '.button[aria-busy="true"] .button-spinner { animation-duration: 700ms !important; '
+        "animation-iteration-count: infinite !important; }" in movimento_reduzido
+    )

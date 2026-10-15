@@ -645,6 +645,7 @@ p, h1, h2, h3 { margin-top: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .button[aria-busy="true"] .button-spinner { animation-duration: 700ms !important; animation-iteration-count: infinite !important; }
   .chat-typing { display: none; }
   .chat-message, .chat-feedback { opacity: 1 !important; transform: none !important; }
   .areas-track { flex-wrap: wrap; justify-content: center; width: auto; padding-inline: 16px; row-gap: 44px; }
