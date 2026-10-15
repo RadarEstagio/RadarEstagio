@@ -344,8 +344,10 @@ def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
 
 SELO_DA_ADZUNA = (
     '<span class="jobs-by-adzuna">'
-    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by '
-    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">'
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+    'aria-label="Jobs (abre em outra aba)">Jobs</a> by '
+    '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+    'aria-label="Adzuna (abre em outra aba)">'
     '<img src="assets/adzuna-logo.png" alt="Adzuna" width="87" height="23" /></a></span>'
 )
 
@@ -395,8 +397,10 @@ def test_vagas_de_exemplo_do_chat_levam_a_atribuicao_em_texto_como_no_telegram()
     chat = html[html.index('class="telegram-chat"') :]
     chat = chat[: chat.index("chat-message-footer")]
     atribuicao = (
-        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Jobs</a> by '
-        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener">Adzuna</a>'
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+        'aria-label="Jobs (abre em outra aba)">Jobs</a> by '
+        '<a href="https://www.adzuna.com.br" target="_blank" rel="noopener" '
+        'aria-label="Adzuna (abre em outra aba)">Adzuna</a>'
     )
 
     assert chat.count(atribuicao) == 2

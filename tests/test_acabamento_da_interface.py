@@ -226,3 +226,15 @@ def test_campo_de_selecao_cresce_com_o_tamanho_da_letra_em_vez_de_cortar_o_texto
 
     assert "min-height: 52px;" in regra
     assert " height: 52px;" not in regra
+
+
+def test_link_que_abre_em_outra_aba_avisa_isso_no_nome_ou_no_texto_ao_lado():
+    html = (RAIZ / "web/index.html").read_text()
+    ancoras = re.findall(r"<a [^>]*target=\"_blank\"[^>]*>", html)
+
+    assert ancoras
+    for ancora in ancoras:
+        if "aria-label=" in ancora:
+            assert "abre em outra aba" in ancora, ancora
+        else:
+            assert re.search(r'href="(privacidade|termos)\.html"', ancora), ancora
