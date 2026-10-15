@@ -427,9 +427,11 @@ mais com o fundo de acento sólido, que engolia a ilustração. O gerador é
 `scripts/gerar_icones_das_areas.py`: recebe uma pasta com `<área>.jpg|png|webp`, tira o fundo
 branco, recorta, centraliza com margem fixa e exporta; roda com
 `uv run --with pillow python scripts/gerar_icones_das_areas.py <pasta>`, e as imagens originais
-não são versionadas. O primeiro set saiu azul, e a paleta do site é verde: recolorir por matiz
-deixou manchas nas partes brancas, então a troca de cor é regerar as imagens com a paleta no
-prompt e rodar o script de novo, sem mexer em HTML nem CSS.
+não são versionadas. O primeiro set saiu azul e foi trocado em 15/10/2026 por um verde, gerado com
+`limited palette of muted forest green, white and one warm accent` no prompt: recolorir por matiz
+deixou manchas nas partes brancas. Trocar a cor de novo é regerar as imagens e rodar o script,
+sem mexer em HTML nem CSS. No tema escuro o verde do objeto tem menos contraste com o tile do que
+tinha o azul; se incomodar, o ajuste é o fundo do tile, não as imagens.
 
 As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
 catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
