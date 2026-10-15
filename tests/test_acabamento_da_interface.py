@@ -217,3 +217,12 @@ def test_alvos_de_toque_chegam_a_44px_e_o_toque_nao_espera_o_duplo_toque():
     assert ".skill-picker button, .selected-skills button { min-height: 44px;" in css
     assert ".auth-help button { min-height: 44px; }" in css
     assert "touch-action: manipulation;" in css
+
+
+def test_campo_de_selecao_cresce_com_o_tamanho_da_letra_em_vez_de_cortar_o_texto():
+    css = ler_css()
+    inicio = re.search(r"^\.field select \{", css, re.MULTILINE).start()
+    regra = css[inicio:].split("}", 1)[0]
+
+    assert "min-height: 52px;" in regra
+    assert " height: 52px;" not in regra

@@ -561,7 +561,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }.field-full { grid-column: 1 / -1; }
 .field { display: flex; flex-direction: column; gap: 7px; color: var(--ink-soft); font-size: 12px; font-weight: 600; }
 .field input, .field select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--surface); }
-.field select { display: block; align-self: stretch; height: 52px; min-width: 100%; padding-right: 42px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position: calc(100% - 19px) 22px, calc(100% - 14px) 22px; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
+.field select { display: block; align-self: stretch; min-height: 52px; min-width: 100%; padding-right: 42px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position: calc(100% - 19px) 22px, calc(100% - 14px) 22px; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
 .field input::placeholder { color: #9ca39f; }
 .field [aria-invalid="true"] { border-color: #c94848; background-color: var(--error-soft); }
 .field-error, .form-message { display: flex; align-items: flex-start; gap: 9px; color: var(--error-text); font-weight: 600; }
