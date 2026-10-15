@@ -1204,8 +1204,11 @@ Deno.test("navegação da conta atualiza a seção ativa", async () => {
     const privacy = a.w.document.querySelector('.account-nav a[href="#account-privacy-panel"]');
 
     assert.equal(overview.getAttribute("aria-current"), "location");
+    deliveries.focus();
+    assert.equal(a.w.document.activeElement, deliveries);
     deliveries.click();
     await settle();
+    assert.equal(a.w.document.activeElement.id, "account-title");
     assert.equal(overview.classList.contains("is-active"), false);
     assert.equal(deliveries.classList.contains("is-active"), true);
     assert.equal(deliveries.getAttribute("aria-current"), "location");
@@ -1222,6 +1225,7 @@ Deno.test("navegação da conta atualiza a seção ativa", async () => {
     assert.equal(a.w.document.querySelector("#account-delivery-panel").hidden, true);
     assert.equal(a.w.document.querySelector("#account-privacy-panel").hidden, false);
     assert.equal(a.w.document.querySelector("#account-title").textContent, "Privacidade");
+    assert.equal(a.w.document.activeElement.id, "account-title");
   } finally { a.close(); }
 });
 

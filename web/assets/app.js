@@ -246,13 +246,16 @@ accountNavEntries.forEach(({ link, target }) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     mostrarSecaoDaConta(link);
+    document.querySelector("#account-title").focus({ preventScroll: true });
   });
 });
 
 window.addEventListener("hashchange", () => {
   if (accountPage.hidden || accountState.hidden) return;
   const entrada = accountNavEntries.find(({ link }) => link.hash === window.location.hash);
-  if (entrada) mostrarSecaoDaConta(entrada.link, false);
+  if (!entrada) return;
+  mostrarSecaoDaConta(entrada.link, false);
+  document.querySelector("#account-title").focus({ preventScroll: true });
 });
 
 function normalizarTexto(texto) {
