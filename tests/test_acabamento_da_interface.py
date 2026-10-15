@@ -176,3 +176,20 @@ def test_nome_da_area_cabe_entre_as_linhas_quando_a_faixa_quebra_com_movimento_r
     )[0]
 
     assert "row-gap: 44px;" in movimento_reduzido
+
+
+def test_alto_contraste_marca_o_que_esta_selecionado_com_as_cores_do_sistema():
+    css = ler_css()
+    inicio = css.rindex("@media (forced-colors: active) {")
+    selecionados = css[inicio:].split("\n}", 1)[0]
+
+    for seletor in (
+        ".option-grid input:checked + span",
+        ".skill-picker button.is-selected",
+        ".account-nav a.is-active",
+        '.combobox-options li[aria-selected="true"]',
+    ):
+        assert seletor in selecionados, seletor
+    assert "background-color: Highlight;" in selecionados
+    assert "color: HighlightText;" in selecionados
+    assert "forced-color-adjust: none" not in css
