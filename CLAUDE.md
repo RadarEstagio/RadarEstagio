@@ -266,8 +266,9 @@ mexer em coleta, pré-filtro, extração, pontuação ou mensagem, ler a seção
 - **Curso e período são decididos pelo Python**, com o catálogo: a IA só extrai `cursos_aceitos`
   e `periodo_minimo`. Cursos da mesma área só se equivalem onde a área declara
   `cursos_intercambiaveis` (só computação); perfil abaixo do período mínimo fica em 35.
-- **`domain/areas.py` é o catálogo único.** `AreaDeInteresse`, a migration `0017` e
-  `web/assets/areas.json` derivam dele; mexeu, regere. A normalização de curso tem paridade entre
+- **`domain/areas.py` é o catálogo único.** `AreaDeInteresse`, a validação do banco e
+  `web/assets/areas.json` derivam dele: mexeu, rode `uv run python -m scripts.gerar_areas`, e
+  subárea nova pede migration nova, nunca edição da `0017`. A normalização de curso tem paridade entre
   Python e site (`tests/fixtures/cursos_normalizados.json`): mudou `normalizarTexto`, teste curso
   e cidade.
 - **Vaga exclusiva para PCD não vai para quem respondeu que não é**, e quem é PCD recebe
