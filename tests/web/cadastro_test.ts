@@ -440,7 +440,7 @@ Deno.test("sem IntersectionObserver as seções que se revelam nunca ficam escon
   const a = app();
   try {
     const blocos = [...a.w.document.querySelectorAll("[data-revelar]")];
-    assert.equal(blocos.length, 3);
+    assert.equal(blocos.length, 2);
     for (const bloco of blocos) assert.equal(bloco.getAttribute("data-revelar"), "");
   } finally { a.close(); }
 });
@@ -448,13 +448,13 @@ Deno.test("sem IntersectionObserver as seções que se revelam nunca ficam escon
 Deno.test("seção que se revela espera entrar na tela e depois para de ser observada", () => {
   const a = app({ observaInterseccao: true });
   try {
-    const [comparacao, jornada, peneira] = a.w.document.querySelectorAll("[data-revelar]");
-    assert.equal(a.observados().length, 3);
-    for (const bloco of [comparacao, jornada, peneira]) assert.equal(bloco.getAttribute("data-revelar"), "aguardando");
-    a.entrarNaTela(peneira);
-    assert.equal(peneira.getAttribute("data-revelar"), "visto");
+    const [comparacao, jornada] = a.w.document.querySelectorAll("[data-revelar]");
+    assert.equal(a.observados().length, 2);
+    for (const bloco of [comparacao, jornada]) assert.equal(bloco.getAttribute("data-revelar"), "aguardando");
+    a.entrarNaTela(jornada);
+    assert.equal(jornada.getAttribute("data-revelar"), "visto");
     assert.equal(comparacao.getAttribute("data-revelar"), "aguardando");
-    assert.equal(a.observados().includes(peneira), false);
+    assert.equal(a.observados().includes(jornada), false);
   } finally { a.close(); }
 });
 

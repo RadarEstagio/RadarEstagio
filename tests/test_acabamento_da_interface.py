@@ -85,7 +85,7 @@ def test_profundidade_vem_do_anel_de_sombra_e_nao_de_borda_com_cor_fixa():
     assert "--shadow-border: 0 0 0 1px oklch(1 0 0 / 0.08);" in tema_escuro
     assert "rgba(23, 32, 26, 0.08)" not in css
     assert "rgba(23, 32, 26, .1)" not in css
-    cards = (".comparison-radar", ".area-tile", ".journey-visual", ".peneira", ".account-row")
+    cards = (".comparison-radar", ".area-tile", ".journey-visual", ".account-row")
     for seletor in cards:
         inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
         regra = css[inicio:].split("}", 1)[0]
@@ -102,7 +102,6 @@ def test_alto_contraste_devolve_a_borda_aos_cards_que_perderam_a_cor():
         ".area-tile",
         ".comparison-radar",
         ".journey-visual",
-        ".peneira",
         ".account-row",
     ):
         assert seletor in alto_contraste, seletor
@@ -151,10 +150,8 @@ def test_secoes_do_meio_explicam_sem_numerar_passos():
         assert numeracao not in meio, numeracao
     for quando in ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"):
         assert f'<p class="journey-quando">{quando}</p>' in meio
-    assert meio.count('class="peneira-vaga vaga-fora"') == 4
-    assert meio.count('class="peneira-vaga vaga-chega"') == 1
-    assert meio.count('class="peneira-vaga vaga-alerta"') == 1
-    assert "Exemplo ilustrativo" in meio
+    assert "Antes de chegar até você" not in meio
+    assert "peneira" not in meio
     assert 'data-event-origin="como_funciona"' in meio
 
 
@@ -162,7 +159,7 @@ def test_conteudo_que_se_revela_so_some_enquanto_o_script_espera_a_rolagem():
     html = (RAIZ / "web/index.html").read_text()
     css = ler_css()
 
-    assert html.count("data-revelar>") == 3
+    assert html.count("data-revelar>") == 2
     assert 'data-revelar="aguardando"' not in html
     for linha in css.splitlines():
         if "opacity: 0;" in linha and "[data-revelar" in linha:
