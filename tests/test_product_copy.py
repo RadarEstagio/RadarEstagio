@@ -150,6 +150,15 @@ def test_cartao_com_o_radar_responde_a_duvida_de_se_candidatar():
     assert "Curso, período e cidade já conferidos" not in cartao
 
 
+def test_faq_conta_o_que_fica_de_fora_no_lugar_da_secao_da_peneira():
+    html = (RAIZ / "web/index.html").read_text()
+    faq = html[html.index('<section class="faq section"') :].split("</section>", 1)[0]
+
+    assert "Vaga de outra área, que pede anos de experiência ou que fica longe de você" in faq
+    assert "a mesma vaga não chega duas vezes" in faq
+    assert "“requisitos a conferir no seu perfil”" in faq
+
+
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
     html = (RAIZ / "web/index.html").read_text()
 
