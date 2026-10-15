@@ -205,3 +205,15 @@ def test_carregamento_do_botao_continua_girando_com_movimento_reduzido():
         '.button[aria-busy="true"] .button-spinner { animation-duration: 700ms !important; '
         "animation-iteration-count: infinite !important; }" in movimento_reduzido
     )
+
+
+def test_alvos_de_toque_chegam_a_44px_e_o_toque_nao_espera_o_duplo_toque():
+    css = ler_css()
+
+    for seletor in (".dialog-close", ".account-confirm-close"):
+        inicio = re.search(rf"^{re.escape(seletor)} \{{", css, re.MULTILINE).start()
+        regra = css[inicio:].split("}", 1)[0]
+        assert "width: 44px; height: 44px;" in regra, seletor
+    assert ".skill-picker button, .selected-skills button { min-height: 44px;" in css
+    assert ".auth-help button { min-height: 44px; }" in css
+    assert "touch-action: manipulation;" in css

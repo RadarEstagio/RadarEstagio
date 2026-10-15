@@ -80,6 +80,7 @@
 }
 
 * { box-sizing: border-box; }
+button, a, input, select, summary, label { touch-action: manipulation; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -522,15 +523,15 @@ p, h1, h2, h3 { margin-top: 0; }
 .password-field input::-webkit-credentials-auto-fill-button { position: absolute; inset-inline-end: 52px; }
 .auth-help button { border: 0; background: transparent; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
 @media (hover: hover) { .password-toggle:hover { color: var(--accent-deep-text); background: var(--paper); } }
-.auth-help { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 20px; }
-.auth-help button { min-height: 28px; }
+.auth-help { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-block: 8px; }
+.auth-help button { min-height: 44px; }
 #assistance-form { display: grid; gap: 24px; margin-block: 24px; }
 #captcha-container { margin-top: 20px; }
 
 .signup-dialog { --signup-dialog-max-height: min(780px, calc(100dvh - 28px)); width: min(1050px, calc(100% - 28px)); max-height: var(--signup-dialog-max-height); padding: 0; overflow: hidden; overscroll-behavior: contain; border: 0; border-radius: var(--radius-lg); background: var(--surface); box-shadow: 0 30px 80px rgba(23, 32, 26, .3); }
 .signup-dialog::backdrop { background: rgba(16, 24, 20, .6); backdrop-filter: blur(6px); }
 .dialog-shell { position: relative; display: grid; grid-template-columns: .78fr 1.22fr; min-height: min(650px, var(--signup-dialog-max-height)); }
-.dialog-close { position: absolute; right: 16px; top: 14px; z-index: 4; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--surface); cursor: pointer; }
+.dialog-close { position: absolute; right: 16px; top: 14px; z-index: 4; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--surface); cursor: pointer; }
 .dialog-close, .account-confirm-close { display: grid; padding: 0; place-items: center; }
 .dialog-close svg, .account-confirm-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
 .dialog-intro { display: flex; flex-direction: column; padding: 54px 42px 38px; color: var(--white); background: var(--accent-deep); }
@@ -582,7 +583,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .combobox-options li[aria-selected="true"] { background: var(--paper); }
 .combobox-options li[aria-disabled="true"] { color: var(--muted); font-size: 13px; cursor: default; }
 @media (hover: hover) { .combobox-toggle:hover { color: var(--accent-deep-text); background: var(--paper); } .combobox-options li:not([aria-disabled="true"]):hover { background: var(--paper); } }
-.skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--surface); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.skill-picker button, .selected-skills button { min-height: 44px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--surface); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .skill-picker button.is-selected { border-color: var(--accent); color: var(--accent-text); background: rgba(62,124,89,.08); }
 @media (hover: hover) { .skill-picker button:hover { border-color: var(--accent); color: var(--accent-text); background: rgba(62,124,89,.08); } }
 .selected-skills { min-height: 0; margin-top: 14px; }
@@ -746,7 +747,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .account-confirm-header > div > p { margin: 0 0 2px; color: var(--danger-text); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .account-confirm-header h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.03em; }
 .account-confirm-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; color: var(--white); background: var(--danger); font-size: 18px; font-weight: 800; }
-.account-confirm-close { display: grid; width: 38px; height: 38px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: var(--muted); background: var(--paper); cursor: pointer; }
+.account-confirm-close { display: grid; width: 44px; height: 44px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: var(--muted); background: var(--paper); cursor: pointer; }
 .account-confirm-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .account-confirm-warning { margin-top: 24px; padding: 17px 18px; border: 1px solid var(--danger-line); border-radius: 12px; background: var(--danger-soft); }
 .account-confirm-warning strong { display: block; color: var(--danger-text); font-size: 12px; letter-spacing: .035em; text-transform: uppercase; }
