@@ -188,6 +188,9 @@ const campoDeCurso = form.elements.curso;
 const botaoDeCursos = document.querySelector("#mostrar-cursos");
 const listaDeCursos = document.querySelector("#lista-de-cursos");
 const avisoDeCursos = document.querySelector("#courses-catalog-notice");
+const AVISO_DE_CURSOS_INDISPONIVEIS = "Não foi possível carregar a lista de cursos agora. Digite o nome do seu curso.";
+const AVISO_DE_CIDADES_INDISPONIVEIS = "Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.";
+const AVISO_DE_HABILIDADES_INDISPONIVEIS = "Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.";
 const avisoDeCursoNaoReconhecido = document.querySelector("#curso-nao-reconhecido");
 let cursosSugeridos = null;
 let cursosDaAreaEscolhida = null;
@@ -345,7 +348,7 @@ if (trilhaDeAreas && !reduzirMovimento) {
 
 async function carregarCursos() {
   const catalogo = await carregarAreas();
-  avisoDeCursos.hidden = Boolean(catalogo);
+  avisoDeCursos.textContent = catalogo ? "" : AVISO_DE_CURSOS_INDISPONIVEIS;
   if (!catalogo) return null;
   cursosSugeridos ??= [...new Set(catalogo.areas.flatMap((area) => area.cursos_sugeridos))]
     .sort((primeiro, segundo) => primeiro.localeCompare(segundo, "pt-BR"))
@@ -371,7 +374,7 @@ function carregarCidades() {
     .catch(() => null)
     .then((cidades) => {
       carregamentoDeCidades = null;
-      avisoDeCidades.hidden = Array.isArray(cidades);
+      avisoDeCidades.textContent = Array.isArray(cidades) ? "" : AVISO_DE_CIDADES_INDISPONIVEIS;
       if (!Array.isArray(cidades)) return null;
       catalogoDeCidades = cidades.map((nome) => ({
         nome,
@@ -642,13 +645,13 @@ async function montarHabilidadesDoCurso() {
   const pickerTinhaOFoco = picker.contains(document.activeElement);
   if (!catalogo) {
     picker.replaceChildren();
-    aviso.hidden = false;
-    avisoDeCursoNaoReconhecido.hidden = true;
+    aviso.textContent = AVISO_DE_HABILIDADES_INDISPONIVEIS;
+    avisarCursoNaoReconhecido("");
     renderSkills();
     devolverOFocoAsHabilidades(picker, pickerTinhaOFoco);
     return;
   }
-  aviso.hidden = true;
+  aviso.textContent = "";
   const area = areaDoCurso(cursoSolicitado, catalogo);
   avisarCursoNaoReconhecido(area ? "" : cursoSolicitado.trim());
   const sugeridas = area?.habilidades ?? [];
@@ -670,7 +673,6 @@ function devolverOFocoAsHabilidades(picker, pickerTinhaOFoco) {
 }
 
 function avisarCursoNaoReconhecido(curso) {
-  avisoDeCursoNaoReconhecido.hidden = !curso;
   avisoDeCursoNaoReconhecido.textContent = curso
     ? `Não reconhecemos o curso “${curso}”. Sem um curso reconhecido, as vagas ficam menos precisas e não há sugestões de habilidades nem áreas de interesse. Se o seu curso aparece na lista de cursos, volte e escolha o nome de lá. Se não aparece, pode continuar.`
     : "";
@@ -1119,7 +1121,7 @@ function limparRascunhoDoCadastro() {
   esquecerPerfilCarregado();
   gradeDeAreas.replaceChildren();
   campoDeAreas.hidden = true;
-  document.querySelector("#skills-catalog-notice").hidden = true;
+  document.querySelector("#skills-catalog-notice").textContent = "";
   avisarCursoNaoReconhecido("");
   renderSkills();
 }

@@ -572,6 +572,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .skill-picker { margin-bottom: 22px; }
 .catalog-notice { margin: -8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .field .catalog-notice { margin: 0; }
+.catalog-notice:empty { margin: 0; }
 .combobox { position: relative; }
 .combobox input { padding-inline-end: 52px; }
 .combobox-toggle { position: absolute; inset-block-start: 50%; inset-inline-end: 4px; display: grid; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); place-items: center; border: 0; border-radius: 8px; color: var(--ink-soft); background: transparent; cursor: pointer; }

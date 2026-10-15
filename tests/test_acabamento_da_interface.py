@@ -238,3 +238,10 @@ def test_link_que_abre_em_outra_aba_avisa_isso_no_nome_ou_no_texto_ao_lado():
             assert "abre em outra aba" in ancora, ancora
         else:
             assert re.search(r'href="(privacidade|termos)\.html"', ancora), ancora
+
+
+def test_aviso_do_catalogo_vazio_nao_ocupa_espaco():
+    css = ler_css()
+
+    assert ".catalog-notice:empty { margin: 0; }" in css
+    assert ".form-message:empty { margin: 0; padding: 0; }" in css

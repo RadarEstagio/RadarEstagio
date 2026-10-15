@@ -432,7 +432,7 @@
                     <button type="button" class="combobox-toggle" id="mostrar-cursos" tabindex="-1" aria-label="Mostrar cursos" aria-controls="lista-de-cursos" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cursos" role="listbox" aria-label="Cursos" hidden></ul>
                   </div>
-                  <p class="catalog-notice" id="courses-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cursos agora. Digite o nome do seu curso.</p>
+                  <p class="catalog-notice" id="courses-catalog-notice" role="status"></p>
                   <small id="ajuda-curso">Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
                 </div>
                 <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
@@ -441,7 +441,7 @@
             <fieldset class="form-step" data-step="3">
               <legend>O que você já sabe usar?</legend>
               <p class="step-help" id="skills-help">Você pode começar pelo curso e pelas preferências. Depois, informe suas habilidades para melhorar as recomendações.</p>
-              <p class="form-message form-message-aviso" id="curso-nao-reconhecido" role="status" hidden></p>
+              <p class="form-message form-message-aviso" id="curso-nao-reconhecido" role="status"></p>
               <div class="skill-picker" id="skill-picker" role="group" aria-label="Habilidades sugeridas">
                 <button type="button" data-skill="Python" aria-pressed="false">Python</button>
                 <button type="button" data-skill="JavaScript" aria-pressed="false">JavaScript</button>
@@ -454,7 +454,7 @@
                 <button type="button" data-skill="Linux" aria-pressed="false">Linux</button>
                 <button type="button" data-skill="Redes" aria-pressed="false">Redes</button>
               </div>
-              <p class="catalog-notice" id="skills-catalog-notice" role="status" hidden>Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.</p>
+              <p class="catalog-notice" id="skills-catalog-notice" role="status"></p>
               <div class="field-grid">
                 <div class="field field-full"><label for="custom-skill">Não encontrou alguma?</label><input id="custom-skill" autocomplete="off" maxlength="100" aria-describedby="ajuda-habilidade" placeholder="Digite uma habilidade e pressione Enter" /><small id="ajuda-habilidade">Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small></div>
               </div>
@@ -472,7 +472,7 @@
                     <button type="button" class="combobox-toggle" id="mostrar-cidades" tabindex="-1" aria-label="Mostrar cidades" aria-controls="lista-de-cidades" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cidades" role="listbox" aria-label="Cidades" hidden></ul>
                   </div>
-                  <p class="catalog-notice" id="cities-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.</p>
+                  <p class="catalog-notice" id="cities-catalog-notice" role="status"></p>
                   <small id="ajuda-cidade">Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
                 </div>
                 <div class="field field-full"><span id="rotulo-modalidade">Modalidade preferida</span><div class="option-grid" role="radiogroup" aria-labelledby="rotulo-modalidade">

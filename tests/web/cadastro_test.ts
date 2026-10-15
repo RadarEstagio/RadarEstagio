@@ -3198,6 +3198,19 @@ Deno.test("o erro do campo soma à dica e a dica volta quando o erro some", asyn
   } finally { a.close(); }
 });
 
+Deno.test("avisos do catálogo são regiões que já existem vazias, sem hidden", async () => {
+  const a = app();
+  try {
+    await settle();
+    for (const id of ["courses-catalog-notice", "cities-catalog-notice", "skills-catalog-notice", "curso-nao-reconhecido"]) {
+      const aviso = a.w.document.getElementById(id);
+      assert.equal(aviso.hasAttribute("hidden"), false, id);
+      assert.equal(aviso.getAttribute("role"), "status", id);
+      assert.equal(aviso.textContent, "", id);
+    }
+  } finally { a.close(); }
+});
+
 Deno.test("curso com menos de 2 caracteres fica na etapa com aviso e não chega ao banco", async () => {
   const a = app();
   try {
@@ -3658,7 +3671,7 @@ Deno.test("falha do catálogo limpa sugestões sem apagar habilidade escolhida",
     await a.w.montarHabilidadesDoCurso();
     assert.deepEqual([...doc.querySelectorAll("#skill-picker [data-skill]")], []);
     assert.deepEqual(habilidadesNaTela(a.w), ["Python"]);
-    assert.equal(doc.querySelector("#skills-catalog-notice").hidden, false);
+    assert.notEqual(doc.querySelector("#skills-catalog-notice").textContent, "");
     assert.equal(doc.querySelector("#continue-without-skills").hidden, true);
   } finally {
     a.close();
@@ -4133,7 +4146,7 @@ Deno.test("lista de cidades fora do ar avisa e não bloqueia o cadastro", async 
       json: async () => areasJson,
     });
     const form = await abrirPreferencias(a);
-    assert.equal(a.w.document.querySelector("#cities-catalog-notice").hidden, false);
+    assert.notEqual(a.w.document.querySelector("#cities-catalog-notice").textContent, "");
     form.elements.cidade.value = "Recife, PE";
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
@@ -4372,12 +4385,12 @@ Deno.test("curso não reconhecido avisa logo na etapa seguinte e não impede o c
     fill(a.w);
     form.elements.curso.value = "Agronomia";
     const aviso = a.w.document.querySelector("#curso-nao-reconhecido");
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     a.w.document.querySelector("#next-step").click();
     await settle();
     assert.equal(a.w.document.querySelector(".form-step.is-active").dataset.step, "3");
     assert.equal(aviso.closest(".form-step").dataset.step, "3");
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     assert.match(aviso.textContent, /“Agronomia”/);
     assert.match(aviso.textContent, /menos precisas/);
     assert.match(aviso.textContent, /lista de cursos, volte e escolha o nome de lá/);
@@ -4403,12 +4416,12 @@ Deno.test("voltar e trocar por um curso reconhecido tira o aviso, mesmo com comp
     form.elements.curso.value = "Curso Que Ninguem Tem";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     doc.querySelector("#previous-step").click();
     form.elements.curso.value = "Direito, UERJ";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     const sugeridas = [...doc.querySelectorAll("#skill-picker [data-skill]")].map((b) => b.dataset.skill);
     assert.equal(sugeridas.includes("Redação"), true);
   } finally {
@@ -4426,10 +4439,10 @@ Deno.test("entrar pelo cabeçalho limpa o aviso com o curso digitado no rascunho
     form.elements.curso.value = "Agronomia";
     doc.querySelector("#next-step").click();
     await settle();
-    assert.equal(aviso.hidden, false);
+    assert.notEqual(aviso.textContent, "");
     doc.querySelector(".js-open-login").click();
     await settle();
-    assert.equal(aviso.hidden, true);
+    assert.equal(aviso.textContent, "");
     assert.equal(aviso.textContent, "");
   } finally {
     a.close();
@@ -4448,8 +4461,8 @@ Deno.test("sem o catálogo de áreas não há como saber o curso e o aviso não 
     form.elements.curso.value = "Agronomia";
     a.w.document.querySelector("#next-step").click();
     await settle();
-    assert.equal(a.w.document.querySelector("#skills-catalog-notice").hidden, false);
-    assert.equal(a.w.document.querySelector("#curso-nao-reconhecido").hidden, true);
+    assert.notEqual(a.w.document.querySelector("#skills-catalog-notice").textContent, "");
+    assert.equal(a.w.document.querySelector("#curso-nao-reconhecido").textContent, "");
   } finally {
     a.close();
   }
@@ -4463,7 +4476,7 @@ Deno.test("lista de cursos fora do ar avisa e não bloqueia o cadastro", async (
       json: async () => cidadesJson,
     });
     const form = await abrirMomento(a);
-    assert.equal(a.w.document.querySelector("#courses-catalog-notice").hidden, false);
+    assert.notEqual(a.w.document.querySelector("#courses-catalog-notice").textContent, "");
     a.w.document.querySelector("#mostrar-cursos").click();
     await settle();
     assert.equal(a.w.document.querySelector("#lista-de-cursos").hidden, true);
