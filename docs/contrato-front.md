@@ -549,3 +549,37 @@ o motor aplica de verdade (duplicata, `fora_da_area_do_curso`, `exige_anos_de_ex
 A animação de entrada depende do script. O HTML chega com `data-revelar` vazio, e só o `app.js`
 o troca por `aguardando`, quando há `IntersectionObserver` e a pessoa não pediu movimento reduzido;
 o CSS só esconde sob `[data-revelar="aguardando"]`. Se o script não carregar, tudo aparece pronto.
+
+### Acessibilidade do cadastro e da faixa de áreas (14/10/2026).
+
+Revisão feita só pelo código, sem navegador nem leitor de tela, e as correções seguem a mesma
+limitação. O que ficou valendo:
+
+- **A faixa de áreas não ganhou botão de pausar.** No toque não existe hover, então o nome do ícone
+  nunca aparecia. O primeiro toque aponta a área e para a faixa, o segundo abre o cadastro, e tocar
+  fora solta. `pointerType === "touch"` não limpa a área no `pointerleave`, que o toque dispara ao
+  levantar o dedo. Com movimento reduzido a faixa quebra em linhas e o nome também aparece.
+- **Alto contraste.** O sistema apaga fundo e sombra, então opção marcada, habilidade escolhida,
+  seção ativa da conta e sugestão destacada usam `Highlight` e `HighlightText` no último
+  `@media (forced-colors: active)` do CSS, que precisa ficar depois das regras que sobrescreve.
+- **O carregamento do botão gira mesmo com movimento reduzido**: é feedback de estado, não
+  decoração.
+- **Alvo de toque de 44px** em fechar, chips de habilidade e botões de ajuda do acesso, com
+  `touch-action: manipulation` nos controles. Os botões de mostrar senha e cursos ficaram em 40px
+  porque cabem dentro do campo de 49px.
+- **Aviso do catálogo é região que já existe**: os quatro avisos (`#courses-catalog-notice`,
+  `#cities-catalog-notice`, `#skills-catalog-notice` e `#curso-nao-reconhecido`) ficam no DOM sem
+  `hidden`, vazios, e o texto entra depois. Aviso novo segue o mesmo padrão.
+- **A lista de cursos e a de cidades anunciam a quantidade** em `#contagem-de-cursos` e
+  `#contagem-de-cidades`, que usam `.sr-only` e limpam ao fechar.
+- **A dica de curso, cidade e habilidade é `aria-describedby` do campo**, e o erro do campo soma à
+  dica em vez de trocá-la (`descricaoOriginalDoCampoComErro`).
+- **Trocar de seção na conta leva o foco ao `#account-title`**, só por ação da pessoa; a carga
+  inicial não rouba o foco.
+- **Link com `target="_blank"` avisa no nome**: `aria-label` com "(abre em outra aba)" nos da Adzuna
+  e do Telegram, e texto visível nos de privacidade e termos. `test_acabamento_da_interface.py`
+  cobra a regra para todo link novo.
+- **O campo de período usa `min-height`**, para crescer com o tamanho da letra do sistema.
+
+Não mudaram: os pares de cor claros de propósito (exemplo dentro dos campos, avisos discretos), que
+ficaram assim por decisão de design e seguem abaixo de 4,5:1.
