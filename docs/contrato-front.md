@@ -420,6 +420,17 @@ teclado, e só a passagem sobre um ícone pausa a fila. Não há logos de empres
 daria a entender uma que não existe. A frase diz "todas estas áreas", não "todas as áreas", porque
 cursos como Medicina não caem em nenhuma.
 
+Os ícones dessa fila são ilustrações 3D (14/10/2026), uma por área, em
+`web/assets/areas/<área>.webp`: WebP com transparência, 144 × 144 px, até 12 KB, com `<img alt="">`
+porque o nome já está no botão. O tile destaca com a borda de acento e uma ampliação leve, e não
+mais com o fundo de acento sólido, que engolia a ilustração. O gerador é
+`scripts/gerar_icones_das_areas.py`: recebe uma pasta com `<área>.jpg|png|webp`, tira o fundo
+branco, recorta, centraliza com margem fixa e exporta; roda com
+`uv run --with pillow python scripts/gerar_icones_das_areas.py <pasta>`, e as imagens originais
+não são versionadas. O primeiro set saiu azul, e a paleta do site é verde: recolorir por matiz
+deixou manchas nas partes brancas, então a troca de cor é regerar as imagens com a paleta no
+prompt e rodar o script de novo, sem mexer em HTML nem CSS.
+
 As áreas ficam no HTML, e não montadas a partir do `areas.json`, para a landing não baixar o
 catálogo ao abrir: carregá-lo cedo mudava o cadastro, que conta com o catálogo ser buscado só ao
 abrir o formulário. `test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo` prende a lista
