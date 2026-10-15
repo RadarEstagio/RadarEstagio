@@ -141,6 +141,15 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
     assert "Direto no Telegram" in html
 
 
+def test_cartao_com_o_radar_responde_a_duvida_de_se_candidatar():
+    html = (RAIZ / "web/index.html").read_text()
+    inicio = html.index('class="comparison-card comparison-radar"')
+    cartao = html[inicio:].split("</article>", 1)[0]
+
+    assert "Aviso do que conferir antes de se candidatar" in cartao
+    assert "Curso, período e cidade já conferidos" not in cartao
+
+
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
     html = (RAIZ / "web/index.html").read_text()
 
