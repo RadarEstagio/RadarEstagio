@@ -81,14 +81,6 @@ AMOSTRA_DOS_DESCARTES = 30
 logger = logging.getLogger(__name__)
 
 
-def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
-    return [
-        str(detalhe["loc"][0]).upper()
-        for detalhe in erro.errors()
-        if detalhe["type"] in TIPOS_DE_ERRO_DE_PREENCHIMENTO
-    ]
-
-
 def problemas_da_configuracao(erro: ValidationError) -> list[str]:
     problemas = []
     for detalhe in erro.errors():

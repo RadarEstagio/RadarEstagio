@@ -234,12 +234,14 @@ nada pode ganhar uma lista própria:
 
 - `AreaDeInteresse` (em `domain/models.py`) é **construído** a partir de `SUBAREAS`.
 - A migration `0017` foi **gerada** do mesmo catálogo — o `CHECK` de `perfis.areas_de_interesse`
-  e a função `validar_cadastro_radar`.
+  e a função `validar_cadastro_radar`. Migration aplicada não se edita: subárea nova pede uma
+  migration nova que redefina os dois, e `tests/test_migracao_das_areas.py` confere a última que
+  define cada um (15/10/2026; antes o teste do `CHECK` lia sempre a `0017`).
 - `web/assets/areas.json` é **arquivo gerado** e serve o cadastro, que monta as áreas conforme o
   curso digitado e lista os `cursos_sugeridos` no campo de curso (16/09/2026: o `datalist`
   com cópia da lista saiu do `index.html`; o curso segue livre, ao contrário da cidade). Mexeu
-  em `areas.py`, regere; `tests/test_areas_do_front.py` e `tests/test_migracao_das_areas.py`
-  quebram se alguma das três listas sair do lugar.
+  em `areas.py`, rode `uv run python -m scripts.gerar_areas`; `tests/test_areas_do_front.py`
+  compara o arquivo byte a byte com a saída do script e diz o comando quando ele está velho.
 
 Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
 `exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". O padrão `titulo`

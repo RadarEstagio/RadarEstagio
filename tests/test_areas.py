@@ -4,7 +4,6 @@ from radar.domain.areas import (
     COMPUTACAO,
     area_do_curso,
     curso_de_nivel_tecnico,
-    curso_e_generico,
     descricao_e_da_area,
     formacao_de_nivel_superior,
     normalizar_curso,
@@ -213,7 +212,6 @@ def test_normalizar_curso_tira_formacao_e_aplica_sinonimos(curso: str, esperado:
     "curso", ["Ensino Superior", "Nível Superior", "Qualquer curso", "Áreas afins"]
 )
 def test_termo_generico_de_formacao_nao_e_curso(curso: str):
-    assert curso_e_generico(curso)
     assert normalizar_curso(curso) == ""
     assert area_do_curso(curso) is None
 

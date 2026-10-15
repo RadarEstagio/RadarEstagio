@@ -18,7 +18,8 @@ O cadastro coleta o perfil antes de `signUp`. Envia em `options.data.cadastro_ra
 | `sessao_id` | UUID da sessão de origem do funil; fica em memória na página quando o navegador bloqueia o armazenamento |
 
 As opções de `areas_de_interesse` **dependem do curso**: o formulário lê `assets/areas.json`
-(arquivo gerado a partir de `radar/domain/areas.py`), descobre a área do curso digitado e monta
+(arquivo gerado a partir de `radar/domain/areas.py` por `uv run python -m scripts.gerar_areas`;
+nunca editar à mão), descobre a área do curso digitado e monta
 só as subáreas dela. Curso sem área conhecida esconde o campo em vez de oferecer opções de outra
 formação, e o envio repete as áreas já salvas em vez de gravar lista vazia (08/10/2026). O banco
 recusa qualquer valor fora do catálogo, então o site nunca deve inventar um.
