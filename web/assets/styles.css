@@ -200,7 +200,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .hero-title-primary, .hero-title-secondary { display: block; }
 .hero-title-primary { color: var(--ink); }
 .hero-title-secondary { color: var(--accent-emphasis); }
-.continuacao { color: var(--muted); }
+.continuacao { color: var(--accent-emphasis); }
 .hero-lead { max-width: 640px; margin: 0 auto 34px; color: var(--ink-soft); font-size: 18px; line-height: 1.6; text-wrap: pretty; }
 .hero-actions { display: flex; align-items: center; justify-content: center; gap: 22px; }
 .trust-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; padding: 0; margin: 36px 0 0; list-style: none; color: var(--ink-soft); font-size: 13px; font-weight: 500; }

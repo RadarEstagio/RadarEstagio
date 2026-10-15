@@ -16,6 +16,7 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert '<span class="hero-title-secondary">Nós levamos ele até você.</span>' in html
     assert ".hero-title-primary { color: var(--ink); }" in css
     assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
+    assert ".continuacao { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
     assert "Busca automática todo dia" in html
