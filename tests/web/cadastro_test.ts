@@ -3157,6 +3157,47 @@ Deno.test("a 51ª digitada seguida de Continuar fica na etapa com o aviso, sem s
   }
 });
 
+function descricaoDoCampo(doc: TestWindow["document"], campo: ElementoDaPagina) {
+  return (campo.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean)
+    .map((id: string) => doc.getElementById(id)?.textContent ?? "").join(" | ");
+}
+
+Deno.test("a dica de cada campo do cadastro é lida junto com o campo", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#curso")), /nome que aparece na sua faculdade/);
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#cidade")), /cidades vizinhas também entram/);
+    assert.match(descricaoDoCampo(doc, doc.querySelector("#custom-skill")), /Uma por vez, com até 100/);
+    const rotulo = doc.querySelector('label[for="custom-skill"]');
+    assert.equal(rotulo.textContent.trim(), "Não encontrou alguma?");
+  } finally { a.close(); }
+});
+
+Deno.test("o erro do campo soma à dica e a dica volta quando o erro some", async () => {
+  const a = app();
+  try {
+    await settle();
+    a.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    const doc = a.w.document;
+    const form = fill(a.w);
+    form.elements.curso.value = " A ";
+    doc.querySelector("#next-step").click();
+    await settle();
+    const descricaoComErro = descricaoDoCampo(doc, form.elements.curso);
+    assert.match(descricaoComErro, /pelo menos 2 caracteres/);
+    assert.match(descricaoComErro, /nome que aparece na sua faculdade/);
+    form.elements.curso.value = "Computação";
+    form.elements.curso.dispatchEvent(new a.w.Event("input", { bubbles: true }));
+    await settle();
+    assert.equal(doc.querySelector("#erro-do-campo"), null);
+    assert.match(descricaoDoCampo(doc, form.elements.curso), /nome que aparece na sua faculdade/);
+    assert.equal(form.elements.curso.hasAttribute("aria-invalid"), false);
+  } finally { a.close(); }
+});
+
 Deno.test("curso com menos de 2 caracteres fica na etapa com aviso e não chega ao banco", async () => {
   const a = app();
   try {

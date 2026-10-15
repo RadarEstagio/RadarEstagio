@@ -428,12 +428,12 @@
                 <div class="field field-full">
                   <label for="curso">Seu curso</label>
                   <div class="combobox">
-                    <input id="curso" name="curso" required minlength="2" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cursos" autocomplete="off" placeholder="Digite ou escolha seu curso" />
+                    <input id="curso" name="curso" required minlength="2" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cursos" aria-describedby="courses-catalog-notice ajuda-curso" autocomplete="off" placeholder="Digite ou escolha seu curso" />
                     <button type="button" class="combobox-toggle" id="mostrar-cursos" tabindex="-1" aria-label="Mostrar cursos" aria-controls="lista-de-cursos" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cursos" role="listbox" aria-label="Cursos" hidden></ul>
                   </div>
                   <p class="catalog-notice" id="courses-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cursos agora. Digite o nome do seu curso.</p>
-                  <small>Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
+                  <small id="ajuda-curso">Use o nome que aparece na sua faculdade. Se não estiver na lista, pode digitar.</small>
                 </div>
                 <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
               </div>
@@ -456,7 +456,7 @@
               </div>
               <p class="catalog-notice" id="skills-catalog-notice" role="status" hidden>Não foi possível carregar as sugestões agora. Você ainda pode digitar uma habilidade ou continuar sem informar.</p>
               <div class="field-grid">
-                <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" maxlength="100" placeholder="Digite uma habilidade e pressione Enter" /><small>Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
+                <div class="field field-full"><label for="custom-skill">Não encontrou alguma?</label><input id="custom-skill" autocomplete="off" maxlength="100" aria-describedby="ajuda-habilidade" placeholder="Digite uma habilidade e pressione Enter" /><small id="ajuda-habilidade">Uma por vez, com até 100 caracteres. Ex.: C#, Figma, AWS ou suporte técnico.</small></div>
               </div>
               <div class="selected-skills" id="selected-skills" role="group" aria-label="Habilidades escolhidas" aria-live="polite"></div>
               <button class="text-link skill-empty-action" type="button" id="continue-without-skills">Ainda não quero informar habilidades <span aria-hidden="true">→</span></button>
@@ -468,12 +468,12 @@
                 <div class="field field-full">
                   <label for="cidade">Cidade principal</label>
                   <div class="combobox">
-                    <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" autocomplete="off" placeholder="Digite e escolha sua cidade" />
+                    <input id="cidade" name="cidade" required minlength="2" maxlength="120" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-de-cidades" aria-describedby="cities-catalog-notice ajuda-cidade" autocomplete="off" placeholder="Digite e escolha sua cidade" />
                     <button type="button" class="combobox-toggle" id="mostrar-cidades" tabindex="-1" aria-label="Mostrar cidades" aria-controls="lista-de-cidades" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
                     <ul class="combobox-options" id="lista-de-cidades" role="listbox" aria-label="Cidades" hidden></ul>
                   </div>
                   <p class="catalog-notice" id="cities-catalog-notice" role="status" hidden>Não foi possível carregar a lista de cidades agora. Confira se o nome está certo, como Rio de Janeiro, RJ.</p>
-                  <small>Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
+                  <small id="ajuda-cidade">Vagas das cidades vizinhas também entram, como Niterói para quem é do Rio. Vagas remotas de outros lugares entram se você não escolher presencial.</small>
                 </div>
                 <div class="field field-full"><span id="rotulo-modalidade">Modalidade preferida</span><div class="option-grid" role="radiogroup" aria-labelledby="rotulo-modalidade">
                   <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>

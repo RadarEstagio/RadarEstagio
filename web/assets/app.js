@@ -683,6 +683,7 @@ function lembrarAreasEscolhidas() {
   });
 }
 let campoComErro = null;
+let descricaoOriginalDoCampoComErro = null;
 const mensagensValidacao = {
   curso: "Informe o nome do seu curso.",
   periodo: "Selecione o período que você está cursando.",
@@ -978,7 +979,9 @@ function humanizeError(error, { profilePending = false, carregandoConta = false 
 function limparErroDoCampo() {
   if (!campoComErro) return;
   campoComErro.removeAttribute("aria-invalid");
-  campoComErro.removeAttribute("aria-describedby");
+  if (descricaoOriginalDoCampoComErro) campoComErro.setAttribute("aria-describedby", descricaoOriginalDoCampoComErro);
+  else campoComErro.removeAttribute("aria-describedby");
+  descricaoOriginalDoCampoComErro = null;
   document.querySelector("#erro-do-campo")?.remove();
   campoComErro = null;
 }
@@ -993,7 +996,8 @@ function marcarErroNoCampo(campo, mensagem) {
   if (rotuloDeConsentimento) rotuloDeConsentimento.insertAdjacentElement("afterend", aviso);
   else (campo.closest(".field") ?? campo.parentElement).append(aviso);
   campo.setAttribute("aria-invalid", "true");
-  campo.setAttribute("aria-describedby", aviso.id);
+  descricaoOriginalDoCampoComErro = campo.getAttribute("aria-describedby");
+  campo.setAttribute("aria-describedby", [aviso.id, descricaoOriginalDoCampoComErro].filter(Boolean).join(" "));
   campoComErro = campo;
   campo.focus();
 }
