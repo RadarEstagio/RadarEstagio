@@ -174,7 +174,7 @@ resolvido (a entrega imediata coleta só para quem atende). Continuam abertos:
 Qualidade das recomendações:
 
 - **Pesos da nota.** Não recalibrar sem `vaga_irrelevante` real; o viés conhecido e as
-  alternativas estão nas [decisões do motor](decisoes-do-motor.md#viés-conhecido-do-ranking).
+  alternativas estão nas [decisões do motor](decisoes-do-motor.md#viés-conhecido-do-ranking-03092026).
 - **Gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem
   com `relevante` nulo, então o juiz automático não foi validado (precisa de 75% de concordância).
 - **Descartes.** `python -m radar descartes` exporta a amostra do pré-filtro, mas ninguém
