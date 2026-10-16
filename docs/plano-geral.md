@@ -126,7 +126,7 @@ não são atualizados.
 | RCD-05 | Valor só depois de três trocas de contexto | Aberto: não há prévia com vagas reais antes da conta |
 | RCD-06 | Conta sem nada acumulado | Aberto: não há "Suas vagas" na conta |
 | RCD-07 | Trabalho episódico | Aberto: não há retorno perto do fim do estágio |
-| RCD-08 | Promessa maior que a prova | Parcial: saíram "100% automático", a faixa de fornecedores e o "todos os dias de manhã" do bot; o cartão de preço ainda diz "Vagas que atendem seu perfil" (`web/index.html`) |
+| RCD-08 | Promessa maior que a prova | Parcial: saíram "100% automático", a faixa de fornecedores e o "todos os dias de manhã" do bot; a lista de diferenciais do hero ainda diz "Vagas que atendem seu perfil" (`web/index.html`) |
 | RCD-09 | Bot responde "use o botão do site" a tudo | No código desde 05/10: mensagem livre encaminhada ao chat de operação. Falta publicar a função (2.1) |
 | RCD-10 | ICP difuso | Sem decisão registrada |
 | RCD-11 | Nada diferencia de um alerta gratuito | Aberto |
