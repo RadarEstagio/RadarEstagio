@@ -1031,7 +1031,8 @@ O modelo vem de `JUIZ_MODELO` (padrão `claude-sonnet-4-6`, outra família que a
 e o adapter segue `AVALIADOR`: `agy` local, sem cota; pela API precisa ser um modelo Gemini. O
 comando só lê o banco; nada de nota alterada. Só pontuação por regra em Python decide o que é
 enviado — o juiz mede, não ranqueia. Antes de usar o número do juiz como evidência, ele precisa
-ser validado contra o gabarito humano de 20 vagas (pré-PRD, H2); abaixo de 75% de concordância
+ser validado contra o gabarito humano de 20 vagas ([plano geral](plano-geral.md#6-hipóteses-de-validação),
+H2); abaixo de 75% de concordância
 é ruído com cara de número.
 
 Primeira rodada real (09/09, `claude-sonnet-4-6` pelo `agy`, 24 de 168 entregas de 14 dias, 5
