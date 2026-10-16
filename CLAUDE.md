@@ -4,7 +4,8 @@ Agente de IA que garimpa sites de vagas de estágio todos os dias e entrega, via
 apenas as oportunidades compatíveis com o perfil do usuário — ranqueadas e explicadas.
 
 Resumo do produto em `docs/funcionalidades.md`, arquitetura detalhada em `docs/arquitetura.md`,
-decisões do motor em `docs/decisoes-do-motor.md`, próximos passos em `docs/plano-geral.md`.
+decisões do motor em `docs/decisoes-do-motor.md`, próximos passos em `docs/plano-geral.md`,
+instalação, comandos e testes em `docs/desenvolvimento.md`; o índice é o `docs/README.md`.
 
 ## Fase atual: MVP de validação com usuários (Fase 2, em andamento)
 
@@ -186,7 +187,9 @@ valem ao mexer no `app.js`:
   ambientes virtuais ou artefatos de build.
 - **Decisão nova é registrada no documento dono**, nunca aqui: motor e extração em
   `docs/decisoes-do-motor.md`, banco e funções em `docs/decisoes-do-banco.md`, site em
-  `docs/contrato-front.md`, publicação no guia, pendência no plano geral. O `CLAUDE.md` só
+  `docs/contrato-front.md`, publicação no guia, pendência no plano geral, dado de cobertura,
+  custo ou oferta em `docs/frentes-externas.md`. Sumário ou retrato de estado não vira documento
+  novo: corrija o dono, porque cópia de estado diverge (16/10). O `CLAUDE.md` só
   recebe o que um agente precisa **seguir**, em até cinco linhas, com link para o registro.
   Sem essa regra o arquivo volta a crescer: passou de 618 linhas em 13/09 para 2.126 em 18/09,
   sempre por relato de correção.
