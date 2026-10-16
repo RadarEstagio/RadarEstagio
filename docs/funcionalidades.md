@@ -10,7 +10,7 @@ O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de 
 - [Para quem usa](#para-quem-usa) — conta, recomendações e controle dos dados.
 - [Respostas de feedback](#as-sete-respostas-de-feedback) — opções e efeito no ranking.
 - [Para desenvolvedores e operação](#para-desenvolvedores-e-operação) — coleta, IA, entrega e segurança.
-- [Comandos](#comandos) — execução e testes locais.
+- [Comandos](#comandos) — a CLI, detalhada no [guia de desenvolvimento](desenvolvimento.md).
 - [Configuração e manutenção](#configuração-e-manutenção).
 - [Fora do escopo](#o-que-não-está-incluído).
 - [Estado de disponibilização](#estado-de-disponibilização).
@@ -429,23 +429,10 @@ Python, Deno, DOM simulado e PostgreSQL isolado via PGlite.
 
 ## Comandos
 
-Prefixo: `uv run python -m radar`.
-
-- **`verificar`**: Validar configuração.
-- **`coletar`**: Consultar fontes e inspecionar coleta.
-- **`avaliar`**: Coletar e avaliar; pode consumir cota de IA.
-- **`testar-telegram`**: Enviar mensagem de teste ao Telegram.
-- **`testar-local`**: Rodar com perfil fixo e memória, ignorando banco/histórico; envia mensagens reais.
-- **`rodar`**: Executar para destinatários ativos do banco; sem `DATABASE_URL`, usa perfil fixo.
-- **`rodar --perfil UUID`**: Selecionar `perfis.id`, não `user_id`; exige banco para usar perfil real.
-- **`metricas`**: Consultar relatório; exige banco.
-- **`gabarito --dias 7 --amostra 20 --saida arquivo.json`**: Exportar uma amostra de entregas para as pessoas marcarem `relevante` com true ou false; exige banco.
-- **`descartes --amostra 30 --saida arquivo.json`**: Exportar uma amostra do que o pré-filtro descartou, com o motivo de cada corte, para as pessoas marcarem `descarte_correto`; consulta as fontes.
-- **`julgar --dias 7 --amostra 30 [--gabarito arquivo.json]`**: Pedir a um segundo modelo (`JUIZ_MODELO`) que julgue, às cegas, uma amostra das entregas recentes e imprimir relevância estimada, concordância com o feedback e reprovadas com nota alta; exige banco e não altera nada. Com `--gabarito`, julga só as entregas rotuladas e mede a concordância do juiz com as pessoas.
-
-**Limitação do modo local:** os botões são gerados, mas os tokens não são persistidos. Portanto,
-feedback dessas mensagens não funciona no webhook. Use envios do fluxo com banco para testar.
-Envios normais que falham na gravação também podem deixar tokens órfãos.
+A CLI (`uv run python -m radar`) tem `verificar`, `coletar`, `avaliar`, `testar-telegram`,
+`testar-local`, `rodar`, `rodar --perfil`, `metricas`, `julgar`, `gabarito` e `descartes`. O que
+cada um faz, os efeitos externos e os cuidados estão no
+[guia de desenvolvimento](desenvolvimento.md#3-comandos).
 
 ## Configuração e manutenção
 
