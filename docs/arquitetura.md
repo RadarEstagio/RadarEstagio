@@ -486,7 +486,7 @@ As decisões de cálculo e apresentação estão em [Métricas](metricas.md).
 Limites ainda registrados: republicação entre fontes com descrição curta pode passar pela
 deduplicação; banco aceita subárea de outro curso,
 mitigada no carregamento; Jooble multiplica consultas por termo e permanece opcional.
-Novos casos devem entrar na [matriz de cobertura](cobertura-estagios.md), com entrada,
+Novos casos devem entrar na [matriz de cobertura](frentes-externas.md#e02--cobertura-de-estágios), com entrada,
 esperado, observado e teste por causa. Não reabrir os seis bugs apenas por ler o relatório antigo.
 
 ### Calibração pendente

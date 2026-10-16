@@ -31,7 +31,7 @@ que estudantes de fora do grupo o acham útil.
 | [`pre-prd.md`](pre-prd.md) | Retrato de 08/09: hipóteses H1 a H7, riscos, viabilidade | Congelado de propósito |
 | [`pit-do-grupo.md`](pit/pit-do-grupo.md) | Entrega AP1 (IBM3116), medida em 28 e 30/09 | É o que vale para a apresentação |
 | [`ideias-icones-3d-das-areas.md`](ideias-icones-3d-das-areas.md) | Proposta de trocar os 12 ícones de linha da landing por ilustrações 3D: objeto por área, prompt-base, arquivos, mudanças no site, 5 decisões do Igor | Em análise (10/10); nada implementado nem decidido |
-| [`cobertura-estagios.md`](cobertura-estagios.md), [`aquisicao-e-prova.md`](aquisicao-e-prova.md), [`custos-operacao.md`](custos-operacao.md), [`hipotese-comercial.md`](hipotese-comercial.md) | Procedimentos e tabelas com "não medido" | Quase vazios por falta de dado externo |
+| [`frentes-externas.md`](frentes-externas.md) | Procedimentos e tabelas com "não medido" | Quase vazios por falta de dado externo |
 | [`auditorias/`](auditorias/) (3) | Agendamento (10/09, G01 a G10); Revenue-Centric Design (10/09, 16 achados); acompanhamento de 05/10 | Datadas, não atualizadas |
 
 ## Como funciona

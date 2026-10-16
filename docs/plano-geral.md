@@ -248,7 +248,7 @@ conferido no código nessa data, para a equipe decidir o que entra:
   "Suas vagas" na conta, retorno perto do fim do estágio, mensagem com três destaques e
   frequência semanal como alternativa à pausa.
 - **Pagador (RCD-02).** A leitura da Lei do Estágio foi corrigida em 29/09 na
-  [hipótese comercial](hipotese-comercial.md): a vedação do art. 5º, §2º alcança agentes de
+  [hipótese comercial](frentes-externas.md#e05--hipótese-comercial): a vedação do art. 5º, §2º alcança agentes de
   integração, e o Radar não é um, então o que limita cobrar do estudante é o mercado. As
   conversas com possíveis pagadores seguem pendentes.
 - **Foco (RCD-03 e RCD-10).** Congelar ajuste de regra do motor sem caso vindo de usuário e
@@ -284,7 +284,7 @@ pergunta do dia seguinte) e os sinais para reavaliar em 19/10 estão em
 - **Histórico Git e skills:** permanecem conforme decisões registradas em 05/09. Não há nova
   autorização para reescrever histórico ou remover recursos de terceiros.
 
-## 4. Pendências externas da expansão
+## 4. Pendências externas
 
 Os IDs abaixo são referências históricas. Atualizar o estado geral aqui e a evidência no
 documento indicado; não manter uma segunda fila no antigo registro de execução.
@@ -292,10 +292,10 @@ documento indicado; não manter uma segunda fila no antigo registro de execuçã
 | Frente | Estado e próximo passo | Documento responsável |
 |---|---|---|
 | E01 — publicação e jornada | Conferir versões, migrations, deploy automático, Auth, SMTP, CAPTCHA, cron e jornada com conta da equipe; inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
-| E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Cobertura](cobertura-estagios.md) |
-| E03 — aquisição | Após verificar a jornada, confirmar canal, URL, responsável e mensagem; obter autorização antes de divulgar relato | [Aquisição e prova](aquisicao-e-prova.md) |
-| E04 — custos | Reunir faturas, uso e horas de suporte em uma janela comum; custos desconhecidos não são zero | [Custos](custos-operacao.md) |
-| E05 — oferta | Após cobertura e custos, decidir oferta, pagador, preço, duração, renovação, cancelamento, aceite e provedor; checkout é tarefa posterior | [Hipótese comercial](hipotese-comercial.md) |
+| E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Frentes externas](frentes-externas.md#e02--cobertura-de-estágios) |
+| E03 — aquisição | Após verificar a jornada, confirmar canal, URL, responsável e mensagem; obter autorização antes de divulgar relato | [Frentes externas](frentes-externas.md#e03--aquisição-e-prova-de-utilidade) |
+| E04 — custos | Reunir faturas, uso e horas de suporte em uma janela comum; custos desconhecidos não são zero | [Frentes externas](frentes-externas.md#e04--custos-da-operação) |
+| E05 — oferta | Após cobertura e custos, decidir oferta, pagador, preço, duração, renovação, cancelamento, aceite e provedor; checkout é tarefa posterior | [Frentes externas](frentes-externas.md#e05--hipótese-comercial) |
 | D01 — formação | Usar casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo; preservar contrato atual até decisão | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
 
 Os responsáveis continuam a confirmar; a proposta de divisão está na seção 2 do guia.
