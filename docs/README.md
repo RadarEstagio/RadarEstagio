@@ -43,6 +43,11 @@ no plano geral, e o que virou regra, nas decisões e no `CLAUDE.md`.
 - [Acompanhamento do Revenue-Centric Design](auditorias/2026-10-05-revenue-centric-design.md)
   (05/10/2026).
 
+## Registro da faxina
+
+[Esclarecimento da faxina](esclarecimento-da-faxina.md): o que a reorganização de 16/10/2026
+mudou, arquivo por arquivo, e as decisões tomadas nela, para a revisão da PR.
+
 ## Como manter
 
 - Ao mudar uma função, atualizar o catálogo e o contrato afetado.
