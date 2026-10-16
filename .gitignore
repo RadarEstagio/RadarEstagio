@@ -55,3 +55,4 @@ descartes-*.json
 
 # Relatório individual da disciplina: nunca versionar
 relatorio-individual/
+.ua/
