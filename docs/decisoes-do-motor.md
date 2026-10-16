@@ -27,6 +27,7 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
   - [Resposta malformada do avaliador não derruba o job](#resposta-malformada-do-avaliador-não-derruba-o-job-16092026)
 - **Pontuação**
   - [Pontuação: por que os pesos são estes](#pontuação-por-que-os-pesos-são-estes)
+  - [Viés conhecido do ranking](#viés-conhecido-do-ranking-03092026)
 - **Entrega e feedback**
   - [Entrega no Telegram](#entrega-no-telegram-10092026)
   - [Vaga fechada na origem](#vaga-fechada-na-origem-16092026)
@@ -1016,11 +1017,24 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   Sobraram "Curso compatível" e "Exige experiência prévia" (o período virou aviso em 14/09), porque
   as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
   vindo do modelo.
-- **Viés conhecido, registrado em 03/09/2026**: anúncio que declara
-  uma tecnologia só e é atendido tira 100, enquanto um que declara cinco e atende três tira 85 —
-  a suavização dá 1.0 cravado com 1 de 1. Quanto mais honesto o anúncio, pior a nota. As duas
-  correções possíveis e o sinal que reverte a decisão estão na seção de viés do ranking de
-  `docs/arquitetura.md`. **Não ajustar peso sem `vaga_irrelevante` real.**
+
+## Viés conhecido do ranking (03/09/2026)
+
+Em 03/09/2026, um anúncio com uma tecnologia declarada e atendida recebia 100, enquanto
+outro com cinco e três atendidas recebia 85: a suavização `(1 + atendidas) / (1 + exigidas)` dá
+1.0 cravado com 1 de 1 e favorece anúncios pouco detalhados. Quanto mais honesto o anúncio, pior
+a nota. Isso é calibração, distinto dos bugs de normalização de habilidades já corrigidos.
+
+Antes de mudar pesos, investigar exemplos reais de `vaga_irrelevante`, especialmente
+`motivo_nota`, comparando recusas com entregas por grupo. As habilidades declaradas estão
+em `vagas.extracao`. Limitar a nota de anúncios com poucos requisitos ou considerar a
+densidade de requisitos na cobertura são alternativas ainda não implementadas. **Não ajustar
+peso sem `vaga_irrelevante` real.**
+
+Em 10/09/2026 entrou só a parte que era incoerência, não calibração: vaga sem nenhum requisito
+atendido não passa da cobertura neutra, porque com um requisito só a suavização dava 0,5 a quem
+não atendia nada. O viés de 1 de 1 contra 3 de 5 e o teto por lista (obrigatória não atendida
+com desejável atendido ainda vale 0,5 com peso 80%) continuam dependendo de `vaga_irrelevante`.
 
 ## Entrega no Telegram (10/09/2026)
 
