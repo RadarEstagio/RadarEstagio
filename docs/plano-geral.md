@@ -94,8 +94,9 @@ a chave pública do Supabase está no `web/config.js`.
 - [x] O check "Cloudflare Pages" sumiu: o PR #152 (15/10) só tem Workers Builds, `python` e `web`.
 - [ ] Decidir sobre a proteção da `main`, ainda desligada em 16/10: exigir os checks `python` e
   `web` antes de mesclar.
-- [ ] Apagar as branches remotas já mescladas (63 em 16/10) e ligar "Automatically delete head
-  branches" (`delete_branch_on_merge` segue falso). Ficam as que não foram mescladas.
+- [x] As 63 branches remotas já mescladas foram apagadas e "Automatically delete head branches"
+  foi ligado (17/10). Ficaram as dos PRs abertos e as dos fechados sem merge (#42 e #128), que
+  têm commits fora da `main`.
 - [ ] Renovar o token do cron-job.org antes de 09/09/2027: vencido, o diário para sem avisar.
 
 ### 2.5 Pedir para alguns colegas usarem
