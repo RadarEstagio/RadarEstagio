@@ -116,10 +116,21 @@ documentação, da apresentação e do `.gitignore`.
 | `docs/desenvolvimento.md` | Novo: instalação, variáveis, comandos e cuidados, frontend local, testes, scripts e operação | Saiu do README da raiz e da seção de comandos do catálogo | `4fea3e5` |
 | `README.md` | Reescrito: o que é, o endereço, links para PIT e docs, fluxo, tecnologias e uma tree da raiz e de `radar/`, `web/`, `supabase/`, `docs/` e `scripts/` | Instalação e operação foram para o guia de desenvolvimento | `26ec0fd` |
 | `docs/README.md` | Reescrito com o que sobrou: entradas, tabela de donos, auditorias e regras de manutenção | — | `b980b13` |
-| `CLAUDE.md` | Aponta o guia de desenvolvimento e o índice; acrescenta o dono das frentes externas e a regra de não criar retrato de estado | — | `5fe7f92` |
+| `CLAUDE.md` | Aponta o guia de desenvolvimento e o índice; acrescenta o dono das frentes externas e a regra de não criar retrato de estado. Em 17/10, enxugado de 416 para 204 linhas | O que só existia nele foi para frentes externas, motor, banco, contrato e guia | `5fe7f92`, `82c9fd6`, `5346708` |
 | `docs/esclarecimento-da-faxina.md` | Este documento | — | último commit |
 | `CONTEXT.md`, `docs/metricas.md`, `docs/termos-de-uso.md`, `docs/politica-de-privacidade.md`, `docs/auditorias/*` | Sem mudança | — | — |
 | `scripts/gerar_cidades.py`, `scripts/gerar_icones_das_areas.py` | Sem mudança; documentados no guia de desenvolvimento | — | — |
+
+### Depois da primeira revisão (17/10/2026)
+
+O Igor respondeu às decisões 3, 4, 15, 16 e 18. O que mudou por causa disso:
+
+| Resposta | O que foi feito | Commit |
+|---|---|---|
+| 3: "pode apagar" | `docs/3d/`, `relatorio-individual/` e `videos/` saíram da pasta do projeto para a Lixeira do macOS (`~/.Trash/radar-faxina-2026-10-17/`), de onde ainda voltam | — (não versionados) |
+| 15: "pode consultar o Supabase" | `supabase migration list --linked`, `functions list`, `functions download` e `secrets list`, só leitura, e `getWebhookInfo` no Telegram: `0001` a `0035` aplicadas, as duas funções publicadas em 08/10 com o código igual ao da `main` e o webhook sem erro. Guia, plano e catálogo deixam de dizer "sem registro" | `b0bc5ad` |
+| 16: "pode fazer o que quiser" | As 63 branches remotas mescladas foram apagadas e o repositório passou a apagar a branch depois do merge. Ficaram as dos PRs abertos (#152 e #153) e as dos fechados sem merge (#42 e #128), que têm commits fora da `main`. A proteção da `main` continua desligada: exigir checks muda como a equipe faz push, e isso fica no plano como decisão | `8ce0405` |
+| 18: "esse CLAUDE.md não está extenso demais?" | Estava. Caiu de 416 para 204 linhas. Antes, o que só existia nele foi para os donos, com o mesmo texto: termos das fontes nas frentes externas, modelo e cota do Gemini no motor, controle do perfil, pausa, envio e ativação no banco, cadastro no site e cidade única no contrato, segredo do webhook, transferência, cron e ações por hash no guia (seção 12 nova) | `82c9fd6`, `5346708` |
 
 ### As seis divergências do sumário
 
@@ -155,11 +166,13 @@ documentação, da apresentação e do `.gitignore`.
    da proposta dos ícones e o sumário entraram; os zips e o png de `docs/3d/` não.
 3. **Não apaguei `docs/3d/` (zips e png), `relatorio-individual/` nem `videos/`.** Nenhum é
    versionado (`relatorio-individual/` está no `.gitignore` e `videos/` no `.git/info/exclude`),
-   então apagar não apareceria na PR e não teria volta pelo Git. Os zips são as imagens originais
-   das ilustrações, que o contrato diz que não se versionam: podem sair da pasta do projeto quando
-   você quiser. O relatório e os vídeos ficaram onde estavam.
+   então apagar não apareceria na PR e não teria volta pelo Git. **Revisto em 17/10:** com o
+   "pode apagar", as três foram para a Lixeira do macOS, não para o `rm`, e ainda podem voltar.
 4. **O sumário entrou no histórico antes de sair**, para a versão de 10/10 continuar recuperável;
-   ele só existia na cópia local.
+   ele só existia na cópia local. "Sumário" aqui é o `docs/sumario-da-documentacao.md`, um
+   arquivo só. Ele não foi transferido inteiro: as seis divergências que apontava foram
+   corrigidas nos documentos donos (tabela acima), e o resto, que copiava README, arquitetura, PIT
+   e plano, foi excluído. Para lê-lo: `git show bf04782:docs/sumario-da-documentacao.md`.
 5. **O sumário saiu em vez de ser enxugado.** Corrigidas as divergências, o resto dele era cópia
    do README, da arquitetura, do PIT e do plano, e ele mesmo dizia não ser dono de nada. É o tipo
    de documento que gerou as divergências.
@@ -194,18 +207,20 @@ documentação, da apresentação e do `.gitignore`.
     09/09 descreviam o Pages, a `URL_DA_LANDING` antiga e pendências já feitas. O que ainda vale
     deles está na tabela, com data e comando.
 15. **Não consultei o Supabase, nem para leitura.** O pedido dizia para não mexer nele, e
-    `supabase migration list` usa as credenciais do projeto. Por isso a aplicação das `0032`–`0035`
-    e os deploys das funções depois de 05/10 aparecem como "sem registro", com o comando para
-    conferir, em vez de afirmados ou negados.
+    `supabase migration list` usa as credenciais do projeto. **Revisto em 17/10:** com a
+    liberação, a consulta foi feita, só leitura, e o resultado está no guia.
 16. **Consultei o GitHub e o site só para leitura.** `gh api` para branches e proteção, `gh pr
-    checks` para o check do Pages e `curl -I` para os cabeçalhos. Nada foi alterado em nenhum dos
-    dois.
+    checks` para o check do Pages e `curl -I` para os cabeçalhos. **Revisto em 17/10:** com mais
+    liberdade, apaguei as branches mescladas e liguei a exclusão automática; os nomes e hashes
+    das 63 estão num comentário da PR #153, com o comando para recriar cada uma. Nada mudou no Cloudflare nem no cron-job.org.
 17. **`CONTEXT.md`, métricas, Termos e Política ficaram como estavam.** O vocabulário e as métricas
     conferem com o código. Termos e Política têm testes que os comparam frase a frase com o HTML,
     e mudar texto legal muda a versão.
-18. **O `CLAUDE.md` mudou pouco.** Entraram três linhas que um agente precisa seguir. Os itens
-    longos que passam das cinco linhas da regra, como o das ações por hash, ficaram: são
-    operacionais e vale enxugá-los numa PR própria, sem misturar com o #152.
+18. **O `CLAUDE.md` mudou pouco.** Entraram três linhas que um agente precisa seguir. **Revisto
+    em 17/10:** foi enxugado de vez, para 204 linhas. As regras do motor e as do `app.js`
+    ficaram com o mesmo texto, porque um agente segue cada uma; o que era relato, medição ou
+    retrato de estado foi para o dono antes de sair. O item do catálogo de áreas ficou igual,
+    então o conflito com o #152 continua num parágrafo só.
 19. **Os dois scripts ficaram.** `gerar_cidades.py` é usado por teste e `gerar_icones_das_areas.py`
     é o caminho documentado para trocar as ilustrações; o `gerar_areas.py` chega com o #152.
 20. **Pendências que só existiam no meio do motor foram para o plano**: refiltrar depois do
