@@ -5,6 +5,32 @@ e os limites aceitos de cada decisão. Movido do `CLAUDE.md` em 20/09/2026 sem r
 seção guarda a data da decisão, e "hoje" se refere a essa data. As regras que valem no dia a dia
 ficam resumidas no `CLAUDE.md`; o contrato com o site está em [contrato frontend](contrato-front.md).
 
+- **Conta e cadastro**
+  - [Exclusão de conta é em duas etapas](#exclusão-de-conta-é-em-duas-etapas-04092026)
+  - [Controle do próprio perfil e pausa](#controle-do-próprio-perfil-e-pausa-04092026-0013)
+  - [Conta confirmada sem perfil é apagada na hora](#conta-confirmada-sem-perfil-é-apagada-na-hora-13092026-0024)
+  - [Cadastro que não confirma o e-mail tem prazo](#cadastro-que-não-confirma-o-e-mail-tem-prazo-16092026-0030)
+  - [Cadastro pendente inválido e sessões do apagamento](#cadastro-pendente-inválido-e-sessões-do-apagamento-08102026-0035)
+  - [Textos do perfil têm teto no banco](#textos-do-perfil-têm-teto-no-banco-13092026-0025)
+  - [Listas do perfil em uma dimensão](#listas-do-perfil-em-uma-dimensão-18092026-0031)
+- **Eventos e métricas**
+  - [Eventos do site têm limite no banco](#eventos-do-site-têm-limite-no-banco-13092026-0023)
+  - [Aberturas, pausas e vínculos repetidos](#aberturas-pausas-e-vínculos-repetidos-16092026-0028)
+  - [Origem da visita tem lista de propriedades](#origem-da-visita-tem-lista-de-propriedades-05102026-0032)
+  - [Grant largo e a pagina sem regra](#grant-largo-e-a-pagina-sem-regra-08102026-0034)
+  - [Contas da equipe fora do funil](#contas-da-equipe-fora-do-funil-proposta-de-05102026)
+- **Operação do job**
+  - [Avaliação, envio e ativação](#avaliação-envio-e-ativação)
+  - [Toda execução se reporta](#toda-execução-se-reporta-18092026)
+  - [O resumo mede o tamanho do banco](#o-resumo-mede-o-tamanho-do-banco-08102026)
+  - [Texto que o Postgres recusa sai na entrada](#texto-que-o-postgres-recusa-sai-na-entrada-16092026)
+  - [Identificador de perfil não vai inteiro ao log](#identificador-de-perfil-não-vai-inteiro-ao-log-08102026)
+  - [SQL aplicado fora do CLI não entra no histórico de migrations](#sql-aplicado-fora-do-cli-não-entra-no-histórico-de-migrations-06092026)
+- **Telegram e Edge Functions**
+  - [Entrega imediata](#entrega-imediata-fase-d-05092026)
+  - [Mensagem livre ao bot chega à equipe](#mensagem-livre-ao-bot-chega-à-equipe-05102026)
+  - [O tratamento da requisição das funções sai do index](#o-tratamento-da-requisição-das-funções-sai-do-index-08102026)
+
 ## Exclusão de conta é em duas etapas (04/09/2026)
 
 `excluir_minha_conta()` marca `excluida_em`
@@ -33,6 +59,19 @@ mutações. Limites: o teste roda as consultas na ordem do repositório, não o 
 o PGlite tem uma conexão só, então a transação e a corrida entre execuções seguem sem teste; e o
 `auth.users` do PGlite é o mínimo que as migrations exigem, então a cascata das outras tabelas do
 Auth do Supabase (sessões, tokens) não é exercitada.
+
+## Controle do próprio perfil e pausa (04/09/2026, `0013`)
+
+Editar, pausar e retomar são `update` em `perfis` pelas colunas já liberadas no `grant`.
+Desvincular o Telegram e excluir a conta não cabem em `grant` — `telegram_chat_id` é do webhook e
+`auth.users` o cliente não apaga — então são funções `security definer` filtrando por
+`auth.uid()`, na migration `0013`. Desvincular rotaciona o `token_vinculo` junto, senão o link
+antigo continuaria valendo.
+
+**`ativo` é só da pausa; exclusão não escreve nele.** O gatilho da `0005` emite
+`entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
+como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
+tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
 
 ## Conta confirmada sem perfil é apagada na hora (13/09/2026, `0024`)
 
@@ -157,103 +196,65 @@ Publicação: `db push` da `0035` antes do merge, porque a correção da confirm
 site não muda; o SQL do job vem no mesmo merge e não depende dela. Invertida, nada quebra. Se a
 `0035` subir antes da `0034`, o push dela pede `--include-all`.
 
-## SQL aplicado fora do CLI não entra no histórico de migrations (06/09/2026)
+## Textos do perfil têm teto no banco (13/09/2026, `0025`)
 
-As `0014`–`0016`
-tinham todos os objetos no banco e nenhuma linha em `supabase_migrations.schema_migrations`.
-Como o `db push` grava o registro na mesma transação em que aplica, três aplicadas e nenhuma
-registrada denunciam SQL rodado direto — pelo painel, por `db query` ou por psql. O efeito só
-aparece depois: com a coluna `remote` vazia, o push seguinte tenta reaplicá-las e quebra no
-primeiro `add column` de coluna existente, deixando a migration nova pela metade. Foi
-reconciliado com `supabase migration repair --status applied 0014 0015 0016`, que só grava o
-registro e não reexecuta SQL. **Conferir `supabase migration list --linked` depois de aplicar e
-antes do próximo push** — é o que torna visível a regra de nunca aplicar pelo painel.
+Uma conta comum gravava
+210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
+`cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
+`not valid` como o da `0023`: `perfis` é atualizado todo dia pelo job e pelo webhook, às vezes em
+lote, e um check `not valid` deixaria uma linha antiga acima do teto derrubar esses updates longe
+da migration. Validado, um perfil acima do teto faz o `db push` falhar inteiro, sem aplicar nada,
+e o erro nomeia a constraint: corrigir a linha e repetir. `validar_cadastro_radar` passou a
+recusar chave desconhecida no cadastro e no perfil; todas as versões do site mandaram só as
+conhecidas. Grants e policies não mudam; a função nova do check fica com o grant padrão, como a
+`habilidades_do_perfil_validas` da `0018`, e precisa dele: o check roda com o papel de quem grava,
+e sem `execute` o update do próprio dono falha. Pode ir ao banco antes do merge: o site atual já limita
+cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
+digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
+`raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
 
-## Texto que o Postgres recusa sai na entrada (16/09/2026)
+## Listas do perfil em uma dimensão (18/09/2026, `0031`)
 
-. Dois caracteres vindos da fonte ou
-da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo de 500 caracteres
-da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
-levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
-antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
-(a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
-levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
-extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
-vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a
-retenção da `0022` não contar o dia e o envio não ser gravado, e a mesma mensagem voltava todo
-dia. As duas falhas foram reproduzidas num Postgres local com todas as migrations, rodando o
-pipeline com o coletor da Adzuna, o agy e o Telegram atrás de `httpx.MockTransport`. A limpeza é
-feita uma vez, nos modelos: `Vaga` e `ExtracaoDaVaga` passam todo texto por
-`sem_caracteres_invalidos` (`domain/texto.py`), que tira NUL e surrogate solto e junta as duas
-metades de um emoji que chegam separadas; nenhum outro caractere muda (acento, travessão, `<`,
-`&`, emoji inteiro, `�`). O validador da `Vaga` cobre os três coletores, e o da extração cobre
-a resposta do Gemini, a do agy e a leitura do cache; o enriquecimento limpa a descrição da
-página por conta própria, porque o `model_copy` não valida. A identidade das vagas guardadas não
-muda, porque o banco nunca aceitou esses caracteres, e o schema da extração é o mesmo:
-`VERSAO_DA_EXTRACAO` segue `7efdbc95`. Como defesa, `guardar_extracoes`,
-`registrar_vagas_sem_extracao`, `guardar_avaliacoes` e `registrar_envios` tratam o
-`UnicodeEncodeError` como falha do banco (`FALHAS_AO_GRAVAR_TEXTO`): aviso do dia, não queda.
-Medido em 16/09, só leitura: nenhuma das 1.003 vagas nem das 790 extrações tem `�` ou NUL
-escapado, e nenhuma das 966 vagas da Adzuna tem emoji ou outro caractere fora do plano básico;
-as 18 com emoji são da Gupy, com a descrição inteira. Não se sabe se a Adzuna manda esses
-caracteres, e a correção é para não depender disso. Limites: gravar cada extração em separado,
-para uma ruim não levar as outras, ficou de fora, porque depois da limpeza nenhum texto da
-extração é recusado e o que sobra para falhar é o banco inteiro; o `model_validate_json` recusa
-a resposta do Gemini inteira se ela trouxer um surrogate solto escapado (erro de avaliação, o
-lote se divide até isolar a vaga), o que só acontece se o modelo o inventar, já que o prompt sai
-limpo; corpo da Adzuna com byte UTF-8 inválido continua sendo corpo que não é JSON (ver "Coleta
-resiliente"); e os testes do storage são de integração, fora do CI. Publicação: sem migration
-nem deploy.
+Qualquer conta cadastrada
+derrubava o diário de todo mundo: um `update` direto gravava `perfis.areas_de_interesse` como
+lista de listas, porque o `<@` da `0017` e o `cardinality` da `0025` achatam a dimensão e só
+olham o conteúdo, e o Python quebrava com `TypeError` ao converter os perfis, antes da coleta.
+Ninguém recebia mensagem, o resumo de operação não saía e o dia seguinte repetia. Em
+`habilidades` o valor já era recusado, mas por acidente: o `array_position(valor, null)` da
+`0018` levanta `0A000` ("searching for elements in multidimensional arrays is not supported"),
+que some se aquela função for reescrita. A correção é nas duas camadas:
+- **No banco**, `coalesce(array_ndims(coluna), 1) = 1` nas duas colunas. Os checks são
+  **validados**, pelo mesmo motivo da `0025`: `perfis` é atualizado todo dia pelo job e pelo
+  webhook, e um check `not valid` deixaria uma linha antiga derrubar esses updates longe da
+  migration. Lista vazia e `areas_de_interesse` nula continuam aceitas, porque `array_ndims`
+  devolve nulo nas duas.
+- **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
+  vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
+  pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
+  log leva só o tipo da exceção e os 8 primeiros caracteres do id, entre reticências
+  (`trecho_do_id`), porque o `ValidationError` repete o valor do campo e o log do Actions é
+  público, e a auditoria de 17/09 já aponta como grave o `perfil_id` inteiro que o diário
+  imprime — o trecho acha a linha para quem tem o banco e não identifica ninguém sozinho.
+  `perfis_ilegiveis` conta as puladas e o resumo de operação
+  mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
+  do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
+  incompletas.
 
-## Toda execução se reporta
+Medido em 18/09, só leitura: dos 6 perfis, nenhum é multidimensional (4 com uma dimensão em
+`areas_de_interesse`, 2 com a lista vazia, 6 com uma dimensão em `habilidades`), então a
+migration aplica sem corrigir linha alguma. O cadastro (`concluir_meu_cadastro`) já recusava
+lista de listas com "lista inválida", porque cobra `jsonb_typeof(item) = 'string'`; o buraco
+era só o `update` direto, que o `grant` da `0002` e da `0006` permite. Limites: o Python pula a
+linha ilegível por qualquer causa, então um defeito nosso de conversão passa a esconder a pessoa
+em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julgar` e do
+`gabarito`, continua sem essa proteção, o que não alcança linha nova agora que o banco cobra a
+dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
+não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
+antes de outra pendente, o push dela pede `--include-all`.
 
-ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
-operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
-por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
-cancelled()` do workflow. O passo do radar tem timeout próprio (28 min, abaixo dos 30 do job)
-para o estouro contar como falha do passo: o GitHub trata o estouro do job como cancelamento,
-e a documentação não diz se `failure()` vale nesse caso.
-**Código de saída honesto e resumo que denuncia (18/09/2026).** Com o token do bot revogado o
-Telegram recusa tudo: ninguém recebia mensagem, o resumo também falhava, o processo terminava
-em zero e o Actions ficava verde. Agora `rodar` e `testar-local` levantam `ErroDeExecucao`
-(`pipeline.py`) e saem com código 1 em dois casos, cada um com teste próprio:
-- **o resumo não chegou ao chat de operação**: execução que não se relata não pode ser lida
-  como verde, e é o caso do token revogado. Sem `TELEGRAM_CHAT_ID` não há resumo e o critério
-  não vale.
-- **ninguém foi atendido por falha**: havia usuários na execução, nenhum recebeu mensagem
-  alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por **falha
-  de verdade** — revalidação indisponível, banco fora do ar, envio recusado pelo Telegram por
-  erro nosso ou indisponibilidade dele.
+## Eventos do site têm limite no banco (13/09/2026, `0023`)
 
-Não são falha, de propósito: o dia legítimo em que todos recebem "nenhuma vaga compatível"; a
-execução sem usuários ativos, inclusive `rodar --perfil` sem entrega a fazer; a execução em que
-parte falhou mas ao menos um recebeu, porque a falha de um usuário não derruba os outros e o
-resumo já mostra o número; o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
-nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`;
-e a **mensagem segurada** por vaga sem extração ou coleta incompleta, que é comportamento
-deliberado (ver "Falha parcial virava 'nenhuma vaga compatível'" e "Coleta resiliente"): a
-pessoa fica pendente para a execução seguinte e o resumo tem linha própria para o caso. Pintar
-isso de vermelho deixava toda entrega imediata cujo candidato ainda não foi extraído terminar
-em vermelho, e alarme que toca sozinho todo dia deixa de ser lido. Falha de verdade ao lado de
-uma mensagem segurada continua derrubando a execução.
-O `ErroDeExecucao` é levantado no `__main__`, depois de gravar o uso da Adzuna e de mandar o
-resumo, então a execução vermelha não desfaz o que entregou nem perde a linha `adzuna:diario`.
-O resumo ganhou, no estilo dos avisos que já tinha, o que só existia no log: "⚠️ Usuários sem
-mensagem por falha", "⚠️ Mensagens seguradas por vaga sem extração", "⚠️ Mensagens seguradas
-pela coleta incompleta", "⚠️ Usuários com envio não gravado" (a mensagem chegou e a linha de
-`envios` não: a pessoa recebe as mesmas vagas amanhã) e "⚠️ Limpeza de contas falhou:
-<motivo>", uma linha por motivo entre conta excluída e cadastro não confirmado. Limites
-aceitos: **um dia inteiro de Gemini fora deixa todos sem mensagem e a execução segue verde**,
-com "⚠️ Vagas sem extração" e "⚠️ Mensagens seguradas por vaga sem extração" no resumo — quem
-opera precisa ler o resumo, o código de saída não conta essa história; o mesmo vale para a
-Adzuna que não responde depois da primeira vaga. Quando o resumo não sai, o aviso do passo
-`if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal. E
-segue passando por verde o dia em que um recebeu e vinte falharam, que só o número no resumo
-denuncia.
-
-## Eventos do site têm limite no banco
-
-(13/09/2026, migration `0023`). A chave pública deixava
+A chave pública deixava
 inserir em `eventos_produto` sem fim, trocando de `sessao_id` a cada requisição e com 4 KB de
 propriedades, e banco cheio no plano gratuito fica só leitura, o que para cadastro, vínculo e
 diário. Evento `web` agora tem propriedades de até 256 bytes, no máximo 60 por sessão e 60 por
@@ -274,82 +275,49 @@ confere as linhas antigas, mas barra `update` futuro de linha web antiga maior q
 nada atualiza linha web. A `0023` pode ir ao banco antes do merge: o site atual já grava dentro
 dos limites.
 
-## O resumo mede o tamanho do banco (08/10/2026)
+## Aberturas, pausas e vínculos repetidos (16/09/2026, `0028`)
 
-A `0023` já dizia que banco cheio no plano gratuito fica só leitura e que isso para cadastro,
-vínculo e diário, mas o único limite que existia era o dos eventos do site. `pg_database_size`
-não era consultado em lugar nenhum do `radar/`, então ninguém sabia a que distância do teto o
-banco estava sem abrir o painel. O resumo de operação passa a trazer uma linha —
-`Tamanho do banco: 19,3 MB de 500,0 MB (4%)` — e um aviso a partir de
-`PROPORCAO_DE_ALERTA_DO_BANCO`, 70% dos 500 MB do plano. A consulta é
-`SQL_TAMANHO_DO_BANCO`, o limite é `LIMITE_DO_PLANO_EM_BYTES` e a leitura que falha só gera
-aviso no log, como a dos eventos do site: capacidade é sensor, não motivo para derrubar a
-execução. Sem migration: o papel que o job já usa lê `pg_database_size`.
-
-**Medição de 08/10/2026 em produção**, só leitura. Banco com 20.237.459 bytes, 19,3 MB dos
-500 MB do plano, 3,9%. `vagas` tem 2.586 linhas em 5.944 kB (2.354 bytes por linha com índices
-e TOAST), `avaliacoes` 3.179 linhas em 1.288 kB (415 bytes por linha), `envios` 927 linhas em
-232 kB e `eventos_produto` 613 linhas em 272 kB. `vagas` e `avaliacoes` somadas são 7.232 kB,
-36,6% do banco; os outros 12 MB são a base fixa do projeto (`auth`, catálogos, schemas do
-Supabase) e não encolhem com retenção nenhuma. De 29/09 a 08/10, com 4 perfis ativos, entraram
-70 vagas e 94 avaliações por dia, cerca de 0,2 MB por dia. Nesse ritmo o aviso de 70% chegaria
-em ~1.650 dias e o teto em ~2.400.
-
-**Por que 70% e não os 80% da cota da Adzuna.** O que importa aqui não é a proporção, é quantos
-dias sobram entre o aviso e o banco só leitura. `avaliacoes` escala com usuário, não com
-calendário: são ~23 avaliações por perfil por dia, então o cenário de divulgação que a própria
-`0023` usa (150 contas) dá ~3.500 avaliações (1,4 MB) e ~560 eventos (0,25 MB) por dia, perto de
-1,9 MB por dia — 350 MB em ~6 meses e 500 MB em ~9. A 70%, os 150 MB restantes são ~79 dias para
-decidir entre podar, mudar de plano ou pagar; a 80%, os 100 MB seriam ~53. E sob o abuso contínuo
-que a `0023` mediu (~35 MB por dia) os mesmos 150 MB são ~4 dias, mais de uma execução diária,
-que é o mínimo para o aviso chegar antes do teto. Hoje, a 3,9%, o limiar não toca sozinho.
-
-**Retenção de `vagas` e `avaliacoes` fica fora (08/10/2026).** A janela mais larga que o sistema
-usa é de 30 dias (`SQL_VAGAS_ENVIADAS_RECENTES`, as respostas de `SQL_ULTIMA_RESPOSTA_POR_VAGA`,
-`SQL_VAGAS_ENCERRADAS`, `SQL_AREAS_RECUSADAS` e a coorte do `metricas.sql`). Apagar vaga com
-`coletada_em` fora dela hoje tiraria 415 das 2.586 vagas, 16% da tabela e 606 kB de linhas: 3%
-do banco e 0,12% do plano. O que isso custaria, medido:
-
-- **A cascata não para nas avaliações.** `envios.vaga_id` é `on delete cascade` desde a `0001`,
-  então as 415 vagas levariam 305 avaliações **e 156 envios**. 15 desses envios são dos últimos
-  30 dias, dentro da coorte do `metricas.sql`, que conta entregas, aberturas, úteis e
-  irrelevantes a partir de `envios`: o funil perderia entrega já medida e `vagas_enviadas` cairia
-  sem nada ter mudado no produto.
-- **`eventos_produto.vaga_id` é `on delete set null`** (`0005`): 8 eventos ficariam sem vaga, 2
-  deles dos últimos 30 dias. `SQL_VAGAS_ENCERRADAS` e `SQL_AREAS_RECUSADAS` juntam evento e
-  `vagas`, então uma marcação de "Vaga encerrada" dentro da janela deixaria de tirar a vaga de
-  todos, e a subárea recusada deixaria de descontar o fator de interesse.
-- **O dedupe depende de `vagas`, não só de `envios`.** `ids_ja_enviadas` é vitalício e lê
-  `(fonte, id_externo)` de `vagas` junto com `envios`; a chave da duplicata mora em `vagas` e o
-  `envios` cascateia. Apagar a vaga apaga o par, não só o anúncio. Na prática a reentrega é
-  improvável — nenhuma vaga fora de 30 dias foi extraída na última semana, a Adzuna só devolve
-  anúncio com até `DIAS_RECENTES` dias e o maior intervalo medido entre coleta e extração foi de
-  8 dias — mas `coletada_em` não é atualizado no `on conflict` do `SQL_GUARDAR_VAGA`, então a
-  janela mede a primeira coleta, não a circulação.
-- **A exportação do titular encolhe.** `baixar_meus_dados()` (`0015`) devolve `avaliacoes` e
-  `envios` do dono; o perfil mais afetado perderia 209 das suas 896 avaliações, 23%. A política
-  de privacidade permite que o anúncio público permaneça no catálogo, então isso é capacidade e
-  não privacidade, mas é histórico que a pessoa hoje consegue baixar.
-- **`delete` não devolve espaço ao disco.** Linha apagada só fica morta e reutilizável dentro da
-  própria tabela; `pg_database_size` não cai sem `VACUUM FULL`, que trava a tabela. Retenção
-  atrasaria o crescimento, nunca seria a alavanca para destravar um banco já cheio.
-- **A variante conservadora rende menos ainda.** Apagar só vaga fora de 30 dias sem avaliação,
-  envio nem evento são 144 linhas e 148 kB, 0,03% do plano, e deixaria no catálogo as outras 342
-  vagas sem vínculo algum.
-
-Decisão: fica só o sensor. 0,12% do plano não paga 156 envios, o funil de 30 dias e 23% da
-exportação de um titular. Revisitar quando o aviso dos 70% chegar, ou antes se `vagas` e
-`avaliacoes` passarem de 100 MB. O pré-requisito para a retenção valer é trocar o
-`on delete cascade` de `envios.vaga_id` por `(fonte, id_externo)` guardado em `envios`, para o
-dedupe e o funil sobreviverem ao catálogo.
-
-Limites aceitos: `pg_database_size` mede o banco inteiro, inclusive `auth` e catálogos, e não é
-o mesmo número que o painel cobra como disco, que inclui WAL e overhead — o sensor serve para a
-tendência e o aviso, não para auditar o plano. Os 500 MB são constante no código: plano novo
-exige mexer em `LIMITE_DO_PLANO_EM_BYTES`. A leitura acontece uma vez por execução diária, então
-pico que enche o banco entre duas execuções não é visto antes de encher, e é para isso que existe
-o teto por hora da `0023`. E leitura que falha tira a linha do resumo sem dizer nada ali: o
-motivo fica só no log.
+O limite da `0023`
+só vale para evento `web`, e dois caminhos ainda gravavam sem fim: cada GET no link rastreável
+grava um `vaga_aberta`, então um script chamando em laço o link de uma mensagem encaminhada
+enchia `eventos_produto`; e cada volta de pausar e retomar por `update` direto na própria linha
+de `perfis` gravava um `entregas_pausadas`. Desvincular pela RPC e mandar `/start` de novo
+gravava um `telegram_vinculado` por volta, pelo mesmo gatilho da `0005`. O gatilho
+`z_descartar_eventos_repetidos` descarta, sem erro (`return null`), o `vaga_aberta` de um par
+`(perfil_id, vaga_id)` que já tem um, e o `entregas_pausadas` ou `telegram_vinculado` do mesmo
+perfil a menos de um dia (por `ocorrido_em`) do anterior. Descarte, e não `PT429` como na
+`0023`, porque o `update` de pausa não pode falhar por causa do evento e abrir de novo não é
+erro: o estado do perfil muda sempre, o motivo da pausa fica em `perfis.motivo_pausa` (o evento
+nunca o levou) e a `ir` redireciona como antes. Sem teto por hora nem aviso no resumo de
+operação: fica sempre a primeira ocorrência, então abuso não apaga evento legítimo, e o tamanho
+fica preso ao que o Radar controla, uma abertura por envio (`envios` tem chave
+`(perfil_id, vaga_id)`) e duas linhas por perfil por dia. Nenhum número muda porque os leitores
+já tratam repetição: o `metricas.sql` conta pares distintos com abertura depois do envio, a
+primeira abertura e pessoas distintas por etapa, e `perfis_vinculados` e `SQL_VAGAS_ENCERRADAS`
+perguntam se o evento existe; a encerrada quer abertura anterior ao voto, e a primeira é a mais
+antiga. A abertura trava o par com `pg_advisory_xact_lock` antes de conferir, para GETs
+simultâneos não passarem juntos; pausa e vínculo já são serializados pela trava da linha de
+`perfis`. O prefixo `z_` faz o gatilho rodar depois de `verificar_perfil_da_interacao`, e
+abertura de conta pausada segue recusada com `42501`. Medido em 16/09, só leitura: 379 eventos;
+41 `vaga_aberta` em 31 pares (24 com uma, 6 com duas, 1 com cinco), repetições de 1 s a 37 min,
+no máximo 7 aberturas por perfil numa hora e 7 no banco inteiro; 2 `entregas_pausadas`, do mesmo
+perfil, a 5 dias uma da outra; 4 `telegram_vinculado`, um por perfil. Aplicada a esse histórico,
+a regra descartaria as 10 aberturas repetidas, e o funil de 7, 30 e 365 dias e as vagas
+encerradas saem iguais. `tests/web/eventos_repetidos_test.ts` monta o mesmo histórico com e sem
+o gatilho (repetições, feedback corrigido, voto de encerrada antes e depois da abertura, pausas e
+revínculos em laço) e exige as mesmas métricas. Limites: a segunda pausa e o revínculo do mesmo
+dia e as reaberturas somem do histórico bruto, e um leitor futuro de "última abertura" ou de
+pausas por dia não os terá; GET em laço ainda executa a `ir` com duas consultas, o que não cresce
+o banco mas gasta invocações de Edge Function, que têm cota própria no plano; a corrida entre
+GETs simultâneos não é testada, porque o PGlite tem uma conexão só, e o descarte não foi
+exercitado pelo PostgREST publicado (a `ir` não pede a linha de volta, e o esperado é 201 com
+zero linhas; se vier erro, o `catch` da `ir` já segue para a vaga); e o feedback (`vaga_util`,
+`vaga_irrelevante`) segue sem limite, porque a utilidade semanal lê a última resposta de cada
+semana e descartar resposta igual à anterior mudaria a semana seguinte; tocar os botões em laço
+exige automatizar uma conta do Telegram, e é o próximo caminho a fechar se aparecer.
+Publicação: `db push` da `0028` antes ou depois do merge, tanto faz, porque nada no código
+depende dela; a `ir` não muda e não precisa de deploy. Se a `0029` ou a `0030` subirem antes, o
+push da `0028` pede `--include-all`.
 
 ## Origem da visita tem lista de propriedades (05/10/2026, `0032`)
 
@@ -472,109 +440,240 @@ integrantes, mais as contas de teste), se a tabela entra numa migration própria
 mudança no `metricas.sql`, e se o resumo diário também as exclui. Até lá, o número de perfis
 da coorte inclui a equipe, e a leitura precisa dizer isso.
 
-## Aberturas, pausas e vínculos repetidos
+## Avaliação, envio e ativação
 
-(16/09/2026, migration `0028`). O limite da `0023`
-só vale para evento `web`, e dois caminhos ainda gravavam sem fim: cada GET no link rastreável
-grava um `vaga_aberta`, então um script chamando em laço o link de uma mensagem encaminhada
-enchia `eventos_produto`; e cada volta de pausar e retomar por `update` direto na própria linha
-de `perfis` gravava um `entregas_pausadas`. Desvincular pela RPC e mandar `/start` de novo
-gravava um `telegram_vinculado` por volta, pelo mesmo gatilho da `0005`. O gatilho
-`z_descartar_eventos_repetidos` descarta, sem erro (`return null`), o `vaga_aberta` de um par
-`(perfil_id, vaga_id)` que já tem um, e o `entregas_pausadas` ou `telegram_vinculado` do mesmo
-perfil a menos de um dia (por `ocorrido_em`) do anterior. Descarte, e não `PT429` como na
-`0023`, porque o `update` de pausa não pode falhar por causa do evento e abrir de novo não é
-erro: o estado do perfil muda sempre, o motivo da pausa fica em `perfis.motivo_pausa` (o evento
-nunca o levou) e a `ir` redireciona como antes. Sem teto por hora nem aviso no resumo de
-operação: fica sempre a primeira ocorrência, então abuso não apaga evento legítimo, e o tamanho
-fica preso ao que o Radar controla, uma abertura por envio (`envios` tem chave
-`(perfil_id, vaga_id)`) e duas linhas por perfil por dia. Nenhum número muda porque os leitores
-já tratam repetição: o `metricas.sql` conta pares distintos com abertura depois do envio, a
-primeira abertura e pessoas distintas por etapa, e `perfis_vinculados` e `SQL_VAGAS_ENCERRADAS`
-perguntam se o evento existe; a encerrada quer abertura anterior ao voto, e a primeira é a mais
-antiga. A abertura trava o par com `pg_advisory_xact_lock` antes de conferir, para GETs
-simultâneos não passarem juntos; pausa e vínculo já são serializados pela trava da linha de
-`perfis`. O prefixo `z_` faz o gatilho rodar depois de `verificar_perfil_da_interacao`, e
-abertura de conta pausada segue recusada com `42501`. Medido em 16/09, só leitura: 379 eventos;
-41 `vaga_aberta` em 31 pares (24 com uma, 6 com duas, 1 com cinco), repetições de 1 s a 37 min,
-no máximo 7 aberturas por perfil numa hora e 7 no banco inteiro; 2 `entregas_pausadas`, do mesmo
-perfil, a 5 dias uma da outra; 4 `telegram_vinculado`, um por perfil. Aplicada a esse histórico,
-a regra descartaria as 10 aberturas repetidas, e o funil de 7, 30 e 365 dias e as vagas
-encerradas saem iguais. `tests/web/eventos_repetidos_test.ts` monta o mesmo histórico com e sem
-o gatilho (repetições, feedback corrigido, voto de encerrada antes e depois da abertura, pausas e
-revínculos em laço) e exige as mesmas métricas. Limites: a segunda pausa e o revínculo do mesmo
-dia e as reaberturas somem do histórico bruto, e um leitor futuro de "última abertura" ou de
-pausas por dia não os terá; GET em laço ainda executa a `ir` com duas consultas, o que não cresce
-o banco mas gasta invocações de Edge Function, que têm cota própria no plano; a corrida entre
-GETs simultâneos não é testada, porque o PGlite tem uma conexão só, e o descarte não foi
-exercitado pelo PostgREST publicado (a `ir` não pede a linha de volta, e o esperado é 201 com
-zero linhas; se vier erro, o `catch` da `ir` já segue para a vaga); e o feedback (`vaga_util`,
-`vaga_irrelevante`) segue sem limite, porque a utilidade semanal lê a última resposta de cada
-semana e descartar resposta igual à anterior mudaria a semana seguinte; tocar os botões em laço
-exige automatizar uma conta do Telegram, e é o próximo caminho a fechar se aparecer.
-Publicação: `db push` da `0028` antes ou depois do merge, tanto faz, porque nada no código
-depende dela; a `ir` não muda e não precisa de deploy. Se a `0029` ou a `0030` subirem antes, o
-push da `0028` pede `--include-all`.
+- **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
+  que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
+  `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
+- **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
+  mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
+  órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
+- **Ativação operacional** é a primeira entrega bem-sucedida com ao menos uma recomendação;
+  `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`. As
+  [métricas](metricas.md) separam esse marco da ativação de produto.
+- No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
+  usuário viram aviso. Falhas de revalidação são contadas por usuário no resumo e bloqueiam a
+  mensagem afetada; o resumo distingue quem ficou sem entrega de quem já recebeu antes da falha.
 
-## Textos do perfil têm teto no banco
+## Toda execução se reporta (18/09/2026)
 
-(13/09/2026, migration `0025`). Uma conta comum gravava
-210 mil caracteres em `perfis.curso` por `update` direto, e o cadastro guardava em
-`cadastros_pendentes` qualquer chave extra do JSON. Os checks de `perfis` são **validados**, não
-`not valid` como o da `0023`: `perfis` é atualizado todo dia pelo job e pelo webhook, às vezes em
-lote, e um check `not valid` deixaria uma linha antiga acima do teto derrubar esses updates longe
-da migration. Validado, um perfil acima do teto faz o `db push` falhar inteiro, sem aplicar nada,
-e o erro nomeia a constraint: corrigir a linha e repetir. `validar_cadastro_radar` passou a
-recusar chave desconhecida no cadastro e no perfil; todas as versões do site mandaram só as
-conhecidas. Grants e policies não mudam; a função nova do check fica com o grant padrão, como a
-`habilidades_do_perfil_validas` da `0018`, e precisa dele: o check roda com o papel de quem grava,
-e sem `execute` o update do próprio dono falha. Pode ir ao banco antes do merge: o site atual já limita
-cidade e habilidade e o cadastro já passava pela validação; só um curso de mais de 200 caracteres
-digitado na edição seria recusado, com a mensagem genérica de erro. Continua sem teto nosso o
-`raw_user_meta_data` do Auth, que o navegador escreve pelo `signUp` e pelo `updateUser`.
+Cada execução manda um resumo ao `TELEGRAM_CHAT_ID`, que com banco passa a ser o chat de
+operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
+por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure() ||
+cancelled()` do workflow. O passo do radar tem timeout próprio (28 min, abaixo dos 30 do job)
+para o estouro contar como falha do passo: o GitHub trata o estouro do job como cancelamento,
+e a documentação não diz se `failure()` vale nesse caso.
+**Código de saída honesto e resumo que denuncia (18/09/2026).** Com o token do bot revogado o
+Telegram recusa tudo: ninguém recebia mensagem, o resumo também falhava, o processo terminava
+em zero e o Actions ficava verde. Agora `rodar` e `testar-local` levantam `ErroDeExecucao`
+(`pipeline.py`) e saem com código 1 em dois casos, cada um com teste próprio:
+- **o resumo não chegou ao chat de operação**: execução que não se relata não pode ser lida
+  como verde, e é o caso do token revogado. Sem `TELEGRAM_CHAT_ID` não há resumo e o critério
+  não vale.
+- **ninguém foi atendido por falha**: havia usuários na execução, nenhum recebeu mensagem
+  alguma (nem recomendação nem "nenhuma vaga compatível") e ao menos um ficou sem por **falha
+  de verdade** — revalidação indisponível, banco fora do ar, envio recusado pelo Telegram por
+  erro nosso ou indisponibilidade dele.
 
-## Listas do perfil em uma dimensão
+Não são falha, de propósito: o dia legítimo em que todos recebem "nenhuma vaga compatível"; a
+execução sem usuários ativos, inclusive `rodar --perfil` sem entrega a fazer; a execução em que
+parte falhou mas ao menos um recebeu, porque a falha de um usuário não derruba os outros e o
+resumo já mostra o número; o destinatário que bloqueou o bot ou sumiu (o 403 e o 400 que
+nomeia o destinatário), que é escolha dele e já leva à pausa por `FALHAS_DE_ENVIO_ATE_PAUSAR`;
+e a **mensagem segurada** por vaga sem extração ou coleta incompleta, que é comportamento
+deliberado (ver "Falha parcial virava 'nenhuma vaga compatível'" e "Coleta resiliente"): a
+pessoa fica pendente para a execução seguinte e o resumo tem linha própria para o caso. Pintar
+isso de vermelho deixava toda entrega imediata cujo candidato ainda não foi extraído terminar
+em vermelho, e alarme que toca sozinho todo dia deixa de ser lido. Falha de verdade ao lado de
+uma mensagem segurada continua derrubando a execução.
+O `ErroDeExecucao` é levantado no `__main__`, depois de gravar o uso da Adzuna e de mandar o
+resumo, então a execução vermelha não desfaz o que entregou nem perde a linha `adzuna:diario`.
+O resumo ganhou, no estilo dos avisos que já tinha, o que só existia no log: "⚠️ Usuários sem
+mensagem por falha", "⚠️ Mensagens seguradas por vaga sem extração", "⚠️ Mensagens seguradas
+pela coleta incompleta", "⚠️ Usuários com envio não gravado" (a mensagem chegou e a linha de
+`envios` não: a pessoa recebe as mesmas vagas amanhã) e "⚠️ Limpeza de contas falhou:
+<motivo>", uma linha por motivo entre conta excluída e cadastro não confirmado. Limites
+aceitos: **um dia inteiro de Gemini fora deixa todos sem mensagem e a execução segue verde**,
+com "⚠️ Vagas sem extração" e "⚠️ Mensagens seguradas por vaga sem extração" no resumo — quem
+opera precisa ler o resumo, o código de saída não conta essa história; o mesmo vale para a
+Adzuna que não responde depois da primeira vaga. Quando o resumo não sai, o aviso do passo
+`if: failure()` usa o mesmo token e falha junto, então o vermelho do run é o único sinal. E
+segue passando por verde o dia em que um recebeu e vinte falharam, que só o número no resumo
+denuncia.
 
-(18/09/2026, migration `0031`). Qualquer conta cadastrada
-derrubava o diário de todo mundo: um `update` direto gravava `perfis.areas_de_interesse` como
-lista de listas, porque o `<@` da `0017` e o `cardinality` da `0025` achatam a dimensão e só
-olham o conteúdo, e o Python quebrava com `TypeError` ao converter os perfis, antes da coleta.
-Ninguém recebia mensagem, o resumo de operação não saía e o dia seguinte repetia. Em
-`habilidades` o valor já era recusado, mas por acidente: o `array_position(valor, null)` da
-`0018` levanta `0A000` ("searching for elements in multidimensional arrays is not supported"),
-que some se aquela função for reescrita. A correção é nas duas camadas:
-- **No banco**, `coalesce(array_ndims(coluna), 1) = 1` nas duas colunas. Os checks são
-  **validados**, pelo mesmo motivo da `0025`: `perfis` é atualizado todo dia pelo job e pelo
-  webhook, e um check `not valid` deixaria uma linha antiga derrubar esses updates longe da
-  migration. Lista vazia e `areas_de_interesse` nula continuam aceitas, porque `array_ndims`
-  devolve nulo nas duas.
-- **No Python**, `listar_ativos` converte linha a linha (`usuarios_das_linhas`): a linha que não
-  vira `Usuario` (`TypeError` ou `ValueError`, que cobre o `ValidationError` do pydantic) é
-  pulada e os demais seguem atendidos; falha da consulta inteira continua sendo a única fatal. O
-  log leva só o tipo da exceção e os 8 primeiros caracteres do id, entre reticências
-  (`trecho_do_id`), porque o `ValidationError` repete o valor do campo e o log do Actions é
-  público, e a auditoria de 17/09 já aponta como grave o `perfil_id` inteiro que o diário
-  imprime — o trecho acha a linha para quem tem o banco e não identifica ninguém sozinho.
-  `perfis_ilegiveis` conta as puladas e o resumo de operação
-  mostra "⚠️ Perfis com dados inválidos, fora da execução: N"; o número vem do repositório, não
-  do `ResumoDaExecucao`, porque a leitura acontece antes do pipeline, como as coletas
-  incompletas.
+## O resumo mede o tamanho do banco (08/10/2026)
 
-Medido em 18/09, só leitura: dos 6 perfis, nenhum é multidimensional (4 com uma dimensão em
-`areas_de_interesse`, 2 com a lista vazia, 6 com uma dimensão em `habilidades`), então a
-migration aplica sem corrigir linha alguma. O cadastro (`concluir_meu_cadastro`) já recusava
-lista de listas com "lista inválida", porque cobra `jsonb_typeof(item) = 'string'`; o buraco
-era só o `update` direto, que o `grant` da `0002` e da `0006` permite. Limites: o Python pula a
-linha ilegível por qualquer causa, então um defeito nosso de conversão passa a esconder a pessoa
-em vez de parar o job, e só o resumo denuncia; `converter_em_entrega`, do `julgar` e do
-`gabarito`, continua sem essa proteção, o que não alcança linha nova agora que o banco cobra a
-dimensão. Publicação: `db push` da `0031` antes ou depois do merge, tanto faz, porque o `radar/`
-não depende dela e o site nunca gravou lista de listas; sem deploy de função. Se a `0031` subir
-antes de outra pendente, o push dela pede `--include-all`.
+A `0023` já dizia que banco cheio no plano gratuito fica só leitura e que isso para cadastro,
+vínculo e diário, mas o único limite que existia era o dos eventos do site. `pg_database_size`
+não era consultado em lugar nenhum do `radar/`, então ninguém sabia a que distância do teto o
+banco estava sem abrir o painel. O resumo de operação passa a trazer uma linha —
+`Tamanho do banco: 19,3 MB de 500,0 MB (4%)` — e um aviso a partir de
+`PROPORCAO_DE_ALERTA_DO_BANCO`, 70% dos 500 MB do plano. A consulta é
+`SQL_TAMANHO_DO_BANCO`, o limite é `LIMITE_DO_PLANO_EM_BYTES` e a leitura que falha só gera
+aviso no log, como a dos eventos do site: capacidade é sensor, não motivo para derrubar a
+execução. Sem migration: o papel que o job já usa lê `pg_database_size`.
+
+**Medição de 08/10/2026 em produção**, só leitura. Banco com 20.237.459 bytes, 19,3 MB dos
+500 MB do plano, 3,9%. `vagas` tem 2.586 linhas em 5.944 kB (2.354 bytes por linha com índices
+e TOAST), `avaliacoes` 3.179 linhas em 1.288 kB (415 bytes por linha), `envios` 927 linhas em
+232 kB e `eventos_produto` 613 linhas em 272 kB. `vagas` e `avaliacoes` somadas são 7.232 kB,
+36,6% do banco; os outros 12 MB são a base fixa do projeto (`auth`, catálogos, schemas do
+Supabase) e não encolhem com retenção nenhuma. De 29/09 a 08/10, com 4 perfis ativos, entraram
+70 vagas e 94 avaliações por dia, cerca de 0,2 MB por dia. Nesse ritmo o aviso de 70% chegaria
+em ~1.650 dias e o teto em ~2.400.
+
+**Por que 70% e não os 80% da cota da Adzuna.** O que importa aqui não é a proporção, é quantos
+dias sobram entre o aviso e o banco só leitura. `avaliacoes` escala com usuário, não com
+calendário: são ~23 avaliações por perfil por dia, então o cenário de divulgação que a própria
+`0023` usa (150 contas) dá ~3.500 avaliações (1,4 MB) e ~560 eventos (0,25 MB) por dia, perto de
+1,9 MB por dia — 350 MB em ~6 meses e 500 MB em ~9. A 70%, os 150 MB restantes são ~79 dias para
+decidir entre podar, mudar de plano ou pagar; a 80%, os 100 MB seriam ~53. E sob o abuso contínuo
+que a `0023` mediu (~35 MB por dia) os mesmos 150 MB são ~4 dias, mais de uma execução diária,
+que é o mínimo para o aviso chegar antes do teto. Hoje, a 3,9%, o limiar não toca sozinho.
+
+**Retenção de `vagas` e `avaliacoes` fica fora (08/10/2026).** A janela mais larga que o sistema
+usa é de 30 dias (`SQL_VAGAS_ENVIADAS_RECENTES`, as respostas de `SQL_ULTIMA_RESPOSTA_POR_VAGA`,
+`SQL_VAGAS_ENCERRADAS`, `SQL_AREAS_RECUSADAS` e a coorte do `metricas.sql`). Apagar vaga com
+`coletada_em` fora dela hoje tiraria 415 das 2.586 vagas, 16% da tabela e 606 kB de linhas: 3%
+do banco e 0,12% do plano. O que isso custaria, medido:
+
+- **A cascata não para nas avaliações.** `envios.vaga_id` é `on delete cascade` desde a `0001`,
+  então as 415 vagas levariam 305 avaliações **e 156 envios**. 15 desses envios são dos últimos
+  30 dias, dentro da coorte do `metricas.sql`, que conta entregas, aberturas, úteis e
+  irrelevantes a partir de `envios`: o funil perderia entrega já medida e `vagas_enviadas` cairia
+  sem nada ter mudado no produto.
+- **`eventos_produto.vaga_id` é `on delete set null`** (`0005`): 8 eventos ficariam sem vaga, 2
+  deles dos últimos 30 dias. `SQL_VAGAS_ENCERRADAS` e `SQL_AREAS_RECUSADAS` juntam evento e
+  `vagas`, então uma marcação de "Vaga encerrada" dentro da janela deixaria de tirar a vaga de
+  todos, e a subárea recusada deixaria de descontar o fator de interesse.
+- **O dedupe depende de `vagas`, não só de `envios`.** `ids_ja_enviadas` é vitalício e lê
+  `(fonte, id_externo)` de `vagas` junto com `envios`; a chave da duplicata mora em `vagas` e o
+  `envios` cascateia. Apagar a vaga apaga o par, não só o anúncio. Na prática a reentrega é
+  improvável — nenhuma vaga fora de 30 dias foi extraída na última semana, a Adzuna só devolve
+  anúncio com até `DIAS_RECENTES` dias e o maior intervalo medido entre coleta e extração foi de
+  8 dias — mas `coletada_em` não é atualizado no `on conflict` do `SQL_GUARDAR_VAGA`, então a
+  janela mede a primeira coleta, não a circulação.
+- **A exportação do titular encolhe.** `baixar_meus_dados()` (`0015`) devolve `avaliacoes` e
+  `envios` do dono; o perfil mais afetado perderia 209 das suas 896 avaliações, 23%. A política
+  de privacidade permite que o anúncio público permaneça no catálogo, então isso é capacidade e
+  não privacidade, mas é histórico que a pessoa hoje consegue baixar.
+- **`delete` não devolve espaço ao disco.** Linha apagada só fica morta e reutilizável dentro da
+  própria tabela; `pg_database_size` não cai sem `VACUUM FULL`, que trava a tabela. Retenção
+  atrasaria o crescimento, nunca seria a alavanca para destravar um banco já cheio.
+- **A variante conservadora rende menos ainda.** Apagar só vaga fora de 30 dias sem avaliação,
+  envio nem evento são 144 linhas e 148 kB, 0,03% do plano, e deixaria no catálogo as outras 342
+  vagas sem vínculo algum.
+
+Decisão: fica só o sensor. 0,12% do plano não paga 156 envios, o funil de 30 dias e 23% da
+exportação de um titular. Revisitar quando o aviso dos 70% chegar, ou antes se `vagas` e
+`avaliacoes` passarem de 100 MB. O pré-requisito para a retenção valer é trocar o
+`on delete cascade` de `envios.vaga_id` por `(fonte, id_externo)` guardado em `envios`, para o
+dedupe e o funil sobreviverem ao catálogo.
+
+Limites aceitos: `pg_database_size` mede o banco inteiro, inclusive `auth` e catálogos, e não é
+o mesmo número que o painel cobra como disco, que inclui WAL e overhead — o sensor serve para a
+tendência e o aviso, não para auditar o plano. Os 500 MB são constante no código: plano novo
+exige mexer em `LIMITE_DO_PLANO_EM_BYTES`. A leitura acontece uma vez por execução diária, então
+pico que enche o banco entre duas execuções não é visto antes de encher, e é para isso que existe
+o teto por hora da `0023`. E leitura que falha tira a linha do resumo sem dizer nada ali: o
+motivo fica só no log.
+
+## Texto que o Postgres recusa sai na entrada (16/09/2026)
+
+Dois caracteres vindos da fonte ou
+da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo de 500 caracteres
+da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
+levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
+antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
+(a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
+levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
+extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
+vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a
+retenção da `0022` não contar o dia e o envio não ser gravado, e a mesma mensagem voltava todo
+dia. As duas falhas foram reproduzidas num Postgres local com todas as migrations, rodando o
+pipeline com o coletor da Adzuna, o agy e o Telegram atrás de `httpx.MockTransport`. A limpeza é
+feita uma vez, nos modelos: `Vaga` e `ExtracaoDaVaga` passam todo texto por
+`sem_caracteres_invalidos` (`domain/texto.py`), que tira NUL e surrogate solto e junta as duas
+metades de um emoji que chegam separadas; nenhum outro caractere muda (acento, travessão, `<`,
+`&`, emoji inteiro, `�`). O validador da `Vaga` cobre os três coletores, e o da extração cobre
+a resposta do Gemini, a do agy e a leitura do cache; o enriquecimento limpa a descrição da
+página por conta própria, porque o `model_copy` não valida. A identidade das vagas guardadas não
+muda, porque o banco nunca aceitou esses caracteres, e o schema da extração é o mesmo:
+`VERSAO_DA_EXTRACAO` segue `7efdbc95`. Como defesa, `guardar_extracoes`,
+`registrar_vagas_sem_extracao`, `guardar_avaliacoes` e `registrar_envios` tratam o
+`UnicodeEncodeError` como falha do banco (`FALHAS_AO_GRAVAR_TEXTO`): aviso do dia, não queda.
+Medido em 16/09, só leitura: nenhuma das 1.003 vagas nem das 790 extrações tem `�` ou NUL
+escapado, e nenhuma das 966 vagas da Adzuna tem emoji ou outro caractere fora do plano básico;
+as 18 com emoji são da Gupy, com a descrição inteira. Não se sabe se a Adzuna manda esses
+caracteres, e a correção é para não depender disso. Limites: gravar cada extração em separado,
+para uma ruim não levar as outras, ficou de fora, porque depois da limpeza nenhum texto da
+extração é recusado e o que sobra para falhar é o banco inteiro; o `model_validate_json` recusa
+a resposta do Gemini inteira se ela trouxer um surrogate solto escapado (erro de avaliação, o
+lote se divide até isolar a vaga), o que só acontece se o modelo o inventar, já que o prompt sai
+limpo; corpo da Adzuna com byte UTF-8 inválido continua sendo corpo que não é JSON (ver "Coleta
+resiliente"); e os testes do storage são de integração, fora do CI. Publicação: sem migration
+nem deploy.
+
+## Identificador de perfil não vai inteiro ao log (08/10/2026)
+
+O repositório é público e o log do Actions também, então qualquer visitante lia no job diário o
+`id` de `perfis` de quem estava sendo atendido. A auditoria de 17/09 já apontava isso como grave
+(é o que motivou o `trecho_do_id` da `0031`, na seção "Listas do perfil em uma dimensão"), e a de
+07/10 o encontrou aberto: 27 escritas do `radar/` mandavam o id inteiro, entre elas as 8 de
+"usuário %s" do `pipeline.py`, a trava não liberada do `storage/postgres.py`, as duas da
+`entrega_imediata.py` e o `print` de "Perfil ... sem entrega a fazer" do `__main__.py`.
+
+- **Um lugar só decide a forma do identificador.** `trecho_do_id` saiu do `storage/postgres.py`
+  para `domain/identificadores.py`, porque agora o pipeline, a CLI, a entrega imediata e o
+  relatório do juiz também o usam e nenhum deles deve depender do driver do banco. Ele devolve os
+  8 primeiros caracteres entre reticências (`...a1b2c3d4...`), então a mensagem diz sozinha que o
+  identificador está cortado e nenhum texto de log precisou mudar — só a forma do id.
+- **8 caracteres continuam servindo.** São 4 bilhões de combinações: acham a linha no banco de
+  quem já tem acesso a ele (`where id::text like '...%'`), com colisão improvável nos perfis que
+  existem, e não identificam ninguém para quem só tem o log. Mais curto começaria a casar com
+  várias linhas; mais longo não acrescenta diagnóstico e aproxima o id inteiro, que é o que a
+  auditoria proíbe. Nenhum hash novo: o trecho já resolve e um hash não se procura no banco.
+- **O input do workflow era o pior caso.** `radar-diario.yml` recebia o id em
+  `env: PERFIL: ${{ inputs.perfil }}`; como input de `workflow_dispatch` não é segredo, o runner
+  imprimia o bloco `env:` sem máscara e o id vazava em **toda** entrega imediata, inclusive nas
+  bem-sucedidas. Agora o primeiro passo do job lê o id de `$GITHUB_EVENT_PATH` com `jq` e registra
+  `::add-mask::`, que vale pelo resto do job; o passo do radar lê o payload do mesmo jeito e segue
+  chamando `rodar --perfil`. Mascarar num passo que recebesse o input por `env:` não resolveria:
+  esse passo imprimiria o valor antes de a máscara existir. E o id não viaja por `GITHUB_ENV`
+  porque isso daria a quem dispara o job uma forma de escrever outras variáveis de ambiente no
+  passo que tem os segredos de produção.
+- **Testes que cobram as duas pontas.** `tests/test_id_no_log.py` percorre o AST do `radar/` e
+  recusa `logger`/`print` que receba `usuario.id` ou `apenas_o_perfil` fora de `trecho_do_id`,
+  mais os casos por `caplog` da entrega imediata e da seleção do perfil;
+  `tests/test_workflows.py` recusa `${{ inputs.` dentro de bloco `env:` sem máscara registrada
+  antes, em qualquer workflow.
+
+Limites aceitos: a máscara cobre o log do job, não o que a página da execução mostra sobre o
+disparo — conferir numa execução real antes de considerar o id fora de alcance público. O resumo
+de operação nunca mostrou identificador, e o relatório do juiz, que mostrava os mesmos 8
+caracteres por conta própria, passou a usar a função; o chat de operação continua recebendo o id
+do perfil na mensagem livre encaminhada, que é privado da equipe. A
+descrição de erro do Telegram vai ao log como o Telegram a escreveu: se um dia ela citar o
+destinatário, o `chat_id` entra no log por esse caminho. Os arquivos de rotulagem do `julgar` e
+do `gabarito` continuam gravando `perfil_id` inteiro: são locais e não versionados, mas um deles
+commitado vaza o id. Os logs do Supabase e do Cloudflare não entram nessa regra porque são
+privados das contas; a `telegram-webhook` não escreve o id no `console`, só o status do disparo.
+
+## SQL aplicado fora do CLI não entra no histórico de migrations (06/09/2026)
+
+As `0014`–`0016`
+tinham todos os objetos no banco e nenhuma linha em `supabase_migrations.schema_migrations`.
+Como o `db push` grava o registro na mesma transação em que aplica, três aplicadas e nenhuma
+registrada denunciam SQL rodado direto — pelo painel, por `db query` ou por psql. O efeito só
+aparece depois: com a coluna `remote` vazia, o push seguinte tenta reaplicá-las e quebra no
+primeiro `add column` de coluna existente, deixando a migration nova pela metade. Foi
+reconciliado com `supabase migration repair --status applied 0014 0015 0016`, que só grava o
+registro e não reexecuta SQL. **Conferir `supabase migration list --linked` depois de aplicar e
+antes do próximo push** — é o que torna visível a regra de nunca aplicar pelo painel.
 
 ## Entrega imediata (fase D, 05/09/2026)
 
-ao gravar o `chat_id`, a `telegram-webhook`
+Ao gravar o `chat_id`, a `telegram-webhook`
 dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
 (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
 espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
@@ -644,55 +743,10 @@ e o link `/?conta`. Se não acha, a resposta de vínculo de sempre.
   republicada sem o segredo, a pessoa recebe a resposta honesta acima.
 - **Não grava nada no banco.** O texto não vira evento nem linha: fica só no chat de operação,
   onde a equipe já recebe o resumo diário.
-- **Pendente da equipe:** a Política de Privacidade precisa dizer que a equipe lê as mensagens
-  enviadas ao bot, e a mudança de texto legal muda a versão. Até lá, publicar a função é decisão
-  de quem revisar o PR. Não há limite por pessoa: quem está vinculado pode encher o chat de
+- **Política:** desde a versão `2026-10-05` a Política de Privacidade diz que a equipe lê as
+  mensagens enviadas ao bot. Não há limite por pessoa: quem está vinculado pode encher o chat de
   operação, e o primeiro sinal de abuso pede um teto por perfil por hora.
 
-## Identificador de perfil não vai inteiro ao log (08/10/2026)
-
-O repositório é público e o log do Actions também, então qualquer visitante lia no job diário o
-`id` de `perfis` de quem estava sendo atendido. A auditoria de 17/09 já apontava isso como grave
-(é o que motivou o `trecho_do_id` da `0031`, na seção "Listas do perfil em uma dimensão"), e a de
-07/10 o encontrou aberto: 27 escritas do `radar/` mandavam o id inteiro, entre elas as 8 de
-"usuário %s" do `pipeline.py`, a trava não liberada do `storage/postgres.py`, as duas da
-`entrega_imediata.py` e o `print` de "Perfil ... sem entrega a fazer" do `__main__.py`.
-
-- **Um lugar só decide a forma do identificador.** `trecho_do_id` saiu do `storage/postgres.py`
-  para `domain/identificadores.py`, porque agora o pipeline, a CLI, a entrega imediata e o
-  relatório do juiz também o usam e nenhum deles deve depender do driver do banco. Ele devolve os
-  8 primeiros caracteres entre reticências (`...a1b2c3d4...`), então a mensagem diz sozinha que o
-  identificador está cortado e nenhum texto de log precisou mudar — só a forma do id.
-- **8 caracteres continuam servindo.** São 4 bilhões de combinações: acham a linha no banco de
-  quem já tem acesso a ele (`where id::text like '...%'`), com colisão improvável nos perfis que
-  existem, e não identificam ninguém para quem só tem o log. Mais curto começaria a casar com
-  várias linhas; mais longo não acrescenta diagnóstico e aproxima o id inteiro, que é o que a
-  auditoria proíbe. Nenhum hash novo: o trecho já resolve e um hash não se procura no banco.
-- **O input do workflow era o pior caso.** `radar-diario.yml` recebia o id em
-  `env: PERFIL: ${{ inputs.perfil }}`; como input de `workflow_dispatch` não é segredo, o runner
-  imprimia o bloco `env:` sem máscara e o id vazava em **toda** entrega imediata, inclusive nas
-  bem-sucedidas. Agora o primeiro passo do job lê o id de `$GITHUB_EVENT_PATH` com `jq` e registra
-  `::add-mask::`, que vale pelo resto do job; o passo do radar lê o payload do mesmo jeito e segue
-  chamando `rodar --perfil`. Mascarar num passo que recebesse o input por `env:` não resolveria:
-  esse passo imprimiria o valor antes de a máscara existir. E o id não viaja por `GITHUB_ENV`
-  porque isso daria a quem dispara o job uma forma de escrever outras variáveis de ambiente no
-  passo que tem os segredos de produção.
-- **Testes que cobram as duas pontas.** `tests/test_id_no_log.py` percorre o AST do `radar/` e
-  recusa `logger`/`print` que receba `usuario.id` ou `apenas_o_perfil` fora de `trecho_do_id`,
-  mais os casos por `caplog` da entrega imediata e da seleção do perfil;
-  `tests/test_workflows.py` recusa `${{ inputs.` dentro de bloco `env:` sem máscara registrada
-  antes, em qualquer workflow.
-
-Limites aceitos: a máscara cobre o log do job, não o que a página da execução mostra sobre o
-disparo — conferir numa execução real antes de considerar o id fora de alcance público. O resumo
-de operação nunca mostrou identificador, e o relatório do juiz, que mostrava os mesmos 8
-caracteres por conta própria, passou a usar a função; o chat de operação continua recebendo o id
-do perfil na mensagem livre encaminhada, que é privado da equipe. A
-descrição de erro do Telegram vai ao log como o Telegram a escreveu: se um dia ela citar o
-destinatário, o `chat_id` entra no log por esse caminho. Os arquivos de rotulagem do `julgar` e
-do `gabarito` continuam gravando `perfil_id` inteiro: são locais e não versionados, mas um deles
-commitado vaza o id. Os logs do Supabase e do Cloudflare não entram nessa regra porque são
-privados das contas; a `telegram-webhook` não escreve o id no `console`, só o status do disparo.
 ## O tratamento da requisição das funções sai do index (08/10/2026)
 
 A auditoria de 07/10 mediu que o `index.ts` das duas Edge Functions não era importado por teste

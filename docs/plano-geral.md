@@ -1,313 +1,236 @@
 # Plano geral
 
-**Revisado em 19/09/2026** contra o código da `main` e, no Supabase, contra o histórico de
-migrations e a lista de funções publicadas; o endereço e a hospedagem foram atualizados em
-03/10/2026 (seção 2, itens 1 e 2). A expansão para diferentes áreas foi autorizada em
-08/09 e as entregas locais de cadastro, landing, métricas e pausa (O00–R03) estão concluídas.
-Validação com estudantes e decisões externas continuam pendentes de evidência.
+**Revisado em 16/10/2026** contra o código da `main` e o GitHub; migrations, Edge Functions e
+webhook do Telegram conferidos em 17/10, só leitura. O Cloudflare e o cron-job.org não foram
+reconsultados nesta revisão. É a fonte única de
+pendências e decisões da equipe; os outros documentos linkam aqui em vez de repetir estado.
 
-Este é o acompanhamento atual do projeto. O plano formal de piloto foi retirado por decisão
-do Igor: não há obrigação de recrutar uma coorte, realizar cinco entrevistas, calcular D7
-ou cumprir metas de pesquisa antes de divulgar. As métricas existentes continuam disponíveis.
+O plano formal de piloto foi retirado por decisão do Igor em 07/09: não há obrigação de recrutar
+uma coorte, fazer cinco entrevistas, calcular D7 ou cumprir metas de pesquisa antes de divulgar.
 
 ## 1. O que já está feito
 
-- **Expansão local concluída:** limite de sete recomendações, cadastro com perfil antes da
-  conta, caminho explícito sem habilidades, sugestões conforme o curso, demonstração
-  ilustrativa e FAQ, estados de vínculo sem promessa de busca já executada, participação no
-  feedback, medianas observadas, utilidade por área e motivo opcional após a pausa.
-  Contratos nas migrations `0017`–`0019`.
-
+- **Produto para qualquer curso** (expansão de 08/09): 12 áreas, cadastro com perfil antes da
+  conta, caminho sem habilidades, sugestões conforme o curso, até sete recomendações,
+  demonstração ilustrativa e FAQ.
 - **Cadastro e conta:** formulário em etapas, confirmação entre aparelhos, reenvio, recuperação
-  de senha, edição de perfil, consentimento e preferência de e-mails.
-- **Controle dos dados:** pausa, retomada, desvínculo, exportação, exclusão com carência de
-  60 dias e cancelamento. As 30 migrations, da `0001` à `0031` — a numeração pula a `0029` —,
-  constam como aplicadas no `supabase migration list --linked` de 19/09.
-- **Telegram:** vínculo por token de uso único, recomendações explicadas e feedback com seis
-  opções. Pelo `supabase functions list` de 19/09, `ir` foi republicada em 10/09 e
-  `telegram-webhook` em 16/09; o código no ar não foi comparado de novo com o repositório.
-- **Primeira entrega:** dispatch por perfil, com exceção entre 06:23 e 07:23 de Brasília.
-  Teste registrado de vínculo até mensagem em cerca de quatro minutos; não é garantia de prazo.
-- **Concorrência:** trava por perfil e releitura do histórico, testadas com duas conexões.
-  Telegram e banco continuam sendo operações separadas.
-- **Coleta e ranking:** Adzuna por padrão (Gupy desligada pelos termos), extração de fatos compartilhada, nota em Python,
-  deduplicação e personalização v1 por recusas. Jooble pronto, mas desligado por padrão.
-- **Mensagens:** listas longas resumidas; desde 09/09, habilidades desejáveis ausentes aparecem
-  como “Diferenciais que a vaga cita”, separadas dos requisitos a conferir e sem virar veto.
-- **Métricas:** funil, vagas abertas distintas, utilidade semanal e recusas com denominadores.
-  Abertura com token real e relatório foram conferidos; falta confirmar o teste de feedback do Igor.
-- **Contato e e-mail:** `contato@radarestagio.com` com recebimento confirmado; Resend verificado
-  e SMTP salvo. Confirmação e recuperação reais pelo site ainda precisam de teste registrado.
-- **Confiabilidade e produto, de 14 a 18/09:** trinta PRs fecharam falhas que derrubavam o
-  diário inteiro ou escondiam vagas — erro inesperado de um usuário, resposta malformada do
-  Gemini, texto que o Postgres recusa, coleta incompleta, extração com id de outra vaga, listas
-  do perfil em mais de uma dimensão — e o código de saída da execução deixou de ficar verde
-  quando ninguém recebeu mensagem. Entraram também a pergunta sobre deficiência (`0026`), o
-  feedback "Vaga encerrada", o prazo do cadastro que não confirma o e-mail (`0030`) e a
-  navegação da conta no celular. O porquê de cada uma está nas
-  [decisões do motor](decisoes-do-motor.md) e no `CLAUDE.md`.
-
-Migrations e funções foram conferidas em 19/09. As demais evidências remotas são de 05–06/09
-e estão no [guia](guia-publicacao-e-piloto.md); esta revisão não refez esses testes.
+  de senha, edição, consentimento, preferência de e-mails, pausa com motivo opcional, retomada,
+  desvínculo, exportação e exclusão com 60 dias para desfazer.
+- **Telegram:** vínculo por token de uso único, recomendações explicadas, feedback com sete
+  opções e, desde 05/10, a pergunta do dia seguinte e a mensagem livre encaminhada à equipe.
+- **Primeira entrega:** disparo por perfil ao vincular, exceto entre 06:23 e 07:23 de Brasília;
+  a marca de atendido só é gravada depois da mensagem.
+- **Coleta e ranking:** Adzuna (Gupy desligada pelos termos em 12/09, Jooble pronto e desligado),
+  extração compartilhada por vaga, nota em Python e personalização v1 por recusas.
+- **Confiabilidade:** as falhas que derrubavam o diário inteiro ou escondiam vagas, de 08 a
+  18/09 e da auditoria de 07/10, foram fechadas com o teste que as reproduz; o porquê de cada uma
+  está nas [decisões do motor](decisoes-do-motor.md) e nas [do banco](decisoes-do-banco.md).
+- **Métricas:** funil da visita à primeira recomendação, visitas por origem (`0032`, 05/10),
+  utilidade semanal e por área e recusas com denominador.
+- **Endereço e hospedagem:** `radarestagio.com` no Cloudflare Workers, na conta do grupo, desde
+  03/10; Site URL e Redirect URLs do Auth e `URL_DA_LANDING` apontam para ele; o Pages antigo foi
+  apagado em 05/10. Os cabeçalhos de segurança do `web/_headers` estão no ar (conferido com
+  `curl -I` em 16/10).
+- **Turnstile** no cadastro, login, reenvio e recuperação, ligado em 03/10.
+- **Textos legais:** Termos e Política revisados por Igor, Ian e Miguel em 02/10, em vigor na
+  versão `2026-10-08`. Responsabilidades combinadas em 02/10: Igor responde o contato, lê o
+  resumo diário e paga o domínio ([guia](guia-publicacao-e-piloto.md#responsabilidades-combinadas-02102026)).
+- **Contato:** `contato@radarestagio.com` recebe; Resend verificado e SMTP salvo.
+- **Ilustrações das áreas:** os ícones da faixa viraram ilustrações 3D em 14/10, trocadas por um
+  set verde em 15/10 ([contrato frontend](contrato-front.md#hero-lado-a-lado-e-faixa-de-áreas-07102026)).
+- **Frontend sem React:** a migração foi feita, testada e descartada em 13/09. O site segue em
+  JavaScript puro, sem build; motivos na seção 6.
 
 ## 2. O que falta antes de divulgar
 
-### 1. Confirmar onde o site está publicado
+### 2.1 Conferir o que foi publicado
 
-- [x] Confirmado em 09/09 que `radarestagio.pages.dev` serve os arquivos do `main`
-  ([guia](guia-publicacao-e-piloto.md)). Em 03/10 o site passou para o Workers, na conta
-  Cloudflare do grupo.
-- [x] Definir o endereço público final e conferir HTTPS, início, Termos e Privacidade:
-      `https://radarestagio.com` responde 200 com certificado válido, `/termos` e `/privacidade`
-      também, `www` e `http://` redirecionam para ele. Falta abrir no celular.
-- [x] Confirmar se mudanças na `main` atualizam o frontend automaticamente: o merge do PR #120
-      publicou a site key do Turnstile em cerca de 30 segundos, com o Workers Builds verde.
-- [x] Apagar o projeto Pages antigo, na conta do Ian: feito em 05/10. O Cloudflare recusou pelo
-      painel por excesso de deployments, que foram apagados pela API antes. O
-      `radarestagio.pages.dev` deixou de resolver, e o domínio novo, o `www`, o e-mail e a `ir`
-      seguem respondendo.
-- [x] Conferir os Redirect URLs do Supabase sem o `pages.dev`: em 05/10 a lista tinha só
-      `radarestagio.com` e `localhost:8000`, e o `www` redireciona com 301 para o domínio novo.
-- [ ] Apagar a zona antiga na conta pessoal do Igor, só depois de aparecer como "Moved"; pôr forma
-      de pagamento na conta do grupo para a renovação de 04/09/2027.
+Conferido em 17/10 com o CLI do Supabase, só leitura; o resultado está no
+[guia](guia-publicacao-e-piloto.md#estado-conferido):
 
-O domínio, o site e o Email Routing estão na conta Cloudflare do grupo desde 03/10/2026, com
-o detalhe e a evidência no [guia](guia-publicacao-e-piloto.md). Combinar acesso e administração
-sem compartilhar senhas: o convite de membros resolve.
+- [x] Migrations `0032` (origem da visita), `0033` (pergunta do dia seguinte), `0034` (grants e
+  formato da `pagina`) e `0035` (confirmação e sessões do apagamento) aplicadas.
+- [x] `telegram-webhook` e `ir` publicadas em 08/10, com o código igual ao da `main`, e o secret
+  `TELEGRAM_CHAT_ID` criado no Supabase.
+- [ ] Abrir o site no celular (HTTPS, início, Termos e Privacidade).
+- [ ] Testar a expiração do desafio do Turnstile.
 
-### 2. Conectar o endereço ao cadastro
+### 2.2 Testar com uma conta da equipe
 
-- [x] Site URL corrigido para o endereço publicado em 09/09, depois do cadastro de ponta a
-      ponta ter caído em `radarestagio.com` ([guia](guia-publicacao-e-piloto.md), seção 5). Em
-      03/10 passou a `https://radarestagio.com`.
-- [x] Trocar a `URL_DA_LANDING` provisória pelo endereço escolhido: em 03/10, a `ir` passou a
-      redirecionar para `https://radarestagio.com`.
-- [x] Configurar Turnstile no frontend e no Supabase e testar o desafio: ligado em 03/10, com o
-      widget no login e o Supabase recusando pedido sem token. Falta testar a expiração do desafio.
+- [x] Cadastro e confirmação do e-mail no domínio novo (Igor, 03/10).
+- [ ] Reenvio da confirmação e recuperação de senha.
+- [ ] Vínculo, entrega de recomendações, abertura e feedback positivo e negativo.
+- [ ] Edição, pausa e retomada, exportação, exclusão e cancelamento.
+- [x] Resposta do bot a um Telegram já vinculado a outra conta: diz onde fica "Desvincular o
+  Telegram" e o que fazer depois (05/10, `835cfe0`).
 
-Não reaplicar as migrations já registradas nem republicar funções só para repetir etapas
-concluídas. Se o código ou o repositório mudar, atualizar as integrações afetadas.
+Para o feedback, usar envio persistido no banco: `testar-local` gera tokens que o webhook não
+encontra. `rodar --perfil` recebe `perfis.id` e exige `DATABASE_URL`. O roteiro completo está no
+[guia](guia-publicacao-e-piloto.md#10-conferência-final-com-conta-de-teste). Anotar os erros e
+corrigir os bloqueadores antes de convidar outras pessoas.
 
-### 3. Testar com uma conta da equipe
+### 2.3 Proteger o site e o cadastro contra tráfego abusivo
 
-- [ ] Cadastro, confirmação, reenvio e recuperação de senha.
-- [ ] Vínculo, entrega de recomendações, abertura e feedback positivo/negativo.
-- [ ] Edição, pausa/retomada, exportação, exclusão e cancelamento.
-- [ ] Reescrever a resposta do bot a um Telegram já vinculado a outra conta
-      (`telegram-webhook/vinculo.ts`): não diz qual conta nem onde fica "Desvincular o Telegram".
+Motivo (03/10/2026): um site alheio em plano gratuito recebeu 126 milhões de requisições para 973
+visitas, 99% com erro 4xx, e a hospedagem pausou por estourar o plano. Bot não escolhe o alvo, e
+a chave pública do Supabase está no `web/config.js`.
 
-Em 03/10, o Igor confirmou o cadastro e a confirmação do e-mail no domínio novo. Reenvio,
-recuperação de senha, entrega, feedback e controles seguem sem teste registrado.
-
-Para feedback, usar envio persistido no banco: `testar-local` gera tokens que o webhook não
-encontra. `rodar --perfil` recebe `perfis.id` e exige `DATABASE_URL` configurada para atender
-um perfil real. Não colocar essa conexão no frontend. Anotar os erros encontrados e corrigir
-os bloqueadores antes de convidar outras pessoas.
-
-### 4. Concluir os textos e combinar a manutenção
-
-- [x] Igor, Ian e Miguel revisarem Termos e Política e resolverem as passagens pendentes.
-- [x] Definir versão/vigência e sincronizar Markdown e páginas HTML: a primeira foi a
-  `2026-10-02`, e em vigor hoje está a versão `2026-10-08`, desde 08/10/2026
-  ([guia](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção)).
-- [x] Combinar quem responde ao contato, acompanha falhas e paga a renovação do domínio: Igor, nas
-  três funções ([guia](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção)).
-
-### 5. Proteger o site e o cadastro contra tráfego abusivo
-
-Motivo (03/10/2026): um site alheio, em plano gratuito, recebeu 126 milhões de requisições para
-973 visitas, 99% com erro 4xx e vindas de dezenas de países, o padrão de uma botnet, e a
-hospedagem pausou por estourar o plano. Bot não escolhe o alvo, e o Radar tem o captcha do Auth
-desligado e a chave pública do Supabase no `web/config.js`.
-
-- [x] Turnstile no cadastro e no Auth (item 2 acima): é a proteção que mais pesa. Ligado em 03/10.
-- [ ] Cloudflare, no `radarestagio.com`: ligar o Bot Fight Mode (Security → Bots) e criar uma
-  regra de limite de requisições por IP, que o plano gratuito permite em número pequeno.
-  O Under Attack Mode fica como botão de emergência. Só vale com o tráfego passando pelo
-  Cloudflare, ou seja, com o proxy do domínio ligado.
+- [x] Turnstile no cadastro e no Auth (03/10).
+- [ ] Cloudflare: ligar o Bot Fight Mode e criar uma regra de limite de requisições por IP; o
+  Under Attack Mode fica como botão de emergência.
 - [ ] Notificações do Cloudflare para pico de tráfego, e conferir em Workers & Pages → Usage que
-  os arquivos estáticos não consomem a cota de 100.000 execuções por dia. O `wrangler.jsonc` não
-  tem script (`main`), mas isso não foi confirmado no painel.
-- [ ] Supabase: conferir o plano, o teto de gasto e o uso das Edge Functions, principalmente a
-  `ir`, que é pública por natureza. O `telegram-webhook` já recusa com 401 quem não tem o
-  segredo, e a `0023` já limita os eventos web.
-- [ ] Resend: conferir o limite diário de e-mails, para um cadastro em massa não esgotar a cota e
-  travar a confirmação de quem é real.
+  os arquivos estáticos não consomem a cota de 100.000 execuções por dia.
+- [ ] Supabase: conferir plano, teto de gasto e uso das Edge Functions, principalmente a `ir`,
+  que é pública por natureza.
+- [ ] Resend: conferir o limite diário de e-mails, para um cadastro em massa não travar a
+  confirmação de quem é real.
+- [ ] CSP que restringe carregamento, publicada antes como `Content-Security-Policy-Report-Only`
+  (o porquê de ter ficado de fora está no [guia](guia-publicacao-e-piloto.md#cabeçalhos-de-resposta-do-site-08102026)).
 
-### 6. Revisar o CI/CD e as branches
+### 2.4 Contas, CI e branches
 
-Estado em 03/10/2026, conferido com `gh` e `git`:
+- [ ] Apagar a zona antiga na conta pessoal do Igor, depois de ela aparecer como "Moved", e pôr
+  forma de pagamento na conta do grupo para a renovação de 04/09/2027.
+- [x] O check "Cloudflare Pages" sumiu: o PR #152 (15/10) só tem Workers Builds, `python` e `web`.
+- [ ] Decidir sobre a proteção da `main`, ainda desligada em 16/10: exigir os checks `python` e
+  `web` antes de mesclar.
+- [x] As 63 branches remotas já mescladas foram apagadas e "Automatically delete head branches"
+  foi ligado (17/10). Ficaram as dos PRs abertos e as dos fechados sem merge (#42 e #128), que
+  têm commits fora da `main`.
+- [ ] Renovar o token do cron-job.org antes de 09/09/2027: vencido, o diário para sem avisar.
 
-- [x] Descobrir por que o check "Workers Builds: radarestagio" falhava nos PRs: o build de
-  branch roda `npx wrangler preview`, que exige `"previews": {}` no `wrangler.jsonc`. Corrigido em
-  03/10 (PR #122), e o check passou nos PRs seguintes. O build de produção, na `main`, nunca
-  teve o problema.
-- [ ] Conferir no próximo PR que o check "Cloudflare Pages" sumiu. Ele era do projeto antigo, que
-  foi apagado em 05/10, e nenhuma regra dependia dele.
-- [ ] Decidir sobre a proteção da `main`, hoje desligada: exigir os checks `python` e `web` antes
-  de mesclar. O GitHub deixa o admin mesclar mesmo assim.
-- [ ] Apagar as 32 branches remotas já mescladas e ligar "Automatically delete head branches"
-  (hoje `delete_branch_on_merge` está falso). Ficam fora as que não foram mescladas.
-- [ ] Revisar os workflows (`testes.yml` e `radar-diario.yml`) e o Dependabot depois dessas
-  mudanças, e registrar o resultado aqui.
+### 2.5 Pedir para alguns colegas usarem
 
-### 7. Pedir para alguns colegas usarem
-
-- [ ] Enviar o site quando o fluxo estiver funcionando.
+- [ ] Enviar o site com um `utm_source` por grupo ou canal
+  ([frentes externas](frentes-externas.md#e03--aquisição-e-prova-de-utilidade)).
 - [ ] Perguntar onde travaram, se alguma vaga serviu e se as mensagens ficaram claras.
 - [ ] Anotar problemas concretos e escolher o próximo ajuste com a equipe.
 
-Sem quantidade mínima, roteiro obrigatório de entrevista, prazo de duas semanas ou metas
-formais. Consultar as métricas quando ajudarem a entender um problema; não é necessário criar
-um dashboard ou novas consultas para começar essa conversa.
+Sem quantidade mínima, roteiro obrigatório de entrevista, prazo ou metas formais.
 
-## 2.1 Rodada de confiabilidade (10/09/2026)
+## 3. Produto: os achados da auditoria Revenue-Centric Design
 
-Uma revisão externa apontou defeitos no núcleo do produto, e eles foram corrigidos com teste
-que reproduz cada falha. O detalhe operacional está no [CLAUDE.md](../CLAUDE.md); a decisão de
-arquitetura, em [arquitetura.md](arquitetura.md). Em resumo: fronteira de transação, identidade
-da vaga por fonte e id, deduplicação que preserva cidade, prompt preservando o nível da
-habilidade, recusa corrigida deixando de penalizar, negação no pré-filtro de experiência, falha
-temporária de entrega não pausando conta, travessão no nome do curso, suítes rodando em pull
-request e versão fixa do cliente supabase.
+Quadro único do estado dos 16 achados, conferido no código em 16/10. A
+[auditoria de 10/09](auditorias/2026-09-10-revenue-centric-design.md) e o
+[acompanhamento de 05/10](auditorias/2026-10-05-revenue-centric-design.md) são retratos datados e
+não são atualizados.
 
-O que essa rodada deliberadamente não fez, e continua pendente:
+| ID | Achado | Estado em 16/10 |
+|---|---|---|
+| RCD-01 | Feedback sem sinal | No código desde 05/10: pergunta do dia seguinte com "Me candidatei". Falta publicar (2.1) e ler a taxa de resposta, combinada para 19/10 ([métricas](metricas.md#pergunta-do-dia-seguinte)) |
+| RCD-02 | Sem pagador | Leitura da Lei do Estágio corrigida em 29/09; nenhuma conversa com pagador |
+| RCD-03 | Esforço fora do gargalo | Aberto; congelar regra do motor sem caso de usuário é decisão da equipe, sem registro |
+| RCD-04 | Visita sem origem, equipe no funil | Origem no código desde 05/10 (`0032`); marcar as contas da equipe é proposta sem decisão ([decisões do banco](decisoes-do-banco.md#contas-da-equipe-fora-do-funil-proposta-de-05102026)) |
+| RCD-05 | Valor só depois de três trocas de contexto | Aberto: não há prévia com vagas reais antes da conta |
+| RCD-06 | Conta sem nada acumulado | Aberto: não há "Suas vagas" na conta |
+| RCD-07 | Trabalho episódico | Aberto: não há retorno perto do fim do estágio |
+| RCD-08 | Promessa maior que a prova | Parcial: saíram "100% automático", a faixa de fornecedores e o "todos os dias de manhã" do bot; a lista de diferenciais do hero ainda diz "Vagas que atendem seu perfil" (`web/index.html`) |
+| RCD-09 | Bot responde "use o botão do site" a tudo | No código desde 05/10: mensagem livre encaminhada ao chat de operação. Falta publicar a função (2.1) |
+| RCD-10 | ICP difuso | Sem decisão registrada |
+| RCD-11 | Nada diferencia de um alerta gratuito | Aberto |
+| RCD-12 | Mensagem densa | Aberto: não há mensagem com três destaques |
+| RCD-13 | Só existe pausar tudo | Aberto: não há frequência semanal |
+| RCD-14 | Progresso em 0% e "Comece pela sua conta" | Feito em 05/10 (`35816a0`): progresso a partir de 20% e "Último passo: crie sua conta para ativar seu Radar" |
+| RCD-15 | Cartão "A definir" | Aberto: o cartão "Depois do piloto" segue com "A definir" (`web/index.html`) |
+| RCD-16 | "Sobre" leva ao CTA final | Aberto: o item do menu aponta para `#sobre`, que é o CTA final |
 
-- **Pesos da nota.** A regra de não recalibrar sem `vaga_irrelevante` real continua valendo. O
-  que mudou foi a explicação: perfil sem habilidade cadastrada agora recebe um aviso na
-  mensagem em vez de uma nota alta sem ressalva.
-- **Detectar execução ausente.** Se o cron externo não disparar, nada avisa: o passo
-  `if: failure()` do workflow só cobre execução que começou. Falta escolher onde esse alerta
-  mora, e a opção mais simples é o próprio cron-job.org avisar por e-mail quando falhar.
-- **Rotular os descartes.** `python -m radar descartes` já exporta a amostra com o motivo, mas
-  ninguém preencheu `descarte_correto` ainda. Sem isso, continuamos medindo só a qualidade do
-  que foi entregue.
-- **Preencher o gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem com
-  `relevante` nulo, então o juiz automático ainda não foi validado.
-- **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
-  compartilhado; a recomendação dessa revisão foi separar responsabilidades sem trocar de
-  framework. A migração para React foi descartada em 13/09; ver a seção 2.3.
+## 4. Pendências externas
 
-## 2.2 Auditoria do agendamento diário (10/09/2026)
+Os IDs vêm do plano de expansão de 08/09 e servem de referência. Estado aqui, evidência no
+documento indicado.
 
-A auditoria está em
-[auditorias/2026-09-10-agendamento-diario.md](auditorias/2026-09-10-agendamento-diario.md), com
-dez achados numerados e o histórico real das execuções. O disparo externo é confiável: 13 de 13
-dias no horário desde 28/08. O risco está no que acontece depois dele. Estado conferido no código
-em 19/09:
+| Frente | Estado e próximo passo | Documento responsável |
+|---|---|---|
+| E01 — publicação e jornada | Seção 2: testar com conta da equipe, a expiração do Turnstile e inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
+| E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Frentes externas](frentes-externas.md#e02--cobertura-de-estágios) |
+| E03 — aquisição | Depois da jornada verificada, confirmar canal, responsável e mensagem; obter autorização antes de divulgar relato | [Frentes externas](frentes-externas.md#e03--aquisição-e-prova-de-utilidade) |
+| E04 — custos | Reunir faturas, uso e horas de suporte numa janela comum; custo desconhecido não é zero | [Frentes externas](frentes-externas.md#e04--custos-da-operação) |
+| E05 — oferta | Depois de cobertura e custos, decidir oferta, pagador, preço e provedor; checkout é tarefa posterior | [Frentes externas](frentes-externas.md#e05--hipótese-comercial) |
+| D01 — formação | Usar os casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
+| Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
 
-- **G01 e G07 — resolvidos no PR #57.** Prazo da extração (`PRAZO_DA_EXTRACAO_SEGUNDOS`), timeout
-  por chamada, candidatas intercaladas por usuário e timeouts de 30 min no job e 28 no passo.
-- **G06 — resolvido.** O run por perfil coleta só para os usuários que vai atender.
-- **G03 — aberto: não reenviar a quem já foi atendido no dia.** A consulta dos usuários ativos
-  não filtra quem já recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. A
-  #68 cobre só a entrega imediata (`entrega_imediata_atendida_em`). Sem essa marca não existe
-  recuperação segura depois de uma falha parcial nem agendador de reserva. Exige migration.
-- **G04 — aberto: detectar execução ausente**, o mesmo item da rodada de confiabilidade acima.
-- **G02 — aberto: registrar o fim de cada lote com a duração.** A omissão de vagas pelo modelo
-  foi identificada em 11/09; falta a duração por lote para medir o raciocínio `low`.
-- **G05, G08, G09 e G10 — abertos, prioridade baixa.** O G10 é o mais visível: falha do disparo
-  da primeira busca só aparece no log da Edge Function.
+Nenhuma dessas frentes cria meta formal nem impede o piloto informal depois da conferência
+operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
 
-## 2.3 Migração do frontend para React (12/09/2026)
+## 5. Confiabilidade e qualidade do motor
 
-**Estado: descartada em 13/09/2026.** O site continua em JavaScript puro, sem build: o
-Cloudflare Pages segue servindo `web/` direto e correções do cadastro e da conta vão no
-`app.js`.
+Da [auditoria do agendamento](auditorias/2026-09-10-agendamento-diario.md) (10/09), conferida no
+código em 16/10: G01 e G07 resolvidos no PR #57 (prazo da extração, timeouts de 30 e 28 min), G06
+resolvido (a entrega imediata coleta só para quem atende). Continuam abertos:
 
-A migração chegou a ser feita e testada. O plano (#62) e o script de build compatível (#64)
-entraram na `main` e saíram depois da decisão; a #66 (Vite, lint, Vitest e CI) e a #67
-(cadastro, autenticação e conta em React) foram fechadas sem merge. Motivos: na Fase 2 a prioridade é validar com
-estudantes e o estudante não via diferença (24 de 28 telas idênticas pixel a pixel), enquanto o
-custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node/npm para manter,
-troca do build no Pages e cada correção do `app.js` refeita em dobro até o merge.
+- **G03 — não reenviar a quem já foi atendido no dia.** A consulta dos ativos não filtra quem
+  recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. Sem essa marca não há
+  recuperação segura depois de falha parcial nem agendador de reserva. Exige migration.
+- **G04 — detectar execução ausente.** Se o cron externo não disparar, nada avisa: o passo
+  `if: failure()` só cobre execução que começou. A opção mais simples é o cron-job.org avisar por
+  e-mail quando falhar.
+- **G02 — registrar a duração de cada lote.** Os logs dizem quantas extrações cada lote devolveu,
+  não quanto tempo levou; falta isso para medir o raciocínio `low` e a margem do prazo.
+- **G05, G08, G09 e G10**, prioridade baixa. O G10 é o mais visível: falha do disparo da
+  primeira busca só aparece no log da Edge Function.
 
-Retomar só se surgirem telas interativas grandes, como o painel web de métricas.
+Qualidade das recomendações:
 
-## 2.4 Auditoria Revenue-Centric Design (10/09/2026)
+- **Pesos da nota.** Não recalibrar sem `vaga_irrelevante` real; o viés conhecido e as
+  alternativas estão nas [decisões do motor](decisoes-do-motor.md#viés-conhecido-do-ranking-03092026).
+- **Gabarito humano.** As 20 entregas do primeiro gabarito (em `gabaritos/`, fora do Git) seguem
+  com `relevante` nulo, então o juiz automático não foi validado (precisa de 75% de concordância).
+- **Descartes.** `python -m radar descartes` exporta a amostra do pré-filtro, mas ninguém
+  preencheu `descarte_correto`.
+- **Abertas desde a quarta rodada (09/09):** refiltrar depois do enriquecimento as vagas que o
+  pré-filtro cortou recuperaria os ~7% de vagas remotas que só dizem isso depois dos 500
+  caracteres da Adzuna; "Banco de Talentos" não é vaga aberta e chega como estágio.
+- **Frase de preferência lida como período mínimo** esconde a vaga de quem está antes do período;
+  a correção é uma frase no prompt, adiada porque troca `VERSAO_DA_EXTRACAO` e reextrai o cache.
+- **Frontend num arquivo só.** `web/assets/app.js` tem 2.367 linhas com estado compartilhado; a
+  recomendação de 10/09 foi separar responsabilidades sem trocar de framework.
 
-A auditoria está em
-[auditorias/2026-09-10-revenue-centric-design.md](auditorias/2026-09-10-revenue-centric-design.md),
-com 16 achados e um plano em nove passos (seção 7). Nenhum achado virou tarefa até 13/09. Estado
-conferido no código nessa data, para a equipe decidir o que entra:
+## 6. Hipóteses de validação
 
-- **Textos que prometem mais que a prova (RCD-08, 14, 15 e 16), correção de minutos.** A landing
-  diz "100% automático" e "Vagas que atendem seu perfil"; a faixa de prova é "ADZUNA GEMINI
-  TELEGRAM"; o bot promete vagas "todos os dias de manhã"; a última etapa do cadastro diz "Comece
-  pela sua conta", com progresso que começa em 0%; o cartão de preço diz "A definir"; "Sobre"
-  leva ao CTA final.
-- **Mensagem livre ao bot (RCD-09).** Recebe resposta automática e não chega à equipe.
-- **Feedback sem sinal (RCD-01).** A pergunta do fim da mensagem ("Deixe seu feedback 👇")
-  continua, e em 05/10 ganhou a pergunta do dia seguinte sobre a vaga aberta, com "Me
-  candidatei", "Não serviu" e "Ainda vou ver" (ver
-  [decisões do motor](decisoes-do-motor.md#pergunta-do-dia-seguinte-05102026)). Falta publicar a
-  `0033`, a função e o código, e ler a taxa de resposta em 19/10.
-- **Distribuição sem origem (RCD-04).** A visita não guarda `referrer` nem `utm_source`, e as
-  sessões da equipe entram no funil.
-- **Não implementados (RCD-05, 06, 07, 12 e 13):** prévia com vagas reais antes da conta,
-  "Suas vagas" na conta, retorno perto do fim do estágio, mensagem com três destaques e
-  frequência semanal como alternativa à pausa.
-- **Pagador (RCD-02).** A leitura da Lei do Estágio foi corrigida em 29/09 na
-  [hipótese comercial](hipotese-comercial.md): a vedação do art. 5º, §2º alcança agentes de
-  integração, e o Radar não é um, então o que limita cobrar do estudante é o mercado. As
-  conversas com possíveis pagadores seguem pendentes.
-- **Foco (RCD-03 e RCD-10).** Congelar ajuste de regra do motor sem caso vindo de usuário e
-  definir o ICP do piloto são decisões da equipe, ainda sem registro.
+Vindas do pré-PRD de 08/09, que saiu em 16/10. O piloto é informal: são sinais combinados para
+ler os resultados sem escolher o critério depois, não metas.
 
-**Acompanhamento de 05/10/2026:** nenhum dos 16 achados tinha sido tratado e só dois perfis
-foram criados desde a auditoria. O plano em três frentes (textos e progresso, origem da visita,
-pergunta do dia seguinte) e os sinais para reavaliar em 19/10 estão em
-[auditorias/2026-10-05-revenue-centric-design.md](auditorias/2026-10-05-revenue-centric-design.md).
+| Hipótese | Teste mínimo | Sinal proposto |
+|---|---|---|
+| H1 — A busca manual é uma dor relevante | Conversar com colegas que usaram por uma semana | A maioria relata busca repetitiva e quer delegar a triagem |
+| H2 — O matching orienta a triagem | 20 vagas por área, avaliadas por pessoas da área sem ver a nota; o mesmo gabarito valida o juiz automático | Concordância de ao menos 75% com a decisão majoritária, das pessoas e do juiz |
+| H3 — As fontes têm cobertura útil por área | Ler o resumo diário por 7 dias com perfis de áreas distintas | Ao menos 1 recomendação relevante em 5 de 7 dias por perfil |
+| H4 — Telegram é um canal aceitável | Colegas vinculam o bot e recebem uma entrega | Quase todos concluem sem considerar o canal uma barreira |
+| H5 — A entrega gera ação útil | 2 semanas com link rastreado, feedback e pergunta do dia seguinte | Metade abre uma vaga; parte sinaliza "Essa serviu" ou "Me candidatei" |
+| H6 — A operação cabe nos limites | Resumo de cada execução (duração, requisições, vagas sem extração) | 6 de 7 execuções sem falha permanente e dentro de 28 minutos |
+| H7 — A expansão não degrada computação | Comparar as entregas de computação antes e depois de 08/09 | Recusas "não é da minha área" não sobem |
 
-## 3. Limitações e decisões que continuam valendo
+Também do pré-PRD, e ainda sem dono: as listas de subáreas e habilidades sugeridas de cada área
+foram escritas pela equipe e precisam ser lidas por alguém da área; e ligar a Jooble só faz
+sentido se H3 falhar em alguma área.
 
-- **Candidatura:** acontece na fonte; o Radar não se candidata e só registra a declaração "Me candidatei" da pergunta do dia seguinte.
-- **Feedback:** última resposta conta nas métricas, mas pode haver eventos brutos repetidos e
+Antes de aprovar uma característica nova, responder: ela reforça a promessa de achar vagas
+relevantes mais cedo? Reduz uma incerteza deste plano? Existe teste manual ou menor que dê a mesma
+evidência? Qual o custo permanente? O que pode ser adiado para abrir espaço?
+
+## 7. Limitações e decisões que continuam valendo
+
+- **Candidatura:** acontece na fonte; o Radar não se candidata e só registra a declaração "Me
+  candidatei" da pergunta do dia seguinte.
+- **Feedback:** a última resposta conta nas métricas, mas pode haver eventos brutos repetidos e
   perguntas simultâneas. Mensagem enviada sem gravação pode deixar token órfão.
 - **Histórico:** exclusões definitivas podem alterar métricas de semanas passadas.
 - **Ranking:** a v1 usa repetição e recusas de área. Os outros motivos não mudam pesos
   automaticamente; investigar exemplos antes de recalibrar.
 - **Vaga encerrada:** o Radar não detecta que uma vaga fechou, porque a Adzuna segue listando o
   anúncio e conferir a origem exigiria seguir o link dela de forma automática. O que existe é a
-  janela de coleta (`dias_recentes`, padrão 3 dias) e o feedback "Vaga encerrada", que tira a vaga
-  da pessoa e, com abertura prévia e no máximo 3 marcações do perfil em 30 dias, dos outros
-  ([decisões do motor](decisoes-do-motor.md), "Vaga fechada na origem"). Quem recebe a vaga no
-  mesmo envio de quem a marcou não é protegido. As linhas de `vagas` não são apagadas por idade,
-  só por fonte se o acordo com a Adzuna acabar. Encurtar a janela não pegaria o caso medido em
-  16/09, de uma vaga com menos de um dia, e perderia vagas válidas; só reavaliar com dados do
-  piloto.
-- **IA:** reuso reduz trabalho repetido; novos anúncios, cidades e áreas podem exigir extrações.
-- **Fora do trabalho imediato:** cobrança, plano formal de pesquisa, D7, campanhas de e-mail
-  e exclusão automática por abandono. Medianas de entrega e abertura já estão implementadas;
-  são tempos observados, não promessa de prazo. Monetização permanece uma hipótese futura.
-- **Jooble:** ativação opcional, com chave e configuração próprias; não bloqueia a divulgação.
-- **Histórico Git e skills:** permanecem conforme decisões registradas em 05/09. Não há nova
-  autorização para reescrever histórico ou remover recursos de terceiros.
-
-## 4. Pendências externas da expansão
-
-Os IDs abaixo são referências históricas. Atualizar o estado geral aqui e a evidência no
-documento indicado; não manter uma segunda fila no antigo registro de execução.
-
-| Frente | Estado e próximo passo | Documento responsável |
-|---|---|---|
-| E01 — publicação e jornada | Conferir versões, migrations, deploy automático, Auth, SMTP, CAPTCHA, cron e jornada com conta da equipe; inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
-| E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Cobertura](cobertura-estagios.md) |
-| E03 — aquisição | Após verificar a jornada, confirmar canal, URL, responsável e mensagem; obter autorização antes de divulgar relato | [Aquisição e prova](aquisicao-e-prova.md) |
-| E04 — custos | Reunir faturas, uso e horas de suporte em uma janela comum; custos desconhecidos não são zero | [Custos](custos-operacao.md) |
-| E05 — oferta | Após cobertura e custos, decidir oferta, pagador, preço, duração, renovação, cancelamento, aceite e provedor; checkout é tarefa posterior | [Hipótese comercial](hipotese-comercial.md) |
-| D01 — formação | Usar casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo; preservar contrato atual até decisão | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
-
-Os responsáveis continuam a confirmar; a proposta de divisão está na seção 2 do guia.
-E02–E05/D01 não criam metas formais nem impedem o piloto informal depois da conferência
-operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
-
-## 5. Onde consultar os detalhes
-
-- [Funcionalidades](funcionalidades.md): o que usuários e desenvolvedores podem fazer.
-- [Guia de publicação](guia-publicacao-e-piloto.md): configuração e evidências datadas.
-- [Cadastro e privacidade](contrato-front.md): decisões dessa frente.
-- [Revisão dos textos](guia-publicacao-e-piloto.md#2-revisar-os-documentos-e-combinar-a-manutenção): pendências dos responsáveis.
-- [Métricas](metricas.md): definições e limites das consultas existentes.
-- [Arquitetura](arquitetura.md) e [contrato frontend](contrato-front.md): implementação.
-- [Índice](README.md): documentos mantidos. O histórico dos planos antigos está no Git.
+  janela de coleta (`dias_recentes`) e o feedback "Vaga encerrada"
+  ([decisões do motor](decisoes-do-motor.md#vaga-fechada-na-origem-16092026)). Quem recebe a vaga
+  no mesmo envio de quem a marcou não é protegido. Encurtar a janela não pegaria o caso medido em
+  16/09 e perderia vagas válidas; só reavaliar com dados do piloto.
+- **IA:** o reuso evita trabalho repetido; anúncios, cidades e áreas novos podem exigir extrações.
+- **Fora do trabalho imediato:** cobrança, plano formal de pesquisa, D7, campanhas de e-mail e
+  exclusão automática por abandono. Monetização permanece hipótese futura.
+- **Frontend em JavaScript puro** (13/09): a migração para React chegou a ser feita (#62, #64,
+  #66, #67) e saiu porque o estudante não via diferença (24 de 28 telas idênticas pixel a pixel)
+  e o custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node/npm e cada
+  correção do `app.js` em dobro. Retomar só com telas interativas grandes, como um painel web de
+  métricas.
+- **Jooble:** opcional, com chave e configuração próprias; não bloqueia a divulgação.
+- **Histórico Git e skills:** permanecem conforme decisões de 05/09. Não há autorização para
+  reescrever histórico ou remover recursos de terceiros.

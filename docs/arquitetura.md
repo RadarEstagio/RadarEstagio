@@ -47,25 +47,17 @@ restringe `perfis.areas_de_interesse` e o `web/assets/areas.json` que o cadastro
 usados na coleta e as subáreas oferecidas no cadastro. O pré-filtro pergunta "essa vaga é da área
 do curso desta pessoa?" e a pontuação compara a área extraída da vaga com a do curso.
 
-Desde a revisão de 08/09, menção ao curso do perfil ou abertura a qualquer formação na
-descrição impede o veto antecipado por título: a extração e a compatibilidade verificam os
-requisitos depois. Nomes de cursos são comparados inteiros, com aliases explícitos e remoção
-de prefixos de formação, da pontuação nas pontas, do complemento depois de vírgula, hífen, barra
-ou parêntese e expansão de abreviações no começo ("Eng.", "Adm.", "C."). Um nome desconhecido não
-herda a área de um trecho do nome, e curso aceito pela vaga fora do catálogo continua contando como
-formação de outra área: nas vagas reais esses nomes são quase sempre curso de outra formação ou
-nível de ensino, e o sinônimo que falta entra como alias (16/09/2026). A menção
-na descrição vale também pelos sinônimos de nome composto que o catálogo converte no curso
-("Ciências Contábeis" para quem cursa Contabilidade); sigla e palavra solta, como "si" e
-"redes", ficam de fora porque aparecem em texto comum.
+Menção ao curso do perfil ou abertura a qualquer formação na descrição impede o veto antecipado
+por título, e nomes de curso são comparados inteiros depois da normalização (aliases, prefixos,
+complementos e abreviações). As regras e as medições estão nas
+[decisões do motor](decisoes-do-motor.md#áreas-uma-fonte-só-para-curso-vaga-banco-e-site-08092026).
 Quando algum perfil não tem área reconhecida, Adzuna e Jooble fazem busca geral de estágio,
 respeitando os limites de paginação existentes; isso não garante cobertura integral.
 
 As notas são recalculadas em Python a cada execução, usando extrações compartilhadas.
 Avaliações armazenadas permanecem como registro, mas não alimentam a seleção; isso evita
 notas antigas após mudanças de regras ou feedback. O histórico de envios continua impedindo
-repetições. Office e idiomas passam a contar na cobertura para cursos fora de computação;
-o comportamento anterior de computação permanece.
+repetições.
 
 ### `domain/` — o que o sistema *é*
 
@@ -142,7 +134,10 @@ A IA extrai **fatos da vaga**; o Python **compara** esses fatos com cada perfil.
 existe por custo: o prompt não contém perfil algum, então uma vaga é extraída **uma vez** e a
 extração serve todos os usuários. O custo de IA passou de O(usuários × vagas) para O(vagas):
 usuário novo não repete extração alguma, mas traz as vagas novas da sua cidade e da sua área, e
-no plano pago cada extração é requisição cobrada.
+no plano pago cada extração é requisição cobrada. O resumo de cada execução informa as
+requisições, e `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade
+se perca; a história do custo antes disso está nas
+[decisões do motor](decisoes-do-motor.md#a-extração-não-é-repetida-por-usuário-03092026).
 
 - **Por que Gemini**: começou pela camada gratuita, suficiente para validar o produto; desde
   10/09/2026 o projeto usa o plano pago.
@@ -164,17 +159,10 @@ no plano pago cada extração é requisição cobrada.
   Nº período” (o do período desde 14/09/2026). Experiência exigida só zera o fator.
 - **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
   área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
-  habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos:
-  SQL pode atender “banco de dados”, mas Java não atende JavaScript. Quando nem o perfil nem a
-  vaga são de computação, um requisito também é atendido por palavras inteiras ("Contratos"
-  atende "revisão de contratos"). Requisito composto ("Excel e Power BI") exige todas as partes,
-  "ou" é alternativa, e requisito repetido só conta se todas as versões forem atendidas. O nível
-  exigido é comparado com o maior nível que o perfil declara entre nome, família e palavras.
-  Desde 09/09, a cobertura neutra sem stack é 0,25, e desde 10/09 vaga em que nenhum requisito
-  que conta é atendido também fica no máximo nela: com um requisito só, a suavização dava 0,5 a
-  quem não atendia nada. Office, idiomas e soft skills ficam
-  fora da cobertura apenas para computação. Desejáveis ausentes aparecem como
-  “Diferenciais que a vaga cita”, separados dos requisitos a conferir, sem virar veto.
+  habilidades usa nomes normalizados e famílias explícitas de requisitos genéricos: SQL pode
+  atender “banco de dados”, mas Java não atende JavaScript. Cobertura, nível, composição, travas
+  e o viés conhecido, com as medições, estão nas
+  [decisões do motor](decisoes-do-motor.md#pontuação-por-que-os-pesos-são-estes).
 - **A extração fica em `vagas.extracao`** (JSONB). Reexecução no mesmo dia, usuário novo
   entrando ou coorte crescendo não gastam cota de novo.
 - **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração.
@@ -190,27 +178,19 @@ no plano pago cada extração é requisição cobrada.
 Regras baratas (regex) cortam o óbvio — "Desenvolvedor Sênior", "5 anos de experiência" —
 antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
-Regex não lê negação sozinho: "não exigimos 2 anos de experiência" descartava a vaga pela
-menção. A negação passou a valer dentro da mesma frase, e só dentro dela, para que um "não"
-da frase anterior não libere a exigência seguinte. Depois da exigência ela vale nas palavras
-logo seguintes, sem atravessar vírgula ("Experiência de 2 anos não é necessária"), e a exigência
-precisa do "de" ("2 anos de experiência"), porque a quebra de linha some e "Duração: 2 anos"
-colava no rótulo "Experiência" da linha seguinte.
+Regex não lê negação sozinho, nem o dono de uma menção: "não exigimos 2 anos de experiência" e
+"PcDs são bem-vindas" não são exigência nem vaga exclusiva. Como cada padrão trata isso, com os
+casos medidos, está nas [decisões do motor](decisoes-do-motor.md#qualidade-da-mensagem-e-do-pré-filtro).
 
 Cortar antes da IA economiza cota e também esconde erro: quem só julga a vaga entregue nunca
 vê a boa vaga que sumiu aqui. `python -m radar descartes` grava uma amostra do que o
 pré-filtro cortou, com o motivo de cada corte, no mesmo formato do gabarito. A amostra cobre
 um motivo diferente por vez antes de repetir, senão o motivo mais frequente tomaria a lista.
 
-O público da vaga (`domain/publico.py`) é regra do mesmo tipo, e o mesmo cuidado com o que a
-menção quer dizer: "PcDs são bem-vindas" é da empresa, "vaga para pessoas com deficiência" é da
-vaga. A mesma frase muda de dono conforme a posição, então a exclusividade só conta quando o
-sujeito abre a frase: "recrutamento e seleção para pessoas com deficiência" é a tarefa do
-estágio, e no título só a sigla ("Estágio - PCD") é marca de vaga, porque o termo por extenso
-costuma nomear o público que o trabalho atende.
-Só a exclusiva para PCD é cortada aqui, e só para quem respondeu que não é PCD; a
-prioridade para quem é PCD e os avisos de vaga afirmativa ficam em `matching/regras.py`, depois
-da nota, porque dependem de a vaga ter passado na nota mínima.
+O público da vaga (`domain/publico.py`) é regra do mesmo tipo. Só a exclusiva para PCD é
+cortada aqui, e só para quem respondeu que não é PCD; a prioridade para quem é PCD e os avisos
+de vaga afirmativa ficam em `matching/regras.py`, depois da nota, porque dependem de a vaga ter
+passado na nota mínima.
 
 ### 5. Extração em lotes com tolerância a falhas
 
@@ -342,11 +322,8 @@ Regras para não afetar quem já usa:
   `registrar_envios` roda depois: uma falha de entrega não descarta o que a IA já custou, e o
   dia seguinte não reavalia as mesmas vagas.
 - **Todo dia tem mensagem, mas nenhuma é vazia.** Sem vaga aprovada, o estudante recebe que
-  nada compatível apareceu e que a busca volta amanhã: silêncio total pareceria serviço morto.
-  A mensagem antiga só dizia "nenhuma vaga compatível hoje"; a de agora diz o que acontece a
-  seguir. Depois de `DIAS_DE_SILENCIO_ATE_AVISAR` dias sem nenhuma recomendação, e no máximo
-  uma vez por período, a mesma mensagem ganha um parágrafo sugerindo ampliar cidade ou
-  modalidade — parágrafo, não segunda mensagem, para não notificar duas vezes no mesmo dia.
+  nada compatível apareceu e que a busca volta amanhã; o porquê e o aviso depois de dias de
+  silêncio estão nas [decisões do motor](decisoes-do-motor.md#qualidade-da-mensagem-e-do-pré-filtro).
 - **Falhas seguidas pausam o perfil.** Cada erro de envio incrementa `perfis.falhas_de_envio`;
   ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
   Um envio bem-sucedido zera a contagem. Sem isso, quem bloqueia o bot vira custo diário eterno.
@@ -412,26 +389,6 @@ fabrica comportamento que nenhum emissor produz.
 | GitHub Actions | executa o workflow manual | repositório público, sem servidor dedicado |
 | cron-job.org | dispara o workflow diariamente | substitui o `schedule` nativo que falhou em testes |
 
-## Regras do repositório
-
-- Sem comentários no código; nomes autoexplicativos.
-- Commits atômicos em [Conventional Commits](https://www.conventionalcommits.org), em
-  português: `feat(matching): adiciona extrator em lotes`.
-- `.env` e segredos nunca commitados.
-- Toda funcionalidade com teste; a suíte roda sem chave e sem internet.
-
-## Custo de IA por usuário
-
-A extração compartilhada é o que tornou a coorte do piloto viável na cota gratuita, antes do
-plano pago de 10/09/2026. Antes, cada
-perfil reavaliava as mesmas vagas: 20 estudantes no primeiro dia pediam cerca de 120 requisições
-contra um limite de 20 por minuto, e o job morria no timeout antes de atender a fila inteira —
-sempre pelos usuários mais recentes, porque a fila é ordenada por `criado_em`.
-
-Agora o número de requisições depende só de quantas vagas novas passaram no pré-filtro de algum
-perfil. O resumo de cada execução (decisão 10) informa esse número, e o teste
-`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
-
 ## Estado e evolução
 
 Banco, múltiplos usuários, cadastro, controle da conta, feedback, métricas e entrega após
@@ -461,9 +418,7 @@ Teste de etapa isolada não cobre esse tipo de falha; contrato entre etapas, sim
 Mudar o prompt muda `VERSAO_DA_EXTRACAO` e invalida o cache: a execução seguinte reextrai as
 candidatas. É o preço de corrigir o formato do que está guardado.
 
-## Viés conhecido do ranking
-
-### Correções e limites preservados da auditoria de 08/09
+## Correções e limites preservados da auditoria de 08/09
 
 Síntese consolidada em 09/09 a partir da auditoria e da revisão do PR #22. Os cenários
 A01–A06 foram registrados como corrigidos localmente; isso não mede sua frequência real
@@ -486,22 +441,5 @@ As decisões de cálculo e apresentação estão em [Métricas](metricas.md).
 Limites ainda registrados: republicação entre fontes com descrição curta pode passar pela
 deduplicação; banco aceita subárea de outro curso,
 mitigada no carregamento; Jooble multiplica consultas por termo e permanece opcional.
-Novos casos devem entrar na [matriz de cobertura](cobertura-estagios.md), com entrada,
+Novos casos devem entrar na [matriz de cobertura](frentes-externas.md#e02--cobertura-de-estágios), com entrada,
 esperado, observado e teste por causa. Não reabrir os seis bugs apenas por ler o relatório antigo.
-
-### Calibração pendente
-
-Em 03/09/2026, um anúncio com uma tecnologia declarada e atendida recebia 100, enquanto
-outro com cinco e três atendidas recebia 85. A cobertura suavizada
-`(1 + atendidas) / (1 + exigidas)` pode favorecer anúncios pouco detalhados.
-Isso é calibração, distinto dos bugs de normalização de habilidades já corrigidos.
-
-Antes de mudar pesos, investigar exemplos reais de `vaga_irrelevante`, especialmente
-`motivo_nota`, comparando recusas com entregas por grupo. As habilidades declaradas estão
-em `vagas.extracao`. Limitar a nota de anúncios com poucos requisitos ou considerar a
-densidade de requisitos na cobertura são alternativas ainda não implementadas.
-
-Em 10/09/2026 entrou só a parte que era incoerência, não calibração: vaga sem nenhum requisito
-atendido não passa da cobertura neutra, porque com um requisito só a suavização dava 0,5 a quem
-não atendia nada. O viés de 1 de 1 contra 3 de 5 e o teto por lista (obrigatória não atendida
-com desejável atendido ainda vale 0,5 com peso 80%) continuam dependendo de `vaga_irrelevante`.

@@ -2,10 +2,15 @@
 
 **Radar de Estágio** · Métodos e Aplicações de IA (IBM3116) · Professor Alvaro Riz
 **Integrantes:** Igor Costa, Ian Dias e Miguel Esteves
-**Aplicação:** <https://radarestagio.pages.dev> · **Código:** <https://github.com/RadarEstagio/RadarEstagio>
+**Aplicação:** <https://radarestagio.com> · **Código:** <https://github.com/RadarEstagio/RadarEstagio>
 
 Os números deste documento foram medidos na aplicação em produção, que entrega recomendações
 diárias a estudantes reais desde 28/08/2026. Onde há data, ela é a da medição.
+
+> Atualização de 16/10/2026: o endereço, a hospedagem e a divisão de responsabilidades foram
+> corrigidos. O site saiu do Cloudflare Pages para `radarestagio.com` em 03/10, o
+> `radarestagio.pages.dev` deixou de resolver em 05/10 e a operação foi combinada em 02/10. Os
+> números continuam os medidos em 28 e 30/09.
 
 ## 1. Identificação do problema
 
@@ -97,7 +102,7 @@ mínima, avisa que não houve vaga compatível — não manda qualquer coisa par
 Flash na extração; PostgreSQL gerenciado no Supabase, com Row Level Security por usuário; Edge
 Functions (Deno) para o webhook do Telegram e para o link rastreável; GitHub Actions como
 executor, disparado por um cron externo; site estático em HTML, CSS e JavaScript no Cloudflare
-Pages.
+Workers, com arquivos estáticos.
 
 **Onde a IA entra — e onde não entra.** Esta é a decisão de projeto mais importante:
 
@@ -326,7 +331,7 @@ entrega todos os dias sem intervenção e tem 2.020 testes automatizados. A arqu
 disparado por cron, não um serviço; não há servidor para manter no ar.
 
 **Infraestrutura necessária.** GitHub Actions (gratuito em repositório público) como executor;
-PostgreSQL gerenciado (plano gratuito do Supabase); Cloudflare Pages para o site estático; um
+PostgreSQL gerenciado (plano gratuito do Supabase); Cloudflare Workers para o site estático; um
 disparador externo de cron; chave da API da Adzuna (gratuita); e a API do Gemini, único item pago
 por uso. Para uso real em escala maior, o plano pago do banco e um domínio próprio são os dois
 primeiros custos a aparecer.
@@ -341,8 +346,8 @@ serviços estão em plano gratuito. O que muda essa conta é ampliar cobertura (
 
 **Pessoas.** Três estudantes construíram e operam o sistema. Para operação real são necessários:
 alguém acompanhando o resumo diário e as falhas; alguém respondendo pedidos de dados e exclusão,
-por exigência da LGPD; e alguém responsável pelo domínio e pelas contas de serviço. Essa divisão
-ainda não foi fechada pelo grupo.
+por exigência da LGPD; e alguém responsável pelo domínio e pelas contas de serviço. Em 02/10 o
+grupo combinou que o Igor assume as três funções, como registra o guia de publicação.
 
 **Disponibilidade de dados.** É o ponto mais frágil: fonte única, sob termos de uso que podem
 mudar. Ampliar para outra fonte é tecnicamente barato — o coletor é uma interface e uma fonte nova

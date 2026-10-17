@@ -1,6 +1,6 @@
 # Funcionalidades do Radar de Estágio
 
-Catálogo atualizado em 19/09/2026 com base no código da `main`. Destina-se aos integrantes,
+Catálogo conferido com o código da `main` em 16/10/2026. Destina-se aos integrantes,
 estudantes e desenvolvedores. “Implementado” significa que existe código; a disponibilidade
 pública depende da configuração e publicação descritas no [guia](guia-publicacao-e-piloto.md).
 O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de todos os portais.
@@ -8,9 +8,9 @@ O catálogo não garante vaga, aprovação em processo seletivo ou cobertura de 
 ## Navegação
 
 - [Para quem usa](#para-quem-usa) — conta, recomendações e controle dos dados.
-- [Respostas de feedback](#as-seis-respostas-de-feedback) — opções e efeito no ranking.
+- [Respostas de feedback](#as-sete-respostas-de-feedback) — opções e efeito no ranking.
 - [Para desenvolvedores e operação](#para-desenvolvedores-e-operação) — coleta, IA, entrega e segurança.
-- [Comandos](#comandos) — execução e testes locais.
+- [Comandos](#comandos) — a CLI, detalhada no [guia de desenvolvimento](desenvolvimento.md).
 - [Configuração e manutenção](#configuração-e-manutenção).
 - [Fora do escopo](#o-que-não-está-incluído).
 - [Estado de disponibilização](#estado-de-disponibilização).
@@ -241,7 +241,7 @@ perfil usa a exclusão com arrependimento.
 
 ---
 
-## As seis respostas de feedback
+## As sete respostas de feedback
 
 - **👍 Essa serviu**: `vaga_util`.
 - **👎 A nota não fez sentido**: `vaga_irrelevante`, `motivo_nota`.
@@ -249,11 +249,14 @@ perfil usa a exclusão com arrependimento.
 - **👎 Pedem demais**: `vaga_irrelevante`, `motivo_exigencia`.
 - **👎 Local ou modalidade**: `vaga_irrelevante`, `motivo_logistica`.
 - **👎 Já vi essa**: `vaga_irrelevante`, `motivo_repetida`.
+- **👎 Vaga encerrada**: `vaga_irrelevante`, `motivo_encerrada`.
 
 Na personalização atual, “Já vi essa” ajuda a filtrar republicações. Duas ou mais recusas de
 área nos últimos 30 dias retiram o fator de interesse daquela subárea para o usuário, com
-teto e aviso específicos. Os demais motivos alimentam análise; positivo não reajusta o
-ranking automaticamente. Regras e métricas têm finalidades diferentes.
+teto e aviso específicos. “Vaga encerrada” tira a vaga de quem marcou e, nas condições do item
+14, dos outros. Os demais motivos alimentam análise; positivo não reajusta o ranking
+automaticamente. Regras e métricas têm finalidades diferentes. A pergunta do dia seguinte usa
+os seis motivos negativos em "Não serviu" e grava `candidatura_iniciada` em "Me candidatei".
 
 ---
 
@@ -380,9 +383,11 @@ Supabase Auth, RLS, grants e RPCs limitadas ao dono.
 
 #### 17. Antiabuso
 
-Integração Turnstile pronta.
+Turnstile no cadastro, no login, no reenvio da confirmação e na recuperação de senha, ligado
+no site e no Supabase em 03/10/2026; eventos do site com teto por sessão, conta e hora (`0023`).
 
-**Condições e limites:** Inerte enquanto chave/configuração não forem ativadas.
+**Condições e limites:** O site e o Cloudflare ainda não têm limite de requisições por IP nem
+Bot Fight Mode; ver o [plano geral](plano-geral.md).
 
 #### 18. Limpeza de contas
 
@@ -424,23 +429,10 @@ Python, Deno, DOM simulado e PostgreSQL isolado via PGlite.
 
 ## Comandos
 
-Prefixo: `uv run python -m radar`.
-
-- **`verificar`**: Validar configuração.
-- **`coletar`**: Consultar fontes e inspecionar coleta.
-- **`avaliar`**: Coletar e avaliar; pode consumir cota de IA.
-- **`testar-telegram`**: Enviar mensagem de teste ao Telegram.
-- **`testar-local`**: Rodar com perfil fixo e memória, ignorando banco/histórico; envia mensagens reais.
-- **`rodar`**: Executar para destinatários ativos do banco; sem `DATABASE_URL`, usa perfil fixo.
-- **`rodar --perfil UUID`**: Selecionar `perfis.id`, não `user_id`; exige banco para usar perfil real.
-- **`metricas`**: Consultar relatório; exige banco.
-- **`gabarito --dias 7 --amostra 20 --saida arquivo.json`**: Exportar uma amostra de entregas para as pessoas marcarem `relevante` com true ou false; exige banco.
-- **`descartes --amostra 30 --saida arquivo.json`**: Exportar uma amostra do que o pré-filtro descartou, com o motivo de cada corte, para as pessoas marcarem `descarte_correto`; consulta as fontes.
-- **`julgar --dias 7 --amostra 30 [--gabarito arquivo.json]`**: Pedir a um segundo modelo (`JUIZ_MODELO`) que julgue, às cegas, uma amostra das entregas recentes e imprimir relevância estimada, concordância com o feedback e reprovadas com nota alta; exige banco e não altera nada. Com `--gabarito`, julga só as entregas rotuladas e mede a concordância do juiz com as pessoas.
-
-**Limitação do modo local:** os botões são gerados, mas os tokens não são persistidos. Portanto,
-feedback dessas mensagens não funciona no webhook. Use envios do fluxo com banco para testar.
-Envios normais que falham na gravação também podem deixar tokens órfãos.
+A CLI (`uv run python -m radar`) tem `verificar`, `coletar`, `avaliar`, `testar-telegram`,
+`testar-local`, `rodar`, `rodar --perfil`, `metricas`, `julgar`, `gabarito` e `descartes`. O que
+cada um faz, os efeitos externos e os cuidados estão no
+[guia de desenvolvimento](desenvolvimento.md#3-comandos).
 
 ## Configuração e manutenção
 
@@ -455,7 +447,8 @@ Os passos concretos e as evidências remotas estão no [guia](guia-publicacao-e-
 
 ## O que não está incluído
 
-- Candidatura automática, envio de currículo ou captura de “já me candidatei”.
+- Candidatura automática ou envio de currículo. A candidatura só é registrada quando a pessoa
+  a declara em "Me candidatei", na pergunta do dia seguinte.
 - Painel web de métricas e lista de vagas no painel da conta.
 - Pagamentos, assinatura e campanhas de marketing por e-mail.
 - Login social na interface, múltiplas cidades/modalidades por perfil ou cadastro pelo diálogo do bot.
@@ -469,8 +462,9 @@ Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma aber
 
 ## Estado de disponibilização
 
-Em 19/09, as 30 migrations constavam como aplicadas e as funções `ir` e `telegram-webhook`
-tinham sido republicadas em 10/09 e 16/09. O guia registra a primeira entrega real e o teste de
-concorrência de 05–06/09. A equipe ainda precisa confirmar o domínio final, o Turnstile, a
-revisão dos textos e o teste completo de cadastro com conta da equipe antes do piloto. Não confundir testes automatizados
-com validação de utilidade por estudantes.
+O site está em `https://radarestagio.com` desde 03/10/2026, com Turnstile ligado e os Termos e a
+Política na versão `2026-10-08`. Em 17/10 o banco tinha as migrations `0001` a `0035` e as
+duas Edge Functions estavam com o código da `main`, publicado em 08/10; o
+[guia](guia-publicacao-e-piloto.md#estado-conferido) tem as conferências. Falta o
+teste completo com conta da equipe (reenvio, recuperação, entrega, feedback e controles). Não
+confundir testes automatizados com validação de utilidade por estudantes.
