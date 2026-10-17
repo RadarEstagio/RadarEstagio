@@ -7,6 +7,7 @@ ficam resumidas no `CLAUDE.md`; o contrato com o site está em [contrato fronten
 
 - **Conta e cadastro**
   - [Exclusão de conta é em duas etapas](#exclusão-de-conta-é-em-duas-etapas-04092026)
+  - [Controle do próprio perfil e pausa](#controle-do-próprio-perfil-e-pausa-04092026-0013)
   - [Conta confirmada sem perfil é apagada na hora](#conta-confirmada-sem-perfil-é-apagada-na-hora-13092026-0024)
   - [Cadastro que não confirma o e-mail tem prazo](#cadastro-que-não-confirma-o-e-mail-tem-prazo-16092026-0030)
   - [Cadastro pendente inválido e sessões do apagamento](#cadastro-pendente-inválido-e-sessões-do-apagamento-08102026-0035)
@@ -19,6 +20,7 @@ ficam resumidas no `CLAUDE.md`; o contrato com o site está em [contrato fronten
   - [Grant largo e a pagina sem regra](#grant-largo-e-a-pagina-sem-regra-08102026-0034)
   - [Contas da equipe fora do funil](#contas-da-equipe-fora-do-funil-proposta-de-05102026)
 - **Operação do job**
+  - [Avaliação, envio e ativação](#avaliação-envio-e-ativação)
   - [Toda execução se reporta](#toda-execução-se-reporta-18092026)
   - [O resumo mede o tamanho do banco](#o-resumo-mede-o-tamanho-do-banco-08102026)
   - [Texto que o Postgres recusa sai na entrada](#texto-que-o-postgres-recusa-sai-na-entrada-16092026)
@@ -57,6 +59,19 @@ mutações. Limites: o teste roda as consultas na ordem do repositório, não o 
 o PGlite tem uma conexão só, então a transação e a corrida entre execuções seguem sem teste; e o
 `auth.users` do PGlite é o mínimo que as migrations exigem, então a cascata das outras tabelas do
 Auth do Supabase (sessões, tokens) não é exercitada.
+
+## Controle do próprio perfil e pausa (04/09/2026, `0013`)
+
+Editar, pausar e retomar são `update` em `perfis` pelas colunas já liberadas no `grant`.
+Desvincular o Telegram e excluir a conta não cabem em `grant` — `telegram_chat_id` é do webhook e
+`auth.users` o cliente não apaga — então são funções `security definer` filtrando por
+`auth.uid()`, na migration `0013`. Desvincular rotaciona o `token_vinculo` junto, senão o link
+antigo continuaria valendo.
+
+**`ativo` é só da pausa; exclusão não escreve nele.** O gatilho da `0005` emite
+`entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
+como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
+tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
 
 ## Conta confirmada sem perfil é apagada na hora (13/09/2026, `0024`)
 
@@ -424,6 +439,21 @@ da tabela, que seria migration. **Falta decidir**: a lista de contas (a equipe t
 integrantes, mais as contas de teste), se a tabela entra numa migration própria antes da
 mudança no `metricas.sql`, e se o resumo diário também as exclui. Até lá, o número de perfis
 da coorte inclui a equipe, e a leitura precisa dizer isso.
+
+## Avaliação, envio e ativação
+
+- **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
+  que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
+  `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
+- **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
+  mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
+  órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
+- **Ativação operacional** é a primeira entrega bem-sucedida com ao menos uma recomendação;
+  `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`. As
+  [métricas](metricas.md) separam esse marco da ativação de produto.
+- No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
+  usuário viram aviso. Falhas de revalidação são contadas por usuário no resumo e bloqueiam a
+  mensagem afetada; o resumo distingue quem ficou sem entrega de quem já recebeu antes da falha.
 
 ## Toda execução se reporta (18/09/2026)
 

@@ -115,6 +115,10 @@ cadastro aceita o texto digitado e avisa, para uma falha de rede não custar a c
 de `uv run python scripts/gerar_cidades.py`, que lê os municípios e a população do Censo 2022
 nas APIs do IBGE; a população só ordena as sugestões. Regerar quando o IBGE criar município.
 
+O perfil aceita uma cidade e uma modalidade. `cidades_aceitas` e `modalidades_aceitas` existiram
+sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da tela que as
+escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
+
 `habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
 cada, contando os espaços nas pontas desde a `0025`. Cada item é o que a pessoa adicionou na tela,
 sem separar por vírgula; habilidade composta ("Python, SQL") é partida pelo Python na comparação. Lista vazia significa que o estudante ainda não informou
@@ -259,6 +263,13 @@ Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
 
 ## Decisões de cadastro e privacidade
 
+- **Cadastro no site, não no bot.** O cadastro conversacional pelo bot foi substituído por um
+  site com conta: dados de perfil são estruturados (lista de habilidades, período, modalidade) e
+  um formulário é mais claro que uma conversa; o bot continua sem estado e sem máquina de
+  conversa; o Supabase já resolve conta (Auth) e banco de uma vez.
+- **A conta fica por último no formulário**: pedir e-mail e senha antes de qualquer valor
+  entregue cobra o preço antes de mostrar o produto. `signup` só é chamado no envio do último
+  passo, nunca ao avançar entre etapas, e login e edição continuam com seus próprios passos.
 - A confirmação de e-mail mantém um canal verificado para acesso e recuperação. O reenvio
   permite corrigir o endereço e respeita o intervalo entre tentativas.
 - Aceite dos termos e autorização opcional de e-mails são controles separados. A autorização

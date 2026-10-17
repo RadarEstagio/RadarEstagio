@@ -215,6 +215,15 @@ recuperação falham até o site publicar a chave, o que aconteceu por cerca de 
 
 Preserve os secrets `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` das funções; as credenciais
 de banco delas vêm do ambiente do Supabase. Nenhum segredo entra em `web/config.js`.
+
+O `TELEGRAM_WEBHOOK_SECRET` vive em três lugares que precisam do mesmo valor: o `setWebhook` no
+Telegram, os secrets do Supabase e os `.env` locais. Divergência vira 401 silencioso em todo
+update: em 04 e 05/09/2026 um re-registro usou o segredo de um `.env` dessincronizado, e cliques e
+vínculos se perderam por cerca de 12 horas. O `setWebhook` leva
+`allowed_updates=["message","callback_query"]`: o registro original só aceitava `message`, e o
+Telegram descartava os cliques dos botões de feedback antes de chegarem à função (corrigido em
+04/09/2026). Ao mexer no webhook, conferir `getWebhookInfo`: `last_error_message` vazio e
+`pending_update_count` zerando. Com o webhook ativo, `getUpdates` deixa de funcionar nesse bot.
 `supabase/config.toml` define `verify_jwt = false` para as duas: o webhook confere o segredo do
 Telegram, e a `ir` atende links do navegador.
 
@@ -288,3 +297,36 @@ Depois de conferir os fluxos, pedir a alguns colegas que usem e relatem onde tra
 vagas serviram, com um `utm_source` por canal. Não há obrigação de entrevistas, coorte, prazo ou
 metas de retenção. A checklist vigente está no
 [plano geral](plano-geral.md#2-o-que-falta-antes-de-divulgar).
+
+## 12. Agendamento, tokens e CI do GitHub
+
+O [workflow diário](../.github/workflows/radar-diario.yml) só tem `workflow_dispatch`: o
+`schedule` nativo ficou dois dias sem disparar e foi removido. Quem dispara às 07:23 de Brasília é
+um job no cron-job.org que chama a API `dispatches` com token fine-grained.
+
+Na transferência de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio` (08/09/2026), commits,
+autores, issues e PRs foram preservados e o GitHub redireciona o endereço antigo; o que quebrou foi
+a ligação das automações, porque cada uma guardava o dono no nome:
+
+- **cron-job.org**: mudam a URL **e o token**. Token fine-grained é preso ao dono, então o antigo
+  para de enxergar o repositório mesmo com a URL certa. O teste bem-sucedido responde **204 No
+  Content** com corpo vazio; 404 é token apontando para a conta pessoal e 403 é falta de
+  `Actions: Read and write`.
+- **Antes de gerar os tokens**, a organização precisa liberar tokens fine-grained (Settings →
+  Personal access tokens). Sem isso o token nasce válido e a API responde 404, sem dizer por quê.
+- **Entrega imediata**: trocar só o `GITHUB_DISPATCH_TOKEN` não basta, porque `REPOSITORIO` em
+  `entrega_imediata.ts` é constante (seção 8).
+- Os secrets do Actions sobreviveram à transferência. O token do cron **vence em 09/09/2027**:
+  quando vencer, o radar diário para de rodar sem avisar ninguém.
+
+**Ações por hash e token só de leitura (13/09/2026).** O job diário recebe os segredos de
+produção, e o dono de uma ação pode mover a tag dela para outro commit. Por isso toda `uses:`
+aponta para o hash de 40 caracteres e todo workflow declara `permissions: contents: read` no topo;
+permissão maior só no job que precisar, com o motivo no commit. O checkout leva
+`persist-credentials: false`, para o token não ficar no `.git/config` ao alcance do radar e das
+dependências, e o `setup-uv` instala o uv `0.12.5`, o mesmo usado localmente: sem `version:` ele
+baixaria o mais novo, que roda no passo dos segredos. `tests/test_workflows.py` cobra essas regras
+e guarda em `VERSAO_DE_CADA_ACAO` a versão de cada hash, porque o YAML não leva comentário. O
+Dependabot abre um PR semanal das ações, 7 dias depois de cada versão sair, e o teste falha até
+alguém registrar no mapa a versão nova, conferida com `git ls-remote`. A versão do uv o Dependabot
+não toca: sobe à mão, junto com o uv local.

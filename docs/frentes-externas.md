@@ -6,6 +6,41 @@ desconhecido fica "não medido", nunca zero. O estado de cada uma está no
 [plano geral](plano-geral.md#4-pendências-externas); a decisão D01, sobre formação acadêmica, fica
 no [contrato frontend](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto).
 
+## Termos de uso das fontes (12/09/2026)
+
+Leitura dos termos no texto original, movida do `CLAUDE.md` em 17/10/2026, que guarda só as
+regras. As medições da cota, da coleta resiliente e do enriquecimento estão nas
+[decisões do motor](decisoes-do-motor.md).
+
+- **Adzuna, uso 1.** Os termos permitem "Publishing Adzuna ad listings" sem prazo. O teste de
+  14 dias e a proibição de agregação ("vacancy counts, average salaries") estão no parágrafo de
+  "Any other use". O Radar publica anúncios com link para a página da Adzuna (o `redirect_url`,
+  com o nosso app id), então cai no uso 1. Confirmação por escrito pedida no e-mail à Adzuna.
+- **Atribuição em cada anúncio exibido**: "Jobs by Adzuna", com "Jobs" ligado a adzuna.com.br e
+  "Adzuna" sendo o logo, também com link, em pelo menos 116×23 px. No Telegram vai o texto com
+  os dois links, porque mensagem de texto não tem imagem (aprovação pedida no e-mail). No site
+  vai o selo com `web/assets/adzuna-logo.png`, o logo oficial servido pelo site de
+  desenvolvedores da Adzuna; no tema escuro ele ganha fundo branco, sem mudar as cores.
+- **Limites da Adzuna**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por
+  mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
+  quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
+  vira erro de coleta, nunca "nenhuma vaga".
+- **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
+  where they provide listings content, will be considered a breach".
+- **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
+- **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
+  and Selection, including expired job opportunities", e o endpoint usado
+  (`employability-portal.gupy.io/api/v1/jobs`) é interno. Era 7% dos envios (17 de 252). O
+  coletor fica no código para o caso de autorização; sem ela, não religar.
+- **Jooble não é saída sem parceria**: a chave gratuita tem "a total lifetime limit of 500
+  requests per key" e devolve só um trecho da descrição.
+- **LinkedIn** está fora de escopo: bloqueia coleta automatizada.
+- **Alternativas medidas.** Greenhouse, Lever e Ashby têm API pública de vagas sem login, mas a
+  documentação trata das vagas da própria empresa e não dá licença a terceiros; em 12/09 havia 36
+  estágios em 6 empresas brasileiras nesses boards, quase todos em SP e BH. A Adzuna tem programa
+  de parceiros ("a sponsored feed of ads for your site… generate more revenue for you"), o
+  caminho para receita sem cobrar do estudante.
+
 ## E02 · Cobertura de estágios
 
 Mede a oferta observada numa amostra; não mede o mercado inteiro e não transforma ausência de

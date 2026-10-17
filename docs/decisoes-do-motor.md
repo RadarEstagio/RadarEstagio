@@ -21,6 +21,7 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
 - **Extração**
   - [A extração não é repetida por usuário](#a-extração-não-é-repetida-por-usuário-03092026)
   - [A extração tem prazo](#a-extração-tem-prazo-11092026)
+  - [Modelo e cota do Gemini](#modelo-e-cota-do-gemini-10092026)
   - [Raciocínio da extração em low](#raciocínio-da-extração-em-low-11092026)
   - [Lote incompleto pede junto o que faltou](#lote-incompleto-pede-junto-o-que-faltou-10092026)
   - [Só entra extração com o id de uma vaga do lote pedido](#só-entra-extração-com-o-id-de-uma-vaga-do-lote-pedido-18092026)
@@ -693,6 +694,16 @@ acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é 
 socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
 enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
 ainda pode levar o job ao kill.
+
+## Modelo e cota do Gemini (10/09/2026)
+
+O padrão é o `gemini-3.6-flash` (`GEMINI_MODELO`): o `gemini-2.5-flash` foi recusado pela API
+como indisponível para contas novas. O projeto está no plano pago desde 10/09/2026. Na cota
+gratuita, o `gemini-3.6-flash` tinha 20 requisições por minuto, e os limites variam por modelo,
+projeto e janela; por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`, padrão 10), com
+repartição do lote que falha e espera pelo "retry in Ns" do 429. Acima de 120 s a espera indica
+cota diária, e o job desiste devolvendo o que já tem. No plano pago o que pesa é o custo por
+requisição e o tempo de execução, não a cota.
 
 ## Raciocínio da extração em `low` (11/09/2026)
 
