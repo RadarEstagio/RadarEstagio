@@ -1,8 +1,8 @@
 # Plano geral
 
-**Revisado em 16/10/2026** contra o código da `main` e o GitHub. O Supabase, o Cloudflare e o
-cron-job.org não foram reconsultados nesta revisão: a última conferência registrada das
-migrations e das funções é a de 19/09, e o que veio depois está na seção 2.1. É a fonte única de
+**Revisado em 16/10/2026** contra o código da `main` e o GitHub; migrations, Edge Functions e
+webhook do Telegram conferidos em 17/10, só leitura. O Cloudflare e o cron-job.org não foram
+reconsultados nesta revisão. É a fonte única de
 pendências e decisões da equipe; os outros documentos linkam aqui em vez de repetir estado.
 
 O plano formal de piloto foi retirado por decisão do Igor em 07/09: não há obrigação de recrutar
@@ -43,18 +43,15 @@ uma coorte, fazer cinco entrevistas, calcular D7 ou cumprir metas de pesquisa an
 
 ## 2. O que falta antes de divulgar
 
-### 2.1 Conferir o que foi publicado depois de 19/09
+### 2.1 Conferir o que foi publicado
 
-O código destas mudanças está na `main`, mas não há registro de que chegaram ao ar. Conferir com
-`supabase migration list --linked` e `supabase functions list`, e registrar o resultado no
-[guia](guia-publicacao-e-piloto.md):
+Conferido em 17/10 com o CLI do Supabase, só leitura; o resultado está no
+[guia](guia-publicacao-e-piloto.md#estado-conferido):
 
-- [ ] Migrations `0032` (origem da visita), `0033` (pergunta do dia seguinte), `0034` (grants e
-  formato da `pagina`) e `0035` (confirmação e sessões do apagamento). Sem a `0033`, a pergunta
-  do dia seguinte falha e só gera aviso no resumo.
-- [ ] `telegram-webhook` republicada depois de 05/10 (mensagem livre e botões da pergunta do dia
-  seguinte) e de 08/10 (`servidor.ts`), com o secret `TELEGRAM_CHAT_ID` criado no Supabase.
-- [ ] `ir` republicada depois de 08/10 (`servidor.ts`); o comportamento é o mesmo.
+- [x] Migrations `0032` (origem da visita), `0033` (pergunta do dia seguinte), `0034` (grants e
+  formato da `pagina`) e `0035` (confirmação e sessões do apagamento) aplicadas.
+- [x] `telegram-webhook` e `ir` publicadas em 08/10, com o código igual ao da `main`, e o secret
+  `TELEGRAM_CHAT_ID` criado no Supabase.
 - [ ] Abrir o site no celular (HTTPS, início, Termos e Privacidade).
 - [ ] Testar a expiração do desafio do Turnstile.
 
@@ -143,7 +140,7 @@ documento indicado.
 
 | Frente | Estado e próximo passo | Documento responsável |
 |---|---|---|
-| E01 — publicação e jornada | Seção 2: conferir a publicação de 0032 a 0035 e das funções, testar com conta da equipe e inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
+| E01 — publicação e jornada | Seção 2: testar com conta da equipe, a expiração do Turnstile e inspecionar 375 px e 1280 px | [Guia](guia-publicacao-e-piloto.md) |
 | E02 — cobertura | Escolher janela, acesso e responsável; coletar amostra e separar erro técnico, desconhecido e descarte legítimo | [Frentes externas](frentes-externas.md#e02--cobertura-de-estágios) |
 | E03 — aquisição | Depois da jornada verificada, confirmar canal, responsável e mensagem; obter autorização antes de divulgar relato | [Frentes externas](frentes-externas.md#e03--aquisição-e-prova-de-utilidade) |
 | E04 — custos | Reunir faturas, uso e horas de suporte numa janela comum; custo desconhecido não é zero | [Frentes externas](frentes-externas.md#e04--custos-da-operação) |

@@ -13,9 +13,9 @@ banco do Radar.
 | Domínio e e-mail | 03/10/2026 | Domínio, site e Email Routing na conta Cloudflare do grupo; `contato@` recriado e testado; Resend "Verified" não reconferido |
 | Auth | 05/10/2026 | Site URL `https://radarestagio.com`; Redirect URLs só com `https://radarestagio.com/**` e `http://localhost:8000/**` |
 | Turnstile | 03/10/2026 | Widget no site; Supabase recusa pedido sem token (400 `captcha_failed`); expiração do desafio sem teste |
-| Migrations | 19/09/2026, `supabase migration list --linked` | `0001` a `0031` aplicadas (a numeração pula a `0029`). **`0032` a `0035` sem registro de aplicação** |
-| Edge Functions | 19/09/2026, `supabase functions list` | `ir` republicada em 10/09 e `telegram-webhook` em 16/09. **Os deploys pedidos em 05/10 (`telegram-webhook`) e 08/10 (as duas) não têm registro** |
-| Webhook do Telegram | 06/09/2026, `getWebhookInfo` | `allowed_updates` com `message` e `callback_query`, sem fila nem erro |
+| Migrations | 17/10/2026, `supabase migration list --linked` | `0001` a `0035` aplicadas, iguais às locais (a numeração pula a `0029`) |
+| Edge Functions | 17/10/2026, `supabase functions list` e `supabase functions download` | `telegram-webhook` (versão 24) e `ir` (versão 8) publicadas em 08/10 às 13:57, com o código igual ao da `main`; secret `TELEGRAM_CHAT_ID` criado |
+| Webhook do Telegram | 17/10/2026, `getWebhookInfo` | `allowed_updates` com `message` e `callback_query`, sem fila nem erro |
 | Rastreio | 03/10/2026 | `URL_DA_LANDING` em `https://radarestagio.com`; a `ir` manda token inexistente para o domínio novo |
 | Primeira entrega | 05/09/2026 | Do `/start` à mensagem em cerca de quatro minutos; trava por perfil validada com duas conexões no banco real |
 | Cadastro no domínio novo | 03/10/2026 | Igor confirmou cadastro e confirmação do e-mail; reenvio, recuperação, entrega, feedback e controles sem teste registrado |

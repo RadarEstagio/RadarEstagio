@@ -463,8 +463,8 @@ Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma aber
 ## Estado de disponibilização
 
 O site está em `https://radarestagio.com` desde 03/10/2026, com Turnstile ligado e os Termos e a
-Política na versão `2026-10-08`. A última conferência registrada das migrations é a de 19/09
-(`0001` a `0031`); a aplicação das `0032` a `0035` e a republicação das funções depois de 05/10 e
-de 08/10 não têm registro, e o [guia](guia-publicacao-e-piloto.md) diz o que conferir. Falta o
+Política na versão `2026-10-08`. Em 17/10 o banco tinha as migrations `0001` a `0035` e as
+duas Edge Functions estavam com o código da `main`, publicado em 08/10; o
+[guia](guia-publicacao-e-piloto.md#estado-conferido) tem as conferências. Falta o
 teste completo com conta da equipe (reenvio, recuperação, entrega, feedback e controles). Não
 confundir testes automatizados com validação de utilidade por estudantes.
