@@ -97,7 +97,7 @@ documentação, da apresentação e do `.gitignore`.
 |---|---|---|---|
 | `prompt-faxina-geral.md` (raiz) | Excluído. Não era versionado, então só foi apagado | Texto completo na seção 1 deste documento | — |
 | `.gitignore` | Ganha `.ua/`, a pasta local de uma ferramenta de análise, que já estava na cópia de trabalho | — | `7eafab7` |
-| `docs/sumario-da-documentacao.md` | Entrou no histórico (só existia na cópia local) e saiu depois de as seis divergências serem corrigidas | Divergências corrigidas nos donos (tabela abaixo); o resto repetia README, arquitetura, PIT e plano | `bf04782`, `9519f34` |
+| `docs/sumario-da-documentacao.md` | Entrou no histórico (só existia na cópia local) e saiu depois de as seis divergências serem corrigidas. Voltou em 17/10, a pedido do Igor, atualizado | Divergências corrigidas nos donos (tabela abaixo) | `bf04782`, `9519f34`, `c9f1d64` |
 | `docs/ideias-icones-3d-das-areas.md` | Excluído, e a cópia idêntica em `docs/3d/` também | A implementação de 14 e 15/10 já está no contrato frontend ("Hero lado a lado e faixa de áreas") | `76c8cd0` |
 | `docs/funcionalidades.md` | Sete respostas de feedback, Turnstile ligado, candidatura declarada, estado de publicação real e carimbo de 16/10; a seção de comandos aponta para o guia novo | — | `92987e0`, `4fea3e5` |
 | `docs/pit-do-grupo.md` → `docs/pit/pit-do-grupo.md` | Endereço `radarestagio.com`, hospedagem no Workers e divisão de responsabilidades de 02/10, com nota datada no topo; os números de 28 e 30/09 não mudaram | — | `bf9ef52`, `01a2a92` |
@@ -123,7 +123,7 @@ documentação, da apresentação e do `.gitignore`.
 
 ### Depois da primeira revisão (17/10/2026)
 
-O Igor respondeu às decisões 3, 4, 15, 16 e 18. O que mudou por causa disso:
+O Igor respondeu às decisões 3, 4, 15, 16 e 18, e depois pediu o sumário de volta. O que mudou por causa disso:
 
 | Resposta | O que foi feito | Commit |
 |---|---|---|
@@ -131,6 +131,7 @@ O Igor respondeu às decisões 3, 4, 15, 16 e 18. O que mudou por causa disso:
 | 15: "pode consultar o Supabase" | `supabase migration list --linked`, `functions list`, `functions download` e `secrets list`, só leitura, e `getWebhookInfo` no Telegram: `0001` a `0035` aplicadas, as duas funções publicadas em 08/10 com o código igual ao da `main` e o webhook sem erro. Guia, plano e catálogo deixam de dizer "sem registro" | `b0bc5ad` |
 | 16: "pode fazer o que quiser" | As 63 branches remotas mescladas foram apagadas e o repositório passou a apagar a branch depois do merge. Ficaram as dos PRs abertos (#152 e #153) e as dos fechados sem merge (#42 e #128), que têm commits fora da `main`. A proteção da `main` continua desligada: exigir checks muda como a equipe faz push, e isso fica no plano como decisão | `8ce0405` |
 | 18: "esse CLAUDE.md não está extenso demais?" | Estava. Caiu de 416 para 204 linhas. Antes, o que só existia nele foi para os donos, com o mesmo texto: termos das fontes nas frentes externas, modelo e cota do Gemini no motor, controle do perfil, pausa, envio e ativação no banco, cadastro no site e cidade única no contrato, segredo do webhook, transferência, cron e ações por hash no guia (seção 12 nova) | `82c9fd6`, `5346708` |
+| 4: "volta o sumário, eu gosto dele, ajuda a não se perder" | O sumário voltou, reescrito como retrato de 17/10: mapa dos documentos de hoje, números com a fonte, o que está aberto e os riscos. As seis divergências de 10/10 saíram, já corrigidas, e a seção fica para as próximas. O `CLAUDE.md`, o índice e o README passam a tratá-lo como o único retrato de estado, atualizado por quem muda um dono. Na conferência, RCD-01 e RCD-09 apareceram no plano ainda como "falta publicar" e foram corrigidos | `71c27a5`, `c9f1d64` |
 
 ### As seis divergências do sumário
 
@@ -175,7 +176,9 @@ O Igor respondeu às decisões 3, 4, 15, 16 e 18. O que mudou por causa disso:
    e plano, foi excluído. Para lê-lo: `git show bf04782:docs/sumario-da-documentacao.md`.
 5. **O sumário saiu em vez de ser enxugado.** Corrigidas as divergências, o resto dele era cópia
    do README, da arquitetura, do PIT e do plano, e ele mesmo dizia não ser dono de nada. É o tipo
-   de documento que gerou as divergências.
+   de documento que gerou as divergências. **Revisto em 17/10:** o Igor quer o sumário para não se
+   perder, então ele voltou, atualizado. Para não divergir de novo, é o único retrato de estado
+   permitido e a regra de manutenção manda atualizá-lo junto com o dono.
 6. **O pré-PRD saiu.** Retrato congelado de 08/09, substituído pelo PIT na disciplina. Antes, o
    que ainda valia foi para o plano: as hipóteses H1 a H7, que o juiz e o gabarito citam, a revisão
    das listas por área e o filtro para característica nova.
