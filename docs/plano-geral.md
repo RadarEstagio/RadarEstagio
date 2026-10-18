@@ -117,7 +117,7 @@ não são atualizados.
 
 | ID | Achado | Estado em 16/10 |
 |---|---|---|
-| RCD-01 | Feedback sem sinal | No código desde 05/10: pergunta do dia seguinte com "Me candidatei". Falta publicar (2.1) e ler a taxa de resposta, combinada para 19/10 ([métricas](metricas.md#pergunta-do-dia-seguinte)) |
+| RCD-01 | Feedback sem sinal | Pergunta do dia seguinte com "Me candidatei", no ar com a `0033` e a função de 08/10 (2.1). Falta ler a taxa de resposta, combinada para 19/10 ([métricas](metricas.md#pergunta-do-dia-seguinte)) |
 | RCD-02 | Sem pagador | Leitura da Lei do Estágio corrigida em 29/09; nenhuma conversa com pagador |
 | RCD-03 | Esforço fora do gargalo | Aberto; congelar regra do motor sem caso de usuário é decisão da equipe, sem registro |
 | RCD-04 | Visita sem origem, equipe no funil | Origem no código desde 05/10 (`0032`); marcar as contas da equipe é proposta sem decisão ([decisões do banco](decisoes-do-banco.md#contas-da-equipe-fora-do-funil-proposta-de-05102026)) |
@@ -125,7 +125,7 @@ não são atualizados.
 | RCD-06 | Conta sem nada acumulado | Aberto: não há "Suas vagas" na conta |
 | RCD-07 | Trabalho episódico | Aberto: não há retorno perto do fim do estágio |
 | RCD-08 | Promessa maior que a prova | Parcial: saíram "100% automático", a faixa de fornecedores e o "todos os dias de manhã" do bot; a lista de diferenciais do hero ainda diz "Vagas que atendem seu perfil" (`web/index.html`) |
-| RCD-09 | Bot responde "use o botão do site" a tudo | No código desde 05/10: mensagem livre encaminhada ao chat de operação. Falta publicar a função (2.1) |
+| RCD-09 | Bot responde "use o botão do site" a tudo | Feito: a mensagem livre é encaminhada ao chat de operação, na função publicada em 08/10 (2.1) |
 | RCD-10 | ICP difuso | Sem decisão registrada |
 | RCD-11 | Nada diferencia de um alerta gratuito | Aberto |
 | RCD-12 | Mensagem densa | Aberto: não há mensagem com três destaques |
