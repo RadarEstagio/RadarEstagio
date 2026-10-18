@@ -17,6 +17,8 @@ Esteves.
 - **[Arquitetura](docs/arquitetura.md)**: como o código é organizado e por quê.
 - **[Desenvolvimento local](docs/desenvolvimento.md)**: instalar, configurar, rodar e testar.
 - **[Plano geral](docs/plano-geral.md)**: o que falta e o que está decidido.
+- **[Sumário da documentação](docs/sumario-da-documentacao.md)**: o mapa dos documentos, os números
+  e o que está aberto, para não se perder.
 - **[Índice da documentação](docs/README.md)**: todos os documentos e o dono de cada assunto.
 
 ## Como funciona
@@ -112,6 +114,7 @@ Em cada função, `servidor.ts` trata a requisição e tem teste; o `index.ts` s
 ```text
 docs/
 ├── README.md                    índice e dono de cada assunto
+├── sumario-da-documentacao.md   mapa dos documentos, números e o que está aberto
 ├── funcionalidades.md           o que o produto faz
 ├── plano-geral.md               pendências e decisões
 ├── arquitetura.md               camadas e decisões técnicas

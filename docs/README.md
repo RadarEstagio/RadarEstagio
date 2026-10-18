@@ -6,6 +6,8 @@ e cada documento diz de qual está falando.
 
 ## Por onde começar
 
+- [Sumário](sumario-da-documentacao.md): o mapa de todos os documentos, os números registrados, o
+  que está aberto e os riscos, numa leitura, para não se perder.
 - [PIT](pit/pit-do-grupo.md): o projeto em uma leitura, entregue na disciplina e medido em 28 e
   30/09/2026, com a [apresentação](pit/apresentacao.html), o
   [pptx](pit/radar-de-estagio-pit.pptx) e as [telas](pit/telas/).
@@ -57,8 +59,9 @@ mudou, arquivo por arquivo, e as decisões tomadas nela, para a revisão da PR.
   que a sustentam.
 - Mudança nos Termos ou na Política troca a versão nos quatro arquivos e em `VERSAO_DOS_TERMOS`,
   como diz o guia.
-- Documento que só retrata o estado de um dia não entra: corrige-se o dono. O que saiu do
-  repositório continua no histórico do Git.
+- Ao mudar um documento dono, atualizar a linha dele no [sumário](sumario-da-documentacao.md),
+  que é o único retrato de estado. Outro documento que só retrata o estado de um dia não entra:
+  corrige-se o dono. O que saiu do repositório continua no histórico do Git.
 
 O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7 não são
 condições para divulgar. Hipótese não vira medição, teste local não vira deploy e histórico não

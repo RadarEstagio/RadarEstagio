@@ -109,8 +109,9 @@ valem ao mexer no `app.js`:
 - **Decisão nova é registrada no documento dono**, nunca aqui: motor e extração em
   `docs/decisoes-do-motor.md`, banco e funções em `docs/decisoes-do-banco.md`, site em
   `docs/contrato-front.md`, publicação no guia, pendência no plano geral, dado de cobertura,
-  custo ou oferta em `docs/frentes-externas.md`. Sumário ou retrato de estado não vira documento
-  novo: corrija o dono, porque cópia de estado diverge (16/10). O `CLAUDE.md` só
+  custo ou oferta em `docs/frentes-externas.md`. O único retrato de estado é o
+  `docs/sumario-da-documentacao.md`: não é dono de nada, e quem muda um dono atualiza a linha dele
+  ali. Fora ele, retrato de estado não vira documento novo, porque cópia diverge. O `CLAUDE.md` só
   recebe o que um agente precisa **seguir**, em até cinco linhas, com link para o registro.
   Sem essa regra o arquivo volta a crescer: passou de 618 linhas em 13/09 para 2.126 em 18/09,
   sempre por relato de correção.
