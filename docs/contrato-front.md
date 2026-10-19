@@ -632,10 +632,10 @@ o botão do Piloto, que repete o que os Termos dizem: sem cartão, e as condiç�
 pago aparecem antes da contratação. A ideia de um plano semanal e um mensal espera preço e oferta
 (E05). Quando houver plano pago, ele volta como segundo cartão no mesmo formato.
 
-O cartão lista dez itens, todos já existentes no produto, em três grupos com rótulo discreto (Busca,
-No Telegram e Sua conta), para não ficar curto nem virar uma lista corrida. A primeira entrega
-aparece como "Primeira busca logo depois de vincular o Telegram", e não como primeira lista, porque
-entre 06:23 e 07:23 ela espera o diário e uma coleta que falha a adia.
+O cartão lista seis itens, sem rótulos de grupo. Com quatro ele ficava curto. Com dez, em três
+grupos (Busca, No Telegram e Sua conta), ficava alto demais, e deitá-lo em colunas na tela larga não
+agradou. Saíram a primeira busca no vínculo, a cidade e a modalidade, o link da vaga original e
+baixar os dados: tudo continua no produto, mas não precisa estar no cartão.
 
 Na landing, "piloto" virou "fase de testes", porque nem todo estudante entende a palavra, e o plano
 se chama Gratuito. Os Termos ainda dizem "piloto": trocar exige versão nova dos textos legais.
