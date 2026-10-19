@@ -15,7 +15,14 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     assert '<span class="hero-title-primary">Cansado de procurar estágio?</span>' in html
     assert '<span class="hero-title-secondary">Nós levamos ele até você.</span>' in html
     assert ".hero-title-primary { color: var(--ink); }" in css
-    assert ".hero-title-secondary { color: var(--accent-emphasis); }" in css
+    assert ".hero-title-primary { display: block; }" in css
+    assert (
+        ".hero-title-secondary { padding-bottom: .1em; color: var(--accent-emphasis); "
+        "font-weight: 700; "
+        "background: var(--pincelada) no-repeat 0 100% / 100% .42em; "
+        "-webkit-box-decoration-break: clone; box-decoration-break: clone; }"
+    ) in css
+    assert css.count('--pincelada: url("data:image/svg+xml,') == 2
     assert ".continuacao { color: var(--accent-emphasis); }" in css
     assert "diferentes áreas" in html
     assert "até sete recomendações explicadas no Telegram" in html
