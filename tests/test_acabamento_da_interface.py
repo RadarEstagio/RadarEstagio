@@ -169,6 +169,8 @@ def test_plano_disponivel_e_um_cartao_estreito_sob_titulo_centralizado():
     for rotulo in ("Busca", "No Telegram", "Sua conta"):
         assert f'">{rotulo}</p>' in precos, rotulo
     assert precos.count('<p class="plan-grupo"') == 3
+    assert '<div class="plan-itens">' in precos
+    assert '"busca telegram" "conta telegram"' in css
     regra_do_item = css.split(".plan li {", 1)[1].split("}", 1)[0]
     assert "border" not in regra_do_item
 
