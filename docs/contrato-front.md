@@ -612,9 +612,12 @@ mais grosso no meio, que sobe para a direita, sob a segunda linha do `h1`, com o
 700. O sublinhado reto foi descartado porque parece link. Testada nos títulos das seções, a
 pincelada não agradou, então eles continuam só em verde.
 
-O traço é a variável `--pincelada`, com uma versão para cada tema, e `box-decoration-break: clone`
-dá um traço a cada linha quando a frase quebra no celular. Com isso, a `.hero-title-secondary`
-deixou de ser bloco: o que quebra a linha é a `.hero-title-primary`.
+O traço é a variável `--pincelada`, com uma versão para cada tema. Quando a frase quebra, o traço é
+um só, cortado na quebra (`box-decoration-break: slice`): a segunda linha continua de onde a
+primeira parou. Com `clone`, cada linha ganhava uma pincelada inteira, que afinava no fim da
+primeira e no começo da segunda, e o Igor pediu a continuidade. Por isso a `.hero-title-secondary`
+deixou de ser bloco, e quem quebra a linha é a `.hero-title-primary`. O espaço inseparável em
+"até&nbsp;você" mantém as duas palavras juntas.
 
 ### Um só cartão de plano, sob título centralizado (19/10/2026).
 
