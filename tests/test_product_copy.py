@@ -13,7 +13,7 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
     css = (RAIZ / "web/assets/styles.css").read_text()
 
     assert '<span class="hero-title-primary">Cansado de procurar estágio?</span>' in html
-    assert '<span class="hero-title-secondary">Nós levamos ele até você.</span>' in html
+    assert '<span class="hero-title-secondary">Nós levamos ele até&nbsp;você.</span>' in html
     assert ".hero-title-primary { color: var(--ink); }" in css
     assert ".hero-title-primary { display: block; }" in css
     assert (
