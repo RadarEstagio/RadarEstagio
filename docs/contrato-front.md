@@ -637,5 +637,10 @@ grupos (Busca, No Telegram e Sua conta), ficava alto demais, e deitá-lo em colu
 agradou. Saíram a primeira busca no vínculo, a cidade e a modalidade, o link da vaga original e
 baixar os dados: tudo continua no produto, mas não precisa estar no cartão.
 
+O botão do cartão continua verde e na largura toda, mas com 40px de altura e cantos de 14px
+(`--radius-md`), porque a pílula de 48px pesava demais dentro do cartão. Os outros botões de
+cadastro da página seguem em pílula. Com 40px, o botão fica abaixo do alvo de toque de 44px adotado
+em 14/10. Foi aceito porque ele ocupa a largura inteira do cartão.
+
 Na landing, "piloto" virou "fase de testes", porque nem todo estudante entende a palavra, e o plano
 se chama Gratuito. Os Termos ainda dizem "piloto": trocar exige versão nova dos textos legais.
