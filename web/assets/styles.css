@@ -371,26 +371,13 @@ p, h1, h2, h3 { margin-top: 0; }
 .plan-moeda { color: var(--muted); font-size: .46em; letter-spacing: 0; }
 .plan-periodo { margin-left: 4px; color: var(--muted); font-size: 15px; font-weight: 500; letter-spacing: 0; }
 .plan-grupo { margin: 0 0 12px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-.plan-itens { display: grid; gap: 26px; margin-bottom: 32px; }
-.plan ul { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
+.plan ul { display: grid; gap: 12px; padding: 0; margin: 0 0 26px; list-style: none; }
+.plan ul:last-of-type { margin-bottom: 32px; }
 .plan li { display: flex; gap: 11px; font-size: 14px; line-height: 1.5; }
 .plan li span { display: grid; flex: none; height: 1.5em; place-items: center; color: var(--accent-text); }
 .plan li svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .plan .button { margin-top: auto; align-self: stretch; }
 .plan-footnote { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
-@media (min-width: 981px) {
-  .pricing-grid { grid-template-columns: minmax(0, 980px); }
-  .plan { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto auto; grid-template-areas: "nome itens" "nota itens" "preco itens" ". itens" "botao itens" "rodape itens"; column-gap: 56px; padding: 48px 48px 40px; }
-  .plan-name { grid-area: nome; }
-  .plan-note { grid-area: nota; }
-  .plan-price { grid-area: preco; }
-  .plan .button { grid-area: botao; }
-  .plan-footnote { grid-area: rodape; }
-  .plan-itens { grid-area: itens; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "busca telegram" "conta telegram"; align-content: start; gap: 28px 36px; margin-bottom: 0; }
-  .plan-bloco-busca { grid-area: busca; }
-  .plan-bloco-telegram { grid-area: telegram; }
-  .plan-bloco-conta { grid-area: conta; }
-}
 
 
 .faq-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 80px; align-items: start; }

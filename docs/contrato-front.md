@@ -633,10 +633,7 @@ pago aparecem antes da contratação. A ideia de um plano semanal e um mensal es
 (E05). Quando houver plano pago, ele volta como segundo cartão no mesmo formato.
 
 O cartão lista dez itens, todos já existentes no produto, em três grupos com rótulo discreto (Busca,
-No Telegram e Sua conta), para não ficar curto nem virar uma lista corrida. Empilhados, os dez
-itens deixavam o cartão alto demais. Por isso, a partir de 981px, ele se deita: até 980px de largura,
-com nome, preço e botão à esquerda e os grupos em duas colunas à direita (No Telegram numa, Busca e
-Sua conta na outra). No celular continua empilhado, com o botão depois dos itens. A primeira entrega
+No Telegram e Sua conta), para não ficar curto nem virar uma lista corrida. A primeira entrega
 aparece como "Primeira busca logo depois de vincular o Telegram", e não como primeira lista, porque
 entre 06:23 e 07:23 ela espera o diário e uma coleta que falha a adia.
 
