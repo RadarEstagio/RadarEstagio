@@ -615,3 +615,11 @@ pincelada não agradou, então eles continuam só em verde.
 O traço é a variável `--pincelada`, com uma versão para cada tema, e `box-decoration-break: clone`
 dá um traço a cada linha quando a frase quebra no celular. Com isso, a `.hero-title-secondary`
 deixou de ser bloco: o que quebra a linha é a `.hero-title-primary`.
+
+### Planos em cartões separados (19/10/2026).
+
+Os dois planos dividiam um bloco da largura da seção, com uma linha entre cada item, e a leitura
+ficava espalhada. Agora cada plano é um cartão de até 400px, centrado e separado do outro, sob o
+título centralizado da seção. O selo fica sobre a borda de cima, o preço vem depois da descrição,
+a lista não tem divisórias e o botão ocupa a largura do cartão. O plano disponível tem borda verde.
+O conteúdo continua o mesmo: Piloto gratuito e "Depois do piloto" a definir.
