@@ -370,9 +370,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .plan-price { display: flex; align-items: baseline; gap: 6px; margin: 22px 0 26px; font-size: clamp(40px, 3.6vw, 52px); font-weight: 600; line-height: 1; letter-spacing: -.025em; }
 .plan-moeda { color: var(--muted); font-size: .46em; letter-spacing: 0; }
 .plan-periodo { margin-left: 4px; color: var(--muted); font-size: 15px; font-weight: 500; letter-spacing: 0; }
-.plan-grupo { margin: 0 0 12px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-.plan ul { display: grid; gap: 12px; padding: 0; margin: 0 0 26px; list-style: none; }
-.plan ul:last-of-type { margin-bottom: 32px; }
+.plan ul { display: grid; gap: 12px; padding: 0; margin: 0 0 32px; list-style: none; }
 .plan li { display: flex; gap: 11px; font-size: 14px; line-height: 1.5; }
 .plan li span { display: grid; flex: none; height: 1.5em; place-items: center; color: var(--accent-text); }
 .plan li svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
