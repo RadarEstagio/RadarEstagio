@@ -20,7 +20,7 @@ def test_landing_exibe_promessa_multiarea_limite_canal_e_condicao_do_piloto():
         ".hero-title-secondary { padding-bottom: .1em; color: var(--accent-emphasis); "
         "font-weight: 700; "
         "background: var(--pincelada) no-repeat 0 100% / 100% .42em; "
-        "-webkit-box-decoration-break: clone; box-decoration-break: clone; }"
+        "-webkit-box-decoration-break: slice; box-decoration-break: slice; }"
     ) in css
     assert css.count('--pincelada: url("data:image/svg+xml,') == 2
     assert ".continuacao { color: var(--accent-emphasis); }" in css

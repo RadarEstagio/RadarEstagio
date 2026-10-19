@@ -201,7 +201,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .hero h1 { max-width: 940px; margin: 0 auto 26px; font-size: clamp(38px, 4.4vw, 60px); font-weight: 600; line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
 .hero-title-primary { display: block; }
 .hero-title-primary { color: var(--ink); }
-.hero-title-secondary { padding-bottom: .1em; color: var(--accent-emphasis); font-weight: 700; background: var(--pincelada) no-repeat 0 100% / 100% .42em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.hero-title-secondary { padding-bottom: .1em; color: var(--accent-emphasis); font-weight: 700; background: var(--pincelada) no-repeat 0 100% / 100% .42em; -webkit-box-decoration-break: slice; box-decoration-break: slice; }
 .continuacao { color: var(--accent-emphasis); }
 .hero-lead { max-width: 640px; margin: 0 auto 34px; color: var(--ink-soft); font-size: 18px; line-height: 1.6; text-wrap: pretty; }
 .hero-actions { display: flex; align-items: center; justify-content: center; gap: 22px; }
