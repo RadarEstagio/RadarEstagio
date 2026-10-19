@@ -374,7 +374,7 @@ p, h1, h2, h3 { margin-top: 0; }
 .plan li { display: flex; gap: 11px; font-size: 14px; line-height: 1.5; }
 .plan li span { display: grid; flex: none; height: 1.5em; place-items: center; color: var(--accent-text); }
 .plan li svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
-.plan .button { margin-top: auto; align-self: stretch; }
+.plan .button { margin-top: auto; align-self: stretch; min-height: 40px; border-radius: var(--radius-md); }
 .plan-footnote { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
 
 

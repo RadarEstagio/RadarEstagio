@@ -168,6 +168,10 @@ def test_plano_disponivel_e_um_cartao_estreito_sob_titulo_centralizado():
     assert "A definir" not in precos
     assert precos.count("<li>") == 6
     assert "plan-grupo" not in precos
+    assert (
+        ".plan .button { margin-top: auto; align-self: stretch; min-height: 40px; "
+        "border-radius: var(--radius-md); }"
+    ) in css
     regra_do_item = css.split(".plan li {", 1)[1].split("}", 1)[0]
     assert "border" not in regra_do_item
 
