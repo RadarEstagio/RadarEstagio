@@ -1322,9 +1322,18 @@ chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
   `VERSAO_DA_EXTRACAO` continuou `7efdbc95`. Vagas extraídas antes ficam sem resumo, e o adapter
   `agy` não devolve resumo.
 - **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
-- **Sem medição ainda.** Não havia chave do Gemini local nem acesso ao banco nesta data, então o
-  tamanho do resumo em `low` e o efeito nos tokens por lote ficam para o primeiro diário. O
-  espaço cresce com vagas novas, não com usuários: com as ~70 vagas novas por dia medidas em
+- **Pedir o resumo não muda o custo.** A documentação do Gemini cobra o raciocínio inteiro como
+  saída, com ou sem `include_thoughts`; o resumo não é cobrado à parte.
+- **Em `low` o resumo deve vir curto ou vazio.** Simulação de 19/10 no `agy`, sem chave do Gemini
+  local nem acesso ao banco: 30 vagas reais da Adzuna com a descrição completa, 3 lotes de 10, no
+  `gemini-3.8-flash-low`, porque o `agy` não oferece o `gemini-3.6-flash` da API. Os três lotes
+  tiveram 0 token de raciocínio, com 1.475 a 1.651 de resposta e ~10 s cada; o mesmo lote no
+  `gemini-3.8-flash-high` teve 7.871, então a contagem funciona. Pelos preços do `3.6-flash`,
+  descontados os ~7,7 mil tokens de entrada do próprio `agy`, cada lote sairia por R$ 0,045 a
+  0,055, perto dos R$ 0,066 de 11/09. O `agy` não devolve o texto do resumo, então o tamanho real
+  fica para o primeiro diário. Se o resumo de `low` vier vazio, ter raciocínio para ler exige subir
+  o nível, e o padrão custava R$ 0,15 por lote.
+- **O espaço cresce com vagas novas, não com usuários**: com as ~70 vagas novas por dia medidas em
   08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
   vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
 
