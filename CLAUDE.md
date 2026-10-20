@@ -250,6 +250,9 @@ As medições que sustentam lote, prazo, raciocínio e tratamento de erro estão
   SDK não lê repetem o mesmo lote, 500 repete uma vez e depois divide, e só entra extração
   com id de uma vaga do lote pedido.
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
+- **O resumo do raciocínio da extração fica em `vagas.extracao -> 'raciocinio_do_lote'`**,
+  um por chamada e repetido nas vagas do lote. É pista, não explicação; nunca reconstituir o
+  raciocínio chamando a IA de novo. Ver `docs/decisoes-do-motor.md`.
 
 ### Motor de recomendação: regras que não podem quebrar
 

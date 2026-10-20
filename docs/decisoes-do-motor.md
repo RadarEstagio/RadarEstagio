@@ -1304,6 +1304,40 @@ cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~1
 comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
 trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
 
+## Resumo do raciocínio gravado na extração
+
+(19/10/2026, `raciocinio_do_lote`). Para entender por que uma vaga recebeu certa extração, o que
+vale é o raciocínio da execução que gerou a nota. Chamar a IA de novo com a mesma vaga traz outro
+raciocínio: temperatura 0 não deixa o Gemini determinístico (repetir o modo padrão concordou em
+90% dos campos, ver a seção anterior), e a vaga sozinha não é o lote de 10 em que ela foi lida.
+Por isso a extração pede `include_thoughts` e copia o resumo devolvido para cada extração daquela
+chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
+
+- **É pista, não explicação.** É o resumo que o modelo faz do próprio raciocínio, e nada garante
+  que ele explique a resposta. Quem decide se a IA errou é a comparação da extração com a
+  descrição da vaga.
+- **Um texto por chamada.** As vagas de um lote dividem o mesmo resumo; a vaga repetida sozinha,
+  ou num lote dividido, leva o da chamada que a extraiu.
+- **Não reextrai nada.** O campo fica fora do schema pedido à IA, como `descricao_completa`, e a
+  `VERSAO_DA_EXTRACAO` continuou `7efdbc95`. Vagas extraídas antes ficam sem resumo, e o adapter
+  `agy` não devolve resumo.
+- **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
+- **Sem medição ainda.** Não havia chave do Gemini local nem acesso ao banco nesta data, então o
+  tamanho do resumo em `low` e o efeito nos tokens por lote ficam para o primeiro diário. O
+  espaço cresce com vagas novas, não com usuários: com as ~70 vagas novas por dia medidas em
+  08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
+  vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
+
+Consulta para investigar uma vaga:
+
+```sql
+select titulo, descricao,
+       extracao - 'raciocinio_do_lote' as fatos,
+       extracao ->> 'raciocinio_do_lote' as raciocinio
+from vagas
+where fonte = 'adzuna' and id_externo = '<id>';
+```
+
 ## A extração não é repetida por usuário
 
 (03/09/2026, formulação revista em 10/09). Isso não
