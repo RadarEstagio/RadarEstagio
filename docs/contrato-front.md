@@ -556,6 +556,10 @@ repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção
 marcada por quando cada coisa acontece ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"),
 com miniaturas do perfil, de um radar varrendo e da notificação.
 
+Em 19/10/2026 o título de "Como funciona" passou de "Você preenche uma vez. O Radar procura todo
+dia." para "Do manual ao automático em um cadastro.", porque a fórmula "Você faz X. O Radar faz Y."
+se repetia no cartão final. O título do cartão final ficou como estava.
+
 Em 15/10/2026 saiu a terceira seção, "Antes de chegar até você", que peneirava seis vagas
 ilustrativas para um perfil de exemplo. Ela repetia a mensagem das outras duas (só chega vaga
 compatível), e a lista com um selo por destino pedia leitura atenta na primeira olhada. O que só ela
