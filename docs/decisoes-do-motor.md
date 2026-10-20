@@ -1324,15 +1324,17 @@ chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
 - **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
 - **Pedir o resumo não muda o custo.** A documentação do Gemini cobra o raciocínio inteiro como
   saída, com ou sem `include_thoughts`; o resumo não é cobrado à parte.
-- **Em `low` o resumo deve vir curto ou vazio.** Simulação de 19/10 no `agy`, sem chave do Gemini
-  local nem acesso ao banco: 30 vagas reais da Adzuna com a descrição completa, 3 lotes de 10, no
-  `gemini-3.8-flash-low`, porque o `agy` não oferece o `gemini-3.6-flash` da API. Os três lotes
-  tiveram 0 token de raciocínio, com 1.475 a 1.651 de resposta e ~10 s cada; o mesmo lote no
-  `gemini-3.8-flash-high` teve 7.871, então a contagem funciona. Pelos preços do `3.6-flash`,
-  descontados os ~7,7 mil tokens de entrada do próprio `agy`, cada lote sairia por R$ 0,045 a
-  0,055, perto dos R$ 0,066 de 11/09. O `agy` não devolve o texto do resumo, então o tamanho real
-  fica para o primeiro diário. Se o resumo de `low` vier vazio, ter raciocínio para ler exige subir
-  o nível, e o padrão custava R$ 0,15 por lote.
+- **O `agy` não prevê o resumo da API.** Simulação de 19 e 20/10, sem chave do Gemini local nem
+  acesso ao banco: 50 vagas reais da Adzuna com a descrição completa, em 5 lotes de 10, no
+  `gemini-3.8-flash`, porque o `agy` não oferece o `gemini-3.6-flash` da API. O texto do raciocínio
+  fica em `~/.gemini/antigravity-cli/brain/<conversa>/.system_generated/logs/transcript_full.jsonl`.
+  Em `low`, os 5 lotes tiveram 0 token de raciocínio (~9 s e R$ 0,041 a 0,051 por lote nos preços
+  do `3.6-flash`, descontados os ~7,7 mil tokens de entrada do próprio `agy`), e um problema de
+  aritmética de controle também teve 0: o `low` do `agy` desliga o raciocínio, não é a extração
+  que dispensa. Em `medium`, 27,7 a 45 mil tokens de raciocínio por lote, 32 a 40 KB de texto vaga
+  a vaga e 160 a 293 s, de 6 a 9 vezes o padrão da API em 11/09 e acima do timeout de 120 s por
+  chamada. O tamanho do resumo em `low` só se mede na API: no primeiro diário ou com uma chave
+  local.
 - **O espaço cresce com vagas novas, não com usuários**: com as ~70 vagas novas por dia medidas em
   08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
   vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
