@@ -556,6 +556,10 @@ repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção
 marcada por quando cada coisa acontece ("Uma vez só", "Todo dia, sozinho", "De manhã, no celular"),
 com miniaturas do perfil, de um radar varrendo e da notificação.
 
+Em 19/10/2026 o título de "Como funciona" passou de "Você preenche uma vez. O Radar procura todo
+dia." para "Do manual ao automático em um cadastro.", porque a fórmula "Você faz X. O Radar faz Y."
+se repetia no cartão final. O título do cartão final ficou como estava.
+
 Em 15/10/2026 saiu a terceira seção, "Antes de chegar até você", que peneirava seis vagas
 ilustrativas para um perfil de exemplo. Ela repetia a mensagem das outras duas (só chega vaga
 compatível), e a lista com um selo por destino pedia leitura atenta na primeira olhada. O que só ela
@@ -602,3 +606,45 @@ limitação. O que ficou valendo:
 
 Não mudaram: os pares de cor claros de propósito (exemplo dentro dos campos, avisos discretos), que
 ficaram assim por decisão de design e seguem abaixo de 4,5:1.
+
+### Pincelada na parte verde do título principal (19/10/2026).
+
+As duas partes dos títulos tinham o mesmo peso (600), e o preto tem cerca de quatro vezes o
+contraste do verde sobre o fundo claro (15:1 contra 4:1). Por isso o olho lia a parte verde como a
+secundária. Entre oito formas de sublinhar comparadas lado a lado, ficou a pincelada: um traço SVG
+mais grosso no meio, que sobe para a direita, sob a segunda linha do `h1`, com o verde em peso
+700. O sublinhado reto foi descartado porque parece link. Testada nos títulos das seções, a
+pincelada não agradou, então eles continuam só em verde.
+
+O traço é a variável `--pincelada`, com uma versão para cada tema. Quando a frase quebra, o traço é
+um só, cortado na quebra (`box-decoration-break: slice`): a segunda linha continua de onde a
+primeira parou. Com `clone`, cada linha ganhava uma pincelada inteira, que afinava no fim da
+primeira e no começo da segunda, e o Igor pediu a continuidade. Por isso a `.hero-title-secondary`
+deixou de ser bloco, e quem quebra a linha é a `.hero-title-primary`. O espaço inseparável em
+"até&nbsp;você" mantém as duas palavras juntas.
+
+### Um só cartão de plano, sob título centralizado (19/10/2026).
+
+Os dois planos dividiam um bloco da largura da seção, com uma linha entre cada item, e a leitura
+ficava espalhada. Agora o plano é um cartão de até 420px, centrado sob o título também centralizado.
+O selo fica sobre a borda de cima, o preço vem depois da descrição, a lista não tem divisórias e o
+botão ocupa a largura do cartão.
+
+Enquanto só existe o piloto gratuito, o cartão "Depois do piloto, A definir" saiu (RCD-15): ele
+levantava a dúvida sobre cobrança sem oferecer nada. O compromisso que ele trazia virou a nota sob
+o botão do Piloto, que repete o que os Termos dizem: sem cartão, e as condições de um eventual plano
+pago aparecem antes da contratação. A ideia de um plano semanal e um mensal espera preço e oferta
+(E05). Quando houver plano pago, ele volta como segundo cartão no mesmo formato.
+
+O cartão lista seis itens, sem rótulos de grupo. Com quatro ele ficava curto. Com dez, em três
+grupos (Busca, No Telegram e Sua conta), ficava alto demais, e deitá-lo em colunas na tela larga não
+agradou. Saíram a primeira busca no vínculo, a cidade e a modalidade, o link da vaga original e
+baixar os dados: tudo continua no produto, mas não precisa estar no cartão.
+
+O botão do cartão continua verde e na largura toda, mas com 40px de altura e cantos de 14px
+(`--radius-md`), porque a pílula de 48px pesava demais dentro do cartão. Os outros botões de
+cadastro da página seguem em pílula. Com 40px, o botão fica abaixo do alvo de toque de 44px adotado
+em 14/10. Foi aceito porque ele ocupa a largura inteira do cartão.
+
+Na landing, "piloto" virou "fase de testes", porque nem todo estudante entende a palavra, e o plano
+se chama Gratuito. Os Termos ainda dizem "piloto": trocar exige versão nova dos textos legais.

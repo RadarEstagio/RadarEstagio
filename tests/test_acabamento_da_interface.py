@@ -155,6 +155,27 @@ def test_secoes_do_meio_explicam_sem_numerar_passos():
     assert 'data-event-origin="como_funciona"' in meio
 
 
+def test_plano_disponivel_e_um_cartao_estreito_sob_titulo_centralizado():
+    html = (RAIZ / "web/index.html").read_text()
+    css = ler_css()
+
+    assert '<div class="section-heading pricing-heading">' in html
+    assert ".how-heading, .pricing-heading { margin-inline: auto; text-align: center; }" in css
+    assert "grid-template-columns: minmax(0, 420px); justify-content: center; }" in css
+    precos = html[html.index('<section class="pricing section"') :]
+    precos = precos[: precos.index("</section>")]
+    assert precos.count('<article class="plan') == 1
+    assert "A definir" not in precos
+    assert precos.count("<li>") == 6
+    assert "plan-grupo" not in precos
+    assert (
+        ".plan .button { margin-top: auto; align-self: stretch; min-height: 40px; "
+        "border-radius: var(--radius-md); }"
+    ) in css
+    regra_do_item = css.split(".plan li {", 1)[1].split("}", 1)[0]
+    assert "border" not in regra_do_item
+
+
 def test_conteudo_que_se_revela_so_some_enquanto_o_script_espera_a_rolagem():
     html = (RAIZ / "web/index.html").read_text()
     css = ler_css()
