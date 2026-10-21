@@ -77,9 +77,12 @@ def test_quem_ficou_sem_mensagem_por_falha_do_telegram_e_atendido_no_segundo_dia
 
 def test_mensagem_segurada_por_falta_de_extracao_nao_marca_o_dia():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=1)])
+    notificador = NotificadorFalso()
 
-    rodar_com_vaga_que_nunca_e_extraida(repositorio, NotificadorFalso(), AGORA_DE_TESTE)
+    resumo = rodar_com_vaga_que_nunca_e_extraida(repositorio, notificador, AGORA_DE_TESTE)
 
+    assert notificador.chats == []
+    assert resumo.mensagens_seguradas_por_falta_de_extracao == 1
     assert not repositorio.atendido_no_dia(usuario(), DIA_DE_TESTE)
 
 
