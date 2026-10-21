@@ -617,11 +617,61 @@ log. A reivindicação saiu, e não entrou coluna nova: as execuções do workfl
 ela ainda protegia era o `rodar --perfil` manual contra o banco de produção junto com uma
 imediata do workflow; isso ficou com a revalidação do destinatário, que na entrega imediata
 (`RepositorioDaEntregaImediata`) confere, dentro da trava do perfil, se ele continua pendente.
-Limites: o diário não faz essa conferência, então um `rodar` manual durante o diário pode mandar
+Limites: o diário não fazia essa conferência até 21/10 (ver "Dia do atendimento", abaixo), então
+um `rodar` manual durante o diário podia mandar
 uma segunda mensagem (outras vagas ou "nenhuma vaga compatível") a quem estava pendente, o que
 antes só acontecia se o manual começasse primeiro; kill entre o envio e a marca, ou marca que
 falha, faz a próxima execução mandar outra mensagem a essa pessoa. Publicação: sem migration e
 sem ordem; a `telegram-webhook` não muda.
+
+## Dia do atendimento: o diário pode rodar de novo (21/10/2026)
+
+Fecha o G03 da auditoria do agendamento. Reexecutar o diário mandava a todos uma segunda leva (as
+vagas 8 a 14 do ranking) ou um segundo "nada compatível", e por isso não havia recuperação segura
+nem segundo disparo. Em 21/10 o cron-job.org deu timeout, nenhum run nasceu, e ele não tem retry
+próprio (não está na documentação, na API nem no código aberto do serviço); um timeout ainda pode
+ter chegado ao GitHub, então qualquer nova tentativa precisa ser inofensiva quando duplicada.
+
+- **`perfis.ultimo_dia_atendido date`** (`0036`), o dia de Brasília vindo do Python, como em
+  `ultimo_dia_sem_extracao`. Só o job escreve; nenhuma migration concede a coluna ao navegador, e o
+  teste PGlite confere que `authenticated` recebe `42501` ao tentar.
+- **Marca nos mesmos casos que já contavam como atendimento**: `registrar_atendimento` grava o dia
+  junto de `entrega_imediata_atendida_em` — mensagem de vagas inteira ou parcial, "nada compatível"
+  e recusa definitiva (403). Não deriva de `envios`, porque "nada compatível", 403 e envio não
+  gravado são atendimentos que não deixam linha lá. Mensagem segurada, falha temporária do Telegram
+  e destinatário que não se revalida não marcam: essas pessoas continuam elegíveis num segundo run.
+- **O 403 marca de propósito.** Sem isso, um segundo disparo diário contaria duas falhas de envio por
+  dia e pausaria o perfil antes dos três dias de `FALHAS_DE_ENVIO_ATE_PAUSAR`.
+- **A entrega imediata também marca.** Quem vincula de madrugada recebe a imediata e não recebe de
+  novo às 07:23 do mesmo dia, que era o motivo da janela de 06:23 ("para não receber duas
+  mensagens"). Os termos dizem que as buscas seguintes são diárias, o que segue verdadeiro.
+- **Releitura depois da trava.** `atender_usuario_travado` confere `atendido_no_dia` antes de ler o
+  histórico, o que fecha o limite acima do `rodar` manual em paralelo com o diário.
+- **Quem já foi atendido fica fora antes da coleta.** As cidades e os termos de busca passam a ser só
+  os de quem falta. Com ativos e todos atendidos, o diário imprime o motivo e termina sem coletar e
+  sem resumo no chat de operação, como `rodar --perfil` sem pendente. O resumo de um run com
+  trabalho mostra "Usuários ativos" só de quem entrou no run e uma linha "Já atendidos hoje".
+
+- **O vigia passou a exigir que nenhum run do diário do dia tenha falhado** (achado da revisão). O
+  run que acha todos atendidos sai verde e calado; sem isso, um primeiro run que atendeu todos e
+  falhou no fim (resumo que não chegou ao chat de operação) ficava escondido pelo segundo.
+- **O segundo job do cron-job.org fica às 07:58, não logo depois.** Um run pendente no grupo de
+  `concurrency` é cancelado pelo próximo que chega, inclusive uma entrega imediata. O job tem 30
+  minutos de teto, então às 07:58 o primeiro já terminou e o segundo não espera na fila.
+- **A migration preenche o dia com o último envio** de cada perfil, para quem recebeu o diário no
+  dia do deploy não receber de novo; "nada compatível" não deixa envio e fica de fora só nesse dia.
+
+Limites: kill entre o envio e a marca, ou marca que falha (vira aviso no log), faz um segundo run no
+mesmo dia mandar outra mensagem a essa pessoa. O mesmo vale para timeout de leitura do Telegram:
+a mensagem pode ter sido entregue e o pipeline a trata como perdida, então o segundo disparo a manda
+de novo. Tratar como entregue trocaria uma duplicata visível e rara por perda silenciosa, com as
+vagas gravadas como enviadas sem nunca chegar; ficou a duplicata. O segundo run só é inócuo quando
+ninguém ficou de fora: com mensagem segurada ou falha de alguém, ele coleta de novo para essas
+pessoas e manda um segundo resumo ao chat de operação, que é o comportamento desejado. A pergunta do
+dia seguinte de quem já foi atendido não é refeita no segundo run, o que só importa se o primeiro
+morreu antes dela. Publicação: aplicar
+a `0036` **antes** do merge. `SQL_USUARIOS_ATIVOS` lê a coluna, e sem ela a leitura dos usuários, a
+única falha fatal do pipeline, derruba o diário inteiro.
 
 ## Mensagem livre ao bot chega à equipe (05/10/2026)
 

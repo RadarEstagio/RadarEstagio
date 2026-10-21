@@ -371,9 +371,24 @@ O fluxo real levou cerca de quatro minutos no teste registrado. A trava por perf
 validada com duas conexões; execuções concorrentes aguardam e releem o histórico.
 Confira a validade do token e reconfigure o acesso se o repositório mudar de organização.
 
-Preserve o agendamento do cron-job.org às 07:23 de Brasília. Não adicione outro agendador que
-**execute** o radar: sem a marca de atendido no dia (G03 da auditoria), um segundo disparo manda
-a todos uma segunda mensagem, com as vagas 8 a 14 do ranking.
+O diário é disparado por **dois jobs no cron-job.org** (21/10/2026), porque o serviço não tem retry
+próprio. Os dois são iguais, e o segundo nasceu como clone do primeiro (Actions → Clone), para o
+token não precisar ser copiado à mão. A configuração, sem o token:
+
+| Campo | `RadarEstagio` | `RadarEstagio (reforço)` |
+|---|---|---|
+| URL | `https://api.github.com/repos/RadarEstagio/RadarEstagio/actions/workflows/radar-diario.yml/dispatches` | a mesma |
+| Horário | todo dia às 07:23, fuso `America/Sao_Paulo` | todo dia às 07:58, mesmo fuso |
+| Método, cabeçalhos e corpo | os que a API de `dispatches` exige (`POST`, token fine-grained, `ref` da `main`), conferidos pelo `204` de 20/10; a aba Advanced não foi aberta para não expor o token | os mesmos, pelo clone |
+| Timeout | 30 s, o teto do plano gratuito | o mesmo |
+| Resposta de sucesso | `204 No Content` | a mesma |
+
+O segundo disparo é seguro desde o G03: quem já recebeu a mensagem do dia de Brasília fica de fora,
+e se todos já receberam o diário termina sem coletar e sem avisar o chat de operação. Nos dias de
+falha ele atende só quem ficou sem mensagem. Às 07:58 o primeiro run já passou do teto de 30
+minutos, então o segundo não fica pendente na `concurrency`, onde uma entrega imediata o cancelaria.
+Mudar o horário de um dos jobs exige conferir a janela da entrega imediata (G09). Não adicione um
+terceiro agendador sem rever essa conta. Os dois jobs usam o mesmo token, que vence em 09/09/2027.
 
 O vigia não é agendador de reserva (21/10/2026). `vigia-do-radar-diario.yml` roda às 09:13 de
 Brasília pelo `schedule` do Actions, confere pela API se houve run do diário concluído com
