@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from uuid import UUID, uuid4
 
 import pytest
@@ -12,6 +13,7 @@ def linha(
     areas: list,
     pessoa_com_deficiencia: bool | None = None,
     habilidades: list | None = None,
+    ultimo_dia_atendido: date | None = None,
 ) -> dict:
     return {
         "id": UUID(int=1),
@@ -24,6 +26,7 @@ def linha(
         "telegram_chat_id": "1",
         "sem_recomendacao_desde": None,
         "silencio_avisado_em": None,
+        "ultimo_dia_atendido": ultimo_dia_atendido,
         "pessoa_com_deficiencia": pessoa_com_deficiencia,
     }
 
@@ -49,6 +52,13 @@ def test_curso_sem_area_conhecida_carrega_sem_areas_de_interesse():
     usuario = converter_em_usuario(linha("Agronomia", ["desenvolvimento_web"]))
 
     assert usuario.perfil.areas_de_interesse == []
+
+
+@pytest.mark.parametrize("dia", [date(2026, 10, 21), None])
+def test_ultimo_dia_atendido_chega_ao_usuario_como_foi_gravado(dia):
+    usuario = converter_em_usuario(linha("Direito", [], ultimo_dia_atendido=dia))
+
+    assert usuario.ultimo_dia_atendido == dia
 
 
 @pytest.mark.parametrize("resposta", [True, False, None])

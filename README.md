@@ -138,7 +138,9 @@ entregas: guarde-o fora do Git e escolha um caminho que não sobrescreva outro g
 
 Para uma verificação com conta da equipe, use `rodar --perfil UUID` com `DATABASE_URL`
 e substitua `UUID` por `perfis.id`, não por `auth.users.id`. Perfil cuja primeira entrega já
-foi atendida não recebe nada: zere `entrega_imediata_atendida_em` desse perfil antes do teste.
+foi atendida não recebe nada: zere `entrega_imediata_atendida_em` desse perfil antes do teste, e
+também `ultimo_dia_atendido` se ele já recebeu mensagem hoje, porque toda execução pula quem já foi
+atendido no dia de Brasília.
 A marca só é gravada depois que a mensagem chega; execução que falha antes deixa o perfil pendente.
 A execução também atende quem ficou com a entrega imediata pendente, e não é simulação: ainda
 há persistência, resumo operacional e rotina de apagamento de contas cuja carência venceu. Use

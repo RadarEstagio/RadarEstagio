@@ -19,10 +19,16 @@ class RepositorioEmMemoria:
         self._usuarios = usuarios
         self._uso: dict[tuple[str, date], int] = {}
         self._dias_sem_extracao: dict[ChaveDaVaga, tuple[date, int]] = {}
+        self._dias_atendidos: dict[UUID, date] = {}
         self.perfis_ilegiveis = 0
 
     def listar_ativos(self) -> list[Usuario]:
-        return list(self._usuarios)
+        return [
+            usuario.model_copy(update={"ultimo_dia_atendido": self._dias_atendidos[usuario.id]})
+            if usuario.id in self._dias_atendidos
+            else usuario
+            for usuario in self._usuarios
+        ]
 
     def pode_entregar(self, usuario: Usuario) -> bool:
         return any(u.id == usuario.id and u.chat_id == usuario.chat_id for u in self._usuarios)
@@ -32,6 +38,14 @@ class RepositorioEmMemoria:
 
     def marcar_entregas_imediatas_atendidas(self, perfis: list[UUID]) -> None:
         return None
+
+    def marcar_atendidos_no_dia(self, perfis: list[UUID], dia: date) -> None:
+        for perfil in perfis:
+            self._dias_atendidos[perfil] = dia
+
+    def atendido_no_dia(self, usuario: Usuario, dia: date) -> bool:
+        original = next((u for u in self._usuarios if u.id == usuario.id), usuario)
+        return self._dias_atendidos.get(usuario.id, original.ultimo_dia_atendido) == dia
 
     def extracoes_existentes(
         self, vagas: list[Vaga], modelo: str

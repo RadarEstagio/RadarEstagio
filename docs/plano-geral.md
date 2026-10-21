@@ -197,10 +197,10 @@ em 19/09:
 - **G01 e G07 — resolvidos no PR #57.** Prazo da extração (`PRAZO_DA_EXTRACAO_SEGUNDOS`), timeout
   por chamada, candidatas intercaladas por usuário e timeouts de 30 min no job e 28 no passo.
 - **G06 — resolvido.** O run por perfil coleta só para os usuários que vai atender.
-- **G03 — aberto: não reenviar a quem já foi atendido no dia.** A consulta dos usuários ativos
-  não filtra quem já recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. A
-  #68 cobre só a entrega imediata (`entrega_imediata_atendida_em`). Sem essa marca não existe
-  recuperação segura depois de uma falha parcial nem agendador de reserva. Exige migration.
+- **G03 — resolvido em 21/10/2026.** `perfis.ultimo_dia_atendido` (`0036`) marca o dia de Brasília
+  em que a pessoa recebeu mensagem, e o diário pula quem já foi atendido, inclusive antes da coleta.
+  Reexecutar o diário ficou seguro, o que permitiu o segundo job do cron-job.org; ver
+  `decisoes-do-banco.md`, "Dia do atendimento".
 - **G04 — resolvido em 21/10/2026.** `vigia-do-radar-diario.yml` confere às 09:13 se houve
   run do diário concluído com sucesso no dia e avisa o chat de operação se não houve. Veio no
   dia em que o cron-job.org deu timeout e o único sinal foi o e-mail dele; ver o guia, seção 8.
