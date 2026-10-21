@@ -1,7 +1,9 @@
 from datetime import date
+from pathlib import Path
 
 from scripts.vigiar_radar_diario import TITULO_DO_DIARIO, conferir
 
+PASTA_DOS_WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
 HOJE = date(2026, 10, 21)
 
 
@@ -83,3 +85,12 @@ def test_o_dia_do_run_e_o_de_brasilia_e_nao_o_de_utc():
 
     assert not em_ordem
     assert "nenhum run do diário foi criado em 21/10" in situacao
+
+
+def test_o_diario_se_nomeia_com_o_titulo_que_o_vigia_procura():
+    diario = (PASTA_DOS_WORKFLOWS / "radar-diario.yml").read_text().splitlines()
+    nome_do_run = next(linha for linha in diario if linha.startswith("run-name:"))
+
+    assert nome_do_run == (
+        f"run-name: ${{{{ inputs.perfil && 'Entrega imediata' || '{TITULO_DO_DIARIO}' }}}}"
+    )
