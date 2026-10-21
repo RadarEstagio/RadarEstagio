@@ -17,7 +17,19 @@ async function consulta(nome: string): Promise<string> {
     .replaceAll("%(dia)s", "$2::date");
 }
 
-async function banco(): Promise<PGlite> {
+async function migracoes(): Promise<string[]> {
+  const nomes: string[] = [];
+  for await (const entrada of Deno.readDir(MIGRACOES)) {
+    if (entrada.name.endsWith(".sql")) nomes.push(entrada.name);
+  }
+  return nomes.sort();
+}
+
+async function aplicar(db: PGlite, nome: string) {
+  await db.exec(await Deno.readTextFile(new URL(nome, MIGRACOES)));
+}
+
+async function banco(ate = "9999"): Promise<PGlite> {
   const db = new PGlite();
   await db.exec(`
     create role anon;
@@ -45,17 +57,14 @@ async function banco(): Promise<PGlite> {
     alter default privileges in schema public
       grant execute on functions to anon, authenticated, service_role;
   `);
-  const nomes: string[] = [];
-  for await (const entrada of Deno.readDir(MIGRACOES)) {
-    if (entrada.name.endsWith(".sql")) nomes.push(entrada.name);
-  }
-  for (const nome of nomes.sort()) {
-    await db.exec(await Deno.readTextFile(new URL(nome, MIGRACOES)));
+  for (const nome of await migracoes()) {
+    if (nome.slice(0, 4) <= ate) await aplicar(db, nome);
   }
   return db;
 }
 
 let contas = 0;
+let vagas = 0;
 
 function donoNumero(numero: number): string {
   return `00000000-0000-4000-8000-${String(numero).padStart(12, "0")}`;
@@ -75,6 +84,21 @@ async function perfilVinculado(db: PGlite): Promise<{ id: string; dono: string }
     [dono, String(contas)],
   );
   return { id: criado.rows[0].id, dono };
+}
+
+async function enviar(db: PGlite, perfil: string, enviadaEm: string) {
+  vagas += 1;
+  const vaga = await db.query<{ id: string }>(
+    `insert into vagas (fonte, id_externo, titulo, empresa, localizacao, descricao, url, publicada_em)
+     values ('adzuna', $1, 'Estágio', 'Empresa', 'Rio de Janeiro, RJ', 'Descrição', $2, now())
+     returning id`,
+    [String(vagas), `https://exemplo.com/${vagas}`],
+  );
+  await db.query("insert into envios(perfil_id, vaga_id, enviada_em) values ($1, $2, $3)", [
+    perfil,
+    vaga.rows[0].id,
+    enviadaEm,
+  ]);
 }
 
 function comoDia(valor: unknown): string | null {
@@ -220,6 +244,29 @@ Deno.test("o navegador não consegue escrever o dia atendido no próprio perfil"
       null,
     );
     assert.equal(await diaGravado(db, id), null);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("a migration preenche o dia com o último envio de cada perfil no dia de Brasília", async () => {
+  const db = await banco("0035");
+  try {
+    const noFimDaNoite = await perfilVinculado(db);
+    await enviar(db, noFimDaNoite.id, "2026-10-20T15:00:00Z");
+    await enviar(db, noFimDaNoite.id, "2026-10-21T02:30:00Z");
+    const comEnvioAntigo = await perfilVinculado(db);
+    await enviar(db, comEnvioAntigo.id, "2026-10-21T10:30:00Z");
+    await enviar(db, comEnvioAntigo.id, "2026-10-15T10:30:00Z");
+    const semEnvio = await perfilVinculado(db);
+
+    const migracao = (await migracoes()).find((nome) => nome.startsWith("0036_"));
+    assert.ok(migracao, "migration 0036 não encontrada");
+    await aplicar(db, migracao);
+
+    assert.equal(await diaGravado(db, noFimDaNoite.id), "2026-10-20");
+    assert.equal(await diaGravado(db, comEnvioAntigo.id), "2026-10-21");
+    assert.equal(await diaGravado(db, semEnvio.id), null);
   } finally {
     await db.close();
   }
