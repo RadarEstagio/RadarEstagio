@@ -71,8 +71,9 @@ class ExtracaoDaVaga(BaseModel):
     modalidade: str | None = None
     alerta_pegadinha: str | None = None
     descricao_completa: SkipJsonSchema[bool | None] = None
+    raciocinio_do_lote: SkipJsonSchema[str | None] = None
 
-    @field_validator("id_vaga", "modalidade", "alerta_pegadinha")
+    @field_validator("id_vaga", "modalidade", "alerta_pegadinha", "raciocinio_do_lote")
     @classmethod
     def remover_caracteres_invalidos(cls, texto: str | None) -> str | None:
         return texto if texto is None else sem_caracteres_invalidos(texto)

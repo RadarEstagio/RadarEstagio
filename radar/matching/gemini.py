@@ -7,6 +7,7 @@ from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
 
 from radar.domain.models import ExtracaoDaVaga, Vaga
+from radar.domain.texto import sem_caracteres_invalidos
 from radar.matching.errors import (
     AvaliadorIndisponivel,
     CotaDeAvaliacaoExcedida,
@@ -27,10 +28,15 @@ RACIOCINIO_DO_MODELO = "padrao"
 INICIO_DO_CORPO_NO_ERRO = 200
 
 
-def configuracao_de_raciocinio(raciocinio: str | None) -> types.ThinkingConfig | None:
-    if raciocinio is None:
+def configuracao_de_raciocinio(
+    raciocinio: str | None, resumir_o_raciocinio: bool = False
+) -> types.ThinkingConfig | None:
+    if raciocinio is None and not resumir_o_raciocinio:
         return None
-    return types.ThinkingConfig(thinking_level=types.ThinkingLevel(raciocinio.upper()))
+    return types.ThinkingConfig(
+        thinking_level=types.ThinkingLevel(raciocinio.upper()) if raciocinio else None,
+        include_thoughts=resumir_o_raciocinio or None,
+    )
 
 
 class ExtratorGemini:
@@ -47,14 +53,20 @@ class ExtratorGemini:
     def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
-        return gerar_json(
+        resposta = chamar_o_modelo(
             self._cliente,
             self._modelo,
             montar_prompt(vagas),
             ExtracoesDeVagas,
             self._timeout_segundos,
             raciocinio=self._raciocinio,
-        ).extracoes
+            resumir_o_raciocinio=True,
+        )
+        resumo = resumo_do_raciocinio(resposta)
+        return [
+            extracao.model_copy(update={"raciocinio_do_lote": resumo})
+            for extracao in validar_json(resposta.text, ExtracoesDeVagas).extracoes
+        ]
 
 
 def gerar_json[T: BaseModel](
@@ -65,12 +77,27 @@ def gerar_json[T: BaseModel](
     timeout_segundos: int,
     raciocinio: str | None = None,
 ) -> T:
+    resposta = chamar_o_modelo(
+        cliente, modelo, prompt, formato, timeout_segundos, raciocinio=raciocinio
+    )
+    return validar_json(resposta.text, formato)
+
+
+def chamar_o_modelo(
+    cliente: genai.Client,
+    modelo: str,
+    prompt: str,
+    formato: type[BaseModel],
+    timeout_segundos: int,
+    raciocinio: str | None = None,
+    resumir_o_raciocinio: bool = False,
+) -> types.GenerateContentResponse:
     configuracao = types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=formato,
         temperature=TEMPERATURA_DETERMINISTICA,
         http_options=types.HttpOptions(timeout=timeout_segundos * MILISSEGUNDOS_POR_SEGUNDO),
-        thinking_config=configuracao_de_raciocinio(raciocinio),
+        thinking_config=configuracao_de_raciocinio(raciocinio, resumir_o_raciocinio),
     )
     try:
         resposta = cliente.models.generate_content(
@@ -99,7 +126,15 @@ def gerar_json[T: BaseModel](
         raise AvaliadorIndisponivel(
             f"Gemini devolveu resposta fora do formato da API: {erro}"
         ) from None
-    return validar_json(resposta.text, formato)
+    return resposta
+
+
+def resumo_do_raciocinio(resposta: types.GenerateContentResponse) -> str | None:
+    if not resposta.candidates or not resposta.candidates[0].content:
+        return None
+    partes = resposta.candidates[0].content.parts or []
+    resumo = "\n".join(parte.text for parte in partes if parte.thought and parte.text)
+    return sem_caracteres_invalidos(resumo) or None
 
 
 def tempo_de_espera(mensagem: str | None) -> float | None:
