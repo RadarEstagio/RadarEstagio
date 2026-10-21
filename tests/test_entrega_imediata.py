@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -43,6 +43,7 @@ ANTIGO = usuario(3, "Belo Horizonte, MG")
 NOVO = usuario(4, "Recife, PE")
 EM_SALVADOR = usuario(5, "Salvador, BA")
 TODOS = [VINCULADO, PENDENTE, ANTIGO, NOVO]
+HOJE = date(2026, 10, 21)
 
 
 class RepositorioComMarcas(RepositorioEmMemoria):
@@ -183,9 +184,9 @@ def test_entrega_imediata_escolhe_o_perfil_e_quem_ficou_pendente_sem_marcar_ning
         TODOS, pendentes=[PENDENTE.id], atendidos=[ANTIGO.id, NOVO.id]
     )
 
-    assert usuarios_a_atender(repositorio, TODOS, VINCULADO.id) == [VINCULADO, PENDENTE]
-    assert usuarios_a_atender(repositorio, TODOS, VINCULADO.id) == [VINCULADO, PENDENTE]
-    assert usuarios_a_atender(repositorio, TODOS, PENDENTE.id) == [PENDENTE]
+    assert usuarios_a_atender(repositorio, TODOS, VINCULADO.id, HOJE) == [VINCULADO, PENDENTE]
+    assert usuarios_a_atender(repositorio, TODOS, VINCULADO.id, HOJE) == [VINCULADO, PENDENTE]
+    assert usuarios_a_atender(repositorio, TODOS, PENDENTE.id, HOJE) == [PENDENTE]
     assert repositorio.atendidos == {ANTIGO.id, NOVO.id}
 
 
@@ -194,7 +195,7 @@ def test_disparo_recusado_deixa_o_perfil_para_a_proxima_execucao():
         TODOS, pendentes=[PENDENTE.id], atendidos=[VINCULADO.id, ANTIGO.id]
     )
 
-    assert usuarios_a_atender(repositorio, TODOS, NOVO.id) == [PENDENTE, NOVO]
+    assert usuarios_a_atender(repositorio, TODOS, NOVO.id, HOJE) == [PENDENTE, NOVO]
 
 
 def test_perfil_vinculado_depois_da_primeira_leitura_ainda_e_atendido():
@@ -203,16 +204,27 @@ def test_perfil_vinculado_depois_da_primeira_leitura_ainda_e_atendido():
     )
     lidos_antes_do_vinculo = [VINCULADO, PENDENTE, ANTIGO]
 
-    assert usuarios_a_atender(repositorio, lidos_antes_do_vinculo, VINCULADO.id) == [
+    assert usuarios_a_atender(repositorio, lidos_antes_do_vinculo, VINCULADO.id, HOJE) == [
         VINCULADO,
         NOVO,
+    ]
+
+
+def test_diario_deixa_de_fora_quem_ja_foi_atendido_no_dia_de_brasilia():
+    atendido_hoje = ANTIGO.model_copy(update={"ultimo_dia_atendido": HOJE})
+    atendido_ontem = NOVO.model_copy(update={"ultimo_dia_atendido": HOJE - timedelta(days=1)})
+    lidos = [VINCULADO, atendido_hoje, atendido_ontem]
+
+    assert usuarios_a_atender(RepositorioComMarcas(lidos), lidos, None, HOJE) == [
+        VINCULADO,
+        atendido_ontem,
     ]
 
 
 def test_diario_atende_todos_sem_marcar_ninguem_antes_de_atender():
     repositorio = RepositorioComMarcas(TODOS, pendentes=[PENDENTE.id], atendidos=[ANTIGO.id])
 
-    assert usuarios_a_atender(repositorio, TODOS, None) == TODOS
+    assert usuarios_a_atender(repositorio, TODOS, None, HOJE) == TODOS
     assert repositorio.atendidos == {ANTIGO.id}
 
 

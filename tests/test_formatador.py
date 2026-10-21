@@ -365,6 +365,14 @@ def test_resumo_da_execucao_traz_os_numeros_da_operacao():
     assert "Requisições ao avaliador: 18" in texto
 
 
+def test_resumo_mostra_quem_ja_tinha_sido_atendido_hoje_so_quando_ha():
+    com = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 1, 1, 7, 40, 1, ja_atendidos_hoje=3)
+    sem = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 40, 1)
+
+    assert "Já atendidos hoje, fora desta execução: 3" in com
+    assert "Já atendidos hoje" not in sem
+
+
 def test_falha_da_execucao_escapa_a_mensagem_do_erro():
     texto = formatar_falha_da_execucao(MOMENTO_DE_TESTE, "Gemini <429> & cota")
 

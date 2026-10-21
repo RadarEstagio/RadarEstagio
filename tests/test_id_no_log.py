@@ -1,5 +1,6 @@
 import ast
 import logging
+from datetime import date
 from pathlib import Path
 from uuid import uuid4
 
@@ -81,7 +82,7 @@ def test_perfil_sem_entrega_imediata_pendente_vai_ao_log_so_pelo_trecho(caplog):
     perfil_id = uuid4()
 
     with caplog.at_level(logging.WARNING):
-        usuarios_a_atender(RepositorioEmMemoria([]), [], perfil_id)
+        usuarios_a_atender(RepositorioEmMemoria([]), [], perfil_id, date(2026, 10, 21))
 
     assert "já atendido" in caplog.text
     assert str(perfil_id) not in caplog.text

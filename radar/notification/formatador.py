@@ -184,6 +184,7 @@ def formatar_resumo_da_execucao(
     falhas_de_limpeza: list[str] | None = None,
     perguntas_do_dia_seguinte: int = 0,
     perguntas_do_dia_seguinte_com_falha: int = 0,
+    ja_atendidos_hoje: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -196,6 +197,8 @@ def formatar_resumo_da_execucao(
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
         f"Perguntas do dia seguinte enviadas: {perguntas_do_dia_seguinte}",
     ]
+    if ja_atendidos_hoje:
+        linhas.append(f"Já atendidos hoje, fora desta execução: {ja_atendidos_hoje}")
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:
