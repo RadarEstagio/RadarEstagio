@@ -67,10 +67,47 @@ def test_diario_que_falhou_avisa_com_a_conclusao_do_run():
     assert "failure" in situacao
 
 
-def test_diario_reexecutado_que_terminou_bem_vale_mesmo_depois_de_uma_falha():
+def test_falha_do_diario_e_avisada_mesmo_quando_um_run_seguinte_termina_bem():
     execucoes = [
-        execucao(78, TITULO_DO_DIARIO, "2026-10-21T11:05:00Z"),
+        execucao(78, TITULO_DO_DIARIO, "2026-10-21T10:58:00Z"),
         execucao(77, TITULO_DO_DIARIO, "2026-10-21T10:23:03Z", conclusao="failure"),
+    ]
+
+    em_ordem, situacao = conferir(execucoes, HOJE)
+
+    assert not em_ordem
+    assert "o run #77 do diário terminou com failure" in situacao
+    assert "o run #78 terminou bem depois" in situacao
+
+
+def test_diario_cancelado_por_estourar_o_tempo_tambem_e_avisado():
+    execucoes = [
+        execucao(78, TITULO_DO_DIARIO, "2026-10-21T10:58:00Z"),
+        execucao(77, TITULO_DO_DIARIO, "2026-10-21T10:23:03Z", conclusao="cancelled"),
+    ]
+
+    em_ordem, situacao = conferir(execucoes, HOJE)
+
+    assert not em_ordem
+    assert "#77" in situacao
+    assert "cancelled" in situacao
+
+
+def test_dois_diarios_que_terminam_bem_no_mesmo_dia_deixam_o_vigia_quieto():
+    execucoes = [
+        execucao(78, TITULO_DO_DIARIO, "2026-10-21T10:58:00Z"),
+        execucao(77, TITULO_DO_DIARIO, "2026-10-21T10:23:03Z"),
+    ]
+
+    em_ordem, _ = conferir(execucoes, HOJE)
+
+    assert em_ordem
+
+
+def test_falha_de_ontem_nao_conta_para_hoje():
+    execucoes = [
+        execucao(77, TITULO_DO_DIARIO, "2026-10-21T10:23:03Z"),
+        execucao(76, TITULO_DO_DIARIO, "2026-10-20T10:23:03Z", conclusao="failure"),
     ]
 
     em_ordem, _ = conferir(execucoes, HOJE)

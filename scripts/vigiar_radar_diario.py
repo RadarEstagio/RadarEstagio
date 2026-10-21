@@ -9,6 +9,7 @@ TITULO_DO_DIARIO = "Radar diário"
 FUSO_DE_BRASILIA = ZoneInfo("America/Sao_Paulo")
 EXECUCOES_CONSULTADAS = 30
 TIMEOUT_DA_CONSULTA_EM_SEGUNDOS = 30
+CONCLUSOES_SEM_FALHA = frozenset({"success", "skipped"})
 
 
 def data_em_brasilia(instante: str) -> date:
@@ -28,10 +29,23 @@ def conferir(execucoes: list[dict], dia: date) -> tuple[bool, str]:
     diarios = diarios_do_dia(execucoes, dia)
     dia_formatado = f"{dia:%d/%m}"
     bem_sucedido = next((diario for diario in diarios if diario["conclusion"] == "success"), None)
-    if bem_sucedido is not None:
+    falhas = [
+        diario
+        for diario in diarios
+        if diario["status"] == "completed" and diario["conclusion"] not in CONCLUSOES_SEM_FALHA
+    ]
+    if bem_sucedido is not None and not falhas:
         return (
             True,
             f"o diário de {dia_formatado} terminou bem no run #{bem_sucedido['run_number']}",
+        )
+    if bem_sucedido is not None:
+        falha = falhas[0]
+        momento = "depois" if bem_sucedido["run_number"] > falha["run_number"] else "antes"
+        return (
+            False,
+            f"o run #{falha['run_number']} do diário terminou com {falha['conclusion']}; "
+            f"o run #{bem_sucedido['run_number']} terminou bem {momento}",
         )
     if not diarios:
         return (
