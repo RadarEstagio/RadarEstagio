@@ -68,6 +68,10 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
+- **Vigia do diário** (21/10/2026): `vigia-do-radar-diario.yml` confere às 09:13 se o diário
+  terminou bem e avisa o chat de operação se não. Ele só lê; agendador que **execute** o radar
+  continua proibido até existir a marca de atendido no dia (G03). O vigia acha o diário pelo
+  `run-name` "Radar diário": mudou o título, mude `TITULO_DO_DIARIO` junto. Ver o guia, seção 8.
 - **Ações por hash e token só de leitura** (13/09/2026): o job diário recebe os segredos de
   produção, e o dono de uma ação pode mover a tag dela para outro commit. Toda `uses:` aponta para
   o hash de 40 caracteres, e todo workflow declara `permissions: contents: read` no topo; permissão
