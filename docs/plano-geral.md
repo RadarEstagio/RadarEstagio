@@ -176,9 +176,7 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Pesos da nota.** A regra de não recalibrar sem `vaga_irrelevante` real continua valendo. O
   que mudou foi a explicação: perfil sem habilidade cadastrada agora recebe um aviso na
   mensagem em vez de uma nota alta sem ressalva.
-- **Detectar execução ausente.** Se o cron externo não disparar, nada avisa: o passo
-  `if: failure()` do workflow só cobre execução que começou. Falta escolher onde esse alerta
-  mora, e a opção mais simples é o próprio cron-job.org avisar por e-mail quando falhar.
+- **Detectar execução ausente — resolvido em 21/10/2026.** O vigia do G04, abaixo.
 - **Rotular os descartes.** `python -m radar descartes` já exporta a amostra com o motivo, mas
   ninguém preencheu `descarte_correto` ainda. Sem isso, continuamos medindo só a qualidade do
   que foi entregue.
@@ -203,7 +201,9 @@ em 19/09:
   não filtra quem já recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. A
   #68 cobre só a entrega imediata (`entrega_imediata_atendida_em`). Sem essa marca não existe
   recuperação segura depois de uma falha parcial nem agendador de reserva. Exige migration.
-- **G04 — aberto: detectar execução ausente**, o mesmo item da rodada de confiabilidade acima.
+- **G04 — resolvido em 21/10/2026.** `vigia-do-radar-diario.yml` confere às 09:13 se houve
+  run do diário concluído com sucesso no dia e avisa o chat de operação se não houve. Veio no
+  dia em que o cron-job.org deu timeout e o único sinal foi o e-mail dele; ver o guia, seção 8.
 - **G02 — aberto: registrar o fim de cada lote com a duração.** A omissão de vagas pelo modelo
   foi identificada em 11/09; falta a duração por lote para medir o raciocínio `low`.
 - **G05, G08, G09 e G10 — abertos, prioridade baixa.** O G10 é o mais visível: falha do disparo

@@ -371,7 +371,20 @@ O fluxo real levou cerca de quatro minutos no teste registrado. A trava por perf
 validada com duas conexões; execuções concorrentes aguardam e releem o histórico.
 Confira a validade do token e reconfigure o acesso se o repositório mudar de organização.
 
-Preserve o agendamento do cron-job.org às 07:23 de Brasília. Não adicione outro agendador.
+Preserve o agendamento do cron-job.org às 07:23 de Brasília. Não adicione outro agendador que
+**execute** o radar: sem a marca de atendido no dia (G03 da auditoria), um segundo disparo manda
+a todos uma segunda mensagem, com as vagas 8 a 14 do ranking.
+
+O vigia não é agendador de reserva (21/10/2026). `vigia-do-radar-diario.yml` roda às 09:13 de
+Brasília pelo `schedule` do Actions, confere pela API se houve run do diário concluído com
+sucesso no dia e, se não houve, avisa o chat de operação com o estado encontrado e o link para
+rodar o diário à mão. Ele só lê. O diário e a entrega imediata se distinguem pelo `run-name`
+("Radar diário" e "Entrega imediata"), porque a API de runs não devolve os inputs. Para
+testar, rode o vigia pelo botão *Run workflow*: num dia sem diário ele fica vermelho e avisa.
+Limite conhecido: o GitHub desliga o `schedule` de repositório público depois de 60 dias sem
+atividade, e o cron-job.org continuaria disparando sem vigia; reative em Actions se o projeto
+parar. Motivo: em 21/10/2026 o cron-job.org deu timeout no disparo, nenhum run nasceu e o
+único aviso foi o e-mail dele na caixa pessoal de quem tem a conta.
 
 **Concluído quando:** vínculo dispara apenas o perfil vinculado, repetição não duplica envio,
 a janela de 06:23 a 07:23 aguarda o diário e os demais perfis continuam atendidos.

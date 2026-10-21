@@ -1,6 +1,9 @@
 from pathlib import Path
 
 WORKFLOW = Path(__file__).parent.parent / ".github/workflows/radar-diario.yml"
+NOME_DO_RUN_QUE_NAO_MOSTRA_O_PERFIL = (
+    "run-name: ${{ inputs.perfil && 'Entrega imediata' || 'Radar diário' }}"
+)
 
 
 def test_execucoes_do_radar_esperam_a_anterior_em_vez_de_rodar_juntas():
@@ -17,9 +20,12 @@ def test_execucoes_do_radar_esperam_a_anterior_em_vez_de_rodar_juntas():
 def test_perfil_da_entrega_imediata_e_mascarado_no_primeiro_passo_do_job():
     conteudo = WORKFLOW.read_text()
     passos = conteudo.split("      - name: ")
+    linhas_que_podem_mostrar_o_perfil = [
+        linha for linha in conteudo.splitlines() if linha != NOME_DO_RUN_QUE_NAO_MOSTRA_O_PERFIL
+    ]
 
     assert "::add-mask::" in passos[1]
-    assert "${{ inputs." not in conteudo
+    assert not any("${{ inputs." in linha for linha in linhas_que_podem_mostrar_o_perfil)
     assert 'rodar --perfil "$perfil"' in conteudo
 
 

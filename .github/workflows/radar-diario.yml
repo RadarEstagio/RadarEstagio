@@ -1,4 +1,5 @@
 name: Radar diário
+run-name: ${{ inputs.perfil && 'Entrega imediata' || 'Radar diário' }}
 
 on:
   workflow_dispatch:

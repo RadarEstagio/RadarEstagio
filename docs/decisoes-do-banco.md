@@ -682,6 +682,11 @@ O repositório é público e o log do Actions também, então qualquer visitante
   mais os casos por `caplog` da entrega imediata e da seleção do perfil;
   `tests/test_workflows.py` recusa `${{ inputs.` dentro de bloco `env:` sem máscara registrada
   antes, em qualquer workflow.
+- **Uma exceção, fixada linha a linha (21/10/2026).** O `run-name` do `radar-diario.yml` usa o
+  perfil só como booleano (`inputs.perfil && 'Entrega imediata' || 'Radar diário'`), para o vigia
+  separar o diário da entrega imediata. `tests/test_workflow_radar_diario.py` aceita `${{ inputs.`
+  apenas nessa linha exata: `run-name` é o que a lista pública de runs mostra, então qualquer
+  variação que exibisse o id volta a ser recusada.
 
 Limites aceitos: a máscara cobre o log do job, não o que a página da execução mostra sobre o
 disparo — conferir numa execução real antes de considerar o id fora de alcance público. O resumo
