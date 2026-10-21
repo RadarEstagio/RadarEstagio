@@ -1,5 +1,5 @@
 import unicodedata
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
@@ -158,6 +158,7 @@ class Usuario(BaseModel):
     chat_id: str = Field(min_length=1)
     sem_recomendacao_desde: datetime | None = None
     silencio_avisado_em: datetime | None = None
+    ultimo_dia_atendido: date | None = None
 
 
 class ResultadoMatch(BaseModel):
