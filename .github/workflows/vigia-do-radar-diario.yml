@@ -1,0 +1,51 @@
+name: Vigia do radar diário
+
+on:
+  schedule:
+    - cron: "13 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conferir-o-diario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Conferir se o diário de hoje terminou bem
+        id: conferencia
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          situacao=$(python3 scripts/vigiar_radar_diario.py) && resultado=0 || resultado=$?
+          echo "$situacao"
+          echo "situacao=$situacao" >> "$GITHUB_OUTPUT"
+          exit "$resultado"
+
+      - name: Avisar que o diário não terminou bem
+        if: failure() || cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SITUACAO: ${{ steps.conferencia.outputs.situacao }}
+          DIARIO_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/radar-diario.yml
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl --silent --show-error --fail \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=🛠️ <b>Radar — o diário de hoje não terminou bem</b>
+          ${SITUACAO:-O vigia não conseguiu conferir; veja o log dele.}
+          Rodar o diário: ${DIARIO_URL}
+          Vigia: ${RUN_URL}"

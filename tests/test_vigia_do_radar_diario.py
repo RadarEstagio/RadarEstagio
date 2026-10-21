@@ -94,3 +94,11 @@ def test_o_diario_se_nomeia_com_o_titulo_que_o_vigia_procura():
     assert nome_do_run == (
         f"run-name: ${{{{ inputs.perfil && 'Entrega imediata' || '{TITULO_DO_DIARIO}' }}}}"
     )
+
+
+def test_o_vigia_roda_por_agendamento_e_confere_com_o_script():
+    vigia = (PASTA_DOS_WORKFLOWS / "vigia-do-radar-diario.yml").read_text()
+
+    assert "schedule:" in vigia
+    assert "python3 scripts/vigiar_radar_diario.py" in vigia
+    assert "actions: read" in vigia
