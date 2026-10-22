@@ -2,14 +2,16 @@ import json
 import re
 from pathlib import Path
 
-from radar.domain.areas import AREAS, area_do_curso, catalogo_do_site, normalizar_curso
+from radar.domain.areas import AREAS, area_do_curso, normalizar_curso
+from scripts.gerar_areas import ARQUIVO_DO_SITE, conteudo_do_catalogo
 
-ARQUIVO = Path(__file__).parent.parent / "web/assets/areas.json"
 LANDING = Path(__file__).parent.parent / "web/index.html"
 
 
 def test_o_catalogo_do_site_e_o_mesmo_do_backend():
-    assert json.loads(ARQUIVO.read_text()) == catalogo_do_site()
+    assert ARQUIVO_DO_SITE.read_text() == conteudo_do_catalogo(), (
+        "areas.json desatualizado: rode uv run python -m scripts.gerar_areas"
+    )
 
 
 def test_a_faixa_da_landing_mostra_exatamente_as_areas_do_catalogo():
