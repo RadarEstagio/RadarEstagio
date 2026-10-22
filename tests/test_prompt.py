@@ -83,3 +83,9 @@ def test_descricao_lida_pela_extracao_fica_fora_do_formato_pedido_a_ia():
     formato = json.dumps(ExtracoesDeVagas.model_json_schema())
 
     assert "descricao_completa" not in formato
+
+
+def test_resumo_do_raciocinio_fica_fora_do_formato_e_nao_reextrai_as_vagas():
+    formato = json.dumps(ExtracoesDeVagas.model_json_schema())
+
+    assert "raciocinio_do_lote" not in formato

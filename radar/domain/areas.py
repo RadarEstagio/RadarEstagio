@@ -875,10 +875,6 @@ def nomes_do_curso(curso: str) -> tuple[str, ...]:
     return (normalizado, *compostos)
 
 
-def curso_e_generico(curso: str) -> bool:
-    return bool(normalizar(curso)) and not normalizar_curso(curso)
-
-
 PADRAO_CURSO_TECNICO = re.compile(
     r"^(?:(?:cursando|estudantes?|alun[oa]s?|curso|ensino|medio|nivel|formacao)(?: d[eoa])?\s+)*"
     r"tecnic[oa]s?\b"

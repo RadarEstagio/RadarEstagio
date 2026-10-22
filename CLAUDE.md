@@ -26,8 +26,14 @@ Actions.
 - **A IA só extrai fatos da vaga** (Gemini Flash; `AVALIADOR=gemini_api`, o padrão e o do Actions,
   ou `agy` local). Quem compara com o perfil e calcula a nota é Python, sem IA.
 - **Agendamento**: o workflow diário só tem `workflow_dispatch`, disparado às 07:23 de Brasília
-  pelo cron-job.org. Não adicionar `schedule` nem outro agendador
+  pelo cron-job.org, com um segundo disparo às 07:58. Não adicionar `schedule` nem outro agendador
   ([guia, seção 12](docs/guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github)).
+- **O diário pode rodar de novo no mesmo dia** (G03): `perfis.ultimo_dia_atendido` (`0036`) faz
+  toda execução pular quem já recebeu a mensagem do dia. Caminho novo do pipeline em que a pessoa
+  recebe mensagem passa por `registrar_atendimento` ([decisões do banco](docs/decisoes-do-banco.md)).
+- **Vigia do diário** (G04): `vigia-do-radar-diario.yml` confere às 09:13 se o diário terminou bem
+  e avisa o chat de operação se não; só lê. Ele acha o diário pelo `run-name` "Radar diário":
+  mudou o título, mude `TITULO_DO_DIARIO`.
 - **Workflows**: toda `uses:` aponta para o hash de 40 caracteres, todo workflow declara
   `permissions: contents: read`, o checkout leva `persist-credentials: false` e o `setup-uv` fixa
   a versão do uv local. Hash novo entra em `VERSAO_DE_CADA_ACAO` (`tests/test_workflows.py`),
@@ -130,6 +136,8 @@ A leitura dos termos está em `docs/frentes-externas.md`; as medições do Gemin
   erro de coleta, nunca "nenhuma vaga".
 - **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade**: gasta cota da Adzuna e
   requisições pagas do Gemini.
+- **O resumo do raciocínio da extração fica em `vagas.extracao -> 'raciocinio_do_lote'`**, um por
+  chamada. É pista, não explicação: nunca reconstituir o raciocínio chamando a IA de novo.
 
 ### Motor de recomendação: regras que não podem quebrar
 
@@ -146,8 +154,9 @@ mexer em coleta, pré-filtro, extração, pontuação ou mensagem, ler a seção
 - **Curso e período são decididos pelo Python**, com o catálogo: a IA só extrai `cursos_aceitos`
   e `periodo_minimo`. Cursos da mesma área só se equivalem onde a área declara
   `cursos_intercambiaveis` (só computação); perfil abaixo do período mínimo fica em 35.
-- **`domain/areas.py` é o catálogo único.** `AreaDeInteresse`, a migration `0017` e
-  `web/assets/areas.json` derivam dele; mexeu, regere. A normalização de curso tem paridade entre
+- **`domain/areas.py` é o catálogo único.** `AreaDeInteresse`, a validação do banco e
+  `web/assets/areas.json` derivam dele: mexeu, rode `uv run python -m scripts.gerar_areas`, e
+  subárea nova pede migration nova, nunca edição da `0017`. A normalização de curso tem paridade entre
   Python e site (`tests/fixtures/cursos_normalizados.json`): mudou `normalizarTexto`, teste curso
   e cidade.
 - **Vaga exclusiva para PCD não vai para quem respondeu que não é**, e quem é PCD recebe
@@ -200,6 +209,7 @@ O porquê de cada item está em `docs/decisoes-do-banco.md`; configuração e co
   vínculo e no desvínculo.
 - **Site**: o `name` do `wrangler.jsonc` é o do projeto no Cloudflare, senão o build falha; trocar
   o endereço exige Site URL, Redirect URLs e `URL_DA_LANDING` juntos (guia, seção 4).
-- **O token do cron-job.org vence em 09/09/2027**: vencido, o diário para sem avisar ninguém.
+- **O token do cron-job.org vence em 09/09/2027**: vencido, os dois disparos param e só o vigia
+  das 09:13 avisa.
 - `domain/perfil_fixo.py` é um perfil **sintético**, usado só sem `DATABASE_URL`. O repositório é
   público: nunca colocar ali dados reais de ninguém.

@@ -899,13 +899,14 @@ def test_falhas_seguidas_de_envio_pausam_o_perfil():
     repositorio = RepositorioFalso([usuario(chat_id="bloqueado")])
     notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
 
-    for _ in range(3):
+    for dia in range(3):
         rodar(
             [vaga(1)],
             {"1": 70},
             repositorio=repositorio,
             notificador=notificador,
             falhas_ate_pausar=3,
+            agora=AGORA_DE_TESTE + timedelta(days=dia),
         )
 
     assert repositorio.falhas_por_usuario == {ID_USUARIO: 3}
@@ -2048,11 +2049,14 @@ def test_encerrada_em_outra_fonte_com_o_mesmo_numero_nao_tira_a_vaga():
 
 def test_republicacao_da_vaga_encerrada_pela_mesma_empresa_tambem_fica_de_fora():
     encerrada = anuncio(1, "Wilson Sons")
-    repositorio = RepositorioComVagasEncerradas([usuario()], [encerrada])
 
-    so_a_republicacao, _, _ = rodar_com(repositorio, [anuncio(9, "WILSON SONS"), vaga(2)])
+    so_a_republicacao, _, _ = rodar_com(
+        RepositorioComVagasEncerradas([usuario()], [encerrada]),
+        [anuncio(9, "WILSON SONS"), vaga(2)],
+    )
     as_duas_com_republicacao_maior, _, _ = rodar_com(
-        repositorio, [encerrada, anuncio(9, "Empresa não informada", " e benefícios"), vaga(2)]
+        RepositorioComVagasEncerradas([usuario()], [encerrada]),
+        [encerrada, anuncio(9, "Empresa não informada", " e benefícios"), vaga(2)],
     )
 
     assert so_a_republicacao == ["2"]

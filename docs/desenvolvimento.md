@@ -71,7 +71,9 @@ Cuidados:
 - **`testar-local`** gera os botões de feedback, mas os tokens não vão para o banco, então o
   webhook não os acha. Teste feedback com envio do fluxo com banco.
 - **`rodar --perfil`** recebe `perfis.id`, não `auth.users.id`. Perfil cuja primeira entrega já
-  foi atendida não recebe nada: zere `entrega_imediata_atendida_em` antes do teste. A execução
+  foi atendida não recebe nada: zere `entrega_imediata_atendida_em` antes do teste, e também
+  `ultimo_dia_atendido` se ele já recebeu mensagem hoje, porque toda execução pula quem já foi
+  atendido no dia de Brasília. A execução
   também atende quem ficou pendente e não é simulação: grava, manda o resumo e roda o apagamento
   das contas cuja carência venceu. Use ambiente de teste para validar exclusão.
 - **`julgar`** usa `AVALIADOR` para escolher o provedor, e `JUIZ_MODELO` precisa existir nele: o
@@ -136,12 +138,16 @@ para a `main` e em todo pull request ([Testes](../.github/workflows/testes.yml))
 
 ## 6. Scripts
 
-Ficam em `scripts/` e só rodam à mão, quando a fonte muda:
+Ficam em `scripts/`. Os geradores só rodam à mão, quando a fonte muda:
 
 | Script | Quando rodar |
 |---|---|
+| `uv run python -m scripts.gerar_areas` | Mudou `radar/domain/areas.py`: regera `web/assets/areas.json`; `tests/test_areas_do_front.py` falha e mostra o comando enquanto o arquivo estiver velho |
 | `uv run python scripts/gerar_cidades.py` | O IBGE criou município: regera `web/assets/cidades.json` e `radar/domain/regioes_imediatas.json` a partir das APIs do IBGE |
 | `uv run --with pillow python scripts/gerar_icones_das_areas.py <pasta>` | Ilustrações novas das áreas: recebe `<área>.jpg\|png\|webp`, tira o fundo branco e grava os WebP em `web/assets/areas/`; as imagens originais não são versionadas |
+
+O `vigiar_radar_diario.py` não roda à mão: é o passo do `vigia-do-radar-diario.yml`, às 09:13 de
+Brasília, e para testá-lo basta disparar o vigia pelo *Run workflow*.
 
 ## 7. Operação
 

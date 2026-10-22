@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from typing import Any
 from uuid import UUID
 
@@ -10,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def usuarios_a_atender(
-    repositorio: Repositorio, ativos: list[Usuario], apenas_o_perfil: UUID | None
+    repositorio: Repositorio, ativos: list[Usuario], apenas_o_perfil: UUID | None, dia: date
 ) -> list[Usuario]:
     if apenas_o_perfil is None:
-        return ativos
+        return [usuario for usuario in ativos if usuario.ultimo_dia_atendido != dia]
     pendentes = repositorio.entregas_imediatas_pendentes(apenas_o_perfil)
     if apenas_o_perfil not in pendentes:
         logger.warning(

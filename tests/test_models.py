@@ -257,3 +257,19 @@ def test_limpeza_da_extracao_nao_mexe_em_emoji_acento_nem_simbolo():
     assert extracao.cursos_aceitos == textos
     assert extracao.habilidades_obrigatorias == textos
     assert extracao.alerta_pegadinha == textos[1]
+
+
+def test_extracao_nasce_sem_resumo_do_raciocinio():
+    extracao = ExtracaoDaVaga(id_vaga="adzuna:1", area_da_vaga=None)
+
+    assert extracao.raciocinio_do_lote is None
+
+
+def test_resumo_do_raciocinio_perde_nul_e_metade_solta_de_emoji():
+    extracao = ExtracaoDaVaga(
+        id_vaga="adzuna:1",
+        area_da_vaga=None,
+        raciocinio_do_lote=f"Vaga 1 pede Python{NUL} {PRIMEIRA_METADE_DO_EMOJI}",
+    )
+
+    assert extracao.raciocinio_do_lote == "Vaga 1 pede Python "

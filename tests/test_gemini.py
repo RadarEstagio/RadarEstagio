@@ -58,6 +58,7 @@ def vaga_exemplo(numero: int = 1) -> Vaga:
 @dataclass
 class RespostaFalsa:
     text: str | None
+    candidates: list | None = None
 
 
 class ModelsFalso:
@@ -331,11 +332,29 @@ def test_extracao_pede_raciocinio_baixo_por_padrao():
     assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
 
 
-def test_raciocinio_padrao_deixa_o_modelo_decidir():
+def test_raciocinio_padrao_deixa_o_modelo_decidir_o_nivel():
     settings = settings_de_teste().model_copy(update={"gemini_raciocinio": "padrao"})
     cliente = ClienteFalso(RespostaFalsa('{"extracoes": []}'))
 
     ExtratorGemini(settings, cliente).extrair([vaga_exemplo()])
+
+    config = cliente.models.chamadas[0]["config"]
+    assert config.thinking_config.thinking_level is None
+    assert config.thinking_config.include_thoughts is True
+
+
+def test_extracao_pede_o_resumo_do_raciocinio():
+    extrator, cliente = extrator_com(RespostaFalsa('{"extracoes": []}'))
+
+    extrator.extrair([vaga_exemplo()])
+
+    assert cliente.models.chamadas[0]["config"].thinking_config.include_thoughts is True
+
+
+def test_juiz_nao_pede_o_resumo_do_raciocinio():
+    cliente = ClienteFalso(RespostaFalsa('{"extracoes": []}'))
+
+    gerar_json(cliente, MODELO_DE_TESTE, "prompt", ExtracoesDeVagas, 120)
 
     assert cliente.models.chamadas[0]["config"].thinking_config is None
 
@@ -379,6 +398,54 @@ def corpo_200(corpo: str | bytes) -> Callable[[httpx.Request], httpx.Response]:
     return lambda requisicao: httpx.Response(
         200, headers={"content-type": "text/html"}, content=conteudo
     )
+
+
+def envelope_com_raciocinio(*resumos: str, texto: str) -> dict:
+    partes = [{"text": resumo, "thought": True} for resumo in resumos] + [{"text": texto}]
+    return {"candidates": [{"content": {"parts": partes, "role": "model"}}]}
+
+
+def respondendo_com_raciocinio(*resumos: str) -> Callable[[httpx.Request], httpx.Response]:
+    def responder(requisicao: httpx.Request) -> httpx.Response:
+        extracoes = [extracao(id_vaga) for id_vaga in ids_no_prompt(requisicao)]
+        texto = json.dumps({"extracoes": extracoes})
+        return httpx.Response(200, json=envelope_com_raciocinio(*resumos, texto=texto))
+
+    return responder
+
+
+def test_resumo_do_raciocinio_acompanha_cada_extracao_do_lote():
+    cliente = cliente_do_sdk(respondendo_com_raciocinio("A vaga 1 pede Python."))
+    extrator = ExtratorGemini(settings_de_teste(), cliente)
+
+    extracoes = extrator.extrair([vaga_exemplo(1), vaga_exemplo(2)])
+
+    assert [item.id_vaga for item in extracoes] == ["adzuna:1", "adzuna:2"]
+    assert [item.raciocinio_do_lote for item in extracoes] == ["A vaga 1 pede Python."] * 2
+
+
+def test_resumo_em_varias_partes_vira_um_texto_so():
+    cliente = cliente_do_sdk(respondendo_com_raciocinio("Primeiro passo.", "Segundo passo."))
+
+    [extraida] = ExtratorGemini(settings_de_teste(), cliente).extrair([vaga_exemplo(1)])
+
+    assert extraida.raciocinio_do_lote == "Primeiro passo.\nSegundo passo."
+
+
+def test_resumo_do_raciocinio_perde_nul_antes_de_chegar_ao_banco():
+    cliente = cliente_do_sdk(respondendo_com_raciocinio("Pede SQL\u0000."))
+
+    [extraida] = ExtratorGemini(settings_de_teste(), cliente).extrair([vaga_exemplo(1)])
+
+    assert extraida.raciocinio_do_lote == "Pede SQL."
+
+
+def test_resposta_sem_resumo_deixa_o_raciocinio_vazio():
+    extrator = ExtratorGemini(settings_de_teste(), cliente_do_sdk(extraindo_as_vagas_do_prompt))
+
+    [extraida] = extrator.extrair([vaga_exemplo(1)])
+
+    assert extraida.raciocinio_do_lote is None
 
 
 def test_resposta_valida_pelo_sdk_vira_extracoes():

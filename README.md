@@ -49,9 +49,9 @@ conversam por API: o contrato entre eles é o schema do banco.
 ├── web/            site estático: landing, cadastro e conta
 ├── supabase/       migrations do banco e Edge Functions
 ├── tests/          testes Python, fixtures e testes do site e do banco em Deno
-├── scripts/        geradores de dados do site, rodados à mão
+├── scripts/        geradores de dados do site e o vigia do diário
 ├── docs/           documentação, PIT e auditorias
-├── .github/        CI, diário e Dependabot
+├── .github/        CI, diário, vigia e Dependabot
 ├── CLAUDE.md       regras de contribuição e fatos operacionais
 ├── CONTEXT.md      vocabulário do produto
 ├── pyproject.toml  dependências Python (uv)
@@ -89,7 +89,7 @@ web/
 ├── _headers                  cabeçalhos de segurança servidos pelo Cloudflare
 └── assets/
     ├── app.js, styles.css
-    ├── areas.json            gerado de radar/domain/areas.py
+    ├── areas.json            gerado por scripts/gerar_areas.py
     ├── cidades.json          gerado por scripts/gerar_cidades.py
     ├── areas/                ilustrações das 12 áreas
     └── adzuna-logo.png       atribuição exigida pela Adzuna
@@ -135,8 +135,10 @@ docs/
 
 ```text
 scripts/
+├── gerar_areas.py            web/assets/areas.json a partir de radar/domain/areas.py
 ├── gerar_cidades.py          municípios e regiões imediatas do IBGE para o site e o motor
-└── gerar_icones_das_areas.py ilustrações das áreas em WebP para a landing
+├── gerar_icones_das_areas.py ilustrações das áreas em WebP para a landing
+└── vigiar_radar_diario.py    confere se o diário do dia terminou bem, rodado pelo vigia
 ```
 
 ## Início rápido

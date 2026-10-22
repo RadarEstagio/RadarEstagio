@@ -403,9 +403,13 @@ Contagem e pausa após falhas seguidas; resumo de operação.
 
 #### 20. Agendamento
 
-Workflow manual disparado pelo cron-job.org ou pelo vínculo.
+Workflow manual disparado pelo cron-job.org, às 07:23 e de novo às 07:58, ou pelo vínculo. Quem
+já recebeu a mensagem do dia de Brasília fica de fora (`0036`), então o segundo disparo só atende
+quem ficou sem mensagem. O vigia confere às 09:13 se o diário terminou bem e avisa o chat de
+operação se não.
 
-**Condições e limites:** Não há cron nativo ativo no workflow.
+**Condições e limites:** Não há cron nativo no workflow diário; o vigia só lê. Mensagem entregue
+sem que a marca do dia seja gravada pode chegar de novo no segundo disparo.
 
 #### 21. Relatório CLI
 
@@ -463,7 +467,7 @@ Consulte [Métricas](metricas.md) antes de comparar períodos ou tratar uma aber
 ## Estado de disponibilização
 
 O site está em `https://radarestagio.com` desde 03/10/2026, com Turnstile ligado e os Termos e a
-Política na versão `2026-10-08`. Em 17/10 o banco tinha as migrations `0001` a `0035` e as
+Política na versão `2026-10-08`. Em 22/10 o banco tinha as migrations `0001` a `0036`; em 17/10 as
 duas Edge Functions estavam com o código da `main`, publicado em 08/10; o
 [guia](guia-publicacao-e-piloto.md#estado-conferido) tem as conferências. Falta o
 teste completo com conta da equipe (reenvio, recuperação, entrega, feedback e controles). Não

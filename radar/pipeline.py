@@ -95,6 +95,7 @@ class RegistroDasEntregas:
         self.seguradas_por_falta_de_extracao: set[UUID] = set()
         self.seguradas_pela_coleta_incompleta: set[UUID] = set()
         self.com_envio_nao_gravado: set[UUID] = set()
+        self.ja_atendidos_hoje: set[UUID] = set()
 
     def mensagem_entregue(self, usuario: Usuario) -> None:
         self.com_mensagem.add(usuario.id)
@@ -110,6 +111,9 @@ class RegistroDasEntregas:
 
     def envio_nao_gravado(self, usuario: Usuario) -> None:
         self.com_envio_nao_gravado.add(usuario.id)
+
+    def ja_atendido_hoje(self, usuario: Usuario) -> None:
+        self.ja_atendidos_hoje.add(usuario.id)
 
 
 class RegistroDasPerguntas:
@@ -128,6 +132,7 @@ class ResumoDaExecucao(BaseModel):
     mensagens_seguradas_por_falta_de_extracao: int = 0
     mensagens_seguradas_pela_coleta_incompleta: int = 0
     usuarios_com_envio_nao_gravado: int = 0
+    usuarios_ja_atendidos_hoje: int = 0
     falhas_de_limpeza: list[str] = []
     vagas_coletadas: int
     vagas_unicas: int
@@ -242,6 +247,7 @@ def executar(
         mensagens_seguradas_por_falta_de_extracao=len(registro.seguradas_por_falta_de_extracao),
         mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
         usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
+        usuarios_ja_atendidos_hoje=len(registro.ja_atendidos_hoje),
         falhas_de_limpeza=falhas_de_limpeza,
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
@@ -547,6 +553,10 @@ def atender_usuario_travado(
     registro: RegistroDasEntregas,
     coleta_incompleta: bool = False,
 ) -> list[Recomendacao] | None:
+    if repositorio.atendido_no_dia(usuario, data_local(agora)):
+        logger.info("usuário %s já foi atendido hoje e ficou de fora", trecho_do_id(usuario.id))
+        registro.ja_atendido_hoje(usuario)
+        return None
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     recusas = repositorio.recusas_do_usuario(usuario)
     usuario = com_areas_recusadas(usuario, recusas)
@@ -594,7 +604,7 @@ def atender_usuario_travado(
         if avisar_que_nao_houve_vaga(
             notificador, repositorio, usuario, parametros, agora, revalidacao, registro
         ):
-            registrar_atendimento(repositorio, usuario)
+            registrar_atendimento(repositorio, usuario, data_local(agora))
         return None
     if not revalidacao.permite(usuario):
         return None
@@ -616,16 +626,16 @@ def atender_usuario_travado(
         pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
         if not entregues:
             if isinstance(erro, DestinatarioRecusouAMensagem):
-                registrar_atendimento(repositorio, usuario)
+                registrar_atendimento(repositorio, usuario, data_local(agora))
             else:
                 registro.mensagem_perdida(usuario)
             return None
         gravar_envios(repositorio, usuario, entregues, registro)
-        registrar_atendimento(repositorio, usuario)
+        registrar_atendimento(repositorio, usuario, data_local(agora))
         registro.mensagem_entregue(usuario)
         return entregues
     gravar_envios(repositorio, usuario, selecionadas, registro)
-    registrar_atendimento(repositorio, usuario)
+    registrar_atendimento(repositorio, usuario, data_local(agora))
     registro.mensagem_entregue(usuario)
     return selecionadas
 
@@ -680,12 +690,21 @@ def gravar_avaliacoes(
         )
 
 
-def registrar_atendimento(repositorio: Repositorio, usuario: Usuario) -> None:
+def registrar_atendimento(repositorio: Repositorio, usuario: Usuario, dia: date) -> None:
     try:
         repositorio.marcar_entregas_imediatas_atendidas([usuario.id])
     except ErroDeArmazenamento as erro:
         logger.warning(
             "usuário %s: entrega imediata não foi marcada como atendida: %s",
+            trecho_do_id(usuario.id),
+            erro,
+        )
+    try:
+        repositorio.marcar_atendidos_no_dia([usuario.id], dia)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: o dia do atendimento não foi marcado e outro diário hoje o atenderia "
+            "de novo: %s",
             trecho_do_id(usuario.id),
             erro,
         )

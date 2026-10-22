@@ -48,7 +48,7 @@ SQL_USUARIOS_ATIVOS = """
              (select max(e.enviada_em) from envios e where e.perfil_id = p.id),
              p.criado_em
            ) as sem_recomendacao_desde,
-           p.silencio_avisado_em
+           p.silencio_avisado_em, p.ultimo_dia_atendido
     from perfis p
     where p.ativo and p.excluida_em is null and p.telegram_chat_id is not null
     order by p.criado_em
@@ -70,6 +70,18 @@ SQL_MARCAR_ENTREGAS_IMEDIATAS_ATENDIDAS = """
     update perfis
     set entrega_imediata_atendida_em = now()
     where id = any(%(perfis)s) and entrega_imediata_atendida_em is null
+"""
+
+SQL_MARCAR_ATENDIDOS_NO_DIA = """
+    update perfis
+    set ultimo_dia_atendido = %(dia)s
+    where id = any(%(perfis)s)
+"""
+
+SQL_ATENDIDO_NO_DIA = """
+    select exists(
+      select 1 from perfis where id = %(perfil_id)s and ultimo_dia_atendido = %(dia)s
+    )
 """
 
 SQL_EXTRACOES_EXISTENTES = """
@@ -448,6 +460,25 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao marcar as entregas imediatas atendidas: {descrever(erro)}"
+            ) from erro
+
+    def marcar_atendidos_no_dia(self, perfis: list[UUID], dia: date) -> None:
+        try:
+            self._conexao.execute(SQL_MARCAR_ATENDIDOS_NO_DIA, {"perfis": perfis, "dia": dia})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao marcar o dia do atendimento: {descrever(erro)}"
+            ) from erro
+
+    def atendido_no_dia(self, usuario: Usuario, dia: date) -> bool:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_ATENDIDO_NO_DIA, {"perfil_id": usuario.id, "dia": dia}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao conferir o dia do atendimento: {descrever(erro)}"
             ) from erro
 
     def extracoes_existentes(
@@ -897,6 +928,7 @@ def converter_em_usuario(linha: dict) -> Usuario:
         chat_id=linha["telegram_chat_id"],
         sem_recomendacao_desde=linha["sem_recomendacao_desde"],
         silencio_avisado_em=linha["silencio_avisado_em"],
+        ultimo_dia_atendido=linha["ultimo_dia_atendido"],
     )
 
 

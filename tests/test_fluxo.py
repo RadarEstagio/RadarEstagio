@@ -14,6 +14,7 @@ from radar.__main__ import executar_fluxo, main
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
+from radar.domain.datas import data_local
 from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
 from radar.pipeline import ResumoDaExecucao, executar
@@ -609,6 +610,42 @@ def test_execucao_relatada_sem_usuarios_ativos_termina_com_codigo_zero(
 
     assert codigo == 0
     assert "Usuários ativos: 0" in mensagens_de_operacao(httpx_mock)[-1]
+
+
+def atendido_hoje(usuario: Usuario) -> Usuario:
+    return usuario.model_copy(update={"ultimo_dia_atendido": data_local(datetime.now(UTC))})
+
+
+def test_diario_com_todos_ja_atendidos_hoje_nao_coleta_nem_manda_mensagem(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    repositorio = RepositorioEmMemoria([atendido_hoje(estudante_de_direito_no_rio())])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert httpx_mock.get_requests() == []
+    assert "já foram atendidos hoje; coleta não executada" in capsys.readouterr().out
+
+
+def test_diario_atende_so_quem_ainda_nao_recebeu_a_mensagem_de_hoje(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_com_vagas_de_ti(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    pendente = estudante_de_direito_no_rio().model_copy(
+        update={"id": UUID(int=9), "chat_id": OUTRO_CHAT_DO_ESTUDANTE}
+    )
+    repositorio = RepositorioEmMemoria([atendido_hoje(estudante_de_direito_no_rio()), pendente])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert len(mensagens_para(httpx_mock, OUTRO_CHAT_DO_ESTUDANTE)) == 1
+    resumo = mensagens_de_operacao(httpx_mock)[-1]
+    assert "Usuários ativos: 1" in resumo
+    assert "Já atendidos hoje, fora desta execução: 1" in resumo
 
 
 def responder_com_vagas_de_ti(httpx_mock: HTTPXMock) -> None:

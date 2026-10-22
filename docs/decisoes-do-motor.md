@@ -23,6 +23,7 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
   - [A extração tem prazo](#a-extração-tem-prazo-11092026)
   - [Modelo e cota do Gemini](#modelo-e-cota-do-gemini-10092026)
   - [Raciocínio da extração em low](#raciocínio-da-extração-em-low-11092026)
+  - [Resumo do raciocínio gravado na extração](#resumo-do-raciocínio-gravado-na-extração)
   - [Lote incompleto pede junto o que faltou](#lote-incompleto-pede-junto-o-que-faltou-10092026)
   - [Só entra extração com o id de uma vaga do lote pedido](#só-entra-extração-com-o-id-de-uma-vaga-do-lote-pedido-18092026)
   - [Resposta malformada do avaliador não derruba o job](#resposta-malformada-do-avaliador-não-derruba-o-job-16092026)
@@ -249,12 +250,14 @@ nada pode ganhar uma lista própria:
 
 - `AreaDeInteresse` (em `domain/models.py`) é **construído** a partir de `SUBAREAS`.
 - A migration `0017` foi **gerada** do mesmo catálogo — o `CHECK` de `perfis.areas_de_interesse`
-  e a função `validar_cadastro_radar`.
+  e a função `validar_cadastro_radar`. Migration aplicada não se edita: subárea nova pede uma
+  migration nova que redefina os dois, e `tests/test_migracao_das_areas.py` confere a última que
+  define cada um (15/10/2026; antes o teste do `CHECK` lia sempre a `0017`).
 - `web/assets/areas.json` é **arquivo gerado** e serve o cadastro, que monta as áreas conforme o
   curso digitado e lista os `cursos_sugeridos` no campo de curso (16/09/2026: o `datalist`
   com cópia da lista saiu do `index.html`; o curso segue livre, ao contrário da cidade). Mexeu
-  em `areas.py`, regere; `tests/test_areas_do_front.py` e `tests/test_migracao_das_areas.py`
-  quebram se alguma das três listas sair do lugar.
+  em `areas.py`, rode `uv run python -m scripts.gerar_areas`; `tests/test_areas_do_front.py`
+  compara o arquivo byte a byte com a saída do script e diz o comando quando ele está velho.
 
 Os padrões são dois de propósito: `titulo` é amplo e responde "essa vaga é da minha área?";
 `exclusao` é estreito e responde "essa vaga é inequivocamente de outra?". O padrão `titulo`
@@ -721,6 +724,51 @@ cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~1
 41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
 comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
 trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
+
+## Resumo do raciocínio gravado na extração
+
+(19/10/2026, `raciocinio_do_lote`). Para entender por que uma vaga recebeu certa extração, o que
+vale é o raciocínio da execução que gerou a nota. Chamar a IA de novo com a mesma vaga traz outro
+raciocínio: temperatura 0 não deixa o Gemini determinístico (repetir o modo padrão concordou em
+90% dos campos, ver a seção anterior), e a vaga sozinha não é o lote de 10 em que ela foi lida.
+Por isso a extração pede `include_thoughts` e copia o resumo devolvido para cada extração daquela
+chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
+
+- **É pista, não explicação.** É o resumo que o modelo faz do próprio raciocínio, e nada garante
+  que ele explique a resposta. Quem decide se a IA errou é a comparação da extração com a
+  descrição da vaga.
+- **Um texto por chamada.** As vagas de um lote dividem o mesmo resumo; a vaga repetida sozinha,
+  ou num lote dividido, leva o da chamada que a extraiu.
+- **Não reextrai nada.** O campo fica fora do schema pedido à IA, como `descricao_completa`, e a
+  `VERSAO_DA_EXTRACAO` continuou `7efdbc95`. Vagas extraídas antes ficam sem resumo, e o adapter
+  `agy` não devolve resumo.
+- **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
+- **Pedir o resumo não muda o custo.** A documentação do Gemini cobra o raciocínio inteiro como
+  saída, com ou sem `include_thoughts`; o resumo não é cobrado à parte.
+- **O `agy` não prevê o resumo da API.** Simulação de 19 e 20/10, sem chave do Gemini local nem
+  acesso ao banco: 50 vagas reais da Adzuna com a descrição completa, em 5 lotes de 10, no
+  `gemini-3.8-flash`, porque o `agy` não oferece o `gemini-3.6-flash` da API. O texto do raciocínio
+  fica em `~/.gemini/antigravity-cli/brain/<conversa>/.system_generated/logs/transcript_full.jsonl`.
+  Em `low`, os 5 lotes tiveram 0 token de raciocínio (~9 s e R$ 0,041 a 0,051 por lote nos preços
+  do `3.6-flash`, descontados os ~7,7 mil tokens de entrada do próprio `agy`), e um problema de
+  aritmética de controle também teve 0: o `low` do `agy` desliga o raciocínio, não é a extração
+  que dispensa. Em `medium`, 27,7 a 45 mil tokens de raciocínio por lote, 32 a 40 KB de texto vaga
+  a vaga e 160 a 293 s, de 6 a 9 vezes o padrão da API em 11/09 e acima do timeout de 120 s por
+  chamada. O tamanho do resumo em `low` só se mede na API: no primeiro diário ou com uma chave
+  local.
+- **O espaço cresce com vagas novas, não com usuários**: com as ~70 vagas novas por dia medidas em
+  08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
+  vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
+
+Consulta para investigar uma vaga:
+
+```sql
+select titulo, descricao,
+       extracao - 'raciocinio_do_lote' as fatos,
+       extracao ->> 'raciocinio_do_lote' as raciocinio
+from vagas
+where fonte = 'adzuna' and id_externo = '<id>';
+```
 
 ## Lote incompleto pede junto o que faltou (10/09/2026)
 

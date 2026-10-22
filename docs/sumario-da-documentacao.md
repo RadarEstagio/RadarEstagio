@@ -1,6 +1,6 @@
 # Sumário da documentação
 
-**Retrato de 17/10/2026.** Visão de conjunto dos documentos do repositório, para não se perder
+**Retrato de 17/10/2026, atualizado em 22/10.** Visão de conjunto dos documentos do repositório, para não se perder
 entre eles. Datas e números são os que cada documento registra. Não é o documento dono de assunto
 algum: o estado vigente está no dono de cada tema, listado no [índice](README.md). Quem muda um
 dono atualiza a linha dele aqui; divergência encontrada entre documentos entra no fim, até ser
@@ -17,19 +17,19 @@ que estudantes de fora do grupo o acham útil.
 
 | Documento | O que contém | Estado |
 |---|---|---|
-| [`CLAUDE.md`](../CLAUDE.md) | Regras de contribuição e de operação que um agente precisa seguir | Enxugado em 17/10 para cerca de 200 linhas; o que era relato ou medição foi para os donos |
+| [`CLAUDE.md`](../CLAUDE.md) | Regras de contribuição e de operação que um agente precisa seguir | Enxugado em 17/10 para cerca de 200 linhas; o que era relato ou medição foi para os donos. Ganhou em 22/10 o vigia, o segundo disparo e o resumo do raciocínio |
 | [`CONTEXT.md`](../CONTEXT.md) | Vocabulário: ativação operacional × de produto, vaga útil, candidatura declarada | Estável |
 | [`README.md`](../README.md) | O que é o projeto, fluxo, tecnologias e a tree de cada área | 16/10 |
 | [`docs/README.md`](README.md) | Índice, com um documento dono por assunto | 16/10 |
 | [`funcionalidades.md`](funcionalidades.md) | Catálogo do que o produto faz para quem usa e para quem opera, e o que não existe | 16/10, com a conferência de 17/10 |
-| [`plano-geral.md`](plano-geral.md) | Fonte única de pendências e decisões, quadro dos 16 achados RCD, hipóteses H1 a H7 | 16/10, com a conferência de 17/10 |
+| [`plano-geral.md`](plano-geral.md) | Fonte única de pendências e decisões, quadro dos 16 achados RCD, hipóteses H1 a H7 | 16/10, com as conferências de 17 e 22/10; G03, G04 e RCD-15 fechados |
 | [`arquitetura.md`](arquitetura.md) | Camadas, contratos e 11 decisões técnicas | Estável; as regras do motor são links |
-| [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.583 linhas |
-| [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0035` (08/10) |
-| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035` e as ilustrações de 15/10 |
+| [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.631 linhas, com o resumo do raciocínio de 19/10 |
+| [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0036` (21/10, dia do atendimento) |
+| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") |
 | [`metricas.md`](metricas.md) | Eventos, denominadores, utilidade semanal, pergunta do dia seguinte | 05/10 |
 | [`desenvolvimento.md`](desenvolvimento.md) | Instalação, variáveis, comandos da CLI, testes e scripts | Criado em 16/10 |
-| [`guia-publicacao-e-piloto.md`](guia-publicacao-e-piloto.md) | Configuração de cada serviço, tabela do estado conferido, roteiro de teste | Supabase e Telegram conferidos em 17/10 |
+| [`guia-publicacao-e-piloto.md`](guia-publicacao-e-piloto.md) | Configuração de cada serviço, tabela do estado conferido, roteiro de teste | Supabase e Telegram conferidos em 17/10, migrations em 22/10; dois disparos do cron e vigia desde 21/10 |
 | [`frentes-externas.md`](frentes-externas.md) | Termos das fontes, cobertura (E02), aquisição (E03), custos (E04) e oferta (E05) | Quase tudo "não medido" por falta de dado externo |
 | [`termos-de-uso.md`](termos-de-uso.md), [`politica-de-privacidade.md`](politica-de-privacidade.md) | Versão `2026-10-08`, igual aos HTML de `web/` | Em vigor desde 08/10 |
 | [`pit/`](pit/pit-do-grupo.md) | Entrega AP1 (IBM3116), medida em 28 e 30/09, com apresentação, pptx e telas | Endereço corrigido em 16/10; números de setembro |
@@ -46,8 +46,8 @@ que estudantes de fora do grupo o acham útil.
 - **Nota (0 a 100):** habilidades 45, período e experiência 15, curso 10, área 10, logística 10,
   interesse 10. Corte de envio em 40. Tetos: curso incompatível ou período abaixo do mínimo 35,
   outro campo 65, outra cidade 30, descrição truncada 60.
-- **Infra:** GitHub Actions só com `workflow_dispatch` (o cron-job.org dispara às 07:23 e o vínculo
-  do Telegram dispara a primeira busca), Supabase em `sa-east-1` (Postgres, Auth e as Edge
+- **Infra:** GitHub Actions só com `workflow_dispatch` (o cron-job.org dispara às 07:23 e às 07:58,
+  o vínculo do Telegram dispara a primeira busca e um vigia confere às 09:13 se o diário terminou bem), Supabase em `sa-east-1` (Postgres, Auth e as Edge
   Functions `ir` e `telegram-webhook`), site estático no Cloudflare Workers em `radarestagio.com`.
   O contrato entre site e motor é o schema do banco.
 - **Regras que o código não ensina:** ausência de dado não é veto; não ajustar peso sem
@@ -68,7 +68,7 @@ que estudantes de fora do grupo o acham útil.
 | Cadastro → primeira lista | Mediana de 1,7 min | PIT |
 | Custo de extração | R$ 0,066 por lote de 10; ~R$ 14 em 30 dias (estimativa, sem fatura) | Auditoria, 05/10 |
 | Banco | 19,3 MB de 500 MB (3,9%), ~0,2 MB por dia | Decisões do banco, 08/10 |
-| Testes | 2.127 em Python, 304 do site e do banco, 85 e 16 das Edge Functions | Suíte local, 17/10 |
+| Testes | 2.169 em Python, 304 do site e do banco, 85 e 16 das Edge Functions | Suíte local, 22/10 |
 
 ## O que está aberto
 
@@ -84,8 +84,9 @@ que estudantes de fora do grupo o acham útil.
 - Pedir a colegas que usem, com um `utm_source` por canal.
 
 **Confiabilidade** ([plano geral](plano-geral.md#5-confiabilidade-e-qualidade-do-motor)):
-reexecutar o diário reenvia a todos (G03); não há alerta se o cron não disparar (G04); o token do
-cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
+G03 e G04 foram fechados em 21/10: reexecutar o diário pula quem já recebeu a mensagem do dia, e o
+vigia avisa se o diário não terminou bem. Seguem abertos G02 (duração de cada lote) e, com
+prioridade baixa, G05, G08, G09 e G10. O token do cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
 automático não está validado (precisa de 75% ou mais de concordância).
 
 **Produto:**

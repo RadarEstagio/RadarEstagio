@@ -8,7 +8,6 @@ from radar.domain.models import (
     AberturaSemResposta,
     BotaoDeFeedback,
     EventosDoSite,
-    MotivoDeRecusa,
     PerguntaDeFeedback,
     Recomendacao,
     Vaga,
@@ -42,14 +41,6 @@ PROPORCAO_DE_ALERTA_DO_BANCO = 0.7
 BYTES_POR_MEGABYTE = 1024 * 1024
 ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
-ROTULOS_DE_MOTIVO = {
-    MotivoDeRecusa.NOTA: "A nota não fez sentido",
-    MotivoDeRecusa.AREA: "Não é da minha área",
-    MotivoDeRecusa.EXIGENCIA: "Pedem demais",
-    MotivoDeRecusa.LOGISTICA: "Local ou modalidade",
-    MotivoDeRecusa.REPETIDA: "Já vi essa",
-    MotivoDeRecusa.ENCERRADA: "Vaga encerrada",
-}
 ROTULOS_MODALIDADE = {
     "remoto": "Remoto",
     "presencial": "Presencial",
@@ -121,13 +112,6 @@ def formatar_pergunta_do_dia_seguinte(abertura: AberturaSemResposta) -> Pergunta
     )
 
 
-def formatar_motivos_da_recusa(token: str) -> list[list[BotaoDeFeedback]]:
-    return [
-        [BotaoDeFeedback(rotulo=rotulo, dados=f"{motivo.value}:{token}")]
-        for motivo, rotulo in ROTULOS_DE_MOTIVO.items()
-    ]
-
-
 def formatar_mensagem_sem_vagas(momento: datetime, dias_de_silencio: int | None = None) -> str:
     mensagem = (
         f"{cabecalho(momento)}\n\n"
@@ -184,6 +168,7 @@ def formatar_resumo_da_execucao(
     falhas_de_limpeza: list[str] | None = None,
     perguntas_do_dia_seguinte: int = 0,
     perguntas_do_dia_seguinte_com_falha: int = 0,
+    ja_atendidos_hoje: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -196,6 +181,8 @@ def formatar_resumo_da_execucao(
         f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}",
         f"Perguntas do dia seguinte enviadas: {perguntas_do_dia_seguinte}",
     ]
+    if ja_atendidos_hoje:
+        linhas.append(f"Já atendidos hoje, fora desta execução: {ja_atendidos_hoje}")
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:

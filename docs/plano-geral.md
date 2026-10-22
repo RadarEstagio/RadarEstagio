@@ -1,7 +1,7 @@
 # Plano geral
 
 **Revisado em 16/10/2026** contra o código da `main` e o GitHub; migrations, Edge Functions e
-webhook do Telegram conferidos em 17/10, só leitura. O Cloudflare e o cron-job.org não foram
+webhook do Telegram conferidos em 17/10, só leitura, e migrations de novo em 22/10 (`0036`). O Cloudflare e o cron-job.org não foram
 reconsultados nesta revisão. É a fonte única de
 pendências e decisões da equipe; os outros documentos linkam aqui em vez de repetir estado.
 
@@ -50,6 +50,7 @@ Conferido em 17/10 com o CLI do Supabase, só leitura; o resultado está no
 
 - [x] Migrations `0032` (origem da visita), `0033` (pergunta do dia seguinte), `0034` (grants e
   formato da `pagina`) e `0035` (confirmação e sessões do apagamento) aplicadas.
+- [x] Migration `0036` (dia do atendimento, G03) aplicada, conferida em 22/10.
 - [x] `telegram-webhook` e `ir` publicadas em 08/10, com o código igual ao da `main`, e o secret
   `TELEGRAM_CHAT_ID` criado no Supabase.
 - [ ] Abrir o site no celular (HTTPS, início, Termos e Privacidade).
@@ -97,7 +98,8 @@ a chave pública do Supabase está no `web/config.js`.
 - [x] As 63 branches remotas já mescladas foram apagadas e "Automatically delete head branches"
   foi ligado (17/10). Ficaram as dos PRs abertos e as dos fechados sem merge (#42 e #128), que
   têm commits fora da `main`.
-- [ ] Renovar o token do cron-job.org antes de 09/09/2027: vencido, o diário para sem avisar.
+- [ ] Renovar o token do cron-job.org antes de 09/09/2027: vencido, os dois disparos param e só o
+  vigia das 09:13 avisa.
 
 ### 2.5 Pedir para alguns colegas usarem
 
@@ -131,7 +133,7 @@ não são atualizados.
 | RCD-12 | Mensagem densa | Aberto: não há mensagem com três destaques |
 | RCD-13 | Só existe pausar tudo | Aberto: não há frequência semanal |
 | RCD-14 | Progresso em 0% e "Comece pela sua conta" | Feito em 05/10 (`35816a0`): progresso a partir de 20% e "Último passo: crie sua conta para ativar seu Radar" |
-| RCD-15 | Cartão "A definir" | Aberto: o cartão "Depois do piloto" segue com "A definir" (`web/index.html`) |
+| RCD-15 | Cartão "A definir" | Feito em 19/10 (#155): ficou só o cartão do plano gratuito, com a nota de que um eventual plano pago aparece antes da contratação |
 | RCD-16 | "Sobre" leva ao CTA final | Aberto: o item do menu aponta para `#sobre`, que é o CTA final |
 
 ## 4. Pendências externas
@@ -156,14 +158,18 @@ operacional. Não há autorização de cobrança ou disparo de mensagens implíc
 
 Da [auditoria do agendamento](auditorias/2026-09-10-agendamento-diario.md) (10/09), conferida no
 código em 16/10: G01 e G07 resolvidos no PR #57 (prazo da extração, timeouts de 30 e 28 min), G06
-resolvido (a entrega imediata coleta só para quem atende). Continuam abertos:
+resolvido (a entrega imediata coleta só para quem atende). Em 21/10:
 
-- **G03 — não reenviar a quem já foi atendido no dia.** A consulta dos ativos não filtra quem
-  recebeu hoje, então reexecutar o diário manda segunda mensagem a todos. Sem essa marca não há
-  recuperação segura depois de falha parcial nem agendador de reserva. Exige migration.
-- **G04 — detectar execução ausente.** Se o cron externo não disparar, nada avisa: o passo
-  `if: failure()` só cobre execução que começou. A opção mais simples é o cron-job.org avisar por
-  e-mail quando falhar.
+- **G03 — resolvido.** `perfis.ultimo_dia_atendido` (`0036`) marca o dia de Brasília em que a
+  pessoa recebeu mensagem, e o diário pula quem já foi atendido, inclusive antes da coleta.
+  Reexecutar ficou seguro, o que permitiu o segundo job do cron-job.org às 07:58
+  ([decisões do banco](decisoes-do-banco.md#dia-do-atendimento-o-diário-pode-rodar-de-novo-21102026)).
+- **G04 — resolvido.** `vigia-do-radar-diario.yml` confere às 09:13 se houve run do diário
+  concluído com sucesso no dia e avisa o chat de operação se não houve
+  ([guia, seção 12](guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github)).
+
+Continuam abertos:
+
 - **G02 — registrar a duração de cada lote.** Os logs dizem quantas extrações cada lote devolveu,
   não quanto tempo levou; falta isso para medir o raciocínio `low` e a margem do prazo.
 - **G05, G08, G09 e G10**, prioridade baixa. O G10 é o mais visível: falha do disparo da

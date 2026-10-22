@@ -13,7 +13,7 @@ banco do Radar.
 | Domínio e e-mail | 03/10/2026 | Domínio, site e Email Routing na conta Cloudflare do grupo; `contato@` recriado e testado; Resend "Verified" não reconferido |
 | Auth | 05/10/2026 | Site URL `https://radarestagio.com`; Redirect URLs só com `https://radarestagio.com/**` e `http://localhost:8000/**` |
 | Turnstile | 03/10/2026 | Widget no site; Supabase recusa pedido sem token (400 `captcha_failed`); expiração do desafio sem teste |
-| Migrations | 17/10/2026, `supabase migration list --linked` | `0001` a `0035` aplicadas, iguais às locais (a numeração pula a `0029`) |
+| Migrations | 22/10/2026, `supabase migration list --linked` | `0001` a `0036` aplicadas, iguais às locais (a numeração pula a `0029`) |
 | Edge Functions | 17/10/2026, `supabase functions list` e `supabase functions download` | `telegram-webhook` (versão 24) e `ir` (versão 8) publicadas em 08/10 às 13:57, com o código igual ao da `main`; secret `TELEGRAM_CHAT_ID` criado |
 | Webhook do Telegram | 17/10/2026, `getWebhookInfo` | `allowed_updates` com `message` e `callback_query`, sem fila nem erro |
 | Rastreio | 03/10/2026 | `URL_DA_LANDING` em `https://radarestagio.com`; a `ir` manda token inexistente para o domínio novo |
@@ -246,8 +246,7 @@ feedback grava o evento certo e link antigo de conta excluída não gera evento.
 O vínculo dispara `workflow_dispatch` com o input `perfil`, lendo o `GITHUB_DISPATCH_TOKEN`. Sem
 ele, o vínculo funciona e a busca fica para o diário. Confira a validade do token e reconfigure o
 acesso se o repositório mudar de organização (`REPOSITORIO` em `entrega_imediata.ts` é
-constante). Preserve o agendamento do cron-job.org às 07:23 de Brasília e não adicione outro
-agendador.
+constante). Os disparos do diário pelo cron-job.org e o vigia estão na seção 12.
 
 **Concluído quando:** o vínculo dispara só o perfil vinculado, repetir não duplica envio, a janela
 de 06:23 a 07:23 espera o diário e os demais perfis continuam atendidos.
@@ -301,8 +300,38 @@ metas de retenção. A checklist vigente está no
 ## 12. Agendamento, tokens e CI do GitHub
 
 O [workflow diário](../.github/workflows/radar-diario.yml) só tem `workflow_dispatch`: o
-`schedule` nativo ficou dois dias sem disparar e foi removido. Quem dispara às 07:23 de Brasília é
-um job no cron-job.org que chama a API `dispatches` com token fine-grained.
+`schedule` nativo ficou dois dias sem disparar e foi removido. Quem dispara é o cron-job.org, que
+chama a API `dispatches` com token fine-grained.
+
+O diário é disparado por **dois jobs no cron-job.org** (21/10/2026), porque o serviço não tem retry
+próprio. Os dois são iguais, e o segundo nasceu como clone do primeiro (Actions → Clone), para o
+token não precisar ser copiado à mão. A configuração, sem o token:
+
+| Campo | `RadarEstagio` | `RadarEstagio (reforço)` |
+|---|---|---|
+| URL | `https://api.github.com/repos/RadarEstagio/RadarEstagio/actions/workflows/radar-diario.yml/dispatches` | a mesma |
+| Horário | todo dia às 07:23, fuso `America/Sao_Paulo` | todo dia às 07:58, mesmo fuso |
+| Método, cabeçalhos e corpo | os que a API de `dispatches` exige (`POST`, token fine-grained, `ref` da `main`), conferidos pelo `204` de 20/10; a aba Advanced não foi aberta para não expor o token | os mesmos, pelo clone |
+| Timeout | 30 s, o teto do plano gratuito | o mesmo |
+| Resposta de sucesso | `204 No Content` | a mesma |
+
+O segundo disparo é seguro desde o G03: quem já recebeu a mensagem do dia de Brasília fica de fora,
+e se todos já receberam o diário termina sem coletar e sem avisar o chat de operação. Nos dias de
+falha ele atende só quem ficou sem mensagem. Às 07:58 o primeiro run já passou do teto de 30
+minutos, então o segundo não fica pendente na `concurrency`, onde uma entrega imediata o cancelaria.
+Mudar o horário de um dos jobs exige conferir a janela da entrega imediata (G09). Não adicione um
+terceiro agendador sem rever essa conta. Os dois jobs usam o mesmo token, que vence em 09/09/2027.
+
+O vigia não é agendador de reserva (21/10/2026). `vigia-do-radar-diario.yml` roda às 09:13 de
+Brasília pelo `schedule` do Actions, confere pela API se houve run do diário concluído com
+sucesso no dia e, se não houve, avisa o chat de operação com o estado encontrado e o link para
+rodar o diário à mão. Ele só lê. O diário e a entrega imediata se distinguem pelo `run-name`
+("Radar diário" e "Entrega imediata"), porque a API de runs não devolve os inputs. Para
+testar, rode o vigia pelo botão *Run workflow*: num dia sem diário ele fica vermelho e avisa.
+Limite conhecido: o GitHub desliga o `schedule` de repositório público depois de 60 dias sem
+atividade, e o cron-job.org continuaria disparando sem vigia; reative em Actions se o projeto
+parar. Motivo: em 21/10/2026 o cron-job.org deu timeout no disparo, nenhum run nasceu e o
+único aviso foi o e-mail dele na caixa pessoal de quem tem a conta.
 
 Na transferência de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio` (08/09/2026), commits,
 autores, issues e PRs foram preservados e o GitHub redireciona o endereço antigo; o que quebrou foi
@@ -317,7 +346,7 @@ a ligação das automações, porque cada uma guardava o dono no nome:
 - **Entrega imediata**: trocar só o `GITHUB_DISPATCH_TOKEN` não basta, porque `REPOSITORIO` em
   `entrega_imediata.ts` é constante (seção 8).
 - Os secrets do Actions sobreviveram à transferência. O token do cron **vence em 09/09/2027**:
-  quando vencer, o radar diário para de rodar sem avisar ninguém.
+  quando vencer, os dois disparos param e só o vigia das 09:13 avisa.
 
 **Ações por hash e token só de leitura (13/09/2026).** O job diário recebe os segredos de
 produção, e o dono de uma ação pode mover a tag dela para outro commit. Por isso toda `uses:`

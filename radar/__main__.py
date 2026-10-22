@@ -38,6 +38,7 @@ from radar.cota import (
     reserva_do_diario,
     uso_da_adzuna,
 )
+from radar.domain.datas import data_local
 from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import EventosDoSite, Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
@@ -79,14 +80,6 @@ AMOSTRA_DO_GABARITO = 20
 AMOSTRA_DOS_DESCARTES = 30
 
 logger = logging.getLogger(__name__)
-
-
-def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
-    return [
-        str(detalhe["loc"][0]).upper()
-        for detalhe in erro.errors()
-        if detalhe["type"] in TIPOS_DE_ERRO_DE_PREENCHIMENTO
-    ]
 
 
 def problemas_da_configuracao(erro: ValidationError) -> list[str]:
@@ -288,11 +281,19 @@ def executar_fluxo(
     agora = datetime.now(UTC)
     try:
         ativos = repositorio.listar_ativos()
-        usuarios_da_coleta = usuarios_a_atender(repositorio, ativos, apenas_o_perfil)
+        usuarios_da_coleta = usuarios_a_atender(
+            repositorio, ativos, apenas_o_perfil, data_local(agora)
+        )
         if apenas_o_perfil is not None and not usuarios_da_coleta:
             print(
                 f"Perfil {trecho_do_id(apenas_o_perfil)} sem entrega a fazer; coleta não executada"
             )
+            return
+        ja_atendidos_hoje = (
+            0 if apenas_o_perfil is not None else len(ativos) - len(usuarios_da_coleta)
+        )
+        if ativos and not usuarios_da_coleta:
+            print(f"Os {len(ativos)} perfis ativos já foram atendidos hoje; coleta não executada")
             return
         reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
         cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
@@ -338,7 +339,8 @@ def executar_fluxo(
         f"{resumo.usuarios_sem_entrega_por_erro_inesperado} sem entrega por erro inesperado; "
         f"{resumo.perguntas_do_dia_seguinte} perguntas do dia seguinte, "
         f"{resumo.perguntas_do_dia_seguinte_com_falha} com falha; "
-        f"{cota.requisicoes} requisições à Adzuna"
+        f"{cota.requisicoes} requisições à Adzuna; "
+        f"{ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje} já atendidos hoje"
     )
     resumo_entregue = avisar_operacao(
         settings,
@@ -375,6 +377,7 @@ def executar_fluxo(
             falhas_de_limpeza=resumo.falhas_de_limpeza,
             perguntas_do_dia_seguinte=resumo.perguntas_do_dia_seguinte,
             perguntas_do_dia_seguinte_com_falha=resumo.perguntas_do_dia_seguinte_com_falha,
+            ja_atendidos_hoje=ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():
