@@ -117,6 +117,10 @@ cadastro aceita o texto digitado e avisa, para uma falha de rede não custar a c
 de `uv run python scripts/gerar_cidades.py`, que lê os municípios e a população do Censo 2022
 nas APIs do IBGE; a população só ordena as sugestões. Regerar quando o IBGE criar município.
 
+O perfil aceita uma cidade e uma modalidade. `cidades_aceitas` e `modalidades_aceitas` existiram
+sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da tela que as
+escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
+
 `habilidades` é uma lista de zero a cinquenta strings não vazias, com no máximo 100 caracteres
 cada, contando os espaços nas pontas desde a `0025`. Cada item é o que a pessoa adicionou na tela,
 sem separar por vírgula; habilidade composta ("Python, SQL") é partida pelo Python na comparação. Lista vazia significa que o estudante ainda não informou
@@ -261,6 +265,13 @@ Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
 
 ## Decisões de cadastro e privacidade
 
+- **Cadastro no site, não no bot.** O cadastro conversacional pelo bot foi substituído por um
+  site com conta: dados de perfil são estruturados (lista de habilidades, período, modalidade) e
+  um formulário é mais claro que uma conversa; o bot continua sem estado e sem máquina de
+  conversa; o Supabase já resolve conta (Auth) e banco de uma vez.
+- **A conta fica por último no formulário**: pedir e-mail e senha antes de qualquer valor
+  entregue cobra o preço antes de mostrar o produto. `signup` só é chamado no envio do último
+  passo, nunca ao avançar entre etapas, e login e edição continuam com seus próprios passos.
 - A confirmação de e-mail mantém um canal verificado para acesso e recuperação. O reenvio
   permite corrigir o endereço e respeita o intervalo entre tentativas.
 - Aceite dos termos e autorização opcional de e-mails são controles separados. A autorização
@@ -280,7 +291,7 @@ Use novas migrations e os testes de `tests/web/` para mudanças nesse contrato.
 Movidos do `CLAUDE.md` em 20/09/2026, sem reescrita: cada um guarda a data da decisão, o que
 foi medido e o limite aceito.
 
-### Conta no site: volta à aba e botão de pausa (13/09/2026).
+### Conta no site: volta à aba e botão de pausa (13/09/2026)
 
 Voltar à aba (`focus`) só consulta
 o banco com a tela de ativação à mostra e o link do Telegram visível
@@ -298,7 +309,7 @@ motivo. O JSDOM não implementa `showModal`: os testes o simulam e conferem `ope
 `close()` foi chamado. O card de preços fala só da Adzuna, e
 `test_card_de_precos_nao_promete_duas_fontes_de_vagas` impede que "duas fontes" volte.
 
-### Armazenamento bloqueado e conta que não carrega (13/09/2026).
+### Armazenamento bloqueado e conta que não carrega (13/09/2026)
 
 Com o armazenamento bloqueado
 (modo privado, bloqueador), `eventSessionId` e `clearPendingProfile` lançavam exceção e o `signUp`
@@ -314,7 +325,7 @@ pendente só sai quando o perfil foi lido e não existe (`contaSemPerfil`). A vi
 não lê mais o perfil, que era descartado. O erro de "Minha conta" na ativação vai para
 `#success-message`, porque o formulário fica escondido nessa tela.
 
-### Segunda auditoria da conta (13/09/2026).
+### Segunda auditoria da conta (13/09/2026)
 
 Propriedades de evento cabem em 256 bytes: a `0023`
 (branch `fix/eventos-e-reserva`) recusa evento web acima disso, e `landing_visualizada` levava o
@@ -327,7 +338,7 @@ refazer a conta, e o teste com URL de 1.000 caracteres confere todos os `registe
 exclusão ganhava a corrida e o erro do envio ia para o formulário escondido. A exclusão sem perfil
 tem mensagens próprias (`55000`, `42501`, rede), não as do cadastro.
 
-### Perfil, habilidades e rascunho (13/09/2026).
+### Perfil, habilidades e rascunho (13/09/2026)
 
 Os textos que o navegador grava no perfil têm teto
 no banco (`0025`): curso 200, cidade 120, habilidade 100 e listas de 50 itens. São os tetos que
@@ -361,7 +372,7 @@ o `main` faz o mesmo. Logout, exclusão e o "Entrar" do cabeçalho seguem limpan
 mesma aba, quem abre o cadastro depois de um visitante vê o curso, a cidade e as habilidades dele até
 entrar numa conta; depois do envio, reabrir mostra o que foi enviado.
 
-### Navegação da conta no celular (16/09/2026).
+### Navegação da conta no celular (16/09/2026)
 
 A conta mostra um painel por vez
 (`mostrarSecaoDaConta`), e os links de `.account-nav` são o único caminho para Entregas, Dados e
@@ -377,7 +388,7 @@ tela estreita que esconda a navegação ou os links. Limite aceito: quem abre a 
 seção pelo endereço (`#account-privacy-panel`) pode ver o item ativo cortado na borda direita até
 rolar a barra; o título da página já diz a seção.
 
-### Ações da conta conferem a conta mostrada (16/09/2026).
+### Ações da conta conferem a conta mostrada (16/09/2026)
 
 As ações de "Minha conta" usavam a sessão
 atual, e o auth-js relê a sessão do armazenamento a cada `getSession`. Com a conta de A na tela e B
@@ -399,7 +410,7 @@ desenham a conta da sessão atual, e "Sair da conta", que encerra a sessão que 
 Supabase precisa da conferência, e teste que clica num controle da conta precisa desenhá-la antes
 (`?conta`), senão a ação é recusada.
 
-### Termos e Privacidade seguem o tema do site (04/10/2026).
+### Termos e Privacidade seguem o tema do site (04/10/2026)
 
 As páginas `termos.html` e `privacidade.html` eram sempre escuras, com tokens próprios, e destoavam
 da landing no tema claro. Agora usam os tokens do site (`--paper`, `--surface`, `--ink`, `--muted`,
@@ -407,7 +418,7 @@ da landing no tema claro. Agora usam os tokens do site (`--paper`, `--surface`, 
 `data-tema` na raiz antes de pintar. Desde 07/10/2026 esse script lê o tema guardado (ver abaixo),
 então os Termos abrem no tema escolhido na landing.
 
-### Hero lado a lado e faixa de áreas (07/10/2026).
+### Hero lado a lado e faixa de áreas (07/10/2026)
 
 Na tela larga, o hero empilhado deixava o chat abaixo da dobra. A partir de 981 px, título e chat
 dividem a tela, e a animação da mensagem começa ao carregar, porque o chat já aparece sem rolar;
@@ -461,7 +472,7 @@ preenchida. Rascunho com curso não é sobrescrito, digitar volta a buscar em to
 outras chamadas de cadastro limpam a restrição. O clique registra `cta_cadastro_aberto` com origem
 `faixa_de_areas`.
 
-### Tema claro por padrão e escolha lembrada (07/10/2026).
+### Tema claro por padrão e escolha lembrada (07/10/2026)
 
 Desde 16/09 o site seguia o tema do sistema a cada abertura e não guardava o botão, para uma
 escolha antiga não passar por cima do sistema. O efeito era o F5 desfazer a escolha: com o sistema
@@ -473,7 +484,7 @@ futuras. Com o armazenamento bloqueado, o site fica no claro e o botão vale só
 A chave tem o mesmo nome da usada até 16/09, então quem escolheu o escuro antes volta a vê-lo.
 A Política diz que a escolha fica no navegador.
 
-### Perda de dado na conta, foco e queda do CDN (08/10/2026).
+### Perda de dado na conta, foco e queda do CDN (08/10/2026)
 
 Quatro achados médios da auditoria de 07/10/2026, todos em `web/assets/app.js`.
 
@@ -514,7 +525,8 @@ baixado e conferido no lugar da linha única do `index.html` que
 cabeçalhos de segurança do `web/_headers` definem. Por isso ficou o CDN.
 Limite aceito: sem o CDN o cadastro e o login continuam impossíveis; o que muda é a mensagem dizer
 o que a pessoa pode fazer.
-### Cada grupo de opção do cadastro anuncia a própria pergunta (08/10/2026).
+
+### Cada grupo de opção do cadastro anuncia a própria pergunta (08/10/2026)
 
 "Modalidade preferida" e "Áreas de interesse" tinham o rótulo num `<span>` solto, sem `fieldset`,
 sem `legend` e sem `role` com `aria-labelledby`. O grupo mais próximo de cada opção era o
@@ -526,7 +538,8 @@ que o `#campo-pcd` já tinha: o `<span>` do rótulo ganhou `id` e o `.option-gri
 sem `aria-describedby`: ele explica a consequência da escolha, não a pergunta. O teste calcula o
 nome acessível a partir do grupo mais próximo da opção, de modo que o rótulo da etapa não passe por
 nome do grupo; grupo de opção novo no cadastro precisa de `role` e rótulo próprios.
-### Os endereços que o navegador contata ao abrir uma página (08/10/2026).
+
+### Os endereços que o navegador contata ao abrir uma página (08/10/2026)
 
 A Política nomeava Supabase, Telegram, Resend, GitHub Actions, Adzuna e Cloudflare, e o Google
 só como Gemini, mas toda abertura de página manda endereço IP e informações do navegador para
@@ -550,7 +563,7 @@ os do Markdown frase a frase, nos Termos e na Política, porque entre 04/10 e 07
 Política teve uma frase a mais que o Markdown. A comparação cobre só os parágrafos: os rótulos
 dos itens divergem de propósito, porque no HTML eles são título e no Markdown abrem a frase.
 
-### As seções do meio mostram em vez de numerar (10/10/2026).
+### As seções do meio mostram em vez de numerar (10/10/2026)
 
 O bloco quase preto que juntava benefícios e passos pesava a leitura, e os cartões "01, 02, 03"
 repetiam a mesma estrutura três vezes sem mostrar o produto. Agora cada seção tem um formato próprio:
@@ -575,7 +588,7 @@ A animação de entrada depende do script. O HTML chega com `data-revelar` vazio
 o troca por `aguardando`, quando há `IntersectionObserver` e a pessoa não pediu movimento reduzido;
 o CSS só esconde sob `[data-revelar="aguardando"]`. Se o script não carregar, tudo aparece pronto.
 
-### Acessibilidade do cadastro e da faixa de áreas (14/10/2026).
+### Acessibilidade do cadastro e da faixa de áreas (14/10/2026)
 
 Revisão feita só pelo código, sem navegador nem leitor de tela, e as correções seguem a mesma
 limitação. O que ficou valendo:

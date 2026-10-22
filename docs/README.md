@@ -1,68 +1,68 @@
 # Documentação do Radar de Estágio
 
-Revisada em 19/09/2026 contra o código da `main` e o Supabase. Implementação, publicação e
-validação com usuários são estados diferentes.
+Cada assunto tem um documento dono. Os outros linkam o dono em vez de repetir o fato, porque
+cópia de estado diverge. Implementado, publicado e validado com estudantes são estados diferentes,
+e cada documento diz de qual está falando.
 
 ## Por onde começar
 
-- [Funcionalidades](funcionalidades.md): capacidades implementadas, dependências e limitações.
-- [Plano geral](plano-geral.md): acompanhamento único de pendências e decisões da equipe.
-- [Guia de publicação e piloto](guia-publicacao-e-piloto.md): configuração, evidências datadas,
-  ordem de publicação, reversão e roteiro de validação.
-- [README do projeto](../README.md): instalação, execução e desenvolvimento do frontend.
-- [Arquitetura](arquitetura.md): camadas, justificativas técnicas, correções da auditoria e riscos.
-- [Decisões do motor](decisoes-do-motor.md): por que cada regra de coleta, pré-filtro, pontuação
-  e mensagem existe, com as medições que a sustentaram.
-- [Decisões do banco e das funções](decisoes-do-banco.md): schema, migrations, webhook e resumo
-  de operação, com os limites aceitos de cada decisão.
-- [Contrato frontend](contrato-front.md): cadastro, Auth, RPCs, privacidade e formação acadêmica.
-- [Ícones 3D das áreas](ideias-icones-3d-das-areas.md): proposta em análise para trocar os
-  ícones de linha da landing por ilustrações, com objetos, prompt, arquivos e riscos.
-- [Métricas](metricas.md): eventos, cálculos, denominadores e limites de interpretação.
-- [Pré-PRD](pre-prd.md): definição, hipóteses, evidências e viabilidade para a disciplina,
-  retrato de 08/09.
-- [PIT](pit-do-grupo.md): entrega da AP1, com problema, contexto, solução, fluxo, casos reais,
-  valor, dados, riscos, viabilidade e próximos passos, medido em 28 e 30/09. O pré-PRD é o
-  registro anterior e não é atualizado; o PIT é o que vale para a apresentação.
-- [Auditorias](auditorias/): revisões datadas com achados numerados; o que virou pendência está
-  no plano geral, e o que virou regra, na arquitetura e no `CLAUDE.md`.
-- [Termos](termos-de-uso.md) e [Política de Privacidade](politica-de-privacidade.md): versão
-  `2026-10-08`, em vigor desde 08/10/2026; manter iguais aos HTML e a `VERSAO_DOS_TERMOS`.
-- [Cobertura](cobertura-estagios.md), [aquisição e prova](aquisicao-e-prova.md),
-  [custos](custos-operacao.md) e [hipótese comercial](hipotese-comercial.md): procedimentos e
-  decisões externas ainda abertos, com dados ausentes explicitados.
+- [Sumário](sumario-da-documentacao.md): o mapa de todos os documentos, os números registrados, o
+  que está aberto e os riscos, numa leitura, para não se perder.
+- [PIT](pit/pit-do-grupo.md): o projeto em uma leitura, entregue na disciplina e medido em 28 e
+  30/09/2026, com a [apresentação](pit/apresentacao.html), o
+  [pptx](pit/radar-de-estagio-pit.pptx) e as [telas](pit/telas/).
+- [Funcionalidades](funcionalidades.md): o que o produto faz hoje, para quem usa e para quem opera.
+- [Plano geral](plano-geral.md): pendências, decisões e o estado dos achados das auditorias.
+- [Desenvolvimento local](desenvolvimento.md): instalar, configurar, rodar a CLI e testar.
 
-## Históricos retirados
-
-O plano de expansão, as fichas e o registro de execução (`execucao-expansao/`), a auditoria
-adversarial de 08/09 e o `web/README.md` saíram em 19/09/2026, depois de consolidados nos
-documentos acima. Continuam no histórico do Git. A01–A06 estão resumidos na arquitetura.
-
-## Como manter
-
-Cada assunto tem um documento dono. Os demais citam o dono por link em vez de repetir o fato,
-porque cópia de estado diverge: foi o que tornou esta revisão necessária.
+## Por assunto
 
 | Assunto | Documento dono |
 |---|---|
-| Pendências e decisões da equipe | [Plano geral](plano-geral.md) |
 | O que o produto faz e seus limites | [Funcionalidades](funcionalidades.md) |
-| Contrato entre site e banco | [Contrato frontend](contrato-front.md) |
-| Configuração, publicação e evidências datadas | [Guia de publicação](guia-publicacao-e-piloto.md) |
+| Pendências e decisões da equipe | [Plano geral](plano-geral.md) |
 | Camadas e decisões técnicas | [Arquitetura](arquitetura.md) |
-| Por que cada regra do motor existe | [Decisões do motor](decisoes-do-motor.md) |
-| Por que o banco, as migrations e o webhook são assim | [Decisões do banco](decisoes-do-banco.md) |
-| Definição e cálculo das métricas | [Métricas](metricas.md) |
+| Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe | [Decisões do motor](decisoes-do-motor.md) |
+| Por que o schema, as migrations, o webhook e o resumo de operação são assim | [Decisões do banco](decisoes-do-banco.md) |
+| Contrato entre o site e o banco, e os pós-mortems do site | [Contrato frontend](contrato-front.md) |
+| Eventos, denominadores e leitura do relatório | [Métricas](metricas.md) |
+| Instalação, comandos, testes e scripts | [Desenvolvimento local](desenvolvimento.md) |
+| Configuração dos serviços e evidências datadas | [Guia de publicação e piloto](guia-publicacao-e-piloto.md) |
+| Cobertura, aquisição, custos e oferta | [Frentes externas](frentes-externas.md) |
+| Textos legais em vigor (versão `2026-10-08`) | [Termos de uso](termos-de-uso.md) e [Política de privacidade](politica-de-privacidade.md), iguais aos HTML de `web/` |
 | Vocabulário do produto | [CONTEXT.md](../CONTEXT.md) |
 | Regras de contribuição e fatos operacionais | [CLAUDE.md](../CLAUDE.md) |
-| Achados de revisão | [Auditorias](auditorias/), datadas e não atualizadas depois |
-| Entrega da disciplina | [PIT](pit-do-grupo.md), medido em 28 e 30/09 |
-| Registro anterior da disciplina | [Pré-PRD](pre-prd.md), retrato de 08/09 |
+| Entrega da disciplina | [PIT](pit/pit-do-grupo.md) |
 
-Ao mudar uma função, atualizar o catálogo e o contrato afetado. Ao publicar ou validar,
-registrar data e resultado no guia e ajustar o estado no plano geral.
+## Auditorias
 
-O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7
-não são condições para divulgar. A conferência operacional e a revisão dos textos estão no
-plano geral. Hipótese não vira medição, teste local não vira deploy e histórico não vira
-instrução para reaplicar uma entrega.
+Revisões datadas, com achados numerados. Não são atualizadas depois: o estado de cada achado está
+no plano geral, e o que virou regra, nas decisões e no `CLAUDE.md`.
+
+- [Agendamento diário](auditorias/2026-09-10-agendamento-diario.md) (10/09/2026): G01 a G10.
+- [Revenue-Centric Design](auditorias/2026-09-10-revenue-centric-design.md) (10/09/2026): RCD-01
+  a RCD-16.
+- [Acompanhamento do Revenue-Centric Design](auditorias/2026-10-05-revenue-centric-design.md)
+  (05/10/2026).
+
+## Registro da faxina
+
+[Esclarecimento da faxina](esclarecimento-da-faxina.md): o que a reorganização de 16/10/2026
+mudou, arquivo por arquivo, e as decisões tomadas nela, para a revisão da PR.
+
+## Como manter
+
+- Ao mudar uma função, atualizar o catálogo e o contrato afetado.
+- Ao publicar ou conferir algo no ambiente real, registrar data e comando no guia e ajustar o
+  item no plano geral.
+- Decisão nova vai para as decisões do motor, as do banco ou o contrato, com a data e a medição
+  que a sustentam.
+- Mudança nos Termos ou na Política troca a versão nos quatro arquivos e em `VERSAO_DOS_TERMOS`,
+  como diz o guia.
+- Ao mudar um documento dono, atualizar a linha dele no [sumário](sumario-da-documentacao.md),
+  que é o único retrato de estado. Outro documento que só retrata o estado de um dia não entra:
+  corrige-se o dono. O que saiu do repositório continua no histórico do Git.
+
+O piloto permanece informal por decisão do Igor em 07/09: entrevistas, coorte mínima e D7 não são
+condições para divulgar. Hipótese não vira medição, teste local não vira deploy e histórico não
+vira instrução para reaplicar uma entrega.

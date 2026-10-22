@@ -3,94 +3,43 @@
 Agente de IA que garimpa sites de vagas de estágio todos os dias e entrega, via Telegram,
 apenas as oportunidades compatíveis com o perfil do usuário — ranqueadas e explicadas.
 
-Resumo do produto em `docs/funcionalidades.md`, arquitetura detalhada em `docs/arquitetura.md`,
-decisões do motor em `docs/decisoes-do-motor.md`, próximos passos em `docs/plano-geral.md`.
+Este arquivo guarda só o que um agente precisa seguir. O índice da documentação é o
+`docs/README.md`: o que o produto faz em `docs/funcionalidades.md`, o que falta em
+`docs/plano-geral.md`, camadas em `docs/arquitetura.md`, instalação, comandos e testes em
+`docs/desenvolvimento.md`.
 
 ## Fase atual: MVP de validação com usuários (Fase 2, em andamento)
 
-Funcionando hoje: vagas da Adzuna (a Gupy saiu em 12/09 pelos termos de uso), banco Supabase com perfis,
-vagas, avaliações, envios e eventos de produto por usuário, cadastro web com conta e vínculo
-com o Telegram, extração de fatos por IA e pontuação determinística de compatibilidade, entrega da mensagem ranqueada no Telegram,
-agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
-na primeira recomendação entregue e funil instrumentado da landing à primeira recomendação.
-
-Ainda não disponível: painel web de métricas. Jooble está implementado, mas desligado por padrão. O feedback
-já molda o ranking na v1 (05/09/2026): "já vi essa" alimenta o filtro de republicação do
-usuário, e subárea com 2+ recusas por "não é da minha área" em 30 dias perde o fator de
-interesse (teto 65 e aviso próprio), tudo por usuário e sem IA; "pedem demais", "local ou
-modalidade" e o reforço positivo de "vaga útil" ficam para a v2, com dados do piloto.
-
-Pendências da Fase 2: validar o produto com estudantes. A cota do Gemini deixou de ser pendência
-em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o trabalho
-não se repete por usuário. Desde 10/09/2026 a API do Gemini está no plano pago: a cota diária
-deixou de ser o limite, e o que pesa é o custo por requisição e o tempo de execução.
+O produto está no ar em `radarestagio.com`, com entrega diária e feedback por usuário; falta
+validá-lo com estudantes. O que funciona e o que ainda não existe estão no catálogo.
 
 ## Stack
 
-Python; dependências em `pyproject.toml`. O que o manifesto e o código não dizem sozinhos:
+Python 3.12 com uv (`pyproject.toml`), Supabase (Postgres, Auth e Edge Functions em Deno), site
+estático em `web/` no Cloudflare Workers, bot do Telegram que só envia e job diário no GitHub
+Actions.
 
-- **Adzuna**: API oficial e gratuita, com chave.
-- **Gupy**: desligada desde 12/09/2026. Os termos proíbem agregar vagas e o endpoint usado
-  (`employability-portal.gupy.io/api/v1/jobs`) é interno; ver "Termos de uso das fontes". LinkedIn
-  está fora de escopo: bloqueia coleta automatizada.
-- **Fontes ativas** vêm de `FONTES` (padrão `adzuna`) e são somadas por `ColetorComposto`,
-  que ignora uma fonte fora do ar e só falha se nenhuma responder. Fonte nova só entra se a
-  validação comprovar cobertura insuficiente.
-- **Jooble**: coletor pronto e **desligado por padrão**. A chave gratuita tem 500 requisições
-  no total, não por mês, então não ligar em produção sem parceria; a sondagem que mediu
-  +35% de cobertura está em `docs/decisoes-do-motor.md`.
-- **IA de extração**: Google Gemini (modelos Flash), com dois adapters — Gemini Developer API
-  para CI/produção e Antigravity CLI (`agy`) para testes locais. `AVALIADOR` escolhe qual; o
-  padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele.
-  `AVALIADOR=agy` dispensa `GEMINI_API_KEY` e usa `AGY_MODELO` e `AGY_TIMEOUT_SEGUNDOS`, com o
-  comando `agy` autenticado localmente; `python -m radar verificar` mostra o adapter ativo. A IA
-  **só extrai fatos da vaga**; quem compara com o perfil e calcula a nota é Python, sem IA.
-- **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
-- **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
-  `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
-  banco, a mensagem volta a apontar direto para a vaga. O banco guarda só a primeira abertura de
-  cada envio (ver "Aberturas, pausas e vínculos repetidos").
-- **Feedback individual**: o teclado numerado acompanha a mensagem diária. Cada número abre
-  título e empresa com uma opção positiva e seis recusas, incluindo `motivo_nota` e
-  `motivo_encerrada` ("Vaga encerrada", ver "Vaga fechada na origem"). A última
-  resposta por recomendação vale nas métricas; cliques repetidos não multiplicam vagas.
-- **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
-  últimos 30 dias, a participação no feedback, as medianas observadas até a primeira entrega e a
-  primeira abertura, a utilidade semanal e por área do curso, as contas pausadas por motivo, a
-  quebra das recusas por motivo e o custo de extração por usuário ativado. As definições estão em
-  `docs/metricas.md`; a consulta fica em `radar/storage/metricas.sql` e o agrupamento por área,
-  que é regra de domínio, em `radar/domain/metricas.py`. Mediana é tempo observado, nunca prazo.
-- **Entrega imediata**: ao gravar o `chat_id`, a `telegram-webhook` dispara o workflow com o
-  input `perfil` e o pipeline atende só quem está pendente (`rodar --perfil <id>`). Vínculo
-  entre 06:23 e 07:23 de Brasília espera o diário, `/start` repetido não dispara de novo
-  (`0021`) e a marca de atendido só é gravada depois da mensagem. O porquê está em
-  `docs/decisoes-do-banco.md`.
-- **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
-  07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
-  token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
-- **Vigia do diário** (21/10/2026): `vigia-do-radar-diario.yml` confere às 09:13 se o diário
-  terminou bem, sem nenhum run do dia com falha, e avisa o chat de operação se não. Ele só lê. O
-  vigia acha o diário pelo `run-name` "Radar diário": mudou o título, mude `TITULO_DO_DIARIO`.
-- **O diário pode rodar de novo no mesmo dia** (21/10/2026, G03): `perfis.ultimo_dia_atendido`
-  (`0036`) marca o dia de Brasília de quem recebeu mensagem, e toda execução pula quem já foi
-  atendido. Por isso há um segundo job no cron-job.org às 07:58. Caminho novo do pipeline em que a
-  pessoa recebe mensagem tem de passar por `registrar_atendimento`. Ver `decisoes-do-banco.md`.
-- **Ações por hash e token só de leitura** (13/09/2026): o job diário recebe os segredos de
-  produção, e o dono de uma ação pode mover a tag dela para outro commit. Toda `uses:` aponta para
-  o hash de 40 caracteres, e todo workflow declara `permissions: contents: read` no topo; permissão
-  maior só no job que precisar, com o motivo no commit. O checkout leva `persist-credentials:
-  false`, para o token não ficar no `.git/config` ao alcance do radar e das dependências, e o
-  `setup-uv` instala o uv `0.12.5`, o mesmo usado localmente: sem `version:` ele baixaria o mais
-  novo, que roda no passo dos segredos. `tests/test_workflows.py` cobra essas regras e guarda em
-  `VERSAO_DE_CADA_ACAO` a versão de cada hash, porque o YAML não leva comentário. O Dependabot
-  abre um PR semanal das ações, 7 dias depois de cada versão sair, e o teste falha até alguém
-  registrar no mapa a versão nova, conferida com `git ls-remote`. A versão do uv o Dependabot não
-  toca: sobe à mão, junto com o uv local.
-- **Persistência**: PostgreSQL gerenciado (Supabase), opcional. Com `DATABASE_URL` o job lê os
-  usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e sem
-  histórico.
-- **Chaves de API**: por variável de ambiente (`.env`, nunca commitado). Os secrets do
-  repositório têm os mesmos nomes das variáveis do `.env`.
+- **Fontes**: só a Adzuna (`FONTES`, padrão `adzuna`), somada por `ColetorComposto`. A Gupy está
+  desligada pelos termos e não volta sem autorização; o Jooble está pronto e desligado, e não liga
+  em produção sem parceria (a chave tem 500 requisições no total); LinkedIn está fora. Fonte nova
+  só entra se a validação comprovar cobertura insuficiente.
+- **A IA só extrai fatos da vaga** (Gemini Flash; `AVALIADOR=gemini_api`, o padrão e o do Actions,
+  ou `agy` local). Quem compara com o perfil e calcula a nota é Python, sem IA.
+- **Agendamento**: o workflow diário só tem `workflow_dispatch`, disparado às 07:23 de Brasília
+  pelo cron-job.org, com um segundo disparo às 07:58. Não adicionar `schedule` nem outro agendador
+  ([guia, seção 12](docs/guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github)).
+- **O diário pode rodar de novo no mesmo dia** (G03): `perfis.ultimo_dia_atendido` (`0036`) faz
+  toda execução pular quem já recebeu a mensagem do dia. Caminho novo do pipeline em que a pessoa
+  recebe mensagem passa por `registrar_atendimento` ([decisões do banco](docs/decisoes-do-banco.md)).
+- **Vigia do diário** (G04): `vigia-do-radar-diario.yml` confere às 09:13 se o diário terminou bem
+  e avisa o chat de operação se não; só lê. Ele acha o diário pelo `run-name` "Radar diário":
+  mudou o título, mude `TITULO_DO_DIARIO`.
+- **Workflows**: toda `uses:` aponta para o hash de 40 caracteres, todo workflow declara
+  `permissions: contents: read`, o checkout leva `persist-credentials: false` e o `setup-uv` fixa
+  a versão do uv local. Hash novo entra em `VERSAO_DE_CADA_ACAO` (`tests/test_workflows.py`),
+  conferido com `git ls-remote`. O porquê está no guia, seção 12.
+- **Chaves de API** só por variável de ambiente (`.env`, nunca commitado); os secrets do
+  repositório têm os mesmos nomes.
 
 ## Arquitetura
 
@@ -104,43 +53,15 @@ prematuras nem código para casos hipotéticos futuros.
 
 ## Decisões técnicas
 
-### Banco de dados: PostgreSQL, não SQLite
-
-SQLite não sobrevive ao GitHub Actions, que destrói a máquina a cada execução, e versionar o
-`.db` exporia `chat_id` num repositório público. A escolha é PostgreSQL gerenciado no Supabase,
-com `JSONB` para o payload das vagas. As alternativas avaliadas e o porquê de cada recusa estão
-na [arquitetura](docs/arquitetura.md).
-
-### Bibliotecas
-
-Sem framework web: a aplicação é um script disparado por cron, não um serviço HTTP.
-`psycopg` 3 acessa o PostgreSQL com SQL puro, sem ORM.
-
-`python-telegram-bot` não entra em fase alguma: o bot só envia mensagens (uma requisição
-HTTP simples). O `/start` do vínculo e os callbacks de feedback chegam por webhook a uma Edge
-Function do Supabase, fora do `radar/`.
-
-### Cadastro no site, não no bot
-
-O cadastro conversacional pelo bot foi substituído por um site com conta. Motivos: dados
-de perfil são estruturados (lista de habilidades, período, modalidade) e um formulário é
-mais claro que uma conversa; o bot continua sem estado e sem máquina de conversa; o Supabase já
-resolve conta (Auth) e banco de uma vez.
-
-A conta ficou por último no formulário: pedir e-mail e senha antes de qualquer valor entregue
-cobra o preço antes de mostrar o produto. `signup` só é chamado no envio do último passo, nunca
-ao avançar entre etapas, e login e edição continuam com seus próprios passos.
-
-Fluxo: o usuário preenche o perfil no site → cria a conta no último passo → clica no botão do
-Telegram, que abre `t.me/RadarEstagio_bot?start=<token>` com um token único da conta →
-o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → a função
-grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
-`chat_id` do banco no lugar do `perfil_fixo` e envia uma mensagem por usuário.
-
-O frontend é uma landing estática integrada ao Supabase. O contrato entre o site e o `radar/` é
-o schema do banco: o site escreve `perfis`, o `radar/` lê
-`perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
-contrato completo para o front está em `docs/contrato-front.md`.
+- **PostgreSQL no Supabase, não SQLite**: o Actions destrói a máquina a cada execução, e
+  versionar o `.db` exporia `chat_id` num repositório público. Alternativas na
+  [arquitetura](docs/arquitetura.md).
+- **Sem framework web nem ORM**: o motor é um script disparado por cron, e `psycopg` 3 acessa o
+  banco com SQL puro. `python-telegram-bot` não entra: o bot só envia, e o `/start` e os botões
+  chegam por webhook a uma Edge Function, fora do `radar/`.
+- **Cadastro no site, não no bot**, com a conta no último passo: `signup` só no envio do último
+  passo, nunca ao avançar entre etapas. O site e o `radar/` só conversam pelo schema do banco,
+  sem API de um para o outro ([contrato frontend](docs/contrato-front.md)).
 
 Os pós-mortems do site — volta à aba, armazenamento bloqueado, rascunho por dona, navegação no
 celular e ações que conferem a conta mostrada — estão em `docs/contrato-front.md`. As regras que
@@ -193,73 +114,30 @@ valem ao mexer no `app.js`:
   ambientes virtuais ou artefatos de build.
 - **Decisão nova é registrada no documento dono**, nunca aqui: motor e extração em
   `docs/decisoes-do-motor.md`, banco e funções em `docs/decisoes-do-banco.md`, site em
-  `docs/contrato-front.md`, publicação no guia, pendência no plano geral. O `CLAUDE.md` só
+  `docs/contrato-front.md`, publicação no guia, pendência no plano geral, dado de cobertura,
+  custo ou oferta em `docs/frentes-externas.md`. O único retrato de estado é o
+  `docs/sumario-da-documentacao.md`: não é dono de nada, e quem muda um dono atualiza a linha dele
+  ali. Fora ele, retrato de estado não vira documento novo, porque cópia diverge. O `CLAUDE.md` só
   recebe o que um agente precisa **seguir**, em até cinco linhas, com link para o registro.
   Sem essa regra o arquivo volta a crescer: passou de 618 linhas em 13/09 para 2.126 em 18/09,
   sempre por relato de correção.
 
-## Estado do projeto
+## Regras de operação
 
-O catálogo atual está em `docs/funcionalidades.md`. Abaixo
-só o conhecimento operacional que não dá para reconstituir lendo o código.
+### Fontes e Gemini
 
-### Termos de uso das fontes (12/09/2026)
+A leitura dos termos está em `docs/frentes-externas.md`; as medições do Gemini, em
+`docs/decisoes-do-motor.md`.
 
-Leitura dos termos no texto original. As medições da cota, da coleta resiliente e do
-enriquecimento estão em `docs/decisoes-do-motor.md`. O que obriga:
-
-- **Adzuna, uso 1.** Os termos permitem "Publishing Adzuna ad listings" sem prazo. O teste de
-  14 dias e a proibição de agregação ("vacancy counts, average salaries") estão no parágrafo de
-  "Any other use". O Radar publica anúncios com link para a página da Adzuna (o `redirect_url`,
-  com o nosso app id), então cai no uso 1. Confirmação por escrito pedida no e-mail à Adzuna.
-- **Atribuição em cada anúncio exibido**: "Jobs by Adzuna", com "Jobs" ligado a adzuna.com.br e
-  "Adzuna" sendo o logo, também com link, em pelo menos 116×23 px. No Telegram vai o texto com
-  os dois links, porque mensagem de texto não tem imagem (aprovação pedida no e-mail). No site
-  vai o selo com `web/assets/adzuna-logo.png`, o logo oficial servido pelo site de
-  desenvolvedores da Adzuna; no tema escuro ele ganha fundo branco, sem mudar as cores.
-- **Limites da Adzuna**: 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por
-  mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
-  quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
-  vira erro de coleta, nunca "nenhuma vaga".
-- **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
-  where they provide listings content, will be considered a breach".
-- **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
-- **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
-  and Selection, including expired job opportunities", e o endpoint usado é interno. Era 7% dos
-  envios (17 de 252). O coletor fica no código para o caso de autorização; sem ela, não religar.
-- **Jooble não é saída sem parceria**: a chave gratuita tem "a total lifetime limit of 500
-  requests per key" e devolve só um trecho da descrição.
-- **Alternativas medidas.** Greenhouse, Lever e Ashby têm API pública de vagas sem login, mas a
-  documentação trata das vagas da própria empresa e não dá licença a terceiros; em 12/09 havia 36
-  estágios em 6 empresas brasileiras nesses boards, quase todos em SP e BH. A Adzuna tem programa
-  de parceiros ("a sponsored feed of ads for your site… generate more revenue for you"), o
-  caminho para receita sem cobrar do estudante.
-
-### Cota e modelo do Gemini
-
-As medições que sustentam lote, prazo, raciocínio e tratamento de erro estão em
-`docs/decisoes-do-motor.md`. O que vale saber para operar:
-
-- Padrão `gemini-3.6-flash` (`GEMINI_MODELO`). O `gemini-2.5-flash` foi recusado pela API como
-  indisponível para contas novas.
-- O projeto está no plano pago desde 10/09/2026. Na cota gratuita, o `gemini-3.6-flash` tinha 20
-  requisições por minuto, e os limites variam por modelo, projeto e janela. Por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`,
-  padrão 10), com repartição do lote que falha e espera pelo "retry in Ns" do 429; acima de
-  120 s a espera indica cota diária e o job desiste devolvendo o que já tem.
-- **A extração cabe num prazo** (`PRAZO_DA_EXTRACAO_SEGUNDOS`, 600) e cada chamada num
-  timeout (`GEMINI_TIMEOUT_SEGUNDOS`, 120). Esgotado o prazo, ela para e devolve o que tem, e
-  o resumo mostra "vagas sem extração"; o job tem 30 minutos e o passo do radar, 28.
-- **A extração não se repete por usuário:** o prompt não tem perfil, então cada vaga é
-  extraída uma vez, guardada em `vagas.extracao` com a versão do prompt, e serve todos.
-- **`GEMINI_RACIOCINIO=low` é o padrão da extração** (R$ 0,066 por lote de 10, ~12 s); o juiz
-  segue no modo padrão. Trocar o nível não invalida o cache.
-- **Erro do avaliador tem regra por tipo:** 429 espera a cota, 502/503/504 e resposta que o
-  SDK não lê repetem o mesmo lote, 500 repete uma vez e depois divide, e só entra extração
-  com id de uma vaga do lote pedido.
-- **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade.**
-- **O resumo do raciocínio da extração fica em `vagas.extracao -> 'raciocinio_do_lote'`**,
-  um por chamada e repetido nas vagas do lote. É pista, não explicação; nunca reconstituir o
-  raciocínio chamando a IA de novo. Ver `docs/decisoes-do-motor.md`.
+- **Cada anúncio da Adzuna exibido leva a atribuição** "Jobs by Adzuna", com os dois links (no
+  site, o logo `web/assets/adzuna-logo.png`). Nunca contatar anunciante que veio dela, e, se o
+  acordo acabar, apagar todo dado obtido dela.
+- **A cota da Adzuna passa por `CotaDaAdzuna`** (25 por minuto, 250 por dia): cota zerada vira
+  erro de coleta, nunca "nenhuma vaga".
+- **Evitar rodar `avaliar`/`rodar` repetidamente sem necessidade**: gasta cota da Adzuna e
+  requisições pagas do Gemini.
+- **O resumo do raciocínio da extração fica em `vagas.extracao -> 'raciocinio_do_lote'`**, um por
+  chamada. É pista, não explicação: nunca reconstituir o raciocínio chamando a IA de novo.
 
 ### Motor de recomendação: regras que não podem quebrar
 
@@ -304,121 +182,34 @@ mexer em coleta, pré-filtro, extração, pontuação ou mensagem, ler a seção
   o número dele é ruído.
 - **Falha nova se procura escrevendo o teste que a reproduz antes de mexer no código.**
 
-### Transferência para a organização (08/09/2026)
+### Supabase, Telegram e Cloudflare
 
-O repositório saiu de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio`. Commits, autores,
-issues e PRs foram preservados, e o GitHub redireciona o endereço antigo — o que quebra é a
-ligação das automações, porque cada uma guardava o dono no nome:
+O porquê de cada item está em `docs/decisoes-do-banco.md`; configuração e conferências, no
+[guia de publicação](docs/guia-publicacao-e-piloto.md).
 
-- **cron-job.org**: mudam a URL **e o token**. Token fine-grained é preso ao dono, então o antigo
-  para de enxergar o repositório mesmo com a URL certa. O teste bem-sucedido responde **204 No
-  Content** com corpo vazio; 404 é token apontando para a conta pessoal e 403 é falta de
-  `Actions: Read and write`.
-- **Entrega imediata**: `REPOSITORIO` em `entrega_imediata.ts` é constante, então exige commit
-  **e** `supabase functions deploy telegram-webhook` — trocar só o `GITHUB_DISPATCH_TOKEN` não
-  basta.
-- **Hospedagem do site** (03/10/2026): o site saiu do Pages e roda no Workers com arquivos
-  estáticos, na conta Cloudflare do grupo, que também tem o domínio `radarestagio.com`. O
-  `wrangler.jsonc` da raiz aponta `web/` e seu `name` tem de ser igual ao do projeto, senão o
-  build falha. O app do Cloudflare precisa de um owner da organização para liberar o repositório.
-  Trocar o endereço exige Site URL, Redirect URLs e `URL_DA_LANDING` juntos; ver o guia, seção 4.
-- **Antes de gerar os tokens**, a organização precisa liberar tokens fine-grained (Settings →
-  Personal access tokens). Sem isso o token nasce válido e a API responde 404, sem dizer por quê.
-- Os secrets do Actions sobreviveram à transferência. O token do cron **vence em 09/09/2027**:
-  quando vencer, o radar diário para de rodar sem avisar ninguém.
-
-### Supabase e Telegram: fatos operacionais
-
-O porquê de cada decisão de schema, migration e webhook, com as medições, está em
-`docs/decisoes-do-banco.md`. Abaixo só o que se usa sem ler a história.
-
-- Projeto ativo: **`xrhvjwemmylwbqgluebc` (`sa-east-1`)**. A `DATABASE_URL` do Actions já usa
-  esse banco.
-- O projeto **`bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.**
-  Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
-- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` marca
-  `excluida_em` e solta o chat do Telegram; o job apaga depois de
-  `DIAS_ATE_APAGAR_CONTA_EXCLUIDA` (60 dias). A sessão não é encerrada ao pedir: sem ela a pessoa
-  não voltaria para cancelar. Conta confirmada **sem perfil** usa
-  `apagar_minha_conta_sem_perfil()` (`0024`) e é apagada na hora.
-- **A sessão de uma conta é a que o banco atribuiu** (`0035`): apagamento só leva eventos anônimos
-  de sessão vinda de evento com `origem = 'banco'` e sem evento de outro `user_id`, nas três
-  consultas. Nunca escolher sessão pelo `sessao_id` que o navegador gravou.
-- **Cadastro que não confirma o e-mail tem prazo** (`0030`): todo link novo descarta o cadastro
-  pendente, e o job apaga o pendente com 2 dias e a conta não confirmada com 30. Pendente que não
-  valida mais é descartado na confirmação, sem derrubá-la (`0035`).
-- **Conferir `supabase migration list --linked` depois de aplicar e antes do próximo push.** SQL
-  rodado fora do CLI não entra no histórico e quebra o push seguinte no primeiro `add column`.
-- **NUL e surrogate solto saem na entrada**, nos modelos (`domain/texto.py`): o Postgres recusa
-  os dois, e eles derrubavam gravação e envio.
-- **Evento web tem teto** (`0023`): 256 bytes de propriedades, 60 por sessão e por conta na
-  última hora e teto por hora de 2.400 para visitantes e 900 para contas; acima disso o insert
-  falha com `PT429`. Abertura, pausa e vínculo repetidos são descartados pelo gatilho da `0028`,
-  ficando a primeira ocorrência.
-- **O resumo mostra o tamanho do banco** e avisa a partir de 70% dos 500 MB do plano
-  (`LIMITE_DO_PLANO_EM_BYTES`); leitura que falha só vira aviso no log. **Não há retenção em
-  `vagas` nem em `avaliacoes`**: apagar vaga fora da janela cascateia `envios` e derruba dedupe,
-  funil e exportação do titular por 0,12% do plano. A medição e a decisão estão em
-  `docs/decisoes-do-banco.md`.
-- **Tabela e sequência novas nascem com `GRANT ALL` do Supabase, e `TRUNCATE` é a única DML fora
-  da RLS**: toda migration que as cria faz `revoke all` de `anon` e `authenticated` (a `0034`
-  fechou `vagas`, `envios` e `avaliacoes`). Propriedade nova de evento web tem regra de tipo,
-  formato e tamanho no banco, não só corte no JavaScript: a lista da `0032` e o formato da
-  `pagina` na `0034` valem por insert, e mexer no site exige mexer na migration junto.
-- **Os textos e as listas do perfil têm teto no banco** (`0025`), validados: curso 200, cidade
-  120, cada habilidade 100 e listas de 50 itens, em uma dimensão só (`0031`). Perfil fora do teto
-  faz o `db push` falhar inteiro.
-- **Toda execução se reporta** ao `TELEGRAM_CHAT_ID`, que com banco é o chat de operação, e o
-  resumo traz os avisos do dia. `rodar` sai com código 1 quando o resumo não chega ao chat ou
-  quando ninguém foi atendido por falha de verdade; dia legítimo sem vaga e mensagem segurada
-  seguem verdes.
-- **Controle do próprio perfil** (04/09/2026): editar, pausar e retomar são `update` em `perfis`
-  pelas colunas já liberadas no `grant`. Desvincular o Telegram e excluir a conta não cabem em
-  `grant` — `telegram_chat_id` é do webhook e `auth.users` o cliente não apaga — então são funções
-  `security definer` filtrando por `auth.uid()`, na migration `0013`. Desvincular rotaciona o
-  `token_vinculo` junto, senão o link antigo continuaria valendo.
-- **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
-  `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
-  como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
-  tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
-- **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
-- **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
-  existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
-  tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade. Desde 10/09/2026
-  a cidade é escolhida na lista de municípios do IBGE (`web/assets/cidades.json`, gerada por
-  `scripts/gerar_cidades.py`) e gravada como `Nome, UF`; a regra é do site, o banco não a cobra.
-- Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
-- O `TELEGRAM_WEBHOOK_SECRET` vive em três lugares que precisam do MESMO valor: o
-  `setWebhook` no Telegram, os secrets do Supabase (`supabase secrets set`) e os `.env`
-  locais. Divergência vira 401 silencioso em todo update (aconteceu em 04-05/09/2026: um
-  re-registro usou o segredo de um `.env` dessincronizado e cliques/vínculos se perderam
-  por ~12 h). Ao mexer no webhook, conferir `getWebhookInfo` depois: `last_error_message`
-  vazio e `pending_update_count` zerando.
-- O `setWebhook` precisa de `allowed_updates=["message","callback_query"]` (corrigido em
-  04/09/2026): o registro original só aceitava `message` e o Telegram descartava os cliques
-  dos botões de feedback antes de chegarem à função. Ao re-registrar o webhook, sempre
-  repassar os dois tipos. Botão de mensagem do `testar-local` nunca funciona: o token do
-  envio não é gravado no banco no modo local.
-- **O tratamento da requisição das Edge Functions fica em `servidor.ts`** (08/10/2026), com as
-  dependências recebidas por parâmetro (cliente do Supabase, variáveis de ambiente, relógio,
-  `fetch`); o `index.ts` é só a fiação e o `Deno.serve`, e teste nenhum o importa. Comportamento
-  novo da função entra com teste em `servidor_test.ts`, e o CI roda `deno test` e
-  `deno check index.ts` por função, cobrados em `tests/test_workflows.py`. Por quê:
-  `docs/decisoes-do-banco.md`.
-- **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
-  atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
-  do clique deixa de valer depois do vínculo.
-- No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
-  usuário viram aviso. Falhas de revalidação são contadas por usuário no resumo e bloqueiam a
-  mensagem afetada; o resumo distingue quem ficou sem entrega de quem já recebeu antes da falha.
-- **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
-  que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
-  `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.
-- **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
-  mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
-  órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
-- Ativação operacional = primeira entrega bem-sucedida com ao menos uma recomendação;
-  `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`. `docs/metricas.md`
-  separa esse marco da ativação de produto.
-- `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
-  `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
+- Projeto ativo: **`xrhvjwemmylwbqgluebc` (`sa-east-1`)**. O `bnzogphdvpubtkcflcue`
+  (`us-east-2`) foi criado por engano: não usar, nem remover sem confirmar que nada aponta para ele.
+- **Nunca alterar tabela pelo painel do Supabase**, só por migration nova em
+  `supabase/migrations/`. Conferir `supabase migration list --linked` depois de aplicar e antes do
+  próximo push: SQL rodado fora do CLI quebra o push seguinte.
+- **Tabela e sequência novas fazem `revoke all` de `anon` e `authenticated`**: nascem com o grant
+  largo do Supabase, e `TRUNCATE` fica fora da RLS. Propriedade nova de evento web ou campo novo
+  do perfil tem regra de tipo e tamanho no banco, não só no JavaScript.
+- **Exclusão de conta é em duas etapas e nunca escreve em `ativo`**, que é só da pausa:
+  `excluir_minha_conta()` marca `excluida_em`, a sessão não é encerrada e o job apaga depois de 60
+  dias. A sessão de uma conta é a que o banco atribuiu (`0035`), nunca o `sessao_id` do navegador.
+- **Sem retenção em `vagas` nem em `avaliacoes`**: apagar vaga cascateia `envios` e derruba
+  dedupe, funil e exportação do titular.
+- **Edge Functions**: o tratamento fica em `servidor.ts`, com as dependências por parâmetro e
+  teste em `servidor_test.ts`; o `index.ts` é só a fiação. `REPOSITORIO` em `entrega_imediata.ts`
+  é constante: trocar de repositório exige commit e `supabase functions deploy`.
+- **Webhook do Telegram**: o `TELEGRAM_WEBHOOK_SECRET` tem o mesmo valor no `setWebhook`, nos
+  secrets do Supabase e nos `.env`, e o registro leva `allowed_updates=["message","callback_query"]`.
+  Depois de mexer, conferir `getWebhookInfo`. `token_vinculo` é de uso único e rotaciona no
+  vínculo e no desvínculo.
+- **Site**: o `name` do `wrangler.jsonc` é o do projeto no Cloudflare, senão o build falha; trocar
+  o endereço exige Site URL, Redirect URLs e `URL_DA_LANDING` juntos (guia, seção 4).
+- **O token do cron-job.org vence em 09/09/2027**: vencido, os dois disparos param e só o vigia
+  das 09:13 avisa.
+- `domain/perfil_fixo.py` é um perfil **sintético**, usado só sem `DATABASE_URL`. O repositório é
+  público: nunca colocar ali dados reais de ninguém.

@@ -3,228 +3,244 @@
 Por que coleta, pré-filtro, extração, pontuação e mensagem são como são, com as medições que
 sustentaram cada regra. Movido do `CLAUDE.md` em 19/09/2026 sem reescrita: cada seção guarda a
 data da decisão, e "hoje" se refere a essa data. As regras que não podem quebrar estão resumidas
-no `CLAUDE.md`; a organização em camadas está na [arquitetura](arquitetura.md).
+no `CLAUDE.md`; a organização em camadas está na [arquitetura](arquitetura.md). As seções estão
+agrupadas pela etapa do pipeline desde 16/10/2026; as rodadas de auditoria do fim são o registro
+das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções da etapa.
 
-## Pontuação: por que os pesos são estes
+- **Coleta e deduplicação**
+  - [Cobertura das fontes](#cobertura-das-fontes-30082026)
+  - [Limites da Adzuna](#limites-da-adzuna-12092026)
+  - [Coleta resiliente](#coleta-resiliente-13092026)
+  - [Enriquecimento: a descrição completa da Adzuna](#enriquecimento-a-descrição-completa-da-adzuna)
+  - [Jooble](#jooble-05092026)
+  - [Cidades vizinhas: região imediata do IBGE](#cidades-vizinhas-região-imediata-do-ibge-10092026)
+- **Pré-filtro e áreas**
+  - [Áreas: uma fonte só para curso, vaga, banco e site](#áreas-uma-fonte-só-para-curso-vaga-banco-e-site-08092026)
+  - [Qualidade da mensagem e do pré-filtro](#qualidade-da-mensagem-e-do-pré-filtro)
+  - [Correções da revisão de expansão](#correções-da-revisão-de-expansão-08092026)
+- **Extração**
+  - [A extração não é repetida por usuário](#a-extração-não-é-repetida-por-usuário-03092026)
+  - [A extração tem prazo](#a-extração-tem-prazo-11092026)
+  - [Modelo e cota do Gemini](#modelo-e-cota-do-gemini-10092026)
+  - [Raciocínio da extração em low](#raciocínio-da-extração-em-low-11092026)
+  - [Resumo do raciocínio gravado na extração](#resumo-do-raciocínio-gravado-na-extração)
+  - [Lote incompleto pede junto o que faltou](#lote-incompleto-pede-junto-o-que-faltou-10092026)
+  - [Só entra extração com o id de uma vaga do lote pedido](#só-entra-extração-com-o-id-de-uma-vaga-do-lote-pedido-18092026)
+  - [Resposta malformada do avaliador não derruba o job](#resposta-malformada-do-avaliador-não-derruba-o-job-16092026)
+- **Pontuação**
+  - [Pontuação: por que os pesos são estes](#pontuação-por-que-os-pesos-são-estes)
+  - [Viés conhecido do ranking](#viés-conhecido-do-ranking-03092026)
+- **Entrega e feedback**
+  - [Entrega no Telegram](#entrega-no-telegram-10092026)
+  - [Vaga fechada na origem](#vaga-fechada-na-origem-16092026)
+  - [Pergunta do dia seguinte](#pergunta-do-dia-seguinte-05102026)
+  - [Erro inesperado não derruba os outros usuários](#erro-inesperado-não-derruba-os-outros-usuários-18092026)
+- **Medição**
+  - [Juiz de recomendações: LLM as a judge](#juiz-de-recomendações-llm-as-a-judge-09092026)
+- **Rodadas de auditoria (registro de 08 a 10/09)**
+  - [Auditoria adversarial de 08/09/2026 (noite): o que mais mudou](#auditoria-adversarial-de-08092026-noite-o-que-mais-mudou)
+  - [Segunda rodada de falhas reproduzidas](#segunda-rodada-de-falhas-reproduzidas-08092026-fim-de-tarde)
+  - [Terceira rodada: auditoria com as vagas reais do banco](#terceira-rodada-auditoria-com-as-vagas-reais-do-banco-08092026-noite)
+  - [Quarta rodada: auditoria após a reescrita do main](#quarta-rodada-auditoria-após-a-reescrita-do-main-09092026)
+  - [Rodada de confiabilidade](#rodada-de-confiabilidade-10092026)
 
-Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
+## Cobertura das fontes (30/08/2026)
 
-- **Cobertura de requisitos suavizada**, `(1+atendidas)/(1+exigidas)`: requisito ausente do
-  perfil vale como incerteza ("não informado"), nunca como veto. As travas de 60/70 pontos por
-  habilidade ausente foram removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de
-  Dados a 48 por "faltar Power BI") enquanto anúncios sem stack ocupavam o topo.
-- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, atrás
-  de vaga com boa parte dos requisitos batidos, mas não de *qualquer* vaga com requisito batido:
-  quem atende 1 de 8 ou mais tem cobertura menor (2/9 < 0.25). Era 0.35 até 09/09/2026, quando a
-  mensagem do Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
-- **Vaga sem nenhum requisito atendido não passa da neutra** (10/09/2026). Com um requisito só,
-  a suavização dava 0.5 a quem não atendia nada, o dobro da vaga sem stack. A Monte Carlo
-  (obrigatório Excel, que não conta em computação, e desejável Power BI) tirava 75 para os dois
-  estudantes de Engenharia de Software sem atender nada: na execução de 10/09 ficou em 7º e 9º,
-  sem ser enviada, e entre as candidatas não enviadas estava em 1º e 2º. Agora, se nenhum
-  requisito que conta na nota é atendido, em nenhuma das listas, a cobertura fica no máximo em
-  0.25; quem atende ao menos um segue a fórmula. O teto nunca sobe nota e não é peso novo: é
-  coerência com a cobertura neutra, como a troca de 0.35 por 0.25. Office e idioma atendidos em
-  computação continuam fora da conta e não tiram a vaga do teto. Medido nas 119 extrações da
-  versão atual contra 18 perfis (6 reais e 12 do catálogo): 300 de 2.142 pares caem, 9 abaixo
-  da nota mínima. Nas candidatas das últimas 48 h ainda não enviadas dos 4 perfis reais com
-  candidatas, saem das 7 primeiras 9 vagas, todas sem requisito atendido; entram 9, seis que
-  batem algo do perfil e três sem requisito atendido que ganham pelos outros fatores (curso,
-  área, interesse). O teto é da vaga inteira, não de cada lista: obrigatória não atendida com
-  desejável atendido continua valendo 0.5 com peso 80%, e a Colégio IPA, que pede "Suporte" e
-  cita "Programação", tira 75. Por lista, os pares com nota 70 ou mais sem obrigatória atendida
-  cairiam de 15 para 8, mas mudaria também vaga com todas as obrigatórias batidas e um
-  desejável faltando; fica para decidir com `vaga_irrelevante`.
-- **"Planilhas" é família atendida por Excel** (10/09/2026). Era membro de Pacote Office, não
-  nome de família, então Excel não atendia "planilhas" (7 extrações), "planilhas eletrônicas"
-  nem "Google Sheets". Com o teto acima, a vaga de Administração que pedia só "planilhas
-  eletrônicas" caía de 65 para 54 para a estudante que tem Excel; agora sobe para 75, e 39
-  pares da medição acima sobem por isso. Custo aceito: "Controle de planilhas" no perfil deixa
-  de atender "planilhas" por palavras, porque a família decide sozinha o requisito que nomeia.
-  Seguem abertos: "Pacote Office" no perfil não atende "Excel" (56 extrações; é a única
-  habilidade de Office que o catálogo sugere para Direito, Saúde e Educação), e Excel não atende
-  "informática" nem "microinformática" (2 extrações cada).
-- **Requisito genérico é atendido por habilidade da mesma família** (09/09/2026): "banco de
-  dados" por SQL/MySQL/Postgres, "back-end" por Java/Spring/Django/Node, "front-end" por
-  React/HTML/CSS/JS, "programação" por qualquer linguagem, "ETL", "cloud", "versionamento",
-  "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
-  exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
-  Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
-- **SQL e bancos relacionais são uma classe só na nota** (13/09/2026). "SQL" não era nome de
-  família: quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a
-  nota de quem tem MongoDB). Ian decidiu que, para estágio, SQL e o banco são a mesma coisa:
-  SQL, MySQL, PostgreSQL, SQL Server, SQLite, MariaDB e Oracle Database se atendem nos dois
-  sentidos (`EQUIVALENCIAS_DE_HABILIDADES`). A primeira versão só deixava SQL atender os bancos,
-  e o termo genérico valia mais que o específico: na vaga adzuna:5873229288, que pede
-  PostgreSQL, MySQL e Oracle, "SQL" tirava 70 e "MySQL" 63. Dentro das famílias o membro vale
-  pelos equivalentes, senão "ETL" e "análise de dados", que listam SQL, deixavam MySQL abaixo.
-  Não é peso novo, é equivalência, como as famílias de 09/09. O que acompanha a classe:
-  - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
-    porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
-    SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
-  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível, e o requisito PL/SQL ou T-SQL só é
-    atendido pelo próprio dialeto. Toda grafia vai para a forma com barra antes da partição
-    (`GRAFIAS_DE_DIALETOS_DE_SQL`: "PL-SQL" e "PLSQL" a "PL/SQL"; "T-SQL", "TSQL" e
-    "Transact-SQL" a "T/SQL"), e a partição do `b1ccbf1` dá a parte "SQL", com nível e
-    palavras, também dentro de habilidade composta. Juntar "PL/SQL" num nome só, como a versão
-    anterior fazia, tirava a parte "SQL" de "Oracle PL/SQL" e parecidos (75 → 61) e deixava
-    "Oracle" no perfil atender "Oracle PL/SQL" por palavras, o caso do ERP.
-  - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
-    SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
-    a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
-    Cloud ficam fora. Esses aliases valem só na comparação com o perfil
-    (`ALIASES_DE_COMPARACAO`): a identidade do requisito, que decide a regra de requisito
-    repetido, continua a do `b1ccbf1`. Sem isso "SQL Server avançado" e "Azure SQL Database"
-    viravam um requisito só, o segundo passava a exigir o nível avançado (75 → 61) e o
-    desejável sumia dos diferenciais.
-  - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
-    comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
-    MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
-  - Nível, composição ("MySQL e Python" exige as duas partes) e NoSQL fora da classe seguem
-    valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
-    anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
+escondia quase tudo (55 vagas em 5 dias no país inteiro). A busca passou a ser por termos, sem
+categoria, repetida por cidade de perfil presencial, híbrido ou indiferente (desde 10/09/2026
+também pela maior cidade da região imediata do perfil; remoto não acrescenta cidade); a localização vem de
+`location.area` (cidade, estado), então bairro não quebra o filtro de cidade. A Gupy deixou de
+buscar por termos no título e traz todos os estágios do país e da cidade. Efeito medido: perfil
+Rio presencial saiu de 2 para 55 candidatas em um dia.
 
-  Medido contra o `b1ccbf1`: nenhuma nota cai e nenhum requisito atendido some nas 41 vagas
-  reais que citam banco (246 pares com 6 perfis, 114 sobem; 861 com os 21 perfis da auditoria,
-  200 sobem) nem nos 8.836 pares da matriz da auditoria (2.298 sobem), e MySQL ou PostgreSQL
-  deixam de ficar abaixo de SQL na mesma vaga (eram 16 e 21 vagas).
-  `tests/test_corpus_de_bancos.py` pontua um corpus com dialeto dentro de habilidade composta e
-  requisitos que o alias junta, com as regras novas ligadas e todas desligadas juntas
-  (equivalências, aliases de comparação e grafias dos dialetos), e exige que nenhuma nota caia,
-  nenhum requisito suma e alguma nota suba; resiste a mudança de peso e quebra se as grafias
-  voltarem a juntar o dialeto ou se a identidade do requisito voltar a usar o alias. Risco
-  aberto: fora de computação a parte "SQL" do dialeto compara por palavras, então "T-SQL" passa
-  a atender "SQL Server Reporting Services", como "PL/SQL" e "SQL" já atendiam.
-- **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
-  anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
-  computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
-  no cadastro dessas áreas.
-- **Desejáveis que faltam aparecem na mensagem** (09/09/2026) como "Diferenciais que a vaga
-  cita", logo abaixo dos requisitos a conferir. Só 39% dos anúncios reais listam desejáveis, com
-  3 ou 4 itens, então a linha custa ~150 caracteres numa mensagem de 7 vagas. Continuam sem
-  virar veto e sem entrar em "a conferir"; o peso de 20% nas habilidades é o de sempre. O rótulo
-  é "diferenciais", não "não atendidos", pelo mesmo motivo do "a conferir" do Igor.
-- **Idiomas e pacote Office não contam na cobertura** (ninguém os cadastra no perfil), mas
-  seguem visíveis na lista de requisitos. As variantes normalizam antes da comparação
-  (03/09/2026): "Microsoft Excel" vira `excel` e "Google Sheets" vira `planilhas`. Antes só o
-  nome exato era ignorado e a variante pesava — uma vaga de dados caiu para 68 penalizada por
-  Google Docs, Drive e Excel. A normalização é por alias, não por pedaço de palavra, para
-  `WordPress` não virar `Word`.
-- **Modalidade extraída preenche a lacuna da fonte** (05/09/2026): a Adzuna não traz
-  modalidade estruturada, então a IA extrai o regime declarado no texto ("remoto",
-  "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
-  modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
-  no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
-- **Habilidades comparadas por nome normalizado, depois família e, fora de computação, por
-  palavras inteiras** (10/09/2026, revisto no mesmo dia depois da auditoria do #41). Só o nome
-  exato deixava estudantes fora de computação sem nada atendido: o anúncio de Direito descreve
-  atividades ("revisão de contratos", "atendimento ao público") e o perfil cadastra a habilidade
-  ("Contratos", "Atendimento"). As duas vagas do Veirano, que descreviam o perfil de um estudante
-  de Direito, ficaram fora com 64 e passam a 86. Fora de computação, quando nome e família falham,
-  o requisito é atendido se todas as palavras de um estão no outro, nos dois sentidos, com plural
-  dobrado; palavra inteira, nunca pedaço, e "análise de dados" não atende "análise de crédito".
-  **Nem perfil nem vaga de computação comparam por palavras**: a primeira versão deixou
-  `JavaScript` atender "React JS", `SQL` atender "PL/SQL" e `React` atender "React Native", e lá
-  os requisitos são nomes de tecnologia, que o nome exato e as famílias já tratam. A trava olhava
-  só o curso até a segunda auditoria de 10/09, e um estudante de Estatística com React atendia
-  "React Native" (55 → 93); agora olha também a área da vaga. O custo, medido em 22 perfis × 343
-  extrações: em vaga de computação, perfil de outro curso perde também correspondência que não é
-  técnica ("inglês técnico" ← Inglês, "atendimento ao cliente" ← Atendimento, "manutenção de
-  computadores" ← Manutenção); 24 de 7.546 pares perdem requisito atendido, 4 com nota menor
-  (−15, −15, −10, −1), nenhum entre as candidatas reais. Vaga com `area_da_vaga` nula não é
-  travada: são programas abertos a várias formações, sem falso positivo encontrado. Requisito com " e ", "/", vírgula,
-  ";", "|" ou " & "/" + " com espaços exige todas as partes ("Excel e Power BI" não é atendido
-  só por Excel; "F&O" e "R&S" não se partem); separador dentro de parênteses não conta. " ou " e
-  "e/ou" são alternativas, e basta uma. O nível dito na última parte vale para as partes sem nível,
-  dentro da mesma alternativa ("Inglês e Espanhol avançados"); dito só na primeira, não se espalha
-  ("Excel avançado e Power BI"), e não atravessa um "ou". Parte que só tem nível se junta à
-  anterior, e a faixa vale pelo menor ("Inglês intermediário/avançado" é atendido por
-  intermediário). O nome inteiro do requisito composto exige o maior nível das partes, e o da
-  habilidade composta do perfil vale pelo menor, contando parte sem nível: "Inglês e Espanhol
-  básicos" não atende "Inglês avançado e Espanhol básico", nem "Inglês avançado e Espanhol"
-  atende "Inglês e Espanhol avançados". Limite conhecido: nível no plural depois de "ou" ("Inglês
-  ou Espanhol avançados") vale só para a última alternativa; não há caso nos dados. Habilidade do
-  perfil escrita assim vira várias, pela mesma regra. Requisito que aparece mais de uma vez com o
-  mesmo nome só conta como atendido se todas as versões forem, então a ordem em que a IA listou
-  não muda a nota, e a mensagem mostra a versão que falta ("a conferir: Excel avançado" para quem
-  tem Excel, não "Excel"). O nível é o maior entre nome, família e palavras,
-  para que acrescentar habilidade nunca derrube a nota; família decide sozinha o requisito que
-  nomeia; alias vale só para o nome inteiro. Risco aceito: habilidade genérica de uma palavra
-  ("Organização", "Gestão", "Processos") atende toda atividade que a contém, e requisito de uma
-  palavra ("redes", "segurança") é atendido por habilidade que a contenha ("Redes sociais",
-  "Segurança do trabalho"); o pré-filtro corta a maior parte desses cruzamentos entre áreas.
-- **Requisito de nível básico é atendido pela habilidade declarada sem nível** (08/10/2026).
-  `_satisfeita` só dava o requisito por atendido com `nivel_do_perfil >= exigencia.nivel`, e
-  habilidade sem nível vale `NIVEL_NAO_INFORMADO`, então o pedido mais fraco que um anúncio pode
-  fazer era o único inatendível para quem declara a habilidade. É estrutural, não descuido de
-  quem cadastra: nenhuma das 73 habilidades sugeridas traz nível, o site não tem campo para
-  declarar um e, nos 4 perfis ativos, 0 de 33 habilidades dizem o nível. Quem tem Excel tirava 98
-  na vaga que pede "Excel" e 64 na que pede "Excel básico" — a mesma nota da que pede "Excel
-  avançado" —, e a mensagem mandava "Requisitos a conferir no seu perfil: Excel básico", nomeando
-  o que a pessoa cadastrou. Agora `exigencia.nivel <= NIVEL_BASICO` vale como requisito sem
-  nível, e "noções de", "iniciante" e a faixa "básico/intermediário", que já valia pelo menor,
-  entram pela mesma porta. **Intermediário e avançado seguem exigindo nível declarado**: a regra
-  de 08/09, de que "Excel" no perfil não comprova "Excel avançado", não muda. Medido no banco,
-  nas 2.149 vagas com extração `7efdbc95`: 133 das 6.609 citações de requisito pedem nível
-  básico, em 99 vagas, e as mais frequentes são "Excel básico" (25), "Pacote Office básico" (23)
-  e "inglês básico" (18). Nos 4 perfis ativos, 81 de 6.447 pares sobem de 1 a 34 pontos, nenhum
-  cai, nenhum requisito atendido desaparece, 2 passam da nota mínima e o top 7 muda em 20 dos 132
-  pares perfil-dia de 33 dias de coleta, 13 deles do perfil de Administração; nos 12 perfis do
-  catálogo, 178 de 25.788 sobem e nenhum cai. Nas 396 vagas que pedem nível intermediário ou
-  maior, nenhum desses requisitos passou a ser atendido. Conferidos à mão: a vaga que pede só
-  "Excel básico" e "digitação" vai de 59 a 86; a que pede "Pacote Office básico", "Excel básico"
-  e "comunicação" vai de 73 a 95; e "programação básica", que a família já atendia por qualquer
-  linguagem, leva a vaga da EPE de 64 a 83. Limites aceitos: a nota sobe para quem declara a
-  habilidade sem comprovar nada, porque não existe onde comprovar; requisito básico que a vaga
-  repete com nível maior continua valendo pelo maior, pela regra de requisito repetido; e um
-  anúncio que escreva "básico" para enfeitar uma exigência real deixa de ser penalizado. A regra
-  é só da nota: o prompt não muda e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
-- **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
-  de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
-  `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do
-  mesmo campo do curso vale meio fator e não gera aviso**; vaga de outro campo zera o fator,
-  limita a nota a 65 e põe o aviso "Fora das suas áreas de interesse". Vaga sem subárea
-  reconhecida também fica com meio fator. Perfil sem interesses não é penalizado, e área recusada
-  no Telegram continua zerando. O nível do meio existe porque punir igual quem marcou "Mercado
-  financeiro" e recebeu Contabilidade era mentir no aviso e cobrar duas vezes: estar em outro
-  campo já pesa em `PESO_AREA`.
-- **Curso** (02/09/2026): incompatível limita a 35 (abaixo da nota mínima, sai da mensagem) com
-  o aviso "Exige formação de outra área"; parcial limita a 75 — vaga operacional de fundos com
-  Excel/Python/SQL chegou a 90 só pela stack genérica. Desde 03/09/2026 quem decide o nível é
-  `matching/compatibilidade.py`, com o catálogo de cursos de `domain/areas.py`, e não mais o
-  julgamento do modelo: a IA extrai `cursos_aceitos` e o Python compara. Curso aceito da mesma
-  área só conta como equivalente quando a área declara `cursos_intercambiaveis` — verdadeiro só
-  em computação, onde Ciência da Computação, Engenharia de Software e ADS disputam as mesmas
-  vagas. Sem essa trava, Engenharia Civil valia por Engenharia Química e Contábeis por Economia
-  (08/09/2026).
-- **Período mínimo** (14/09/2026): perfil abaixo do `periodo_minimo` extraído limita a 35 com o
-  aviso "Exige a partir do Nº período", como curso incompatível. Antes só zerava os 15 pontos de
-  período/experiência, e um perfil de Administração no 1º período recebeu em 1º lugar, com 80, a
-  vaga do CIEE que pede "4º ou 5º período". O aviso substitui o ponto contra genérico, mas avisos
-  não são gravados em `avaliacoes` (como no curso incompatível): `baixar_meus_dados` mostra 35 sem
-  motivo, e as linhas antigas ainda têm "Período mínimo incompatível". Experiência exigida segue
-  só no fator, e faixa ("4º ao 6º") segue sem teto superior, porque o prompt não extrai o limite.
-  Valor fora de 1 a 12 vira `None` na validação: ano lido como período esconderia a vaga de todos.
-  Das 131 extrações da versão `7efdbc95` com `periodo_minimo`, 130 batem com o anúncio. O erro é
-  frase de preferência lida como mínimo, e o modelo é inconsistente nela: de 4 achadas, só "é
-  desejável que esteja cursando entre o 4 ao 7 semestre" (adzuna:5872138783) virou 4; a mesma
-  frase na 5872067515, "preferencialmente o 6º ou 7º período" (5880906488) e "desejável entre 4º
-  e 7º período" (5881849408) vieram nulas. Com o teto, esse erro esconde a vaga; a correção é uma
-  frase no prompt, adiada porque muda `VERSAO_DA_EXTRACAO` e reextrai o cache. Nos 9 anúncios com
-  faixa por curso a extração guardou o menor mínimo (5880225477: ADS a partir do 3º e CC a partir
-  do 7º → 3), mas é comportamento observado: o prompt não manda. Nos 4 perfis ativos, 54 de 663
-  pares caem abaixo de 40 e 8 dos 188 envios de 7 dias não teriam saído. Risco aberto:
-  `perfis.periodo` é o que a pessoa digitou no cadastro e não avança sozinho, então perfil
-  desatualizado passa a perder vaga que já pode fazer.
-- **Pontos a favor e contra são gerados da comparação** (03/09/2026), não escritos pela IA.
-  Sobraram "Curso compatível" e "Exige experiência prévia" (o período virou aviso em 14/09), porque
-  as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
-  vindo do modelo.
-- **Viés conhecido, registrado em 03/09/2026**: anúncio que declara
-  uma tecnologia só e é atendido tira 100, enquanto um que declara cinco e atende três tira 85 —
-  a suavização dá 1.0 cravado com 1 de 1. Quanto mais honesto o anúncio, pior a nota. As duas
-  correções possíveis e o sinal que reverte a decisão estão na seção de viés do ranking de
-  `docs/arquitetura.md`. **Não ajustar peso sem `vaga_irrelevante` real.**
+Paginação da Adzuna (08/09/2026): a busca por termos das áreas cadastradas encontra 4.988 vagas,
+mas `LIMITE_DE_PAGINAS_POR_REGIAO` puxava 4 páginas de 50 por região — 4% do disponível, e esse
+teto era repartido entre os cursos conforme a base crescia. A página 15 ainda devolve 50 vagas
+cheias e relevantes, então o limite subiu para 10. Medido no Rio com quatro áreas: 699 vagas
+coletadas contra ~400, e cada curso ganhou de 65% a 120% mais candidatas. Subir páginas é
+preferível a buscar por área separadamente: o custo fica plano (10 chamadas por região) em vez de
+multiplicar por curso.
+
+Agregadores (Divulga Vagas, BuscarVagas) republicam o mesmo anúncio com "empresa" diferente:
+`remover_republicacoes` em `filtering/duplicatas.py` une vagas com mesmo título e cidade cujas 40
+primeiras palavras da descrição coincidam em 80% — só o início conta porque a Adzuna trunca a
+descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias (04/09/2026): a
+candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
+repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
+modalidade e, em empate, a de descrição mais longa.
+
+**Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
+três casos, e a pessoa perdia uma delas sem aviso:
+- **Empresa sem nome.** Com "Empresa não informada", "Confidencial", "Empresa Confidencial" ou
+  empresa vazia, a chave título + empresa + cidade virava só título e cidade. Nas vagas guardadas,
+  "Estágio Em Administração - Recrutamento Aberto" tinha cinco anúncios de descrições diferentes, e
+  todos viravam um. Para essas empresas (`EMPRESAS_NAO_IDENTIFICADAS`) a chave leva também a
+  descrição normalizada inteira: o mesmo anúncio repetido segue unido pela chave, mesmo com menos de
+  20 palavras, que a republicação não compara, e o texto parecido segue unido pela republicação.
+- **Símbolo no título.** A limpeza trocava por espaço tudo que não é letra ou número, e "C#", "C++"
+  e "C" viravam "c". "#" e "++" colados ao fim da palavra agora fazem parte dela; caixa, acento e o
+  resto da pontuação seguem ignorados ("C#/.NET" é "c# .net").
+- **Cidade sem estado.** A chave usava o nome antes da vírgula, e "Bom Jesus, PI" era "Bom Jesus,
+  RS" (240 nomes de município existem em mais de um estado). As chaves usam `identificar_municipio`
+  de `domain/regioes.py`: o estado vale nos formatos das fontes e, sem estado, vem do nome quando ele
+  só existe num estado, então "Niterói" segue igual a "Niterói, Estado do Rio de Janeiro".
+
+Símbolo e cidade valem também para a republicação e, com ela, para "Já vi essa", as enviadas nos
+últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha (o efeito de
+"Vaga encerrada" para os outros passou a olhar, ver "Vaga fechada na origem"). Medido nas
+1.003 vagas guardadas, com a regra do `main` e a nova sobre o conjunto e sobre janelas que imitam
+uma execução (vagas publicadas nos 4 dias antes de cada dia de coleta): o conjunto passa de 879 para
+888 vagas únicas, e 8 das 20 janelas, todas de 08 a 16/09, ganham de 1 a 6. Os 17 grupos desfeitos
+são todos de empresa sem nome e foram conferidos à mão: nenhum par com descrição igual ou parecida
+se separa, nenhum par com descrição diferente se junta, e o anúncio repetido (restaurante, suporte
+nas lojas, "Auxílio nas atividades administrativas") continua um só. O filtro entre dias bloqueia os
+mesmos 100 pares de enviada e candidata, e a única vaga encerrada não tira nada a mais nem a menos.
+Símbolo e cidade não mudam nenhum grupo nos dados, porque `vagas` guarda só o que passou no
+pré-filtro de algum perfil, quase tudo do Rio, e só um título tem C#: ficam cobertos pelos testes.
+Limites aceitos: nome repetido sem estado ("Bom Jesus") não é unido a estado algum, então a mesma
+vaga pode chegar duas vezes em vez de sumir; empresa sem nome que repete o anúncio com texto curto
+e diferente também chega duas vezes; agência com nome que anuncia vagas de clientes com o mesmo
+título continua juntando vagas distintas (numa janela de 14/09, a Fundação Mudes juntou "Estágio em
+Administração" de uma empresa de vistorias e de uma de engenharia), e tratá-la como empresa sem nome
+separaria a vaga que a empresa republica com texto reescrito; outro rótulo de empresa escondida
+("Sigilosa") segue valendo como nome; e "T.I" e "TI" continuam chaves diferentes, como antes.
+
+## Limites da Adzuna (12/09/2026)
+
+Os termos da Adzuna permitem 25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
+`CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
+acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
+`uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
+sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
+12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
+mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
+`coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
+(`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
+10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
+Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
+zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
+O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
+roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
+imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
+`uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
+essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
+amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
+falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
+o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
+Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
+Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
+valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
+falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
+07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
+regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
+
+## Coleta resiliente (13/09/2026)
+
+Com pelo menos uma vaga em mãos, falha numa página tardia
+da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
+coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
+aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
+uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
+inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
+sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
+não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
+fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
+sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
+e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
+cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
+só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
+nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
+remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
+de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
+
+## Enriquecimento: a descrição completa da Adzuna
+
+Pendente de resposta da Adzuna. O enriquecimento lê a página do anúncio no site da Adzuna
+(`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
+site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
+12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
+sai e a extração passa a ler só os 500 caracteres da API.
+**Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
+`/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
+28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
+(19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
+quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
+nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
+a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
+presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
+atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
+mérito, porque 81 antes da trava vence 60.
+**A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
+técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
+extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
+num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
+ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
+falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
+com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
+modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
+`VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
+a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
+antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
+Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
+registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
+texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
+não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
+histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
+sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
+cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
+têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
+no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
+descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
+só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
+reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
+texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
+do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
+a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
+feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
+e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
+completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
+medição acima) pode ver outro texto que o lido pela IA.
+
+## Jooble (05/09/2026)
+
+Coletor pronto e **desligado por padrão**. API oficial gratuita de
+`br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
+InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
+33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
+~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
+vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
+parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
+várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
+(40% das vagas dela) destrava a descrição completa.
+
+## Cidades vizinhas: região imediata do IBGE (10/09/2026)
+
+Quem mora em Niterói trabalha no Rio, mas a cidade era comparada pelo nome exato. Nos 30 dias
+anteriores, 448 vagas chegaram como "Rio de Janeiro" e 1 como "Niterói": um perfil presencial de
+Niterói praticamente não recebia nada. A Adzuna ainda rotula pela região, e "Estágio TI - Niterói"
+veio como Rio de Janeiro.
+
+`domain/regioes.py` classifica vaga × perfil em mesma cidade, mesma região imediata do IBGE ou
+distante, lendo `radar/domain/regioes_imediatas.json` (510 regiões, gerado por
+`scripts/gerar_cidades.py` junto com a lista do site). O que muda:
+
+- **Mesma região vale como a cidade** no pré-filtro e na trava de 30 para híbrido e indiferente.
+- **Na logística vale metade** da cidade, cerca de 2,5 pontos a menos: a própria cidade continua
+  na frente, sem enterrar a vizinha.
+- **A coleta busca também a maior cidade da região** do perfil (Adzuna `where`),
+  senão um perfil de Niterói sozinho dependeria de haver alguém do Rio para as vagas do Rio
+  serem coletadas.
+- **O juiz recebe as cidades da região** no perfil; sem isso ele marcaria `logistica` na vaga
+  do Rio para quem é de Niterói.
+- **O estado da vaga é lido nos formatos das fontes** ("Estado do Rio de Janeiro", "Rio de
+  Janeiro", "RJ"). Sem estado, vale o nome quando ele só existe num estado; perfil antigo
+  "Rio de Janeiro" continua achando a região. Nome igual em estados diferentes deixou de ser a
+  mesma cidade.
+
+Limite conhecido: a região imediata do Rio tem 21 municípios e inclui Saquarema e Mangaratiba, a
+cerca de 100 km. Se o feedback "local ou modalidade" apontar esses casos, o ajuste é uma lista de
+exceções ou a região metropolitana, não voltar ao nome exato.
 
 ## Áreas: uma fonte só para curso, vaga, banco e site (08/09/2026)
 
@@ -536,6 +552,785 @@ título.
   intencional: quem não é PCD recebe uma vaga a mais que não serve, em vez de perder em silêncio
   uma que serve.
 
+## Correções da revisão de expansão (08/09/2026)
+
+- Cursos passam por correspondência integral após remover prefixos de formação; aliases
+  explícitos estão no catálogo e no JSON gerado. Medicina Veterinária fica desconhecida,
+  não herda saúde humana; Gestão Financeira tem alias em finanças.
+- Perfil sem área reconhecida **soma** uma busca geral (Adzuna sem `what_or`, Jooble com
+  "estágio" puro) à busca dirigida dos cursos conhecidos, em vez de substituí-la. Trocar a de
+  todos custava 68% das candidatas de computação e 66% das de Direito no Rio (167→54, 116→40),
+  porque o `what_or` é o que ordena as 500 primeiras da fatia nacional. Termos de busca são
+  palavras soltas: a Adzuna trata `what_or` como OR por palavra, então "recursos humanos" virava
+  "recursos" OU "humanos" (1546 vagas contra 1185 da frase); o catálogo usa "recrutamento",
+  "rh", "exportação".
+- Curso mencionado na descrição com contexto de formação, ou abertura a qualquer formação,
+  mantém a vaga para análise mesmo com título de outra área. A compatibilidade de curso é
+  decidida após a extração.
+- Pontuação é recalculada em Python em toda execução. Notas persistidas não são reutilizadas;
+  extrações continuam compartilhadas e histórico de envios continua bloqueando repetição.
+- Curso genérico aceito pelo anúncio ("Engenharia", "Química", "Administração") conta como o
+  curso específico do perfil quando o nome aceito aparece inteiro dentro do nome do perfil **e**
+  o catálogo reconhece o perfil. Sem a segunda condição, "Medicina" valeria para Medicina
+  Veterinária — que é desconhecida de propósito. A correspondência integral sozinha marcava
+  como incompatível (teto 35) quem estuda Engenharia Civil numa vaga "cursando Engenharia".
+- A correspondência integral roda depois de `normalizar_curso`: tira prefixos de formação
+  ("Cursando", "Graduação em", "Curso Superior de Tecnologia em"), sufixos ("completo",
+  "- Bacharelado", "(Bacharelado)", "/Eletrônica"), aplica sinônimos ("Ciências Econômicas" →
+  economia, "ADS", "TI", "RH") e devolve vazio para termo genérico ("Ensino Superior",
+  "qualquer curso") — que em `cursos_aceitos` não comprova elegibilidade sozinho. Só abertura explícita
+  a qualquer curso libera todas as formações; termos genéricos não anulam cursos específicos. "Licenciatura em X" sem
+  alias cai em educação. Prefixos, sufixos, sinônimos e genéricos vão no `areas.json` e o site
+  aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
+  genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é
+  um alias.
+- **Curso aceito fora do catálogo** (16/09/2026). Na vaga, nome que o catálogo não reconhece não
+  tem área, e a lista feita só desses nomes dava curso incompatível, teto 35 e "Exige formação de
+  outra área". Nas 566 extrações da versão `7efdbc95` com os 4 perfis ativos, 62 dos 2.264 pares
+  caíam nisso. Conferidos à mão: 50 estão certos (vaga de ensino médio ou EJA, 16; só para
+  técnico, 4; lista técnica em que a IA tirou o "Técnico em" dos itens seguintes, 12; nome de
+  outra formação para quem não é dela, 18), 10 eram sinônimo que faltava ("ADM" para
+  Administração; "Tecnologia", "Tecnologia/Sistemas", "Cibersegurança" e "Sistemas para a
+  Internet" para computação) e 2 são erro da extração: adzuna:5882923702 pede "TI, Estatística,
+  Matemática, Engenharias" e a IA guardou só Estatística e Matemática. Fora dos 62, lista mista
+  escondia mais 3 pares ("T.I, ADM" de Administração e "desenvolvimento de software ou
+  administração" de computação). A correção são sinônimos: "ADM", "Tecnologia", "Cibersegurança",
+  "Sistemas para a Internet" e "Desenvolvimento de Software", mais "Rede de Computadores" e
+  "Análise de Sistema", que estão em 7 vagas e só passavam porque a lista trazia outro curso de
+  computação. **A regra não mudou.** Tratar como parcial (teto 75) a lista sem nome reconhecido
+  subia 22 pares que passam no pré-filtro, 12 certos e 10 errados (ensino médio para Administração
+  a 54, técnico em automação e em mecânica para computação de 43 a 53); mesmo tirando ensino médio
+  e técnico, levava a vaga que pede Engenharia a Administração (54) e a de Estatística e Matemática
+  a Medicina Veterinária (59). Os nomes fora do catálogo nas vagas são quase todos curso de outra
+  formação (Estatística em 13 vagas, Matemática em 11, Ciências Sociais, Design de Moda,
+  Biblioteconomia), a família "Engenharia(s)" (28 vagas), que `mesmo_curso` já resolve para quem é
+  de engenharia, ou nível de ensino, e para eles o 35 está certo;
+  `test_nome_fora_do_catalogo_de_outra_formacao_segue_incompativel` impede relaxar a lista inteira.
+  Medido contra o `main` com 43 perfis (os 4 ativos e 39 sintéticos, 24.338 pares): 75 pares mudam,
+  todos sobem, 55 passam no pré-filtro e cruzam a nota mínima, e nenhum descarte muda. Nos 4 ativos
+  são 13 (35 → 51 a 80), 11 entregáveis; agrupando por dia de coleta, sem histórico, a vaga de
+  Ciência de Dados que aceita "Tecnologia" entraria no top 7 dos dois perfis de computação em 11/09
+  e a de estágio administrativo que aceita "ADM" no de Administração em 12/09. Sinônimo não entra
+  no padrão de título, mas o composto entra em `nomes_do_curso`: quem cursa Sistemas para Internet,
+  Desenvolvimento de Sistemas, Redes de Computadores ou Análise de Sistemas passa a achar também a
+  forma nova citada na descrição. Limites: "Curso Superior de Tecnologia" e "Graduação em
+  Tecnologia" sozinhos passam a valer como Tecnologia da Informação (nenhum caso nas 790
+  extrações); o erro da extração segue, porque a correção é de prompt e muda `VERSAO_DA_EXTRACAO`;
+  grafia errada ("Administação") e "Administração Bacharelado" seguem desconhecidas e hoje só
+  aparecem ao lado de um nome reconhecido ("Eng. Elétrica" passou a valer pela expansão de
+  abreviações do item seguinte); e nome novo continua dando 35 até ganhar alias.
+- **Curso com pontuação, complemento ou abreviação** (16/09/2026). "Ciência da Computação.",
+  "Direito, UERJ" e "Eng. de Software" ficavam sem área: `normalizar_curso` só cortava o
+  complemento depois de hífen, barra, "|" ou de parêntese que fechava o nome, e não conhecia
+  abreviação. O site não dizia nada à pessoa. Agora a normalização tira a pontuação das pontas,
+  corta a partir de vírgula e de parêntese no meio do nome ("Psicologia (UFRJ) - noturno") e
+  expande "Eng", "Adm", "Ciên", "Ciênc" e "C" no começo do que sobra depois dos prefixos de
+  formação, com ponto ou espaço e só com outra palavra depois (`ABREVIACOES_DE_FORMACAO`, que vai
+  no `areas.json`): "Graduação em Eng. Elétrica" chega a engenharia elétrica. As de ciência viram
+  "ciencias", que os sinônimos levam a ciência da computação e que fecha com Contábeis,
+  Econômicas, Atuariais, Biológicas e Jurídicas; "C. de Dados" segue desconhecido. Abreviação
+  sozinha não expande: "Eng." solto segue desconhecido, e "ADM" solto vale como Administração pelo
+  sinônimo do item anterior. O site espelha a regra e a fixture de paridade ganhou as formas. Um fuzz de
+  5.150 entradas (catálogo, sinônimos, os 296 `cursos_aceitos` reais e variações com pontuação,
+  complemento e abreviação) deu zero divergência entre Python e site, nenhuma perdeu a área que
+  tinha e a normalização segue idempotente; só trocam de área "Licenciatura em X" com pontuação no
+  fim, que caía em educação e passa à área de X, como já acontecia sem a pontuação.
+  Medido no banco: os 6 perfis reais já tinham área e continuam (0 → 0 sem área). Das 296 formas
+  distintas de `cursos_aceitos` das 790 extrações, só "Eng. Elétrica", "Eng. de Computação" e
+  "Eng. de Produção" mudam, as três para o curso certo (170 → 173 com área). Nas 600 extrações
+  que validam no modelo atual, nenhum par com os perfis reais muda; com os cursos sugeridos do
+  catálogo, 3 de 27.600 pares mudam, Engenharia Elétrica e de Produção em duas vagas de dados que
+  listam "Eng." (35 → 52 e 63, curso compatível), e as duas seguem cortadas pelo pré-filtro para
+  esses perfis. Um perfil sintético "Direito, UERJ" passa de 42 vagas com nota 40 ou mais, nenhuma
+  com curso compatível, a 71, com 61 compatíveis. Do lado da vaga, sem caso nos dados: item sem
+  técnico com vírgula vale pelo primeiro curso, como já valia com barra ("Administração,
+  Contabilidade ou Economia" dá compatível a Administração e segue 35 para os outros, que antes
+  também tinham 35), e "Técnico ou Superior (Administração)" deixa de ser parcial e fica
+  compatível para Administração e 35 para Contábeis, como "Técnico ou superior em Administração".
+  O aviso do site abre a etapa de habilidades quando o catálogo carregou e o curso não tem área:
+  diz o nome digitado, que as vagas ficam menos precisas e sem sugestões nem áreas de interesse, e
+  sugere voltar e escolher o nome na lista; Continuar segue e o curso é salvo como foi digitado.
+  Fica no topo dessa etapa, a primeira tela depois do curso, e não embaixo do campo, onde a lista
+  aberta o cobre durante a digitação e o clique em Continuar troca de etapa antes da leitura. Sem
+  catálogo o aviso some, e limpar o rascunho o apaga, porque ele leva o curso da pessoa. Limites:
+  curso sem separador ("Direito UERJ", "Direito 5º período"), com ponto no meio ("Direito. UERJ")
+  ou abreviação fora do começo ("Sist. de Informação", "Anal. de Sistemas") continua desconhecido
+  e só ganha o aviso; e vírgula corta o nome, então o que vem depois dela nunca conta. Publicação:
+  site e `radar/` juntos, sem migration; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+- "laboratório" saiu do padrão de exclusão de saúde: vetava "Desenvolvimento de Software para
+  Laboratório" para quem é de computação. Continua no padrão positivo, então saúde ainda
+  reconhece laboratório como título seu.
+- A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
+  Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
+
+## A extração não é repetida por usuário (03/09/2026)
+
+Formulação revista em 10/09: isso não
+é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
+mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
+gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
+O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
+modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
+6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
+15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
+`criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
+`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
+
+## A extração tem prazo (11/09/2026)
+
+G01 e G07 da auditoria do agendamento. A extração roda antes
+de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
+mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
+`PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
+de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
+extração". A conferência **reserva o tempo da própria chamada**, então uma requisição só começa
+se couber inteira no prazo: sem isso, três repetições de 120 s mais as esperas furavam os 600 s
+e o run podia terminar com zero extrações. Cada chamada leva `GEMINI_TIMEOUT_SEGUNDOS`
+(padrão 120, extrator e juiz), e tanto o timeout quanto falha de rede (`httpx.TransportError`,
+que cobre conexão recusada e queda no meio da resposta) viram indisponibilidade, tratada como o
+504: espera e repete o mesmo lote dentro do prazo. Antes só o timeout era tratado, e um
+`ConnectError` derrubava a execução inteira sem resumo de operação. As candidatas vão para a
+extração intercaladas por usuário, para o corte não cair sempre em quem entrou por último. O job
+tem 30 minutos e o passo do radar 28. Números que sustentam os valores, medidos no diário de
+11/09: ~27 s por requisição (93 vagas em 11 requisições) e ~21 s por usuário na entrega, o que
+acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é por operação de
+socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
+enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
+ainda pode levar o job ao kill.
+
+## Modelo e cota do Gemini (10/09/2026)
+
+O padrão é o `gemini-3.6-flash` (`GEMINI_MODELO`): o `gemini-2.5-flash` foi recusado pela API
+como indisponível para contas novas. O projeto está no plano pago desde 10/09/2026. Na cota
+gratuita, o `gemini-3.6-flash` tinha 20 requisições por minuto, e os limites variam por modelo,
+projeto e janela; por isso a extração vai em lotes (`GEMINI_VAGAS_POR_LOTE`, padrão 10), com
+repartição do lote que falha e espera pelo "retry in Ns" do 429. Acima de 120 s a espera indica
+cota diária, e o job desiste devolvendo o que já tem. No plano pago o que pesa é o custo por
+requisição e o tempo de execução, não a cota.
+
+## Raciocínio da extração em `low` (11/09/2026)
+
+O nível vem de `GEMINI_RACIOCINIO`. O `gemini-3.6-flash`
+pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
+4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
+US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
+gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
+`low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
+padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
+um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
+cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
+~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
+11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
+41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
+comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
+trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
+
+## Resumo do raciocínio gravado na extração
+
+(19/10/2026, `raciocinio_do_lote`). Para entender por que uma vaga recebeu certa extração, o que
+vale é o raciocínio da execução que gerou a nota. Chamar a IA de novo com a mesma vaga traz outro
+raciocínio: temperatura 0 não deixa o Gemini determinístico (repetir o modo padrão concordou em
+90% dos campos, ver a seção anterior), e a vaga sozinha não é o lote de 10 em que ela foi lida.
+Por isso a extração pede `include_thoughts` e copia o resumo devolvido para cada extração daquela
+chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
+
+- **É pista, não explicação.** É o resumo que o modelo faz do próprio raciocínio, e nada garante
+  que ele explique a resposta. Quem decide se a IA errou é a comparação da extração com a
+  descrição da vaga.
+- **Um texto por chamada.** As vagas de um lote dividem o mesmo resumo; a vaga repetida sozinha,
+  ou num lote dividido, leva o da chamada que a extraiu.
+- **Não reextrai nada.** O campo fica fora do schema pedido à IA, como `descricao_completa`, e a
+  `VERSAO_DA_EXTRACAO` continuou `7efdbc95`. Vagas extraídas antes ficam sem resumo, e o adapter
+  `agy` não devolve resumo.
+- **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
+- **Pedir o resumo não muda o custo.** A documentação do Gemini cobra o raciocínio inteiro como
+  saída, com ou sem `include_thoughts`; o resumo não é cobrado à parte.
+- **O `agy` não prevê o resumo da API.** Simulação de 19 e 20/10, sem chave do Gemini local nem
+  acesso ao banco: 50 vagas reais da Adzuna com a descrição completa, em 5 lotes de 10, no
+  `gemini-3.8-flash`, porque o `agy` não oferece o `gemini-3.6-flash` da API. O texto do raciocínio
+  fica em `~/.gemini/antigravity-cli/brain/<conversa>/.system_generated/logs/transcript_full.jsonl`.
+  Em `low`, os 5 lotes tiveram 0 token de raciocínio (~9 s e R$ 0,041 a 0,051 por lote nos preços
+  do `3.6-flash`, descontados os ~7,7 mil tokens de entrada do próprio `agy`), e um problema de
+  aritmética de controle também teve 0: o `low` do `agy` desliga o raciocínio, não é a extração
+  que dispensa. Em `medium`, 27,7 a 45 mil tokens de raciocínio por lote, 32 a 40 KB de texto vaga
+  a vaga e 160 a 293 s, de 6 a 9 vezes o padrão da API em 11/09 e acima do timeout de 120 s por
+  chamada. O tamanho do resumo em `low` só se mede na API: no primeiro diário ou com uma chave
+  local.
+- **O espaço cresce com vagas novas, não com usuários**: com as ~70 vagas novas por dia medidas em
+  08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
+  vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
+
+Consulta para investigar uma vaga:
+
+```sql
+select titulo, descricao,
+       extracao - 'raciocinio_do_lote' as fatos,
+       extracao ->> 'raciocinio_do_lote' as raciocinio
+from vagas
+where fonte = 'adzuna' and id_externo = '<id>';
+```
+
+## Lote incompleto pede junto o que faltou (10/09/2026)
+
+Em 10/09, 3 de 13 lotes voltaram com
+1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
+de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
+mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
+uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
+com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
+com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
+ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
+Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
+que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
+conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
+tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
+acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
+temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
+troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
+como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
+na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
+extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
+os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
+
+## Só entra extração com o id de uma vaga do lote pedido (18/09/2026)
+
+Grave 3 da auditoria de
+17/09. O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
+`id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
+com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
+forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
+nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
+compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
+está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
+que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
+mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
+qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
+regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
+esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
+quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
+lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
+as sem extração.
+**A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
+`INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
+cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
+conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
+reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
+nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
+enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
+apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
+nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
+atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
+observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
+cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
+conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
+dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
+já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
+devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
+migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+## Resposta malformada do avaliador não derruba o job (16/09/2026)
+
+Item 14 da auditoria. Só
+erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
+(página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
+`json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
+`usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
+`TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
+qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
+terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
+do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
+e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
+é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
+lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
+formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
+mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
+configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
+aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
+barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
+candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
+modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
+julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
+`UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
+o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
+mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
+`candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
+lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
+recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
+do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
+ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
+minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
+`7efdbc95`.
+
+## Pontuação: por que os pesos são estes
+
+Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
+
+- **Cobertura de requisitos suavizada**, `(1+atendidas)/(1+exigidas)`: requisito ausente do
+  perfil vale como incerteza ("não informado"), nunca como veto. As travas de 60/70 pontos por
+  habilidade ausente foram removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de
+  Dados a 48 por "faltar Power BI") enquanto anúncios sem stack ocupavam o topo.
+- **Vaga que não declara stack** recebe cobertura neutra de 0.25 (~nota 65): entregável, atrás
+  de vaga com boa parte dos requisitos batidos, mas não de *qualquer* vaga com requisito batido:
+  quem atende 1 de 8 ou mais tem cobertura menor (2/9 < 0.25). Era 0.35 até 09/09/2026, quando a
+  mensagem do Igor mostrou anúncio mudo em 75 acima de vaga em que ele batia MySQL e SQL (69).
+- **Vaga sem nenhum requisito atendido não passa da neutra** (10/09/2026). Com um requisito só,
+  a suavização dava 0.5 a quem não atendia nada, o dobro da vaga sem stack. A Monte Carlo
+  (obrigatório Excel, que não conta em computação, e desejável Power BI) tirava 75 para os dois
+  estudantes de Engenharia de Software sem atender nada: na execução de 10/09 ficou em 7º e 9º,
+  sem ser enviada, e entre as candidatas não enviadas estava em 1º e 2º. Agora, se nenhum
+  requisito que conta na nota é atendido, em nenhuma das listas, a cobertura fica no máximo em
+  0.25; quem atende ao menos um segue a fórmula. O teto nunca sobe nota e não é peso novo: é
+  coerência com a cobertura neutra, como a troca de 0.35 por 0.25. Office e idioma atendidos em
+  computação continuam fora da conta e não tiram a vaga do teto. Medido nas 119 extrações da
+  versão atual contra 18 perfis (6 reais e 12 do catálogo): 300 de 2.142 pares caem, 9 abaixo
+  da nota mínima. Nas candidatas das últimas 48 h ainda não enviadas dos 4 perfis reais com
+  candidatas, saem das 7 primeiras 9 vagas, todas sem requisito atendido; entram 9, seis que
+  batem algo do perfil e três sem requisito atendido que ganham pelos outros fatores (curso,
+  área, interesse). O teto é da vaga inteira, não de cada lista: obrigatória não atendida com
+  desejável atendido continua valendo 0.5 com peso 80%, e a Colégio IPA, que pede "Suporte" e
+  cita "Programação", tira 75. Por lista, os pares com nota 70 ou mais sem obrigatória atendida
+  cairiam de 15 para 8, mas mudaria também vaga com todas as obrigatórias batidas e um
+  desejável faltando; fica para decidir com `vaga_irrelevante`.
+- **"Planilhas" é família atendida por Excel** (10/09/2026). Era membro de Pacote Office, não
+  nome de família, então Excel não atendia "planilhas" (7 extrações), "planilhas eletrônicas"
+  nem "Google Sheets". Com o teto acima, a vaga de Administração que pedia só "planilhas
+  eletrônicas" caía de 65 para 54 para a estudante que tem Excel; agora sobe para 75, e 39
+  pares da medição acima sobem por isso. Custo aceito: "Controle de planilhas" no perfil deixa
+  de atender "planilhas" por palavras, porque a família decide sozinha o requisito que nomeia.
+  Seguem abertos: "Pacote Office" no perfil não atende "Excel" (56 extrações; é a única
+  habilidade de Office que o catálogo sugere para Direito, Saúde e Educação), e Excel não atende
+  "informática" nem "microinformática" (2 extrações cada).
+- **Requisito genérico é atendido por habilidade da mesma família** (09/09/2026): "banco de
+  dados" por SQL/MySQL/Postgres, "back-end" por Java/Spring/Django/Node, "front-end" por
+  React/HTML/CSS/JS, "programação" por qualquer linguagem, "ETL", "cloud", "versionamento",
+  "mobile", "pacote Office", "análise de dados" e "IA" idem (`FAMILIAS_DE_HABILIDADES`). O nível
+  exigido continua valendo contra o melhor membro presente. Antes, um perfil com SQL, MySQL,
+  Java e Spring via zero atendidos em "banco de dados, front-end, back-end, ETL".
+- **SQL e bancos relacionais são uma classe só na nota** (13/09/2026). "SQL" não era nome de
+  família: quem tinha MySQL ou PostgreSQL ficava sem nada atendido na vaga que pedia SQL (54, a
+  nota de quem tem MongoDB). Ian decidiu que, para estágio, SQL e o banco são a mesma coisa:
+  SQL, MySQL, PostgreSQL, SQL Server, SQLite, MariaDB e Oracle Database se atendem nos dois
+  sentidos (`EQUIVALENCIAS_DE_HABILIDADES`). A primeira versão só deixava SQL atender os bancos,
+  e o termo genérico valia mais que o específico: na vaga adzuna:5873229288, que pede
+  PostgreSQL, MySQL e Oracle, "SQL" tirava 70 e "MySQL" 63. Dentro das famílias o membro vale
+  pelos equivalentes, senão "ETL" e "análise de dados", que listam SQL, deixavam MySQL abaixo.
+  Não é peso novo, é equivalência, como as famílias de 09/09. O que acompanha a classe:
+  - "Oracle" exigido é atendido pela classe, mas "Oracle" no perfil não atende nada dela,
+    porque também é o ERP: o perfil de Engenharia de Produção com Excel, Oracle e SAP ganhava
+    SQL em 16 vagas reais. "Oracle Database" entra nos dois lados.
+  - PL/SQL e T-SQL no perfil implicam SQL, com o mesmo nível, e o requisito PL/SQL ou T-SQL só é
+    atendido pelo próprio dialeto. Toda grafia vai para a forma com barra antes da partição
+    (`GRAFIAS_DE_DIALETOS_DE_SQL`: "PL-SQL" e "PLSQL" a "PL/SQL"; "T-SQL", "TSQL" e
+    "Transact-SQL" a "T/SQL"), e a partição do `b1ccbf1` dá a parte "SQL", com nível e
+    palavras, também dentro de habilidade composta. Juntar "PL/SQL" num nome só, como a versão
+    anterior fazia, tirava a parte "SQL" de "Oracle PL/SQL" e parecidos (75 → 61) e deixava
+    "Oracle" no perfil atender "Oracle PL/SQL" por palavras, o caso do ERP.
+  - Aliases levam formas compostas à classe: "Banco de dados SQL", "Linguagem SQL" e "Consultas
+    SQL" a SQL; "Microsoft SQL Server", "MSSQL" e "Azure SQL Database" a SQL Server; "Oracle DB"
+    a Oracle Database; "Postgre" a PostgreSQL. NoSQL, MySQL Workbench, SSRS, Oracle ERP e Oracle
+    Cloud ficam fora. Esses aliases valem só na comparação com o perfil
+    (`ALIASES_DE_COMPARACAO`): a identidade do requisito, que decide a regra de requisito
+    repetido, continua a do `b1ccbf1`. Sem isso "SQL Server avançado" e "Azure SQL Database"
+    viravam um requisito só, o segundo passava a exigir o nível avançado (75 → 61) e o
+    desejável sumia dos diferenciais.
+  - A classe não é família. Família decide sozinha o requisito que nomeia e desliga a
+    comparação por palavras; na versão que usava família, "Consultas SQL", "Banco de dados
+    MySQL" e "ERP Oracle" perderam em Direito o requisito que atendiam (98 → 64).
+  - Nível, composição ("MySQL e Python" exige as duas partes) e NoSQL fora da classe seguem
+    valendo. A regra é só da nota: o prompt segue separando SQL de MySQL para guardar o nome do
+    anúncio, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+
+  Medido contra o `b1ccbf1`: nenhuma nota cai e nenhum requisito atendido some nas 41 vagas
+  reais que citam banco (246 pares com 6 perfis, 114 sobem; 861 com os 21 perfis da auditoria,
+  200 sobem) nem nos 8.836 pares da matriz da auditoria (2.298 sobem), e MySQL ou PostgreSQL
+  deixam de ficar abaixo de SQL na mesma vaga (eram 16 e 21 vagas).
+  `tests/test_corpus_de_bancos.py` pontua um corpus com dialeto dentro de habilidade composta e
+  requisitos que o alias junta, com as regras novas ligadas e todas desligadas juntas
+  (equivalências, aliases de comparação e grafias dos dialetos), e exige que nenhuma nota caia,
+  nenhum requisito suma e alguma nota suba; resiste a mudança de peso e quebra se as grafias
+  voltarem a juntar o dialeto ou se a identidade do requisito voltar a usar o alias. Risco
+  aberto: fora de computação a parte "SQL" do dialeto compara por palavras, então "T-SQL" passa
+  a atender "SQL Server Reporting Services", como "PL/SQL" e "SQL" já atendiam.
+- **Soft skill não conta na cobertura de computação** (09/09/2026), como Office e idiomas:
+  anúncio cuja única habilidade era "comunicação" ganhava cobertura 0.5 e nota 75. Fora de
+  computação continua contando, porque "Comunicação" e "Organização" são habilidades sugeridas
+  no cadastro dessas áreas.
+- **Desejáveis que faltam aparecem na mensagem** (09/09/2026) como "Diferenciais que a vaga
+  cita", logo abaixo dos requisitos a conferir. Só 39% dos anúncios reais listam desejáveis, com
+  3 ou 4 itens, então a linha custa ~150 caracteres numa mensagem de 7 vagas. Continuam sem
+  virar veto e sem entrar em "a conferir"; o peso de 20% nas habilidades é o de sempre. O rótulo
+  é "diferenciais", não "não atendidos", pelo mesmo motivo do "a conferir" do Igor.
+- **Idiomas e pacote Office não contam na cobertura** (ninguém os cadastra no perfil), mas
+  seguem visíveis na lista de requisitos. As variantes normalizam antes da comparação
+  (03/09/2026): "Microsoft Excel" vira `excel` e "Google Sheets" vira `planilhas`. Antes só o
+  nome exato era ignorado e a variante pesava — uma vaga de dados caiu para 68 penalizada por
+  Google Docs, Drive e Excel. A normalização é por alias, não por pedaço de palavra, para
+  `WordPress` não virar `Word`.
+- **Modalidade extraída preenche a lacuna da fonte** (05/09/2026): a Adzuna não traz
+  modalidade estruturada, então a IA extrai o regime declarado no texto ("remoto",
+  "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
+  modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
+  no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
+- **Habilidades comparadas por nome normalizado, depois família e, fora de computação, por
+  palavras inteiras** (10/09/2026, revisto no mesmo dia depois da auditoria do #41). Só o nome
+  exato deixava estudantes fora de computação sem nada atendido: o anúncio de Direito descreve
+  atividades ("revisão de contratos", "atendimento ao público") e o perfil cadastra a habilidade
+  ("Contratos", "Atendimento"). As duas vagas do Veirano, que descreviam o perfil de um estudante
+  de Direito, ficaram fora com 64 e passam a 86. Fora de computação, quando nome e família falham,
+  o requisito é atendido se todas as palavras de um estão no outro, nos dois sentidos, com plural
+  dobrado; palavra inteira, nunca pedaço, e "análise de dados" não atende "análise de crédito".
+  **Nem perfil nem vaga de computação comparam por palavras**: a primeira versão deixou
+  `JavaScript` atender "React JS", `SQL` atender "PL/SQL" e `React` atender "React Native", e lá
+  os requisitos são nomes de tecnologia, que o nome exato e as famílias já tratam. A trava olhava
+  só o curso até a segunda auditoria de 10/09, e um estudante de Estatística com React atendia
+  "React Native" (55 → 93); agora olha também a área da vaga. O custo, medido em 22 perfis × 343
+  extrações: em vaga de computação, perfil de outro curso perde também correspondência que não é
+  técnica ("inglês técnico" ← Inglês, "atendimento ao cliente" ← Atendimento, "manutenção de
+  computadores" ← Manutenção); 24 de 7.546 pares perdem requisito atendido, 4 com nota menor
+  (−15, −15, −10, −1), nenhum entre as candidatas reais. Vaga com `area_da_vaga` nula não é
+  travada: são programas abertos a várias formações, sem falso positivo encontrado. Requisito com " e ", "/", vírgula,
+  ";", "|" ou " & "/" + " com espaços exige todas as partes ("Excel e Power BI" não é atendido
+  só por Excel; "F&O" e "R&S" não se partem); separador dentro de parênteses não conta. " ou " e
+  "e/ou" são alternativas, e basta uma. O nível dito na última parte vale para as partes sem nível,
+  dentro da mesma alternativa ("Inglês e Espanhol avançados"); dito só na primeira, não se espalha
+  ("Excel avançado e Power BI"), e não atravessa um "ou". Parte que só tem nível se junta à
+  anterior, e a faixa vale pelo menor ("Inglês intermediário/avançado" é atendido por
+  intermediário). O nome inteiro do requisito composto exige o maior nível das partes, e o da
+  habilidade composta do perfil vale pelo menor, contando parte sem nível: "Inglês e Espanhol
+  básicos" não atende "Inglês avançado e Espanhol básico", nem "Inglês avançado e Espanhol"
+  atende "Inglês e Espanhol avançados". Limite conhecido: nível no plural depois de "ou" ("Inglês
+  ou Espanhol avançados") vale só para a última alternativa; não há caso nos dados. Habilidade do
+  perfil escrita assim vira várias, pela mesma regra. Requisito que aparece mais de uma vez com o
+  mesmo nome só conta como atendido se todas as versões forem, então a ordem em que a IA listou
+  não muda a nota, e a mensagem mostra a versão que falta ("a conferir: Excel avançado" para quem
+  tem Excel, não "Excel"). O nível é o maior entre nome, família e palavras,
+  para que acrescentar habilidade nunca derrube a nota; família decide sozinha o requisito que
+  nomeia; alias vale só para o nome inteiro. Risco aceito: habilidade genérica de uma palavra
+  ("Organização", "Gestão", "Processos") atende toda atividade que a contém, e requisito de uma
+  palavra ("redes", "segurança") é atendido por habilidade que a contenha ("Redes sociais",
+  "Segurança do trabalho"); o pré-filtro corta a maior parte desses cruzamentos entre áreas.
+- **Requisito de nível básico é atendido pela habilidade declarada sem nível** (08/10/2026).
+  `_satisfeita` só dava o requisito por atendido com `nivel_do_perfil >= exigencia.nivel`, e
+  habilidade sem nível vale `NIVEL_NAO_INFORMADO`, então o pedido mais fraco que um anúncio pode
+  fazer era o único inatendível para quem declara a habilidade. É estrutural, não descuido de
+  quem cadastra: nenhuma das 73 habilidades sugeridas traz nível, o site não tem campo para
+  declarar um e, nos 4 perfis ativos, 0 de 33 habilidades dizem o nível. Quem tem Excel tirava 98
+  na vaga que pede "Excel" e 64 na que pede "Excel básico" — a mesma nota da que pede "Excel
+  avançado" —, e a mensagem mandava "Requisitos a conferir no seu perfil: Excel básico", nomeando
+  o que a pessoa cadastrou. Agora `exigencia.nivel <= NIVEL_BASICO` vale como requisito sem
+  nível, e "noções de", "iniciante" e a faixa "básico/intermediário", que já valia pelo menor,
+  entram pela mesma porta. **Intermediário e avançado seguem exigindo nível declarado**: a regra
+  de 08/09, de que "Excel" no perfil não comprova "Excel avançado", não muda. Medido no banco,
+  nas 2.149 vagas com extração `7efdbc95`: 133 das 6.609 citações de requisito pedem nível
+  básico, em 99 vagas, e as mais frequentes são "Excel básico" (25), "Pacote Office básico" (23)
+  e "inglês básico" (18). Nos 4 perfis ativos, 81 de 6.447 pares sobem de 1 a 34 pontos, nenhum
+  cai, nenhum requisito atendido desaparece, 2 passam da nota mínima e o top 7 muda em 20 dos 132
+  pares perfil-dia de 33 dias de coleta, 13 deles do perfil de Administração; nos 12 perfis do
+  catálogo, 178 de 25.788 sobem e nenhum cai. Nas 396 vagas que pedem nível intermediário ou
+  maior, nenhum desses requisitos passou a ser atendido. Conferidos à mão: a vaga que pede só
+  "Excel básico" e "digitação" vai de 59 a 86; a que pede "Pacote Office básico", "Excel básico"
+  e "comunicação" vai de 73 a 95; e "programação básica", que a família já atendia por qualquer
+  linguagem, leva a vaga da EPE de 64 a 83. Limites aceitos: a nota sobe para quem declara a
+  habilidade sem comprovar nada, porque não existe onde comprovar; requisito básico que a vaga
+  repete com nível maior continua valendo pelo maior, pela regra de requisito repetido; e um
+  anúncio que escreva "básico" para enfeitar uma exigência real deixa de ser penalizado. A regra
+  é só da nota: o prompt não muda e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+- **Área de interesse** (01/09/2026, revisto em 08/09/2026): a IA classifica a vaga em subáreas
+  de um catálogo fechado (`AreaDeInteresse`, derivado de `domain/areas.py`) e o fator compara com
+  `perfis.areas_de_interesse`. São três níveis: match ganha o fator cheio; **outra subárea do
+  mesmo campo do curso vale meio fator e não gera aviso**; vaga de outro campo zera o fator,
+  limita a nota a 65 e põe o aviso "Fora das suas áreas de interesse". Vaga sem subárea
+  reconhecida também fica com meio fator. Perfil sem interesses não é penalizado, e área recusada
+  no Telegram continua zerando. O nível do meio existe porque punir igual quem marcou "Mercado
+  financeiro" e recebeu Contabilidade era mentir no aviso e cobrar duas vezes: estar em outro
+  campo já pesa em `PESO_AREA`.
+- **Curso** (02/09/2026): incompatível limita a 35 (abaixo da nota mínima, sai da mensagem) com
+  o aviso "Exige formação de outra área"; parcial limita a 75 — vaga operacional de fundos com
+  Excel/Python/SQL chegou a 90 só pela stack genérica. Desde 03/09/2026 quem decide o nível é
+  `matching/compatibilidade.py`, com o catálogo de cursos de `domain/areas.py`, e não mais o
+  julgamento do modelo: a IA extrai `cursos_aceitos` e o Python compara. Curso aceito da mesma
+  área só conta como equivalente quando a área declara `cursos_intercambiaveis` — verdadeiro só
+  em computação, onde Ciência da Computação, Engenharia de Software e ADS disputam as mesmas
+  vagas. Sem essa trava, Engenharia Civil valia por Engenharia Química e Contábeis por Economia
+  (08/09/2026).
+- **Período mínimo** (14/09/2026): perfil abaixo do `periodo_minimo` extraído limita a 35 com o
+  aviso "Exige a partir do Nº período", como curso incompatível. Antes só zerava os 15 pontos de
+  período/experiência, e um perfil de Administração no 1º período recebeu em 1º lugar, com 80, a
+  vaga do CIEE que pede "4º ou 5º período". O aviso substitui o ponto contra genérico, mas avisos
+  não são gravados em `avaliacoes` (como no curso incompatível): `baixar_meus_dados` mostra 35 sem
+  motivo, e as linhas antigas ainda têm "Período mínimo incompatível". Experiência exigida segue
+  só no fator, e faixa ("4º ao 6º") segue sem teto superior, porque o prompt não extrai o limite.
+  Valor fora de 1 a 12 vira `None` na validação: ano lido como período esconderia a vaga de todos.
+  Das 131 extrações da versão `7efdbc95` com `periodo_minimo`, 130 batem com o anúncio. O erro é
+  frase de preferência lida como mínimo, e o modelo é inconsistente nela: de 4 achadas, só "é
+  desejável que esteja cursando entre o 4 ao 7 semestre" (adzuna:5872138783) virou 4; a mesma
+  frase na 5872067515, "preferencialmente o 6º ou 7º período" (5880906488) e "desejável entre 4º
+  e 7º período" (5881849408) vieram nulas. Com o teto, esse erro esconde a vaga; a correção é uma
+  frase no prompt, adiada porque muda `VERSAO_DA_EXTRACAO` e reextrai o cache. Nos 9 anúncios com
+  faixa por curso a extração guardou o menor mínimo (5880225477: ADS a partir do 3º e CC a partir
+  do 7º → 3), mas é comportamento observado: o prompt não manda. Nos 4 perfis ativos, 54 de 663
+  pares caem abaixo de 40 e 8 dos 188 envios de 7 dias não teriam saído. Risco aberto:
+  `perfis.periodo` é o que a pessoa digitou no cadastro e não avança sozinho, então perfil
+  desatualizado passa a perder vaga que já pode fazer.
+- **Pontos a favor e contra são gerados da comparação** (03/09/2026), não escritos pela IA.
+  Sobraram "Curso compatível" e "Exige experiência prévia" (o período virou aviso em 14/09), porque
+  as habilidades já aparecem na lista de requisitos e duplicavam. `alerta_pegadinha` continua
+  vindo do modelo.
+
+## Viés conhecido do ranking (03/09/2026)
+
+Em 03/09/2026, um anúncio com uma tecnologia declarada e atendida recebia 100, enquanto
+outro com cinco e três atendidas recebia 85: a suavização `(1 + atendidas) / (1 + exigidas)` dá
+1.0 cravado com 1 de 1 e favorece anúncios pouco detalhados. Quanto mais honesto o anúncio, pior
+a nota. Isso é calibração, distinto dos bugs de normalização de habilidades já corrigidos.
+
+Antes de mudar pesos, investigar exemplos reais de `vaga_irrelevante`, especialmente
+`motivo_nota`, comparando recusas com entregas por grupo. As habilidades declaradas estão
+em `vagas.extracao`. Limitar a nota de anúncios com poucos requisitos ou considerar a
+densidade de requisitos na cobertura são alternativas ainda não implementadas. **Não ajustar
+peso sem `vaga_irrelevante` real.**
+
+Em 10/09/2026 entrou só a parte que era incoerência, não calibração: vaga sem nenhum requisito
+atendido não passa da cobertura neutra, porque com um requisito só a suavização dava 0,5 a quem
+não atendia nada. O viés de 1 de 1 contra 3 de 5 e o teto por lista (obrigatória não atendida
+com desejável atendido ainda vale 0,5 com peso 80%) continuam dependendo de `vaga_irrelevante`.
+
+## Entrega no Telegram (10/09/2026)
+
+- **Falha no meio da mensagem não apaga o que chegou.** A mensagem de sete vagas vai em várias
+  partes; se a segunda falhava, nada era gravado e no dia seguinte tudo voltava. O notificador
+  informa quantas partes o Telegram aceitou, `recomendacoes_por_parte` diz quais vagas estavam
+  nelas, e só essas entram no histórico. Efeito colateral aceito: o teclado de feedback fica na
+  última parte, então vaga entregue numa falha parcial fica sem botão.
+- **Texto vindo da fonte tem teto.** A divisão só corta no separador entre vagas, então um bloco
+  grande passava de 4096 e o Telegram recusava a mensagem inteira com 400, que ainda contava como
+  falha de envio do usuário. Título, empresa, localização, requisitos, pontos, avisos e alerta
+  são cortados **depois** do escape, para não partir uma entidade HTML. Pior caso medido: 3216
+  caracteres por bloco.
+- **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
+  chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
+
+## Vaga fechada na origem (16/09/2026)
+
+"Estágio em Ti - Desenvolvimento de Sistemas - Rio"
+(Wilson Sons, adzuna:5885226961) foi publicada na Adzuna às 16:33 de 15/09, coletada e
+enriquecida às 07:25 de 16/09 com a descrição completa e enviada a duas pessoas às 07:25; horas
+depois o site de origem dizia "Esta vaga expirou", e a página da Adzuna continuava no ar com a
+descrição e "Candidatar-se". **O Radar não tem como saber que a vaga fechou**: a Adzuna não
+informa expiração e segue listando o anúncio, e conferir a origem exigiria seguir o link da
+Adzuna de forma automática, que é o clique que ela contabiliza. Reler a página da Adzuna antes
+de enviar não teria pegado este caso. A resposta é o feedback: "👎 Vaga encerrada"
+(`motivo_encerrada`) tira a vaga de todos no pipeline, antes da deduplicação, da extração e da
+entrega, desde que a mesma pessoa tenha aberto a vaga pelo link antes de marcar (`vaga_aberta`
+anterior) e que essa seja a última resposta dela à vaga nos últimos 30 dias
+(`SQL_VAGAS_ENCERRADAS`). O efeito é global porque vaga fechada está fechada para todos. Saem a
+vaga com a mesma fonte e número e as republicações dela (`remover_republicacoes_de`, a regra de
+"Já vi essa"), e o filtro roda antes da deduplicação: agregadores republicam com outro número, e
+a deduplicação fica com a versão de descrição maior, que escapava. Exigir a abertura só barra
+quem não abriu; o toque errado de quem abriu ("Já vi essa" fica logo acima) é tratado pelo
+aviso próprio, que diz que a vaga deixa de ser enviada e que tocar no número de novo desfaz.
+Falha ao ler as marcações só avisa no log. `motivo_encerrada` fica fora das recusas por grupo
+de extração e da concordância do `julgar`, que medem o ranking, e aparece na quebra por motivo;
+continua em `vagas_irrelevantes` e na última resposta da utilidade (ver `docs/metricas.md`).
+Limites: quem recebe a vaga no mesmo envio de quem a marcou não é protegido; link encaminhado a
+outra pessoa grava `vaga_aberta` no perfil de quem recebeu a mensagem; e teste com conta da
+equipe em vaga real tira a vaga de todos se a marcação não for desfeita (o roteiro do guia
+avisa). Publicação: `supabase functions deploy telegram-webhook`, porque o teclado e o aviso
+são da função; o `radar/` não precisa de migration.
+
+**Quem pode tirar a vaga de todos (16/09/2026).** Uma marcação bastava, e daí saíam três
+defeitos: uma pessoa, ou uma conta de teste esquecida, podia marcar em série as vagas que recebeu
+e esvaziar as mensagens dos outros por 30 dias; a marcação de conta excluída seguia valendo durante
+a carência; e a republicação espalhava o voto, porque texto padrão de agência nas 40 primeiras
+palavras junta vagas de empresas diferentes com o mesmo título e cidade. Agora a marcação tem dois
+alcances:
+- **Quem marcou deixa de receber, sempre.** A última resposta "Vaga encerrada" dos últimos 30 dias
+  entra em `SQL_VAGAS_QUE_NAO_VOLTAM`, junto com "Já vi essa", sem exigir abertura e em qualquer
+  estado da conta, e a vaga e as republicações dela pela regra ampla deixam de chegar à pessoa. O
+  envio já a barrava pelo número, mas pela republicação só até 30 dias depois do envio.
+- **Os outros, com três condições** (`SQL_VAGAS_ENCERRADAS`). Abertura pelo link antes da
+  marcação, como antes. Perfil existente e sem exclusão: a conta apagada já perdia os eventos em
+  cascata, e excluir suspende o efeito, que volta se a exclusão for cancelada. Pausada ou sem
+  Telegram segue valendo, decisão do dono: essa conta não recebe vagas nem consegue votar, e a
+  marcação que conta foi dada com a conta ativa (a primeira versão desta correção a tirava, porque
+  a conta não consegue desfazer o voto). E só as `MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS` (3)
+  primeiras marcações vigentes do perfil em 30 dias, em ordem de `ocorrido_em` com a vaga
+  desempatando; da quarta em diante a marcação vale só para quem marcou, e a vaga que já saiu para
+  os outros não volta quando a pessoa marca mais uma (a primeira versão anulava todas, também
+  decisão revista pelo dono). Marcação sem abertura ocupa lugar na ordem, sem sair para os outros.
+  Desfazer uma marcação a tira da ordem e a seguinte sobe; remarcar a põe no fim. A republicação
+  só sai para todos se for da mesma empresa ou de empresa sem nome
+  (`republicacao_da_mesma_empresa`, com `EMPRESAS_NAO_IDENTIFICADAS`, como na chave de duplicata).
+
+Medido no banco em 16/09: há 1 marcação, de conta ativa que abriu a vaga antes, e ela continua
+valendo para todos; nenhuma vem de conta excluída ou pausada, e a vaga não tem republicação
+guardada. O teto: 1 marcação em 31 vagas abertas pelo link, e o perfil que mais abre abriu 20 em 10
+dias, cerca de 60 por mês, o que dá 3 marcações mesmo com 5% de vagas fechadas; a mensagem tem até
+7 vagas, e da quarta marcação em diante, mesmo de uma mensagem só, o efeito fica com quem marcou.
+A empresa: das 307 vagas já enviadas, as que podem ser marcadas, 49 têm republicação entre as 1.003
+guardadas, 134 no total; com a regra da empresa, 39 e 74. As 60 que deixam de sair para todos foram
+conferidas à mão e são todas o mesmo anúncio com outro rótulo de empresa (BuscarVagas e Divulga
+Vagas, "Ltda" a mais, "Oportunidades Petros"). É o custo aceito: essa cópia chega uma vez a quem não
+marcou, visível. Nenhum par de empresas realmente diferentes com o mesmo título e cidade passa de
+0,31 de semelhança nas 40 primeiras palavras, então a proteção ainda não evitou um caso real.
+Limites: as agências (Fundação Mudes, CIEE, Nube) aparecem com o próprio nome na empresa, e entre as
+vagas delas só o texto separa, como antes; cada conta ainda tira até três vagas de todos por 30
+dias, e contas combinadas somam; marcação errada de conta pausada ou desvinculada não tem como ser
+desfeita até a conta voltar; quem recebe a vaga no mesmo envio segue sem proteção; e marcar sem
+abrir gasta um dos três lugares. A contagem de `motivo_encerrada` nas métricas deixa de ser o
+número de vagas tiradas de todos (`docs/metricas.md`). O teste em PGlite lê as constantes inteiras
+de `postgres.py` para montar a consulta, porque o teto entra nela como literal. Publicação: só o
+`radar/`, sem migration e sem deploy de função; o aviso do bot ("Essa vaga deixa de ser enviada")
+segue verdadeiro para quem marcou.
+
+## Pergunta do dia seguinte (05/10/2026)
+
+O feedback do fim da mensagem não produzia sinal (RCD-01): em 05/10, 6 respostas em 750
+recomendações, três perfis, só uma de fora da equipe, e nenhum `vaga_util` nem
+`candidatura_iniciada` na história. A pergunta pedia uma taxonomia de reclamação no fim de uma
+mensagem longa, depois de a pessoa já ter saído pelo link. A nova pergunta pede o que a pessoa
+fez, no dia seguinte, sobre uma vaga que ela mesma abriu: "Ontem você abriu *título — empresa*.
+E aí?", com **Me candidatei**, **Não serviu** e **Ainda vou ver**. Sem IA e sem mudar peso ou
+regra do motor.
+
+- **Quem recebe e quando.** No máximo uma por pessoa por dia, sobre a abertura mais recente do
+  dia anterior em Brasília cuja vaga ainda não teve `vaga_util`, `vaga_irrelevante` nem
+  `candidatura_iniciada` depois do envio. A consulta é `radar/storage/abertura_sem_resposta.sql`,
+  a mesma que o PGlite roda com todas as migrations. A abertura é a primeira do par, porque a
+  `0028` só grava essa.
+- **Uma marca por envio, reservada antes do envio.** `envios.pergunta_do_dia_seguinte_em`
+  (`0033`) é gravada por um `update ... where pergunta_do_dia_seguinte_em is null` **antes** de
+  mandar a pergunta, como a entrega imediata reivindica o disparo antes de fazê-lo. Gravar depois
+  do envio deixava um furo: se a gravação falhasse e o diário rodasse de novo, a pergunta saía
+  duas vezes. Com a reserva, quem não consegue reservar não envia, e quem envia já está marcado.
+  Se o Telegram recusar o envio, a reserva é desfeita e a próxima execução tenta de novo; se
+  desfazê-la também falhar, ou se o processo morrer entre a reserva e o envio, a pergunta se
+  perde naquele dia. Foi a escolha: erra para o lado de não repetir, e o custo é uma pergunta a
+  menos, nunca uma a mais. A marca também garante o limite de uma por pessoa por dia, e "Ainda
+  vou ver", que não emite evento, não volta no dia seguinte. A vaga que ficou sem resposta não é
+  perguntada de novo: o laço de ontem se fecha uma vez só, para a pergunta não virar cobrança.
+- **Não segura nem atrasa a mensagem de recomendações.** É um laço próprio, depois de todos os
+  usuários atendidos, fora da trava do atendimento, e vale também no dia sem vaga compatível e na
+  mensagem segurada. Quem ficou sem mensagem por falha de revalidação ou de envio não é
+  perguntado: a pergunta falharia pelo mesmo motivo e contaria duas vezes no resumo.
+- **Falha vira aviso, nunca código 1.** Erro do Telegram, do banco ou inesperado conta em
+  `perguntas_do_dia_seguinte_com_falha`, aparece como "⚠️ Perguntas do dia seguinte com falha" no
+  resumo de operação e não entra em `ninguem_foi_atendido_por_falha`. Falha ao reservar também
+  conta, e então a pergunta não sai.
+- **Os botões.** "Me candidatei" grava `candidatura_iniciada` (já no catálogo, e já somada às
+  vagas úteis pela consulta de métricas) e fecha a pergunta. "Não serviu" troca a própria
+  mensagem pelos seis motivos de `feedback.ts`, sem a opção positiva, e o motivo segue o caminho
+  da recusa de sempre. "Ainda vou ver" só fecha a pergunta. O formato da mensagem fica em
+  `notification/formatador.py` e a tratativa dos cliques na `telegram-webhook`; um teste Python
+  lê o `feedback.ts` para as ações não divergirem.
+- **A candidatura é declarada, não observada.** Ela acontece na fonte, que o Radar não vê. "Me
+  candidatei" pode superestimar (toque por engano, ninguém confere) e subestimar (quem se
+  candidata e não responde). Serve como sinal de utilidade, não como contagem de candidaturas, e
+  não é motivo para mexer em peso: a regra de não ajustar a nota sem `vaga_irrelevante` real
+  continua.
+- **Limites aceitos.** "Ainda vou ver" e o silêncio ficam indistinguíveis no banco, porque a
+  marca só diz que a pergunta saiu. "Não serviu" sem escolher o motivo não grava nada. O botão
+  só vale com conta ativa e chat vinculado; pausar a conta entre a pergunta e o toque o deixa
+  sem efeito ("Esta pergunta não vale mais"). A entrega imediata não pergunta: o perfil recém
+  vinculado não abriu nada ontem, e depois de atendido `pode_entregar` da entrega imediata já
+  devolve falso.
+- **Ordem de publicação.** `db push` da `0033`, depois `supabase functions deploy
+  telegram-webhook`, depois o merge. Com o radar novo antes da migration, a consulta falha e só
+  gera o aviso no resumo; com ele antes da função, o toque nos botões novos responde "Esta
+  pergunta não vale mais". A `0033` é o número seguinte à `0032` da origem da visita; se a
+  `0033` subir antes da `0032`, o push pede `--include-all`.
+
+## Erro inesperado não derruba os outros usuários (18/09/2026)
+
+Auditoria dos médios "o run inteiro cai por causa de um único dado". `atender_usuario` e
+`executar_fluxo` só tratavam os quatro erros de domínio (`ErroDeColeta`, `ErroDeAvaliacao`,
+`ErroDeNotificacao`, `ErroDeArmazenamento`), então qualquer outra exceção vinda de um perfil ou de
+uma vaga deixava sem mensagem todo mundo da fila, inclusive quem já tinha sido atendido, cujo
+retorno se perdia, e sem aviso de operação. A rede de segurança tem dois níveis:
+
+- **Por usuário.** O laço de `executar` envolve `atender_usuario`: `Exception` vira
+  `logger.exception` com o traceback e o usuário fica sem entrega, como já era o erro de envio e o
+  de gravação. O resumo de operação ganhou "⚠️ Sem entrega por erro inesperado: N (veja o traceback
+  no log)" e o `stdout` traz o mesmo número; o campo é
+  `ResumoDaExecucao.usuarios_sem_entrega_por_erro_inesperado`.
+- **Da execução.** Qualquer `Exception` que suba do pipeline vira o mesmo aviso de falha que os
+  quatro erros conhecidos, com o nome do tipo na frente da mensagem, e segue subindo. Sem isso o
+  dono só descobria a queda olhando o log do Actions.
+
+`KeyboardInterrupt`, `SystemExit` e as demais `BaseException` continuam subindo sem virar aviso,
+porque interrupção não é defeito de dado; por isso a `ExecucaoInterrompida` dos testes de entrega
+imediata, que imita um kill, passou a herdar de `BaseException`.
+
+Os quatro casos reproduzidos pela auditoria foram corrigidos também na origem, cada um com o teste
+que falhava antes:
+
+- **Telegram com corpo de erro que não é objeto JSON.** `descricao_do_erro` chamava `.get` no que
+  `resposta.json()` devolvesse; um proxy respondendo `"Bad Gateway"`, uma lista ou um número dava
+  `AttributeError` de dentro do `except` do `HTTPStatusError`. Corpo que não é objeto cai agora no
+  mesmo texto cru que já servia ao corpo que nem é JSON.
+- **URL malformada de uma vaga.** `urlsplit` levanta `ValueError` com colchete de IPv6 aberto
+  (`https://[oops/vaga/1`), o que derrubava a formatação da mensagem (`dominio_da_vaga`) e o
+  enriquecimento (`aponta_para_anuncio_land_ad`); e `httpx.InvalidURL`, que não é `HTTPError`,
+  escapava do `except` do enriquecimento (porta inválida, caractere não imprimível, URL longa
+  demais). Domínio ilegível volta a cair no nome da fonte, caminho ilegível vale como caminho
+  vazio e a URL que o httpx recusa entra no aviso das páginas que falham: a vaga segue com os 500
+  caracteres da API. O link continua apontando para a URL como veio.
+- **Gemini com resposta que o SDK não lê.** O tratamento de 16/09 cobria corpo que não é JSON e
+  envelope fora do formato, mas gzip corrompido (`httpx.DecodingError`) e excesso de redirect
+  (`httpx.TooManyRedirects`) são `RequestError` e não `TransportError`, e `parts` como objeto no
+  lugar de lista vira `AttributeError` dentro do pydantic do SDK. Os três viram
+  `AvaliadorIndisponivel`, o tratamento do 503: espera e repete o mesmo lote dentro do prazo. A
+  mensagem da falha de rede passa a nomear o tipo. `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+- **Número gigante no pré-filtro.** `int()` recusa texto com mais de 4.300 dígitos desde o Python
+  3.11, e o padrão de anos de experiência captura `\d+` sobre a descrição inteira. Número com mais
+  de 4 dígitos passa a ser ignorado em vez de convertido; nenhum descarte muda, porque a faixa que
+  descarta é de 2 a 9 anos.
+
+O que a rede **não** cobre: exceção fora do laço por usuário (coleta, deduplicação,
+enriquecimento, extração, leitura dos ativos, apagamento de contas) segue derrubando a execução
+inteira, agora com aviso de operação — é o preço de essas etapas serem uma só para todos. Exceção
+depois do pipeline (registro do uso da Adzuna, leitura dos eventos do site, formatação e envio do
+resumo) fica fora do `try` e não vira aviso. Se `liberar_atendimento` falhar depois de a mensagem
+sair, o retorno se perde e a pessoa é contada como sem entrega, embora tenha recebido. E o aviso é
+enviado pelo próprio notificador: se ele também quebrar, o run morre com o traceback dos dois
+erros encadeados, sem mensagem no Telegram. O código de saída do processo não mudou.
+
+## Juiz de recomendações: LLM as a judge (09/09/2026)
+
+`python -m radar julgar --dias 7 --amostra 30` pede a um **segundo modelo** que julgue, às
+cegas, uma amostra das entregas recentes: para cada vaga enviada, `relevante`, `nota_juiz`,
+`problema` (catálogo fechado: outra_area, exige_demais, logistica, repetida, anuncio_fraco,
+nenhum) e um motivo. O juiz vê o perfil e o anúncio completo, **nunca a nota do Radar**, para o
+julgamento ser independente. O relatório (`reporting/julgamento.py`) traz relevância por perfil,
+problemas, concordância com o feedback das pessoas quando existir, e as vagas reprovadas pelo
+juiz com nota do Radar acima de 70 — a lista que interessa para revisar regra.
+
+O modelo vem de `JUIZ_MODELO` (padrão `claude-sonnet-4-6`, outra família que a do extrator)
+e o adapter segue `AVALIADOR`: `agy` local, sem cota; pela API precisa ser um modelo Gemini. O
+comando só lê o banco; nada de nota alterada. Só pontuação por regra em Python decide o que é
+enviado — o juiz mede, não ranqueia. Antes de usar o número do juiz como evidência, ele precisa
+ser validado contra o gabarito humano de 20 vagas ([plano geral](plano-geral.md#6-hipóteses-de-validação),
+H2); abaixo de 75% de concordância
+é ruído com cara de número.
+
+Primeira rodada real (09/09, `claude-sonnet-4-6` pelo `agy`, 24 de 168 entregas de 14 dias, 5
+minutos): 12 relevantes, mediana do juiz 39 contra 69 do Radar. As cinco reprovadas com nota
+alta eram todas de 28 a 31/08, antes das regras de área, interesse e cidade — o relatório mostra
+a data de cada uma por isso. Limitação que o juiz expôs: a Adzuna informa a região, não a
+cidade ("Estagiário de TI - São Gonçalo" vem como "Rio de Janeiro"); 1 caso em 168 envios,
+registrado, sem regra nova.
+
+Desde 10/09/2026 o comando **falha com código 1** quando nenhuma entrega é julgada, imprimindo
+o último erro do avaliador. Antes, o padrão `gemini_api` + `claude-sonnet-4-6` devolvia
+relatório vazio com código 0, o que parecia execução limpa. O `--gabarito` também avisa quantos
+rótulos ficaram fora da janela de `--dias`, em vez de descartá-los em silêncio.
+
+O gabarito humano nasce de `python -m radar gabarito --dias 2 --amostra 20 --saida arquivo.json`:
+o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com true ou false;
+`julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
+primeiro arquivo, com 20 entregas de 08 e 09/09, saiu do Git em 12/09 porque trazia vagas reais e o
+`perfil_id` de cada usuário: fica em `gabaritos/`, ignorada, e vai em privado a quem for rotular.
+
 ## Auditoria adversarial de 08/09/2026 (noite): o que mais mudou
 
 Três revisores independentes e uma medição em produção depois da expansão. Regras que ficaram:
@@ -721,6 +1516,46 @@ porque com 5 slots vaga boa saía da janela sem ser enviada). A landing de 08/09
 cinco"; Ian decidiu manter 7, a landing passou a dizer "até sete" e o PR #22 do Igor adotou o
 mesmo valor no padrão do código, na copy e no plano de expansão.
 
+## Quarta rodada: auditoria após a reescrita do `main` (09/09/2026)
+
+O `main` foi reescrito por force push (rebase sobre a PR de estilo e o README). Antes de
+auditar, os 13 commits locais foram conferidos por patch-id contra o novo histórico (todos
+presentes), o site publicado já servia a nova versão e as quatro suítes passaram. O que a rodada
+achou, com coleta real (823 vagas), banco e juiz:
+
+- **Rótulo de subárea entrava no regex de título.** `PADROES_DE_TITULO` junta marcadores, nomes
+  de curso e rótulos das subáreas; o rótulo "Segurança" de computação aceitava "Estágio Técnico em
+  Segurança do Trabalho" para Engenharia de Software (nota 58, sem menção a curso). Nove títulos
+  da coleta, todos de segurança do trabalho. O rótulo virou "Segurança da informação", que já era
+  o marcador da área; os outros rótulos só aceitavam títulos coerentes com a área.
+- **Contexto de formação atravessava o fim da frase.** "Estagiário na área de gestão financeira
+  (Barra). O grupo atende marketing e comunicação" contava "marketing" como curso citado, porque
+  "área de" estava a 20 palavras. A janela de contexto (formação e atuação) agora começa no último
+  ". " antes do termo. Medido: zero pares (curso, vaga) mudaram em 12 cursos × 823 vagas; só o
+  caso encontrado deixa de passar. "; " e quebra de linha não são fronteira porque listas de
+  cursos usam os dois.
+- **Perfil remoto recebia vaga de outra cidade sem modalidade a 88, sem aviso.** O pré-filtro
+  ignorava a cidade para perfil remoto e a logística vale pouco; Administração remota no Rio
+  recebeu Fortaleza, Belo Horizonte e Itajaí "modalidade não informada" nas primeiras posições.
+  Agora perfil remoto segue a mesma regra do híbrido: vaga de outra cidade só fica se admite remoto.
+  Medido para um perfil remoto do Rio em 11 cursos: 947 → 265 candidatas; das 260 descartadas com
+  descrição truncada que puderam ser completadas, 18 (7%) citam remoto só no texto completo — a
+  mesma limitação que o híbrido já tinha, registrada abaixo. Nenhum usuário atual é remoto.
+- **`julgar --gabarito` com arquivo ausente ou inválido** estourava traceback; vira
+  `ErroDeArmazenamento` com mensagem e saída 1.
+
+O que foi verificado e não precisou de regra: os 8 envios de outra cidade para perfis presenciais
+são todos do run das 07:23 de 08/09, antes da trava das 23:47; o run de 09/09 não tem nenhum. O
+juiz (14 de 48 entregas de 2 dias) reprovou com nota alta só casos de 08/09 pela mesma razão,
+mais "Estágio em TI" de infraestrutura para Engenharia de Software (subárea de computação; o
+interesse do perfil decide) e um anúncio que lista Informática, Computação e ADS sem citar
+Engenharia de Software (cursos intercambiáveis por decisão).
+
+Pendências que esta rodada deixou anotadas: (1) refiltrar as candidatas depois do enriquecimento
+e antes da extração recuperaria os 7% de vagas remotas que só dizem isso após os 500 caracteres da
+Adzuna, sem gastar extração; (2) "Banco de Talentos" não é vaga aberta e chega como estágio;
+(3) a Adzuna informa região, não cidade.
+
 ## Rodada de confiabilidade (10/09/2026)
 
 Correções de uma revisão externa, cada uma com o teste que reproduz a falha antes do conserto.
@@ -794,771 +1629,3 @@ Não corrigido de propósito: os pesos da nota. A regra de não recalibrar sem `
 real continua valendo. Perfil sem habilidade cadastrada recebia nota alta sem nada distinguir
 compatibilidade observada de informação ausente; a resposta foi um aviso na mensagem
 ("Nota calculada sem habilidades no seu perfil"), não um peso novo.
-
-## Entrega no Telegram (10/09/2026)
-
-- **Falha no meio da mensagem não apaga o que chegou.** A mensagem de sete vagas vai em várias
-  partes; se a segunda falhava, nada era gravado e no dia seguinte tudo voltava. O notificador
-  informa quantas partes o Telegram aceitou, `recomendacoes_por_parte` diz quais vagas estavam
-  nelas, e só essas entram no histórico. Efeito colateral aceito: o teclado de feedback fica na
-  última parte, então vaga entregue numa falha parcial fica sem botão.
-- **Texto vindo da fonte tem teto.** A divisão só corta no separador entre vagas, então um bloco
-  grande passava de 4096 e o Telegram recusava a mensagem inteira com 400, que ainda contava como
-  falha de envio do usuário. Título, empresa, localização, requisitos, pontos, avisos e alerta
-  são cortados **depois** do escape, para não partir uma entidade HTML. Pior caso medido: 3216
-  caracteres por bloco.
-- **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
-  chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
-- **Vaga fechada na origem** (16/09/2026). "Estágio em Ti - Desenvolvimento de Sistemas - Rio"
-  (Wilson Sons, adzuna:5885226961) foi publicada na Adzuna às 16:33 de 15/09, coletada e
-  enriquecida às 07:25 de 16/09 com a descrição completa e enviada a duas pessoas às 07:25; horas
-  depois o site de origem dizia "Esta vaga expirou", e a página da Adzuna continuava no ar com a
-  descrição e "Candidatar-se". **O Radar não tem como saber que a vaga fechou**: a Adzuna não
-  informa expiração e segue listando o anúncio, e conferir a origem exigiria seguir o link da
-  Adzuna de forma automática, que é o clique que ela contabiliza. Reler a página da Adzuna antes
-  de enviar não teria pegado este caso. A resposta é o feedback: "👎 Vaga encerrada"
-  (`motivo_encerrada`) tira a vaga de todos no pipeline, antes da deduplicação, da extração e da
-  entrega, desde que a mesma pessoa tenha aberto a vaga pelo link antes de marcar (`vaga_aberta`
-  anterior) e que essa seja a última resposta dela à vaga nos últimos 30 dias
-  (`SQL_VAGAS_ENCERRADAS`). O efeito é global porque vaga fechada está fechada para todos. Saem a
-  vaga com a mesma fonte e número e as republicações dela (`remover_republicacoes_de`, a regra de
-  "Já vi essa"), e o filtro roda antes da deduplicação: agregadores republicam com outro número, e
-  a deduplicação fica com a versão de descrição maior, que escapava. Exigir a abertura só barra
-  quem não abriu; o toque errado de quem abriu ("Já vi essa" fica logo acima) é tratado pelo
-  aviso próprio, que diz que a vaga deixa de ser enviada e que tocar no número de novo desfaz.
-  Falha ao ler as marcações só avisa no log. `motivo_encerrada` fica fora das recusas por grupo
-  de extração e da concordância do `julgar`, que medem o ranking, e aparece na quebra por motivo;
-  continua em `vagas_irrelevantes` e na última resposta da utilidade (ver `docs/metricas.md`).
-  Limites: quem recebe a vaga no mesmo envio de quem a marcou não é protegido; link encaminhado a
-  outra pessoa grava `vaga_aberta` no perfil de quem recebeu a mensagem; e teste com conta da
-  equipe em vaga real tira a vaga de todos se a marcação não for desfeita (o roteiro do guia
-  avisa). Publicação: `supabase functions deploy telegram-webhook`, porque o teclado e o aviso
-  são da função; o `radar/` não precisa de migration.
-  **Quem pode tirar a vaga de todos (16/09/2026).** Uma marcação bastava, e daí saíam três
-  defeitos: uma pessoa, ou uma conta de teste esquecida, podia marcar em série as vagas que recebeu
-  e esvaziar as mensagens dos outros por 30 dias; a marcação de conta excluída seguia valendo durante
-  a carência; e a republicação espalhava o voto, porque texto padrão de agência nas 40 primeiras
-  palavras junta vagas de empresas diferentes com o mesmo título e cidade. Agora a marcação tem dois
-  alcances:
-  - **Quem marcou deixa de receber, sempre.** A última resposta "Vaga encerrada" dos últimos 30 dias
-    entra em `SQL_VAGAS_QUE_NAO_VOLTAM`, junto com "Já vi essa", sem exigir abertura e em qualquer
-    estado da conta, e a vaga e as republicações dela pela regra ampla deixam de chegar à pessoa. O
-    envio já a barrava pelo número, mas pela republicação só até 30 dias depois do envio.
-  - **Os outros, com três condições** (`SQL_VAGAS_ENCERRADAS`). Abertura pelo link antes da
-    marcação, como antes. Perfil existente e sem exclusão: a conta apagada já perdia os eventos em
-    cascata, e excluir suspende o efeito, que volta se a exclusão for cancelada. Pausada ou sem
-    Telegram segue valendo, decisão do dono: essa conta não recebe vagas nem consegue votar, e a
-    marcação que conta foi dada com a conta ativa (a primeira versão desta correção a tirava, porque
-    a conta não consegue desfazer o voto). E só as `MARCACOES_DE_ENCERRADA_QUE_VALEM_PARA_TODOS` (3)
-    primeiras marcações vigentes do perfil em 30 dias, em ordem de `ocorrido_em` com a vaga
-    desempatando; da quarta em diante a marcação vale só para quem marcou, e a vaga que já saiu para
-    os outros não volta quando a pessoa marca mais uma (a primeira versão anulava todas, também
-    decisão revista pelo dono). Marcação sem abertura ocupa lugar na ordem, sem sair para os outros.
-    Desfazer uma marcação a tira da ordem e a seguinte sobe; remarcar a põe no fim. A republicação
-    só sai para todos se for da mesma empresa ou de empresa sem nome
-    (`republicacao_da_mesma_empresa`, com `EMPRESAS_NAO_IDENTIFICADAS`, como na chave de duplicata).
-
-  Medido no banco em 16/09: há 1 marcação, de conta ativa que abriu a vaga antes, e ela continua
-  valendo para todos; nenhuma vem de conta excluída ou pausada, e a vaga não tem republicação
-  guardada. O teto: 1 marcação em 31 vagas abertas pelo link, e o perfil que mais abre abriu 20 em 10
-  dias, cerca de 60 por mês, o que dá 3 marcações mesmo com 5% de vagas fechadas; a mensagem tem até
-  7 vagas, e da quarta marcação em diante, mesmo de uma mensagem só, o efeito fica com quem marcou.
-  A empresa: das 307 vagas já enviadas, as que podem ser marcadas, 49 têm republicação entre as 1.003
-  guardadas, 134 no total; com a regra da empresa, 39 e 74. As 60 que deixam de sair para todos foram
-  conferidas à mão e são todas o mesmo anúncio com outro rótulo de empresa (BuscarVagas e Divulga
-  Vagas, "Ltda" a mais, "Oportunidades Petros"). É o custo aceito: essa cópia chega uma vez a quem não
-  marcou, visível. Nenhum par de empresas realmente diferentes com o mesmo título e cidade passa de
-  0,31 de semelhança nas 40 primeiras palavras, então a proteção ainda não evitou um caso real.
-  Limites: as agências (Fundação Mudes, CIEE, Nube) aparecem com o próprio nome na empresa, e entre as
-  vagas delas só o texto separa, como antes; cada conta ainda tira até três vagas de todos por 30
-  dias, e contas combinadas somam; marcação errada de conta pausada ou desvinculada não tem como ser
-  desfeita até a conta voltar; quem recebe a vaga no mesmo envio segue sem proteção; e marcar sem
-  abrir gasta um dos três lugares. A contagem de `motivo_encerrada` nas métricas deixa de ser o
-  número de vagas tiradas de todos (`docs/metricas.md`). O teste em PGlite lê as constantes inteiras
-  de `postgres.py` para montar a consulta, porque o teto entra nela como literal. Publicação: só o
-  `radar/`, sem migration e sem deploy de função; o aviso do bot ("Essa vaga deixa de ser enviada")
-  segue verdadeiro para quem marcou.
-
-## Pergunta do dia seguinte (05/10/2026)
-
-O feedback do fim da mensagem não produzia sinal (RCD-01): em 05/10, 6 respostas em 750
-recomendações, três perfis, só uma de fora da equipe, e nenhum `vaga_util` nem
-`candidatura_iniciada` na história. A pergunta pedia uma taxonomia de reclamação no fim de uma
-mensagem longa, depois de a pessoa já ter saído pelo link. A nova pergunta pede o que a pessoa
-fez, no dia seguinte, sobre uma vaga que ela mesma abriu: "Ontem você abriu *título — empresa*.
-E aí?", com **Me candidatei**, **Não serviu** e **Ainda vou ver**. Sem IA e sem mudar peso ou
-regra do motor.
-
-- **Quem recebe e quando.** No máximo uma por pessoa por dia, sobre a abertura mais recente do
-  dia anterior em Brasília cuja vaga ainda não teve `vaga_util`, `vaga_irrelevante` nem
-  `candidatura_iniciada` depois do envio. A consulta é `radar/storage/abertura_sem_resposta.sql`,
-  a mesma que o PGlite roda com todas as migrations. A abertura é a primeira do par, porque a
-  `0028` só grava essa.
-- **Uma marca por envio, reservada antes do envio.** `envios.pergunta_do_dia_seguinte_em`
-  (`0033`) é gravada por um `update ... where pergunta_do_dia_seguinte_em is null` **antes** de
-  mandar a pergunta, como a entrega imediata reivindica o disparo antes de fazê-lo. Gravar depois
-  do envio deixava um furo: se a gravação falhasse e o diário rodasse de novo, a pergunta saía
-  duas vezes. Com a reserva, quem não consegue reservar não envia, e quem envia já está marcado.
-  Se o Telegram recusar o envio, a reserva é desfeita e a próxima execução tenta de novo; se
-  desfazê-la também falhar, ou se o processo morrer entre a reserva e o envio, a pergunta se
-  perde naquele dia. Foi a escolha: erra para o lado de não repetir, e o custo é uma pergunta a
-  menos, nunca uma a mais. A marca também garante o limite de uma por pessoa por dia, e "Ainda
-  vou ver", que não emite evento, não volta no dia seguinte. A vaga que ficou sem resposta não é
-  perguntada de novo: o laço de ontem se fecha uma vez só, para a pergunta não virar cobrança.
-- **Não segura nem atrasa a mensagem de recomendações.** É um laço próprio, depois de todos os
-  usuários atendidos, fora da trava do atendimento, e vale também no dia sem vaga compatível e na
-  mensagem segurada. Quem ficou sem mensagem por falha de revalidação ou de envio não é
-  perguntado: a pergunta falharia pelo mesmo motivo e contaria duas vezes no resumo.
-- **Falha vira aviso, nunca código 1.** Erro do Telegram, do banco ou inesperado conta em
-  `perguntas_do_dia_seguinte_com_falha`, aparece como "⚠️ Perguntas do dia seguinte com falha" no
-  resumo de operação e não entra em `ninguem_foi_atendido_por_falha`. Falha ao reservar também
-  conta, e então a pergunta não sai.
-- **Os botões.** "Me candidatei" grava `candidatura_iniciada` (já no catálogo, e já somada às
-  vagas úteis pela consulta de métricas) e fecha a pergunta. "Não serviu" troca a própria
-  mensagem pelos seis motivos de `feedback.ts`, sem a opção positiva, e o motivo segue o caminho
-  da recusa de sempre. "Ainda vou ver" só fecha a pergunta. O formato da mensagem fica em
-  `notification/formatador.py` e a tratativa dos cliques na `telegram-webhook`; um teste Python
-  lê o `feedback.ts` para as ações não divergirem.
-- **A candidatura é declarada, não observada.** Ela acontece na fonte, que o Radar não vê. "Me
-  candidatei" pode superestimar (toque por engano, ninguém confere) e subestimar (quem se
-  candidata e não responde). Serve como sinal de utilidade, não como contagem de candidaturas, e
-  não é motivo para mexer em peso: a regra de não ajustar a nota sem `vaga_irrelevante` real
-  continua.
-- **Limites aceitos.** "Ainda vou ver" e o silêncio ficam indistinguíveis no banco, porque a
-  marca só diz que a pergunta saiu. "Não serviu" sem escolher o motivo não grava nada. O botão
-  só vale com conta ativa e chat vinculado; pausar a conta entre a pergunta e o toque o deixa
-  sem efeito ("Esta pergunta não vale mais"). A entrega imediata não pergunta: o perfil recém
-  vinculado não abriu nada ontem, e depois de atendido `pode_entregar` da entrega imediata já
-  devolve falso.
-- **Ordem de publicação.** `db push` da `0033`, depois `supabase functions deploy
-  telegram-webhook`, depois o merge. Com o radar novo antes da migration, a consulta falha e só
-  gera o aviso no resumo; com ele antes da função, o toque nos botões novos responde "Esta
-  pergunta não vale mais". A `0033` é o número seguinte à `0032` da origem da visita; se a
-  `0033` subir antes da `0032`, o push pede `--include-all`.
-
-## Erro inesperado não derruba os outros usuários (18/09/2026)
-
-Auditoria dos médios "o run inteiro cai por causa de um único dado". `atender_usuario` e
-`executar_fluxo` só tratavam os quatro erros de domínio (`ErroDeColeta`, `ErroDeAvaliacao`,
-`ErroDeNotificacao`, `ErroDeArmazenamento`), então qualquer outra exceção vinda de um perfil ou de
-uma vaga deixava sem mensagem todo mundo da fila, inclusive quem já tinha sido atendido, cujo
-retorno se perdia, e sem aviso de operação. A rede de segurança tem dois níveis:
-
-- **Por usuário.** O laço de `executar` envolve `atender_usuario`: `Exception` vira
-  `logger.exception` com o traceback e o usuário fica sem entrega, como já era o erro de envio e o
-  de gravação. O resumo de operação ganhou "⚠️ Sem entrega por erro inesperado: N (veja o traceback
-  no log)" e o `stdout` traz o mesmo número; o campo é
-  `ResumoDaExecucao.usuarios_sem_entrega_por_erro_inesperado`.
-- **Da execução.** Qualquer `Exception` que suba do pipeline vira o mesmo aviso de falha que os
-  quatro erros conhecidos, com o nome do tipo na frente da mensagem, e segue subindo. Sem isso o
-  dono só descobria a queda olhando o log do Actions.
-
-`KeyboardInterrupt`, `SystemExit` e as demais `BaseException` continuam subindo sem virar aviso,
-porque interrupção não é defeito de dado; por isso a `ExecucaoInterrompida` dos testes de entrega
-imediata, que imita um kill, passou a herdar de `BaseException`.
-
-Os quatro casos reproduzidos pela auditoria foram corrigidos também na origem, cada um com o teste
-que falhava antes:
-
-- **Telegram com corpo de erro que não é objeto JSON.** `descricao_do_erro` chamava `.get` no que
-  `resposta.json()` devolvesse; um proxy respondendo `"Bad Gateway"`, uma lista ou um número dava
-  `AttributeError` de dentro do `except` do `HTTPStatusError`. Corpo que não é objeto cai agora no
-  mesmo texto cru que já servia ao corpo que nem é JSON.
-- **URL malformada de uma vaga.** `urlsplit` levanta `ValueError` com colchete de IPv6 aberto
-  (`https://[oops/vaga/1`), o que derrubava a formatação da mensagem (`dominio_da_vaga`) e o
-  enriquecimento (`aponta_para_anuncio_land_ad`); e `httpx.InvalidURL`, que não é `HTTPError`,
-  escapava do `except` do enriquecimento (porta inválida, caractere não imprimível, URL longa
-  demais). Domínio ilegível volta a cair no nome da fonte, caminho ilegível vale como caminho
-  vazio e a URL que o httpx recusa entra no aviso das páginas que falham: a vaga segue com os 500
-  caracteres da API. O link continua apontando para a URL como veio.
-- **Gemini com resposta que o SDK não lê.** O tratamento de 16/09 cobria corpo que não é JSON e
-  envelope fora do formato, mas gzip corrompido (`httpx.DecodingError`) e excesso de redirect
-  (`httpx.TooManyRedirects`) são `RequestError` e não `TransportError`, e `parts` como objeto no
-  lugar de lista vira `AttributeError` dentro do pydantic do SDK. Os três viram
-  `AvaliadorIndisponivel`, o tratamento do 503: espera e repete o mesmo lote dentro do prazo. A
-  mensagem da falha de rede passa a nomear o tipo. `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
-- **Número gigante no pré-filtro.** `int()` recusa texto com mais de 4.300 dígitos desde o Python
-  3.11, e o padrão de anos de experiência captura `\d+` sobre a descrição inteira. Número com mais
-  de 4 dígitos passa a ser ignorado em vez de convertido; nenhum descarte muda, porque a faixa que
-  descarta é de 2 a 9 anos.
-
-O que a rede **não** cobre: exceção fora do laço por usuário (coleta, deduplicação,
-enriquecimento, extração, leitura dos ativos, apagamento de contas) segue derrubando a execução
-inteira, agora com aviso de operação — é o preço de essas etapas serem uma só para todos. Exceção
-depois do pipeline (registro do uso da Adzuna, leitura dos eventos do site, formatação e envio do
-resumo) fica fora do `try` e não vira aviso. Se `liberar_atendimento` falhar depois de a mensagem
-sair, o retorno se perde e a pessoa é contada como sem entrega, embora tenha recebido. E o aviso é
-enviado pelo próprio notificador: se ele também quebrar, o run morre com o traceback dos dois
-erros encadeados, sem mensagem no Telegram. O código de saída do processo não mudou.
-
-## Cidades vizinhas: região imediata do IBGE (10/09/2026)
-
-Quem mora em Niterói trabalha no Rio, mas a cidade era comparada pelo nome exato. Nos 30 dias
-anteriores, 448 vagas chegaram como "Rio de Janeiro" e 1 como "Niterói": um perfil presencial de
-Niterói praticamente não recebia nada. A Adzuna ainda rotula pela região, e "Estágio TI - Niterói"
-veio como Rio de Janeiro.
-
-`domain/regioes.py` classifica vaga × perfil em mesma cidade, mesma região imediata do IBGE ou
-distante, lendo `radar/domain/regioes_imediatas.json` (510 regiões, gerado por
-`scripts/gerar_cidades.py` junto com a lista do site). O que muda:
-
-- **Mesma região vale como a cidade** no pré-filtro e na trava de 30 para híbrido e indiferente.
-- **Na logística vale metade** da cidade, cerca de 2,5 pontos a menos: a própria cidade continua
-  na frente, sem enterrar a vizinha.
-- **A coleta busca também a maior cidade da região** do perfil (Adzuna `where`),
-  senão um perfil de Niterói sozinho dependeria de haver alguém do Rio para as vagas do Rio
-  serem coletadas.
-- **O juiz recebe as cidades da região** no perfil; sem isso ele marcaria `logistica` na vaga
-  do Rio para quem é de Niterói.
-- **O estado da vaga é lido nos formatos das fontes** ("Estado do Rio de Janeiro", "Rio de
-  Janeiro", "RJ"). Sem estado, vale o nome quando ele só existe num estado; perfil antigo
-  "Rio de Janeiro" continua achando a região. Nome igual em estados diferentes deixou de ser a
-  mesma cidade.
-
-Limite conhecido: a região imediata do Rio tem 21 municípios e inclui Saquarema e Mangaratiba, a
-cerca de 100 km. Se o feedback "local ou modalidade" apontar esses casos, o ajuste é uma lista de
-exceções ou a região metropolitana, não voltar ao nome exato.
-
-## Juiz de recomendações: LLM as a judge (09/09/2026)
-
-`python -m radar julgar --dias 7 --amostra 30` pede a um **segundo modelo** que julgue, às
-cegas, uma amostra das entregas recentes: para cada vaga enviada, `relevante`, `nota_juiz`,
-`problema` (catálogo fechado: outra_area, exige_demais, logistica, repetida, anuncio_fraco,
-nenhum) e um motivo. O juiz vê o perfil e o anúncio completo, **nunca a nota do Radar**, para o
-julgamento ser independente. O relatório (`reporting/julgamento.py`) traz relevância por perfil,
-problemas, concordância com o feedback das pessoas quando existir, e as vagas reprovadas pelo
-juiz com nota do Radar acima de 70 — a lista que interessa para revisar regra.
-
-O modelo vem de `JUIZ_MODELO` (padrão `claude-sonnet-4-6`, outra família que a do extrator)
-e o adapter segue `AVALIADOR`: `agy` local, sem cota; pela API precisa ser um modelo Gemini. O
-comando só lê o banco; nada de nota alterada. Só pontuação por regra em Python decide o que é
-enviado — o juiz mede, não ranqueia. Antes de usar o número do juiz como evidência, ele precisa
-ser validado contra o gabarito humano de 20 vagas (pré-PRD, H2); abaixo de 75% de concordância
-é ruído com cara de número.
-
-Primeira rodada real (09/09, `claude-sonnet-4-6` pelo `agy`, 24 de 168 entregas de 14 dias, 5
-minutos): 12 relevantes, mediana do juiz 39 contra 69 do Radar. As cinco reprovadas com nota
-alta eram todas de 28 a 31/08, antes das regras de área, interesse e cidade — o relatório mostra
-a data de cada uma por isso. Limitação que o juiz expôs: a Adzuna informa a região, não a
-cidade ("Estagiário de TI - São Gonçalo" vem como "Rio de Janeiro"); 1 caso em 168 envios,
-registrado, sem regra nova.
-
-Desde 10/09/2026 o comando **falha com código 1** quando nenhuma entrega é julgada, imprimindo
-o último erro do avaliador. Antes, o padrão `gemini_api` + `claude-sonnet-4-6` devolvia
-relatório vazio com código 0, o que parecia execução limpa. O `--gabarito` também avisa quantos
-rótulos ficaram fora da janela de `--dias`, em vez de descartá-los em silêncio.
-
-O gabarito humano nasce de `python -m radar gabarito --dias 2 --amostra 20 --saida arquivo.json`:
-o arquivo lista as entregas com `relevante: null` para cada pessoa preencher com true ou false;
-`julgar --gabarito arquivo.json` julga só essas e imprime a concordância juiz × pessoas. O
-primeiro arquivo, com 20 entregas de 08 e 09/09, saiu do Git em 12/09 porque trazia vagas reais e o
-`perfil_id` de cada usuário: fica em `gabaritos/`, ignorada, e vai em privado a quem for rotular.
-
-## Quarta rodada: auditoria após a reescrita do `main` (09/09/2026)
-
-O `main` foi reescrito por force push (rebase sobre a PR de estilo e o README). Antes de
-auditar, os 13 commits locais foram conferidos por patch-id contra o novo histórico (todos
-presentes), o site publicado já servia a nova versão e as quatro suítes passaram. O que a rodada
-achou, com coleta real (823 vagas), banco e juiz:
-
-- **Rótulo de subárea entrava no regex de título.** `PADROES_DE_TITULO` junta marcadores, nomes
-  de curso e rótulos das subáreas; o rótulo "Segurança" de computação aceitava "Estágio Técnico em
-  Segurança do Trabalho" para Engenharia de Software (nota 58, sem menção a curso). Nove títulos
-  da coleta, todos de segurança do trabalho. O rótulo virou "Segurança da informação", que já era
-  o marcador da área; os outros rótulos só aceitavam títulos coerentes com a área.
-- **Contexto de formação atravessava o fim da frase.** "Estagiário na área de gestão financeira
-  (Barra). O grupo atende marketing e comunicação" contava "marketing" como curso citado, porque
-  "área de" estava a 20 palavras. A janela de contexto (formação e atuação) agora começa no último
-  ". " antes do termo. Medido: zero pares (curso, vaga) mudaram em 12 cursos × 823 vagas; só o
-  caso encontrado deixa de passar. "; " e quebra de linha não são fronteira porque listas de
-  cursos usam os dois.
-- **Perfil remoto recebia vaga de outra cidade sem modalidade a 88, sem aviso.** O pré-filtro
-  ignorava a cidade para perfil remoto e a logística vale pouco; Administração remota no Rio
-  recebeu Fortaleza, Belo Horizonte e Itajaí "modalidade não informada" nas primeiras posições.
-  Agora perfil remoto segue a mesma regra do híbrido: vaga de outra cidade só fica se admite remoto.
-  Medido para um perfil remoto do Rio em 11 cursos: 947 → 265 candidatas; das 260 descartadas com
-  descrição truncada que puderam ser completadas, 18 (7%) citam remoto só no texto completo — a
-  mesma limitação que o híbrido já tinha, registrada abaixo. Nenhum usuário atual é remoto.
-- **`julgar --gabarito` com arquivo ausente ou inválido** estourava traceback; vira
-  `ErroDeArmazenamento` com mensagem e saída 1.
-
-O que foi verificado e não precisou de regra: os 8 envios de outra cidade para perfis presenciais
-são todos do run das 07:23 de 08/09, antes da trava das 23:47; o run de 09/09 não tem nenhum. O
-juiz (14 de 48 entregas de 2 dias) reprovou com nota alta só casos de 08/09 pela mesma razão,
-mais "Estágio em TI" de infraestrutura para Engenharia de Software (subárea de computação; o
-interesse do perfil decide) e um anúncio que lista Informática, Computação e ADS sem citar
-Engenharia de Software (cursos intercambiáveis por decisão).
-
-Pendências que esta rodada deixou anotadas: (1) refiltrar as candidatas depois do enriquecimento
-e antes da extração recuperaria os 7% de vagas remotas que só dizem isso após os 500 caracteres da
-Adzuna, sem gastar extração; (2) "Banco de Talentos" não é vaga aberta e chega como estágio;
-(3) a Adzuna informa região, não cidade.
-
-## Cobertura das fontes (30/08/2026)
-
-A Adzuna classificava 93% das vagas brasileiras como categoria "Unknown", então `category=it-jobs`
-escondia quase tudo (55 vagas em 5 dias no país inteiro). A busca passou a ser por termos, sem
-categoria, repetida por cidade de perfil presencial, híbrido ou indiferente (desde 10/09/2026
-também pela maior cidade da região imediata do perfil; remoto não acrescenta cidade); a localização vem de
-`location.area` (cidade, estado), então bairro não quebra o filtro de cidade. A Gupy deixou de
-buscar por termos no título e traz todos os estágios do país e da cidade. Efeito medido: perfil
-Rio presencial saiu de 2 para 55 candidatas em um dia.
-
-Paginação da Adzuna (08/09/2026): a busca por termos das áreas cadastradas encontra 4.988 vagas,
-mas `LIMITE_DE_PAGINAS_POR_REGIAO` puxava 4 páginas de 50 por região — 4% do disponível, e esse
-teto era repartido entre os cursos conforme a base crescia. A página 15 ainda devolve 50 vagas
-cheias e relevantes, então o limite subiu para 10. Medido no Rio com quatro áreas: 699 vagas
-coletadas contra ~400, e cada curso ganhou de 65% a 120% mais candidatas. Subir páginas é
-preferível a buscar por área separadamente: o custo fica plano (10 chamadas por região) em vez de
-multiplicar por curso.
-
-Agregadores (Divulga Vagas, BuscarVagas) republicam o mesmo anúncio com "empresa" diferente:
-`remover_republicacoes` em `filtering/duplicatas.py` une vagas com mesmo título e cidade cujas 40
-primeiras palavras da descrição coincidam em 80% — só o início conta porque a Adzuna trunca a
-descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias (04/09/2026): a
-candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
-repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
-modalidade e, em empate, a de descrição mais longa.
-
-**Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
-três casos, e a pessoa perdia uma delas sem aviso:
-- **Empresa sem nome.** Com "Empresa não informada", "Confidencial", "Empresa Confidencial" ou
-  empresa vazia, a chave título + empresa + cidade virava só título e cidade. Nas vagas guardadas,
-  "Estágio Em Administração - Recrutamento Aberto" tinha cinco anúncios de descrições diferentes, e
-  todos viravam um. Para essas empresas (`EMPRESAS_NAO_IDENTIFICADAS`) a chave leva também a
-  descrição normalizada inteira: o mesmo anúncio repetido segue unido pela chave, mesmo com menos de
-  20 palavras, que a republicação não compara, e o texto parecido segue unido pela republicação.
-- **Símbolo no título.** A limpeza trocava por espaço tudo que não é letra ou número, e "C#", "C++"
-  e "C" viravam "c". "#" e "++" colados ao fim da palavra agora fazem parte dela; caixa, acento e o
-  resto da pontuação seguem ignorados ("C#/.NET" é "c# .net").
-- **Cidade sem estado.** A chave usava o nome antes da vírgula, e "Bom Jesus, PI" era "Bom Jesus,
-  RS" (240 nomes de município existem em mais de um estado). As chaves usam `identificar_municipio`
-  de `domain/regioes.py`: o estado vale nos formatos das fontes e, sem estado, vem do nome quando ele
-  só existe num estado, então "Niterói" segue igual a "Niterói, Estado do Rio de Janeiro".
-
-Símbolo e cidade valem também para a republicação e, com ela, para "Já vi essa", as enviadas nos
-últimos 30 dias e "Vaga encerrada"; a empresa não, porque a republicação já não a olha (o efeito de
-"Vaga encerrada" para os outros passou a olhar, ver "Vaga fechada na origem"). Medido nas
-1.003 vagas guardadas, com a regra do `main` e a nova sobre o conjunto e sobre janelas que imitam
-uma execução (vagas publicadas nos 4 dias antes de cada dia de coleta): o conjunto passa de 879 para
-888 vagas únicas, e 8 das 20 janelas, todas de 08 a 16/09, ganham de 1 a 6. Os 17 grupos desfeitos
-são todos de empresa sem nome e foram conferidos à mão: nenhum par com descrição igual ou parecida
-se separa, nenhum par com descrição diferente se junta, e o anúncio repetido (restaurante, suporte
-nas lojas, "Auxílio nas atividades administrativas") continua um só. O filtro entre dias bloqueia os
-mesmos 100 pares de enviada e candidata, e a única vaga encerrada não tira nada a mais nem a menos.
-Símbolo e cidade não mudam nenhum grupo nos dados, porque `vagas` guarda só o que passou no
-pré-filtro de algum perfil, quase tudo do Rio, e só um título tem C#: ficam cobertos pelos testes.
-Limites aceitos: nome repetido sem estado ("Bom Jesus") não é unido a estado algum, então a mesma
-vaga pode chegar duas vezes em vez de sumir; empresa sem nome que repete o anúncio com texto curto
-e diferente também chega duas vezes; agência com nome que anuncia vagas de clientes com o mesmo
-título continua juntando vagas distintas (numa janela de 14/09, a Fundação Mudes juntou "Estágio em
-Administração" de uma empresa de vistorias e de uma de engenharia), e tratá-la como empresa sem nome
-separaria a vaga que a empresa republica com texto reescrito; outro rótulo de empresa escondida
-("Sigilosa") segue valendo como nome; e "T.I" e "TI" continuam chaves diferentes, como antes.
-
-## Correções da revisão de expansão (08/09/2026)
-
-- Cursos passam por correspondência integral após remover prefixos de formação; aliases
-  explícitos estão no catálogo e no JSON gerado. Medicina Veterinária fica desconhecida,
-  não herda saúde humana; Gestão Financeira tem alias em finanças.
-- Perfil sem área reconhecida **soma** uma busca geral (Adzuna sem `what_or`, Jooble com
-  "estágio" puro) à busca dirigida dos cursos conhecidos, em vez de substituí-la. Trocar a de
-  todos custava 68% das candidatas de computação e 66% das de Direito no Rio (167→54, 116→40),
-  porque o `what_or` é o que ordena as 500 primeiras da fatia nacional. Termos de busca são
-  palavras soltas: a Adzuna trata `what_or` como OR por palavra, então "recursos humanos" virava
-  "recursos" OU "humanos" (1546 vagas contra 1185 da frase); o catálogo usa "recrutamento",
-  "rh", "exportação".
-- Curso mencionado na descrição com contexto de formação, ou abertura a qualquer formação,
-  mantém a vaga para análise mesmo com título de outra área. A compatibilidade de curso é
-  decidida após a extração.
-- Pontuação é recalculada em Python em toda execução. Notas persistidas não são reutilizadas;
-  extrações continuam compartilhadas e histórico de envios continua bloqueando repetição.
-- Curso genérico aceito pelo anúncio ("Engenharia", "Química", "Administração") conta como o
-  curso específico do perfil quando o nome aceito aparece inteiro dentro do nome do perfil **e**
-  o catálogo reconhece o perfil. Sem a segunda condição, "Medicina" valeria para Medicina
-  Veterinária — que é desconhecida de propósito. A correspondência integral sozinha marcava
-  como incompatível (teto 35) quem estuda Engenharia Civil numa vaga "cursando Engenharia".
-- A correspondência integral roda depois de `normalizar_curso`: tira prefixos de formação
-  ("Cursando", "Graduação em", "Curso Superior de Tecnologia em"), sufixos ("completo",
-  "- Bacharelado", "(Bacharelado)", "/Eletrônica"), aplica sinônimos ("Ciências Econômicas" →
-  economia, "ADS", "TI", "RH") e devolve vazio para termo genérico ("Ensino Superior",
-  "qualquer curso") — que em `cursos_aceitos` não comprova elegibilidade sozinho. Só abertura explícita
-  a qualquer curso libera todas as formações; termos genéricos não anulam cursos específicos. "Licenciatura em X" sem
-  alias cai em educação. Prefixos, sufixos, sinônimos e genéricos vão no `areas.json` e o site
-  aplica a mesma regra. Nome que ainda não está lá vira área desconhecida: recebe só título
-  genérico, busca geral e nota parcial. Ao ver um curso frequente cair nesse caso, o conserto é
-  um alias.
-- **Curso aceito fora do catálogo** (16/09/2026). Na vaga, nome que o catálogo não reconhece não
-  tem área, e a lista feita só desses nomes dava curso incompatível, teto 35 e "Exige formação de
-  outra área". Nas 566 extrações da versão `7efdbc95` com os 4 perfis ativos, 62 dos 2.264 pares
-  caíam nisso. Conferidos à mão: 50 estão certos (vaga de ensino médio ou EJA, 16; só para
-  técnico, 4; lista técnica em que a IA tirou o "Técnico em" dos itens seguintes, 12; nome de
-  outra formação para quem não é dela, 18), 10 eram sinônimo que faltava ("ADM" para
-  Administração; "Tecnologia", "Tecnologia/Sistemas", "Cibersegurança" e "Sistemas para a
-  Internet" para computação) e 2 são erro da extração: adzuna:5882923702 pede "TI, Estatística,
-  Matemática, Engenharias" e a IA guardou só Estatística e Matemática. Fora dos 62, lista mista
-  escondia mais 3 pares ("T.I, ADM" de Administração e "desenvolvimento de software ou
-  administração" de computação). A correção são sinônimos: "ADM", "Tecnologia", "Cibersegurança",
-  "Sistemas para a Internet" e "Desenvolvimento de Software", mais "Rede de Computadores" e
-  "Análise de Sistema", que estão em 7 vagas e só passavam porque a lista trazia outro curso de
-  computação. **A regra não mudou.** Tratar como parcial (teto 75) a lista sem nome reconhecido
-  subia 22 pares que passam no pré-filtro, 12 certos e 10 errados (ensino médio para Administração
-  a 54, técnico em automação e em mecânica para computação de 43 a 53); mesmo tirando ensino médio
-  e técnico, levava a vaga que pede Engenharia a Administração (54) e a de Estatística e Matemática
-  a Medicina Veterinária (59). Os nomes fora do catálogo nas vagas são quase todos curso de outra
-  formação (Estatística em 13 vagas, Matemática em 11, Ciências Sociais, Design de Moda,
-  Biblioteconomia), a família "Engenharia(s)" (28 vagas), que `mesmo_curso` já resolve para quem é
-  de engenharia, ou nível de ensino, e para eles o 35 está certo;
-  `test_nome_fora_do_catalogo_de_outra_formacao_segue_incompativel` impede relaxar a lista inteira.
-  Medido contra o `main` com 43 perfis (os 4 ativos e 39 sintéticos, 24.338 pares): 75 pares mudam,
-  todos sobem, 55 passam no pré-filtro e cruzam a nota mínima, e nenhum descarte muda. Nos 4 ativos
-  são 13 (35 → 51 a 80), 11 entregáveis; agrupando por dia de coleta, sem histórico, a vaga de
-  Ciência de Dados que aceita "Tecnologia" entraria no top 7 dos dois perfis de computação em 11/09
-  e a de estágio administrativo que aceita "ADM" no de Administração em 12/09. Sinônimo não entra
-  no padrão de título, mas o composto entra em `nomes_do_curso`: quem cursa Sistemas para Internet,
-  Desenvolvimento de Sistemas, Redes de Computadores ou Análise de Sistemas passa a achar também a
-  forma nova citada na descrição. Limites: "Curso Superior de Tecnologia" e "Graduação em
-  Tecnologia" sozinhos passam a valer como Tecnologia da Informação (nenhum caso nas 790
-  extrações); o erro da extração segue, porque a correção é de prompt e muda `VERSAO_DA_EXTRACAO`;
-  grafia errada ("Administação") e "Administração Bacharelado" seguem desconhecidas e hoje só
-  aparecem ao lado de um nome reconhecido ("Eng. Elétrica" passou a valer pela expansão de
-  abreviações do item seguinte); e nome novo continua dando 35 até ganhar alias.
-- **Curso com pontuação, complemento ou abreviação** (16/09/2026). "Ciência da Computação.",
-  "Direito, UERJ" e "Eng. de Software" ficavam sem área: `normalizar_curso` só cortava o
-  complemento depois de hífen, barra, "|" ou de parêntese que fechava o nome, e não conhecia
-  abreviação. O site não dizia nada à pessoa. Agora a normalização tira a pontuação das pontas,
-  corta a partir de vírgula e de parêntese no meio do nome ("Psicologia (UFRJ) - noturno") e
-  expande "Eng", "Adm", "Ciên", "Ciênc" e "C" no começo do que sobra depois dos prefixos de
-  formação, com ponto ou espaço e só com outra palavra depois (`ABREVIACOES_DE_FORMACAO`, que vai
-  no `areas.json`): "Graduação em Eng. Elétrica" chega a engenharia elétrica. As de ciência viram
-  "ciencias", que os sinônimos levam a ciência da computação e que fecha com Contábeis,
-  Econômicas, Atuariais, Biológicas e Jurídicas; "C. de Dados" segue desconhecido. Abreviação
-  sozinha não expande: "Eng." solto segue desconhecido, e "ADM" solto vale como Administração pelo
-  sinônimo do item anterior. O site espelha a regra e a fixture de paridade ganhou as formas. Um fuzz de
-  5.150 entradas (catálogo, sinônimos, os 296 `cursos_aceitos` reais e variações com pontuação,
-  complemento e abreviação) deu zero divergência entre Python e site, nenhuma perdeu a área que
-  tinha e a normalização segue idempotente; só trocam de área "Licenciatura em X" com pontuação no
-  fim, que caía em educação e passa à área de X, como já acontecia sem a pontuação.
-  Medido no banco: os 6 perfis reais já tinham área e continuam (0 → 0 sem área). Das 296 formas
-  distintas de `cursos_aceitos` das 790 extrações, só "Eng. Elétrica", "Eng. de Computação" e
-  "Eng. de Produção" mudam, as três para o curso certo (170 → 173 com área). Nas 600 extrações
-  que validam no modelo atual, nenhum par com os perfis reais muda; com os cursos sugeridos do
-  catálogo, 3 de 27.600 pares mudam, Engenharia Elétrica e de Produção em duas vagas de dados que
-  listam "Eng." (35 → 52 e 63, curso compatível), e as duas seguem cortadas pelo pré-filtro para
-  esses perfis. Um perfil sintético "Direito, UERJ" passa de 42 vagas com nota 40 ou mais, nenhuma
-  com curso compatível, a 71, com 61 compatíveis. Do lado da vaga, sem caso nos dados: item sem
-  técnico com vírgula vale pelo primeiro curso, como já valia com barra ("Administração,
-  Contabilidade ou Economia" dá compatível a Administração e segue 35 para os outros, que antes
-  também tinham 35), e "Técnico ou Superior (Administração)" deixa de ser parcial e fica
-  compatível para Administração e 35 para Contábeis, como "Técnico ou superior em Administração".
-  O aviso do site abre a etapa de habilidades quando o catálogo carregou e o curso não tem área:
-  diz o nome digitado, que as vagas ficam menos precisas e sem sugestões nem áreas de interesse, e
-  sugere voltar e escolher o nome na lista; Continuar segue e o curso é salvo como foi digitado.
-  Fica no topo dessa etapa, a primeira tela depois do curso, e não embaixo do campo, onde a lista
-  aberta o cobre durante a digitação e o clique em Continuar troca de etapa antes da leitura. Sem
-  catálogo o aviso some, e limpar o rascunho o apaga, porque ele leva o curso da pessoa. Limites:
-  curso sem separador ("Direito UERJ", "Direito 5º período"), com ponto no meio ("Direito. UERJ")
-  ou abreviação fora do começo ("Sist. de Informação", "Anal. de Sistemas") continua desconhecido
-  e só ganha o aviso; e vírgula corta o nome, então o que vem depois dela nunca conta. Publicação:
-  site e `radar/` juntos, sem migration; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
-- "laboratório" saiu do padrão de exclusão de saúde: vetava "Desenvolvimento de Software para
-  Laboratório" para quem é de computação. Continua no padrão positivo, então saúde ainda
-  reconhece laboratório como título seu.
-- A exclusão de Office e idiomas do cálculo agora se restringe a perfis de computação.
-  Nas demais formações, requisitos explícitos contam com a mesma normalização das explicações.
-
-## A extração tem prazo
-
-(11/09/2026, G01 e G07 da auditoria do agendamento). Ela roda antes
-de qualquer envio e só é gravada no fim, então um kill do job durante ela deixava todos sem
-mensagem e jogava fora o que já tinha sido pago, e o dia seguinte repetia a mesma fila.
-`PRAZO_DA_EXTRACAO_SEGUNDOS` (padrão 600) é conferido antes de cada requisição e de cada espera
-de cota; esgotado, a extração para e segue com o que tem, e o resumo mostra "vagas sem
-extração". A conferência **reserva o tempo da própria chamada**, então uma requisição só começa
-se couber inteira no prazo: sem isso, três repetições de 120 s mais as esperas furavam os 600 s
-e o run podia terminar com zero extrações. Cada chamada leva `GEMINI_TIMEOUT_SEGUNDOS`
-(padrão 120, extrator e juiz), e tanto o timeout quanto falha de rede (`httpx.TransportError`,
-que cobre conexão recusada e queda no meio da resposta) viram indisponibilidade, tratada como o
-504: espera e repete o mesmo lote dentro do prazo. Antes só o timeout era tratado, e um
-`ConnectError` derrubava a execução inteira sem resumo de operação. As candidatas vão para a
-extração intercaladas por usuário, para o corte não cair sempre em quem entrou por último. O job
-tem 30 minutos e o passo do radar 28. Números que sustentam os valores, medidos no diário de
-11/09: ~27 s por requisição (93 vagas em 11 requisições) e ~21 s por usuário na entrega, o que
-acomoda cerca de 40 usuários. Dois limites conhecidos: o timeout do `httpx` é por operação de
-socket, não por chamada, então resposta que chega devagar sem parar não o estoura; e o
-enriquecimento das descrições roda antes da extração sem orçamento algum, então uma Adzuna lenta
-ainda pode levar o job ao kill.
-
-## Raciocínio da extração em `low`
-
-(11/09/2026, `GEMINI_RACIOCINIO`). O `gemini-3.6-flash`
-pensa por padrão e o raciocínio é cobrado como saída: numa requisição real de 10 vagas foram
-4.902 tokens de raciocínio para 2.655 de resposta, cerca de 60% do custo (R$ 0,15 por lote, a
-US$ 0,75 e 3,75 por milhão e R$ 5,10). Teste com 50 vagas de 11/09 contra as extrações
-gravadas: repetir o modo padrão concordou em 90% dos campos, que é o ruído do próprio modelo;
-`low` em 88%; `minimal` em 82%. O top 7 dos 4 perfis reais mudou em `low` o mesmo que no
-padrão repetido, fora uma vaga de Direito, e em `minimal` mudou mais. `minimal` ainda devolveu
-um lote inteiro de 10 vagas vazias, sem habilidade nem curso, que o extrator não detecta e o
-cache guardaria, por isso ficou de fora. `low` custa R$ 0,066 por lote e leva ~12 s contra
-~30 s; o padrão devolveu 1 de 10 num dos cinco lotes (o mesmo lote incompleto do diário de
-11/09) e `low` devolveu 10 de 10 em todos. Ponto a acompanhar: pegadinha. A gravada tinha 3 em
-41 vagas, o padrão repetido achou 1 e `low` nenhuma. `GEMINI_RACIOCINIO=padrao` volta ao
-comportamento anterior sem mudar código; o nível não entra na identidade da extração, então
-trocá-lo não reextrai o que está no cache. Vale só para a extração: o juiz segue no padrão.
-
-## Resumo do raciocínio gravado na extração
-
-(19/10/2026, `raciocinio_do_lote`). Para entender por que uma vaga recebeu certa extração, o que
-vale é o raciocínio da execução que gerou a nota. Chamar a IA de novo com a mesma vaga traz outro
-raciocínio: temperatura 0 não deixa o Gemini determinístico (repetir o modo padrão concordou em
-90% dos campos, ver a seção anterior), e a vaga sozinha não é o lote de 10 em que ela foi lida.
-Por isso a extração pede `include_thoughts` e copia o resumo devolvido para cada extração daquela
-chamada, em `vagas.extracao -> 'raciocinio_do_lote'`.
-
-- **É pista, não explicação.** É o resumo que o modelo faz do próprio raciocínio, e nada garante
-  que ele explique a resposta. Quem decide se a IA errou é a comparação da extração com a
-  descrição da vaga.
-- **Um texto por chamada.** As vagas de um lote dividem o mesmo resumo; a vaga repetida sozinha,
-  ou num lote dividido, leva o da chamada que a extraiu.
-- **Não reextrai nada.** O campo fica fora do schema pedido à IA, como `descricao_completa`, e a
-  `VERSAO_DA_EXTRACAO` continuou `7efdbc95`. Vagas extraídas antes ficam sem resumo, e o adapter
-  `agy` não devolve resumo.
-- **O juiz não pede resumo**, e `GEMINI_RACIOCINIO=padrao` pede o resumo sem fixar o nível.
-- **Pedir o resumo não muda o custo.** A documentação do Gemini cobra o raciocínio inteiro como
-  saída, com ou sem `include_thoughts`; o resumo não é cobrado à parte.
-- **O `agy` não prevê o resumo da API.** Simulação de 19 e 20/10, sem chave do Gemini local nem
-  acesso ao banco: 50 vagas reais da Adzuna com a descrição completa, em 5 lotes de 10, no
-  `gemini-3.8-flash`, porque o `agy` não oferece o `gemini-3.6-flash` da API. O texto do raciocínio
-  fica em `~/.gemini/antigravity-cli/brain/<conversa>/.system_generated/logs/transcript_full.jsonl`.
-  Em `low`, os 5 lotes tiveram 0 token de raciocínio (~9 s e R$ 0,041 a 0,051 por lote nos preços
-  do `3.6-flash`, descontados os ~7,7 mil tokens de entrada do próprio `agy`), e um problema de
-  aritmética de controle também teve 0: o `low` do `agy` desliga o raciocínio, não é a extração
-  que dispensa. Em `medium`, 27,7 a 45 mil tokens de raciocínio por lote, 32 a 40 KB de texto vaga
-  a vaga e 160 a 293 s, de 6 a 9 vezes o padrão da API em 11/09 e acima do timeout de 120 s por
-  chamada. O tamanho do resumo em `low` só se mede na API: no primeiro diário ou com uma chave
-  local.
-- **O espaço cresce com vagas novas, não com usuários**: com as ~70 vagas novas por dia medidas em
-  08/10, cada 1 KB de resumo soma ~70 KB por dia ao banco. Se o resumo vier grande, guardar uma
-  vez por chamada numa tabela própria em vez de repetir nas vagas do lote.
-
-Consulta para investigar uma vaga:
-
-```sql
-select titulo, descricao,
-       extracao - 'raciocinio_do_lote' as fatos,
-       extracao ->> 'raciocinio_do_lote' as raciocinio
-from vagas
-where fonte = 'adzuna' and id_externo = '<id>';
-```
-
-## A extração não é repetida por usuário
-
-(03/09/2026, formulação revista em 10/09). Isso não
-é o mesmo que dizer que o custo total independe da coorte: mais usuários trazem mais cidades e
-mais áreas, e portanto mais vagas novas para extrair, além de mais consultas, pontuação,
-gravações, envios e suporte. O que não cresce é o trabalho repetido sobre a **mesma** vaga.
-O prompt não contém perfil, então cada vaga é extraída uma vez e a extração serve todos. Ela fica em `vagas.extracao` (JSONB), de
-modo que reexecução no mesmo dia ou usuário novo entrando não gastam cota. Antes eram cerca de
-6 requisições por usuário por dia: 20 estudantes estouravam a cota e o job morria no timeout de
-15 minutos, sempre deixando sem mensagem quem entrou por último, porque a fila é ordenada por
-`criado_em`. O resumo de cada execução informa quantas requisições foram gastas, e
-`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
-
-## Lote incompleto pede junto o que faltou
-
-(10/09/2026). Em 10/09, 3 de 13 lotes voltaram com
-1 de 10 extrações, e as 9 que faltavam iam uma a uma, cada chamada levando de novo a instrução
-de 9.170 caracteres. Agora, se a resposta traz parte do lote, só com ids do lote, e faltam 2 ou
-mais, as que faltaram vão juntas numa requisição, uma vez, e o que ainda faltar segue uma a
-uma. Lote que volta vazio segue uma a uma, porque repeti-lo mandaria o mesmo prompt; resposta
-com id fora do lote ou repetido também. A repetição que falha com erro não temporário, ou volta
-com id fora do que faltou ou repetido, é descartada inteira e segue uma a uma; com 429 ou 503
-ela espera e se repete como qualquer lote, e a cota diária interrompe a extração como antes.
-Custo: cada chamada de 2 ou mais vagas que volta incompleta gera no máximo 1 requisição a mais
-que antes, sem contar as novas tentativas após 429/503. Num lote dividido por erro cada parte
-conta, então um lote de 10 pode passar de +1. Em caracteres de entrada, a repetição de 9 vagas
-tem de 17% a 34% das 9 chamadas avulsas (descrições de 500 a 3.000 caracteres), e é esse o
-acréscimo quando ela volta sem nada. Fuzz de 6.000 cenários contra a versão anterior, sem erro
-temporário: nenhuma vaga a menos e o limite nunca violado. Limites aceitos: o descarte não pega
-troca de ids entre as vagas que faltaram, e a extração errada iria para o cache compartilhado,
-como já pode acontecer na primeira chamada de qualquer lote; e erro temporário persistente só
-na repetição para a execução mais cedo que antes. Os logs `Lote de N vagas voltou com M
-extrações` e `Repetição de N vagas ...` registram os ids que faltaram, os devolvidos sem vaga e
-os repetidos: ainda não se sabe se o modelo devolve um item só ou copia os ids errado.
-
-## Só entra extração com o id de uma vaga do lote pedido
-
-(18/09/2026, grave 3 da auditoria de
-17/09). O `ExtratorEmLotes` aproveitava qualquer item que o modelo devolvesse, inclusive com
-`id_vaga` de outra vaga, e no `obter_extracoes` a primeira extração que chega para um id vence,
-com a verdadeira descartada em silêncio. Bastava um id copiado errado, ou um bloco `### Vaga id=`
-forjado na descrição de um anúncio, para uma vaga boa ficar com os fatos de outra, cair para a
-nota que esses fatos dão **para todos os usuários** e ainda mandar a extração errada para o cache
-compartilhado, que os dias seguintes reaproveitam. Agora só é aproveitada extração cujo `id_vaga`
-está no lote pedido e aparece uma vez só; id fora do lote e id repetido são descartados com log
-que diz os ids devolvidos e o lote, e a vaga segue como "sem extração", o caminho que já segura a
-mensagem e a devolve ao extrator. As **duas** cópias de um id repetido caem: não dá para saber
-qual é a verdadeira, e a vaga volta sozinha, num prompt em que a descrição da outra não está. A
-regra all-or-nothing da repetição do lote incompleto fica como está, porque é mais estrita que
-esta. O `pipeline.py` também passou a registrar o descarte, para nada sobrescrever em silêncio;
-quem decide o que é aproveitável continua sendo o extrator em lotes. Custo: um id repetido num
-lote de 10 custa 2 requisições avulsas em vez de 1, e o log da cota passa a contar essa vaga entre
-as sem extração.
-**A injeção pelo texto do anúncio não foi fechada, de propósito.** `VERSAO_DA_EXTRACAO` cobre
-`INSTRUCAO_DE_EXTRACAO` e o schema, **não** `descrever_vaga`: escapar ali a linha que imita o
-cabeçalho de vaga mudaria o que a IA lê sem invalidar o cache, e extração feita sobre o texto cru
-conviveria com extração feita sobre o escapado sem como distinguir; pôr `descrever_vaga` no hash
-reextrairia as 882 do cache de uma vez. Medido em 18/09, só leitura: das 1.095 vagas guardadas,
-nenhuma descrição tem `###`, "id_vaga" ou "extracoes", e nenhuma tem quebra de linha (o
-enriquecimento junta os espaços e a Adzuna não mandou nenhuma), então o cabeçalho forjado só
-apareceria no meio da linha "Descrição:", nunca no começo de uma. Das 882 extrações guardadas,
-nenhuma tem `id_vaga` diferente da vaga em que está gravada (658 no formato `fonte:id` da versão
-atual, 224 só com o número, das versões antigas): o defeito é do código, não um incidente
-observado. O prompt já manda tratar a descrição como dado não confiável. Se um anúncio com
-cabeçalho forjado aparecer, escapar `descrever_vaga` junto com a troca de `VERSAO_DA_EXTRACAO` é o
-conserto. Limites conhecidos: troca de ids **entre duas vagas do mesmo lote** passa, porque os
-dois ids são do lote e nenhum se repete, e a extração errada vai para o cache — é o mesmo limite
-já registrado acima para a repetição; e item forjado que **substitui** o verdadeiro (o modelo
-devolve um item só, com o id da outra vaga) também passa, e só a vaga que faltou é repedida. Sem
-migration e sem deploy; `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
-
-## Resposta malformada do avaliador não derruba o job
-
-(16/09/2026, item 14 da auditoria). Só
-erro do `httpx` e `APIError` viravam erro de avaliação. HTTP 200 com corpo que não é JSON
-(página HTML de proxy, corpo cortado sem erro de transporte) fazia o SDK levantar
-`json.JSONDecodeError`; JSON com tipo errado no envelope (`text` numérico, `parts` ou
-`usageMetadata` como texto), `pydantic.ValidationError`; corpo escalar ou `candidates` numérico,
-`TypeError`. As três atravessavam `ExtratorEmLotes` e `executar_fluxo`: o job morria antes de
-qualquer envio, as extrações pagas no run se perdiam, o resumo de operação não saía e o `julgar`
-terminava em traceback. Agora `gerar_json` as converte em `AvaliadorIndisponivel`, o tratamento
-do 502/503/504, do timeout e da falha de rede: espera e repete o **mesmo** lote dentro do prazo
-e, se persistir, para a extração com o que já veio, e o resumo mostra as vagas sem extração. Não
-é a regra do 500 nem divisão porque o envelope é escrito pelo servidor, não pelo modelo: nada no
-lote o causa, dividir não isola vaga alguma e, com o corpo quebrado persistente (proxy, mudança de
-formato da API), pagaria uma chamada por vaga; parar depois de 4 chamadas e 3 esperas de 61 s é o
-mais barato. A mensagem leva os 200 primeiros caracteres do corpo, para dizer de onde ele veio. A
-configuração do pedido é montada antes do `try`, então erro de programação ao montá-la segue
-aparecendo como tal. Ficam como estavam, erro do lote que divide: o envelope sem texto (pedido
-barrado em `promptFeedback`, candidato com `finishReason` SAFETY, MAX_TOKENS sem partes, sem
-candidatos), que o SDK entrega como "resposta vazia" e é causado pelo conteúdo, e o texto do
-modelo fora do JSON pedido. O juiz usa o mesmo `gerar_json` e não repete: o lote fica sem
-julgamento e os outros seguem. No `agy`, saída que não decodifica em UTF-8 levantava
-`UnicodeDecodeError` do `subprocess` e virou a mesma "saída inválida" das demais. Os testes usam
-o SDK de verdade sobre `httpx.MockTransport`, o que também pega uma versão do `google-genai` que
-mude onde o corpo é lido. Limites: o SDK aceita sem erro corpo `{}`, `null`, `[]`, string JSON e
-`candidates` como texto, que viram "resposta vazia", então um proxy que devolva isso divide cada
-lote até a vaga (19 chamadas por lote de 10) até o prazo; corpo aninhado a ponto de estourar a
-recursão do `json.loads` (`RecursionError`) segue derrubando; `TypeError` ou `ValidationError`
-do próprio SDK ao montar o pedido também virariam indisponibilidade, mas só com mudança de código
-ou de versão, que o teste da resposta válida pelo SDK pega; e o log da espera diz "Cota por
-minuto atingida", como já dizia no 503. Sem migration e sem deploy; `VERSAO_DA_EXTRACAO` segue
-`7efdbc95`.
-
-## Limites
-
-25 requisições por minuto, 250 por dia, 1.000 por semana e 2.500 por mês.
-`CotaDaAdzuna` segura o ritmo, conta cada chamada (tentativas incluídas) e para a coleta quando
-acaba o saldo do dia, dos últimos 7 dias ou do mês, devolvendo o que já trouxe. O uso fica em
-`uso_das_fontes` (migration 0020) e o resumo diário mostra o mês e avisa a partir de 80%. Banco
-sem a tabela ou fora do ar não derruba a execução: a cota segue sem saldo e o log avisa. Em
-12/09 a coleta fazia ~18 requisições por execução (10 páginas no Brasil, 8 no Rio), ~540 por
-mês só com o diário; cada cidade nova soma até 10. `rodar` e `testar-local` usam a cota;
-`coletar` e `avaliar` respeitam o limite por minuto, mas não gravam o uso. A entrega imediata
-(`rodar --perfil`) coleta só para o perfil atendido e não pode gastar a reserva do diário:
-10 páginas × (1 + cidades de busca) × buscas, calculada pelos usuários ativos (20 em 12/09).
-Sem essa reserva, vínculos feitos entre 21h e 07:23 esgotavam o dia antes do diário. Cota
-zerada antes da primeira busca vira erro de coleta e aviso de operação, nunca "nenhuma vaga".
-O "hoje" da cota é o dia em UTC, que vira às 21h de Brasília. **Depois que o diário do dia UTC
-roda, a reserva sai do saldo do dia (13/09/2026).** Antes ela valia o dia inteiro, e a entrega
-imediata da tarde recebia saldo zero com o dia sobrando. O diário que termina grava em
-`uso_das_fontes` a linha `adzuna:diario` do dia com o que gastou (zero também conta); achando
-essa linha, a imediata desconta a reserva só da semana e do mês, que ainda protegem o diário de
-amanhã. Registro, não horário, porque o cron pode atrasar ou falhar: sem a linha (diário que
-falhou, não rodou ou registro ilegível) a reserva continua, e entre 21h e 07:23 o dia UTC já é
-o do próximo diário. A linha também mostra o gasto real do diário contra a reserva estimada.
-Só grava a linha a execução sem `--perfil` que começa a partir das 09:23 UTC (06:23 de
-Brasília), o início da janela do diário na `telegram-webhook`; um teste confere que os dois
-valores não se afastam. Antes, um `rodar` manual às 22h de Brasília, para refazer um diário que
-falhou, marcava o dia UTC seguinte e as imediatas da madrugada gastavam a reserva do diário das
-07:23, que ficava sem cota. A janela, e não a hora gravada, porque dispensa coluna nova e já é
-regra do produto: entre 06:23 e 07:23 o webhook não dispara imediata.
-
-## Coleta resiliente (13/09/2026)
-
-Com pelo menos uma vaga em mãos, falha numa página tardia
-da Adzuna (429 ou 5xx depois das tentativas, rede, resposta 200 com corpo inválido) para a
-coleta sem novas requisições e levanta `ColetaIncompleta` com o que já veio; o `ColetorComposto`
-aproveita essas vagas e o resumo diário mostra "⚠️ Coleta da Adzuna incompleta: <motivo>". Antes,
-uma página ruim jogava fora tudo. Sem nenhuma vaga continua erro de coleta e aviso de operação,
-inclusive quando a falha é na primeira região e as outras responderiam. Corpo que não é JSON,
-sem `results` ou com `results` fora de lista vira `ErroDeColeta`, nunca exceção crua; item que
-não converte é pulado com aviso. Num dia de coleta incompleta, ou de cota esgotada no meio, quem
-fica sem vaga selecionada tem a mensagem segurada: "nenhuma vaga compatível" afirmaria algo
-sobre uma busca que não aconteceu. O pipeline recebe isso por `executar(coleta_incompleta=...)`
-e não sabe de quais regiões cada perfil depende, então a retenção vale para todos. O uso da
-cota é gravado por `ColetorComRegistroDeUso` assim que a coleta termina, com sucesso ou erro;
-só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidades antes da busca
-nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
-remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
-de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
-
-## Pendente, a descrição completa
-
-O enriquecimento lê a página do anúncio no site da Adzuna
-(`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
-site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
-12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
-sai e a extração passa a ler só os 500 caracteres da API.
-**Anúncio `/land/ad/` não é pedido (14/09/2026).** Parte das vagas vem com `redirect_url`
-`/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
-28/08, nenhuma completada, e eram todas as falhas do enriquecimento nos diários de 12 a 14/09
-(19, 18 e 18). O enriquecimento as pula pelo caminho da URL, sem requisição, e o log só conta
-quantas; elas seguem com a trava de 60. No empate que a trava cria, o ranking desempata pela
-nota antes dos limites objetivos (`nota_antes_dos_limites_objetivos`, só em memória): em 14/09
-a Vettore, 81 antes da trava, ficou fora da mensagem de Administração atrás de vagas de 61 e 65
-presas no mesmo 60. O desempate só vale entre notas finais iguais: a vaga presa em 60 segue
-atrás de qualquer vaga com 61 ou mais, mas passa à frente de vaga completa que tirou 60 por
-mérito, porque 81 antes da trava vence 60.
-**A trava segue o que a extração leu (16/09/2026).** A trava de 60 e a linha "Requisitos
-técnicos: não informados na descrição" liam a `descricao_completa` da vaga do dia, mas a
-extração vem do cache e pode ter sido feita noutro dia. Extraída sobre os 500 caracteres da API
-num dia em que o enriquecimento falhou, a vaga perdia a trava quando a página chegava, sem a IA
-ter lido o anúncio; extraída sobre a página, era travada à toa no dia em que o enriquecimento
-falhava. A extração guarda agora `descricao_completa` no próprio JSONB, gravado pelo pipeline
-com a vaga do momento da extração, e `pontuar` o aplica à vaga avaliada, como já fazia com a
-modalidade extraída. O campo é `SkipJsonSchema`: fica fora do formato pedido à IA e do hash, e
-`VERSAO_DA_EXTRACAO` segue `7efdbc95`. Extração feita sobre a cortada volta à IA uma vez quando
-a vaga chega completa (`leu_menos_que`); se a nova não vier (prazo, cota, resposta vazia), a
-antiga segue valendo com a trava, sem contar como vaga sem extração nem segurar a mensagem.
-Sem migration. Medido em 16/09, só leitura: nenhuma das 566 extrações da versão atual tem o
-registro. Das 550 da Adzuna, 96 são de descrição curta que a API já dá inteira, 33 guardam o
-texto cortado (30 `/land/ad/`, que nunca completam) e 421 guardam a página. Nessas 421 o banco
-não diz o que a IA leu, porque `vagas.descricao` fica com o texto mais longo já visto e não há
-histórico: 222 têm item extraído que só aparece depois do 550º caractere da página, 199 não dão
-sinal para lado nenhum, e nenhum dos 5 casos mais suspeitos, conferidos à mão, mostrou leitura
-cortada. Travar as antigas com a página guardada pegaria 141 dos 189 envios de 7 dias, os que
-têm nota acima de 60; reextraí-las seriam até 421 vagas de uma vez (~43 lotes, ~8 min, colado
-no prazo de 600 s) para achar pouco ou nada. Por isso a extração antiga sem registro segue a
-descrição de hoje, como antes: no deploy nenhuma nota muda e nada volta à IA, e o defeito fica
-só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Daqui em diante a
-reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
-texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
-do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
-a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
-feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
-e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
-completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
-medição acima) pode ver outro texto que o lido pela IA.
-
-## Jooble
-
-coletor pronto e **desligado por padrão** (05/09/2026). API oficial gratuita de
-`br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
-InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
-33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
-~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
-vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
-parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
-várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
-(40% das vagas dela) destrava a descrição completa.
