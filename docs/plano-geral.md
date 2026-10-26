@@ -88,6 +88,29 @@ a chave pública do Supabase está no `web/config.js`.
 - [ ] CSP que restringe carregamento, publicada antes como `Content-Security-Policy-Report-Only`
   (o porquê de ter ficado de fora está no [guia](guia-publicacao-e-piloto.md#cabeçalhos-de-resposta-do-site-08102026)).
 
+Acesso de quem não está logado, conferido em produção em 15/10, só leitura (`has_table_privilege`,
+`has_function_privilege`, `pg_policies` e chamadas à API com a chave publicável): nenhum perfil,
+vaga, avaliação ou envio é lido ou alterado sem login. O papel `anon` só grava os 5 eventos da
+landing em `eventos_produto`. A investigar:
+
+- [ ] `habilidades_do_perfil_validas` e `todos_os_textos_cabem` são executáveis pelo `anon` via
+  `/rest/v1/rpc`, porque a `0018` e a `0025` não fizeram `revoke`. São puras e não leem tabela.
+  Ao fechar, retirar de `public` e `anon` e manter `authenticated`: o `CHECK` de `perfis` roda
+  com as permissões de quem grava, e sem elas a edição do perfil quebra. O teste da edição vai
+  junto.
+- [ ] O visitante escolhe o `sessao_id`. Quem gera uma sessão por pedido contorna o teto de 60 por
+  sessão, infla o funil e, ao esgotar o teto de 2.400 eventos anônimos por hora (`0023`), faz
+  falhar os eventos dos visitantes reais até a hora virar. Conferir se o `app.js` absorve o
+  `PT429` sem afetar a página e se `eventos_produto` precisa de retenção.
+- [ ] O Supabase dá ao `anon` permissões padrão em `storage`, `realtime` e `extensions`, inclusive
+  `TRUNCATE` em `storage.objects` e leitura de `pg_stat_statements`. Hoje nada disso é alcançável:
+  a API só expõe `public` e `graphql_public`, não há bucket, a RLS de `storage` e
+  `realtime.messages` não tem política e a publicação do Realtime está vazia. Expor schema, criar
+  bucket ou publicar tabela no Realtime reabre o acesso. Avaliar revogar essas permissões ou
+  cobrar em teste que continuem inalcançáveis.
+- [ ] Testar com a chave publicável os canais públicos de broadcast e presence do Realtime, que
+  não leem o banco e não foram conferidos.
+
 ### 2.4 Contas, CI e branches
 
 - [ ] Apagar a zona antiga na conta pessoal do Igor, depois de ela aparecer como "Moved", e pôr
