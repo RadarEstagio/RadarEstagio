@@ -237,6 +237,29 @@ Antes de aprovar uma característica nova, responder: ela reforça a promessa de
 relevantes mais cedo? Reduz uma incerteza deste plano? Existe teste manual ou menor que dê a mesma
 evidência? Qual o custo permanente? O que pode ser adiado para abrir espaço?
 
+### Painel de métricas por usuário (ideia de 26/10/2026, sem decisão)
+
+Pedido: ver como cada pessoa reage aos envios do Telegram (cadastro, vínculo, aberturas,
+feedback), além do que `python -m radar metricas` já agrega. Os dados existem em `perfis`,
+`envios`, `avaliacoes` e `eventos_produto`; falta a consulta por usuário e a tela. Caminhos:
+
+1. **Metabase ou Grafana** com usuário Postgres só de leitura. Sem código, mas mais uma peça, e o
+   usuário enxerga `telegram_chat_id` e `token_vinculo`.
+2. **`python -m radar painel`**, HTML estático gerado localmente com `DATABASE_URL`: agregados,
+   `radar/storage/usuarios.sql` (uma linha por perfil) e linha do tempo por `perfil_id`. Cabe na
+   arquitetura de script sem servidor e nenhum dado pessoal sai da máquina. Recomendado como
+   primeiro passo, em fatias: consulta e modelo com teste, renderização, comando e docs.
+3. **Painel web logado** em `web/`, com função `security definer` restrita a uma lista de
+   administradores. Ao vivo para a equipe, mas abre superfície nova (RLS, grants, migration). É o
+   caso de "tela interativa grande" que reabriria a conversa sobre React (seção 7).
+
+Limites a respeitar em qualquer caminho: a resposta de pessoa com deficiência não entra; identificar
+por `perfil_id` abreviado, nunca por e-mail ou `chat_id`; contas da equipe ainda entram na coorte
+([decisões do banco](decisoes-do-banco.md#contas-da-equipe-fora-do-funil-proposta-de-05102026)); não
+publicar dado de estudante em hospedagem que a [política de privacidade](politica-de-privacidade.md)
+não cobre. Antes de construir, passar pelas perguntas acima: a seção 2.5 já diz que o piloto não
+precisa de dashboard para começar a conversa com os colegas.
+
 ## 7. Limitações e decisões que continuam valendo
 
 - **Candidatura:** acontece na fonte; o Radar não se candidata e só registra a declaração "Me

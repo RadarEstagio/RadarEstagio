@@ -22,7 +22,7 @@ que estudantes de fora do grupo o acham útil.
 | [`README.md`](../README.md) | O que é o projeto, fluxo, tecnologias e a tree de cada área | 16/10 |
 | [`docs/README.md`](README.md) | Índice, com um documento dono por assunto | 16/10 |
 | [`funcionalidades.md`](funcionalidades.md) | Catálogo do que o produto faz para quem usa e para quem opera, e o que não existe | 16/10, com a conferência de 17/10 |
-| [`plano-geral.md`](plano-geral.md) | Fonte única de pendências e decisões, quadro dos 16 achados RCD, hipóteses H1 a H7 | 16/10, com as conferências de 17 e 22/10; G03, G04 e RCD-15 fechados; acesso sem login conferido em 15/10 (seção 2.3) |
+| [`plano-geral.md`](plano-geral.md) | Fonte única de pendências e decisões, quadro dos 16 achados RCD, hipóteses H1 a H7 | 16/10, com as conferências de 17 e 22/10; G03, G04 e RCD-15 fechados; ideia do painel por usuário em 26/10 (seção 6); acesso sem login conferido em 15/10 (seção 2.3) |
 | [`arquitetura.md`](arquitetura.md) | Camadas, contratos e 11 decisões técnicas | Estável; as regras do motor são links |
 | [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.631 linhas, com o resumo do raciocínio de 19/10 |
 | [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0036` (21/10, dia do atendimento) |
@@ -100,6 +100,9 @@ automático não está validado (precisa de 75% ou mais de concordância).
 - Dos 16 achados RCD, o plano lista como não implementados: prévia real antes da conta, "Suas
   vagas", retorno no fim do estágio, mensagem com três destaques e frequência semanal.
 - ICP do piloto e congelamento do motor sem caso de usuário não têm decisão registrada.
+- Painel de métricas por usuário: três caminhos descritos no
+  [plano geral](plano-geral.md#painel-de-métricas-por-usuário-ideia-de-26102026-sem-decisão), sem
+  decisão; o recomendado é o HTML local `radar painel`.
 
 **Negócio e externo:**
 
