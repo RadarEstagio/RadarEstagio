@@ -663,3 +663,23 @@ em 14/10. Foi aceito porque ele ocupa a largura inteira do cartão.
 
 Na landing, "piloto" virou "fase de testes", porque nem todo estudante entende a palavra, e o plano
 se chama Gratuito. Os Termos ainda dizem "piloto": trocar exige versão nova dos textos legais.
+
+### Cabeçalho do celular numa linha, com menu (11/11/2026)
+
+Até 580px, o cabeçalho grudado tinha a marca, o tema, o "Entrar" e, numa segunda linha, o botão de
+cadastro da largura da tela. Eram cerca de 120px fixos, um quinto da altura de um celular de 667px,
+com o conteúdo passando por baixo durante a rolagem. Com a pessoa logada, o botão virava "Minha
+conta" logo acima do "Minha conta" do hero. E as seções (Como funciona, Preços, FAQ, Sobre) não
+apareciam: a `.desktop-nav` some a partir de 980px e nada a substituía.
+
+Agora, até 980px, o cabeçalho mostra a marca, o tema e um botão de menu. O menu (`#menu-celular`)
+abre embaixo do cabeçalho com os mesmos links da `.desktop-nav` e, até 580px, também com "Entrar" e
+o botão de cadastro, que viram só "Minha conta" para quem entrou, como os outros da página. Entre
+581px e 980px, "Entrar" e o cadastro continuam no cabeçalho, porque cabem. O menu fecha ao escolher
+um item, ao tocar fora do cabeçalho e no Esc, que devolve o foco ao botão. O cadastro aberto pelo
+menu registra a origem `menu` em `cta_cadastro_aberto`.
+
+O teste `menu do celular abre, leva às mesmas seções do computador e fecha` compara os links do
+menu com os da `.desktop-nav`: seção nova no cabeçalho do computador entra nos dois. Como o JSDOM
+não avalia media query, `test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu` lê o
+CSS e recusa a volta do botão de cadastro ao cabeçalho do celular.
