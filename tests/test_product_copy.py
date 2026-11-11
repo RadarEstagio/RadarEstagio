@@ -398,6 +398,15 @@ def test_abas_da_conta_dividem_a_largura_do_celular_com_rotulos_curtos():
     assert "justify-content: center" in links_no_celular
 
 
+def test_excluir_conta_no_painel_e_contorno_e_so_a_confirmacao_e_vermelha_cheia():
+    html = (RAIZ / "web/index.html").read_text()
+    botao = re.search(r'<button [^>]*id="delete-account"[^>]*>', html).group(0)
+    confirmar = re.search(r'<button [^>]*id="account-confirm-yes"[^>]*>', html).group(0)
+
+    assert "button-danger-ghost" in botao
+    assert re.search(r'class="button button-danger"', confirmar)
+
+
 def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
     html = (RAIZ / "web/index.html").read_text()
 
