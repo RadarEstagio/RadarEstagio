@@ -382,6 +382,22 @@ def test_navegacao_da_conta_no_celular_rola_sozinha_sem_alargar_a_pagina():
     assert all(altura >= 44 for altura in alturas_dos_links)
 
 
+def test_abas_da_conta_dividem_a_largura_do_celular_com_rotulos_curtos():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    navegacao = re.search(r'<nav class="account-nav"[^>]*>(.*?)</nav>', html, re.S).group(1)
+    rotulos = re.findall(r"<a [^>]*>([^<]+)</a>", navegacao)
+    links_no_celular = " ".join(
+        declaracoes
+        for seletores, declaracoes in _regras_das_telas_estreitas(css)
+        if seletores == ".account-nav a"
+    )
+
+    assert rotulos == ["Perfil", "Entregas", "Dados", "Privacidade"]
+    assert "flex: 1 1 auto" in links_no_celular
+    assert "justify-content: center" in links_no_celular
+
+
 def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
     html = (RAIZ / "web/index.html").read_text()
 
