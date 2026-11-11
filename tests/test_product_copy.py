@@ -1,5 +1,6 @@
 import html as marcacao_html
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 from radar.pipeline import DIAS_ATE_APAGAR_CADASTRO_PENDENTE, DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA
@@ -188,6 +189,47 @@ def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
     css = (RAIZ / "web/assets/styles.css").read_text()
 
     assert ".privacy-note { display: none; }" not in css
+
+
+def test_campos_na_tela_de_toque_tem_16px_para_o_iphone_nao_ampliar_ao_tocar():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    toque = "@media (pointer: coarse)"
+    html = (RAIZ / "web/index.html").read_text()
+
+    for seletor in (".field input", ".field select"):
+        assert declaracoes_do_css(css, seletor, media=toque)["font-size"] == "16px"
+    campos = _campos_de_digitar(html)
+    assert len(campos) >= 8
+    assert [nome for nome, dentro_de_field in campos if not dentro_de_field] == []
+
+
+class _LeitorDeCampos(HTMLParser):
+    VAZIOS = {"input", "img", "br", "meta", "link", "hr", "source", "path", "circle"}
+
+    def __init__(self):
+        super().__init__()
+        self.abertos: list[bool] = []
+        self.campos: list[tuple[str, bool]] = []
+
+    def handle_starttag(self, tag, attrs):
+        atributos = dict(attrs)
+        e_field = "field" in (atributos.get("class") or "").split()
+        de_digitar = atributos.get("type") not in ("checkbox", "radio")
+        if tag in ("input", "select", "textarea") and de_digitar:
+            nome = atributos.get("id") or atributos.get("name") or tag
+            self.campos.append((nome, any(self.abertos) or e_field))
+        if tag not in self.VAZIOS:
+            self.abertos.append(e_field)
+
+    def handle_endtag(self, tag):
+        if tag not in self.VAZIOS and self.abertos:
+            self.abertos.pop()
+
+
+def _campos_de_digitar(html: str) -> list[tuple[str, bool]]:
+    leitor = _LeitorDeCampos()
+    leitor.feed(html)
+    return leitor.campos
 
 
 def test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo():
