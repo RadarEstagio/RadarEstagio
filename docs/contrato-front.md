@@ -700,3 +700,22 @@ de tela, recortado com `clip-path` e não com `display: none`, porque é ele que
 formulário: `test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular` segue cobrando isso,
 e `test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo` recusa a volta do
 bloco para cima. No computador nada mudou.
+
+### Campos com 16px na tela de toque (11/11/2026)
+
+Os campos do cadastro, do login e da recuperação de senha herdavam os 12px do `.field`, que é o
+tamanho do rótulo. O Safari do iPhone amplia a página quando foca um campo com menos de 16px e não
+volta sozinho, então quem preenchia o cadastro ficava com a tela cortada dos lados. Em
+`@media (pointer: coarse)`, `.field input` e `.field select` passam a 16px. A regra vale para todo
+aparelho de toque, inclusive iPad, que também amplia, e não por largura de tela. Com mouse, os
+campos seguem em 12px. `test_campos_na_tela_de_toque_tem_16px_para_o_iphone_nao_ampliar_ao_tocar`
+confere a regra e recusa campo de digitar fora de um `.field`, que escaparia dela.
+
+### Cancelar a edição do perfil (11/11/2026)
+
+Ao tocar em "Editar perfil", as abas da conta somem e a primeira etapa não tem "Voltar". A única
+saída era "Voltar ao site", que leva para a landing. Agora "Cancelar edição" (`#cancel-edit`) fica
+sob os botões em todas as etapas da edição, e só nela. Ele passa por `recusarSeASessaoMudou`, relê o
+perfil do banco com `perfilAtual` e mostra a conta pelo mesmo `mostrarEstadoDoPerfil` do
+salvamento, sem gravar nada. O que foi mudado no formulário se perde, porque "Editar perfil"
+sempre preenche o formulário de novo com o perfil salvo.

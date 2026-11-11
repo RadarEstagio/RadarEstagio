@@ -26,7 +26,7 @@ que estudantes de fora do grupo o acham útil.
 | [`arquitetura.md`](arquitetura.md) | Camadas, contratos e 11 decisões técnicas | Estável; as regras do motor são links |
 | [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.631 linhas, com o resumo do raciocínio de 19/10 |
 | [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0036` (21/10, dia do atendimento) |
-| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") e o menu e o cadastro do celular de 11/11 |
+| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") e o celular de 11/11 (menu, cadastro, campos de 16px, cancelar edição) |
 | [`metricas.md`](metricas.md) | Eventos, denominadores, utilidade semanal, pergunta do dia seguinte | 05/10 |
 | [`desenvolvimento.md`](desenvolvimento.md) | Instalação, variáveis, comandos da CLI, testes e scripts | Criado em 16/10 |
 | [`guia-publicacao-e-piloto.md`](guia-publicacao-e-piloto.md) | Configuração de cada serviço, tabela do estado conferido, roteiro de teste | Supabase e Telegram conferidos em 17/10, migrations em 22/10; dois disparos do cron e vigia desde 21/10 |
