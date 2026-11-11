@@ -1094,6 +1094,50 @@ Deno.test("edição após login mostra preferências e salva sem pedir novo acei
   }
 });
 
+Deno.test("cancelar a edição em qualquer etapa volta à conta sem salvar", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const cancelar = doc.querySelector("#cancel-edit");
+    assert.equal(cancelar.hidden, true);
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(cancelar.hidden, false);
+    const form = doc.querySelector("#signup-form");
+    form.elements.cidade.value = "Natal, RN";
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector("#previous-step").hidden, false);
+    cancelar.click();
+    await settle();
+    assert.equal(form.hidden, true);
+    assert.equal(doc.querySelector("#account-state").hidden, false);
+    assert.equal(doc.querySelector("#account-overview-panel").hidden, false);
+    assert.match(doc.querySelector("#account-summary").textContent, /Recife/);
+    assert.equal(doc.activeElement.id, "account-title");
+    const gravacoesNoPerfil = a.calls.filter(([nome, tabela]) =>
+      ["update", "upsert", "insert"].includes(String(nome)) && tabela === "perfis"
+    );
+    assert.deepEqual(gravacoesNoPerfil, []);
+  } finally {
+    a.close();
+  }
+
+  const visitante = app();
+  try {
+    await settle();
+    visitante.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(visitante.w.document.querySelector("#cancel-edit").hidden, true);
+  } finally {
+    visitante.close();
+  }
+});
+
 Deno.test("preferência de e-mail pode ser revogada e falha preserva o valor anterior", async () => {
   const a = app({
     session: { user },

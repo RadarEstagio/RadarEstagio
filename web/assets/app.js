@@ -127,6 +127,7 @@ const pauseReasonMessage = document.querySelector("#pause-reason-message");
 const savePauseReason = document.querySelector("#save-pause-reason");
 const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
+const cancelarEdicao = document.querySelector("#cancel-edit");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
 const chamadasDeLogin = [...document.querySelectorAll(".js-open-login")];
 const atalhoDaConta = document.querySelector("#atalho-da-conta");
@@ -1096,6 +1097,7 @@ function setAuthMode(mode) {
 
 function sairDoModoEdicao() {
   editandoPerfilExistente = false;
+  cancelarEdicao.hidden = true;
   credenciais.hidden = false;
   document.querySelector(".auth-help").hidden = false;
   atualizarPassosAtivos();
@@ -1109,6 +1111,7 @@ function sairDoModoEdicao() {
 function entrarNoModoEdicao() {
   setAuthMode("signup");
   editandoPerfilExistente = true;
+  cancelarEdicao.hidden = false;
   credenciais.hidden = true;
   document.querySelector(".auth-help").hidden = true;
   accountSwitch.hidden = true;
@@ -1869,6 +1872,17 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
     showStep(PASSO_MOMENTO);
   } catch (error) {
     setAccountMessage(humanizeError(error));
+  }
+});
+
+cancelarEdicao.addEventListener("click", async () => {
+  try {
+    if (await recusarSeASessaoMudou()) return;
+    const profile = await perfilAtual();
+    setFormMessage();
+    mostrarEstadoDoPerfil(profile);
+  } catch (error) {
+    setFormMessage(humanizeError(error));
   }
 });
 
