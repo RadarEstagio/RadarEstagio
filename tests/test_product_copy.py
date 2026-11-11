@@ -190,6 +190,22 @@ def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
     assert ".privacy-note { display: none; }" not in css
 
 
+def test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    celular = "@media (max-width: 760px)"
+    apresentacao = declaracoes_do_css(css, ".dialog-intro", media=celular)
+    titulo = declaracoes_do_css(css, ".dialog-intro h2", media=celular)
+
+    assert declaracoes_do_css(css, ".dialog-shell", media=celular)["flex-direction"] == "column"
+    assert apresentacao["order"] == "1"
+    assert apresentacao["background"] == "none"
+    assert titulo["clip-path"] == "inset(50%)"
+    assert "display" not in titulo
+    marca = declaracoes_do_css(css, ".dialog-intro .radar-mark-dialog", media=celular)
+    assert marca["display"] == "none"
+    assert "display" not in declaracoes_do_css(css, ".privacy-note", media=celular)
+
+
 def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
     css = (RAIZ / "web/assets/styles.css").read_text()
     regra_do_celular = css[css.index("@media (max-width: 760px)") :]
