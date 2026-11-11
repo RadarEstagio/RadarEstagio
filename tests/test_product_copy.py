@@ -1,5 +1,6 @@
 import html as marcacao_html
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 from radar.pipeline import DIAS_ATE_APAGAR_CADASTRO_PENDENTE, DIAS_ATE_APAGAR_CONTA_NAO_CONFIRMADA
@@ -190,6 +191,63 @@ def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
     assert ".privacy-note { display: none; }" not in css
 
 
+def test_campos_na_tela_de_toque_tem_16px_para_o_iphone_nao_ampliar_ao_tocar():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    toque = "@media (pointer: coarse)"
+    html = (RAIZ / "web/index.html").read_text()
+
+    for seletor in (".field input", ".field select"):
+        assert declaracoes_do_css(css, seletor, media=toque)["font-size"] == "16px"
+    campos = _campos_de_digitar(html)
+    assert len(campos) >= 8
+    assert [nome for nome, dentro_de_field in campos if not dentro_de_field] == []
+
+
+class _LeitorDeCampos(HTMLParser):
+    VAZIOS = {"input", "img", "br", "meta", "link", "hr", "source", "path", "circle"}
+
+    def __init__(self):
+        super().__init__()
+        self.abertos: list[bool] = []
+        self.campos: list[tuple[str, bool]] = []
+
+    def handle_starttag(self, tag, attrs):
+        atributos = dict(attrs)
+        e_field = "field" in (atributos.get("class") or "").split()
+        de_digitar = atributos.get("type") not in ("checkbox", "radio")
+        if tag in ("input", "select", "textarea") and de_digitar:
+            nome = atributos.get("id") or atributos.get("name") or tag
+            self.campos.append((nome, any(self.abertos) or e_field))
+        if tag not in self.VAZIOS:
+            self.abertos.append(e_field)
+
+    def handle_endtag(self, tag):
+        if tag not in self.VAZIOS and self.abertos:
+            self.abertos.pop()
+
+
+def _campos_de_digitar(html: str) -> list[tuple[str, bool]]:
+    leitor = _LeitorDeCampos()
+    leitor.feed(html)
+    return leitor.campos
+
+
+def test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    celular = "@media (max-width: 760px)"
+    apresentacao = declaracoes_do_css(css, ".dialog-intro", media=celular)
+    titulo = declaracoes_do_css(css, ".dialog-intro h2", media=celular)
+
+    assert declaracoes_do_css(css, ".dialog-shell", media=celular)["flex-direction"] == "column"
+    assert apresentacao["order"] == "1"
+    assert apresentacao["background"] == "none"
+    assert titulo["clip-path"] == "inset(50%)"
+    assert "display" not in titulo
+    marca = declaracoes_do_css(css, ".dialog-intro .radar-mark-dialog", media=celular)
+    assert marca["display"] == "none"
+    assert "display" not in declaracoes_do_css(css, ".privacy-note", media=celular)
+
+
 def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
     css = (RAIZ / "web/assets/styles.css").read_text()
     regra_do_celular = css[css.index("@media (max-width: 760px)") :]
@@ -237,6 +295,24 @@ def test_cadastro_rola_no_computador_em_vez_de_cortar_o_botao():
     assert dialogo["--signup-dialog-max-height"] == "min(780px, calc(100dvh - 28px))"
     assert declaracoes_do_css(css, ".dialog-shell")["min-height"] == f"min(650px, {limite})"
     assert declaracoes_do_css(css, ".dialog-form-area")["position"] == "relative"
+
+
+def test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    celular = "@media (max-width: 580px)"
+    sem_navegacao = "@media (max-width: 980px)"
+    tela_larga = "@media (min-width: 981px)"
+
+    assert declaracoes_do_css(css, ".menu-toggle")["display"] == "none"
+    assert declaracoes_do_css(css, ".menu-toggle", media=sem_navegacao)["display"] == "grid"
+    assert declaracoes_do_css(css, ".menu-celular", media=tela_larga)["display"] == "none"
+    assert declaracoes_do_css(css, ".header-login", media=celular)["display"] == "none"
+    assert declaracoes_do_css(css, ".header-actions > .button", media=celular)["display"] == "none"
+    assert "grid-column" not in declaracoes_do_css(css, ".header-actions > .button", media=celular)
+    assert declaracoes_do_css(css, ".menu-celular-acoes")["display"] == "none"
+    assert declaracoes_do_css(css, ".menu-celular-acoes", media=celular)["display"] == "grid"
+    assert declaracoes_do_css(css, ".atalho-da-conta")["display"] == "none"
+    assert declaracoes_do_css(css, ".atalho-da-conta", media=celular)["display"] == "grid"
 
 
 def _regras_das_telas_estreitas(css):

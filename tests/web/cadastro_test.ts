@@ -510,6 +510,105 @@ Deno.test("tema e login são controles separados com ações independentes", asy
   }
 });
 
+Deno.test("menu do celular abre, leva às mesmas seções do computador e fecha", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const botao = doc.querySelector("#menu-toggle");
+    const menu = doc.querySelector("#menu-celular");
+    const secoes = (seletor: string) => [...doc.querySelectorAll(`${seletor} a`)].map((link) => link.getAttribute("href"));
+    assert.deepEqual(secoes("#menu-celular nav"), secoes(".desktop-nav"));
+    assert.equal(menu.hidden, true);
+    assert.equal(botao.getAttribute("aria-controls"), "menu-celular");
+
+    botao.click();
+    assert.equal(menu.hidden, false);
+    assert.equal(botao.getAttribute("aria-expanded"), "true");
+    assert.equal(botao.getAttribute("aria-label"), "Fechar menu");
+    menu.querySelector('a[href="#precos"]').click();
+    assert.equal(menu.hidden, true);
+    assert.equal(botao.getAttribute("aria-expanded"), "false");
+    assert.equal(botao.getAttribute("aria-label"), "Abrir menu");
+
+    botao.click();
+    doc.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    assert.equal(menu.hidden, true);
+    assert.equal(doc.activeElement, botao);
+
+    botao.click();
+    doc.querySelector("#inicio").click();
+    assert.equal(menu.hidden, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("menu do celular oferece o cadastro só ao visitante, sem Entrar nem Minha conta", async () => {
+  const visitante = app();
+  try {
+    await settle();
+    const doc = visitante.w.document;
+    const cadastro = doc.querySelector("#menu-celular .js-open-signup");
+    assert.equal(doc.querySelector("#menu-celular .js-open-login"), null);
+    assert.equal(doc.querySelector(".menu-celular-acoes").hidden, false);
+    assert.equal(cadastro.textContent.trim(), "Cadastrar meu perfil");
+    doc.querySelector("#menu-toggle").click();
+    cadastro.click();
+    await settle();
+    assert.equal(doc.querySelector("#menu-celular").hidden, true);
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    const aberturas = visitante.calls
+      .filter(([nome, tabela]) => nome === "insert" && tabela === "eventos_produto")
+      .map(([, , payload]) => payload as unknown as { nome: string; propriedades: Record<string, unknown> })
+      .filter((evento) => evento.nome === "cta_cadastro_aberto");
+    assert.deepEqual(aberturas.map((evento) => evento.propriedades.origem), ["menu"]);
+  } finally {
+    visitante.close();
+  }
+
+  const dono = app({ session: { user }, savedProfile: { ...profile } });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    assert.equal(doc.querySelector(".menu-celular-acoes").hidden, true);
+  } finally {
+    dono.close();
+  }
+});
+
+Deno.test("ícone da conta no cabeçalho abre o login do visitante e a conta de quem entrou", async () => {
+  const visitante = app();
+  try {
+    await settle();
+    const doc = visitante.w.document;
+    const icone = doc.querySelector("#atalho-da-conta");
+    assert.ok(icone.matches(".header-utilities > button"));
+    assert.equal(icone.textContent.trim(), "");
+    assert.equal(icone.getAttribute("aria-label"), "Entrar");
+    icone.click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+  } finally {
+    visitante.close();
+  }
+
+  const dono = app({ session: { user }, savedProfile: { ...profile } });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    const icone = doc.querySelector("#atalho-da-conta");
+    assert.equal(icone.hidden, false);
+    assert.equal(icone.getAttribute("aria-label"), "Minha conta");
+    icone.click();
+    await settle();
+    assert.equal(doc.querySelector("#account-page").hidden, false);
+  } finally {
+    dono.close();
+  }
+});
+
 Deno.test("site começa no claro mesmo com o sistema no escuro", () => {
   const a = app({ temaDoSistema: "escuro" });
   try {
@@ -992,6 +1091,50 @@ Deno.test("edição após login mostra preferências e salva sem pedir novo acei
     assert.equal(a.calls.some(([name]) => name === "signup"), false);
   } finally {
     a.close();
+  }
+});
+
+Deno.test("cancelar a edição em qualquer etapa volta à conta sem salvar", async () => {
+  const a = app({
+    session: { user },
+    url: "https://radarestagio.com/?conta",
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const cancelar = doc.querySelector("#cancel-edit");
+    assert.equal(cancelar.hidden, true);
+    doc.querySelector("#edit-profile").click();
+    await settle();
+    assert.equal(cancelar.hidden, false);
+    const form = doc.querySelector("#signup-form");
+    form.elements.cidade.value = "Natal, RN";
+    doc.querySelector("#next-step").click();
+    assert.equal(doc.querySelector("#previous-step").hidden, false);
+    cancelar.click();
+    await settle();
+    assert.equal(form.hidden, true);
+    assert.equal(doc.querySelector("#account-state").hidden, false);
+    assert.equal(doc.querySelector("#account-overview-panel").hidden, false);
+    assert.match(doc.querySelector("#account-summary").textContent, /Recife/);
+    assert.equal(doc.activeElement.id, "account-title");
+    const gravacoesNoPerfil = a.calls.filter(([nome, tabela]) =>
+      ["update", "upsert", "insert"].includes(String(nome)) && tabela === "perfis"
+    );
+    assert.deepEqual(gravacoesNoPerfil, []);
+  } finally {
+    a.close();
+  }
+
+  const visitante = app();
+  try {
+    await settle();
+    visitante.w.document.querySelector(".js-open-signup").click();
+    await settle();
+    assert.equal(visitante.w.document.querySelector("#cancel-edit").hidden, true);
+  } finally {
+    visitante.close();
   }
 });
 

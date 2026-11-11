@@ -663,3 +663,59 @@ em 14/10. Foi aceito porque ele ocupa a largura inteira do cartão.
 
 Na landing, "piloto" virou "fase de testes", porque nem todo estudante entende a palavra, e o plano
 se chama Gratuito. Os Termos ainda dizem "piloto": trocar exige versão nova dos textos legais.
+
+### Cabeçalho do celular numa linha, com menu (11/11/2026)
+
+Até 580px, o cabeçalho grudado tinha a marca, o tema, o "Entrar" e, numa segunda linha, o botão de
+cadastro da largura da tela. Eram cerca de 120px fixos, um quinto da altura de um celular de 667px,
+com o conteúdo passando por baixo durante a rolagem. Com a pessoa logada, o botão virava "Minha
+conta" logo acima do "Minha conta" do hero. E as seções (Como funciona, Preços, FAQ, Sobre) não
+apareciam: a `.desktop-nav` some a partir de 980px e nada a substituía.
+
+Agora, até 980px, o cabeçalho mostra a marca, o tema e um botão de menu. O menu (`#menu-celular`)
+abre embaixo do cabeçalho com os mesmos links da `.desktop-nav` e, até 580px, também com o botão de
+cadastro, só para o visitante. Ainda até 580px, um ícone de pessoa (`#atalho-da-conta`), sem texto,
+fica entre o tema e o menu: abre o login do visitante e a conta de quem entrou, e o `aria-label`
+diz "Entrar" ou "Minha conta". O Igor pediu o ícone no lugar do texto "Minha conta". Entre 581px e
+980px, "Entrar" e o cadastro continuam no cabeçalho, porque cabem. O menu fecha ao escolher
+um item, ao tocar fora do cabeçalho e no Esc, que devolve o foco ao botão. O cadastro aberto pelo
+menu registra a origem `menu` em `cta_cadastro_aberto`.
+
+O teste `menu do celular abre, leva às mesmas seções do computador e fecha` compara os links do
+menu com os da `.desktop-nav`: seção nova no cabeçalho do computador entra nos dois. Como o JSDOM
+não avalia media query, `test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu` lê o
+CSS e recusa a volta do botão de cadastro ao cabeçalho do celular.
+
+### Cadastro do celular abre no formulário (11/11/2026)
+
+Até 760px, o cadastro abria com o bloco verde de apresentação em cima: a marca, "Ative seu radar",
+o título e o aviso de privacidade ocupavam cerca de 310px de uma tela de 667px, e o primeiro campo
+ficava no limite de baixo. O Igor pediu que o primeiro clique mostrasse o funil. Agora, no celular,
+o cadastro abre direto na barra de progresso, com o X ao lado dela, e na pergunta da etapa.
+
+O bloco de apresentação perde o verde e vai para depois do formulário (`order: 1`). A marca e os
+dois parágrafos somem, e o título "Seu perfil deixa cada busca mais certeira" fica só para leitor
+de tela, recortado com `clip-path` e não com `display: none`, porque é ele que dá nome ao
+`<dialog>` (`aria-labelledby`). O aviso de privacidade continua visível, como nota em cinza sob o
+formulário: `test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular` segue cobrando isso,
+e `test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo` recusa a volta do
+bloco para cima. No computador nada mudou.
+
+### Campos com 16px na tela de toque (11/11/2026)
+
+Os campos do cadastro, do login e da recuperação de senha herdavam os 12px do `.field`, que é o
+tamanho do rótulo. O Safari do iPhone amplia a página quando foca um campo com menos de 16px e não
+volta sozinho, então quem preenchia o cadastro ficava com a tela cortada dos lados. Em
+`@media (pointer: coarse)`, `.field input` e `.field select` passam a 16px. A regra vale para todo
+aparelho de toque, inclusive iPad, que também amplia, e não por largura de tela. Com mouse, os
+campos seguem em 12px. `test_campos_na_tela_de_toque_tem_16px_para_o_iphone_nao_ampliar_ao_tocar`
+confere a regra e recusa campo de digitar fora de um `.field`, que escaparia dela.
+
+### Cancelar a edição do perfil (11/11/2026)
+
+Ao tocar em "Editar perfil", as abas da conta somem e a primeira etapa não tem "Voltar". A única
+saída era "Voltar ao site", que leva para a landing. Agora "Cancelar edição" (`#cancel-edit`) fica
+sob os botões em todas as etapas da edição, e só nela. Ele passa por `recusarSeASessaoMudou`, relê o
+perfil do banco com `perfilAtual` e mostra a conta pelo mesmo `mostrarEstadoDoPerfil` do
+salvamento, sem gravar nada. O que foi mudado no formulário se perde, porque "Editar perfil"
+sempre preenche o formulário de novo com o perfil salvo.
