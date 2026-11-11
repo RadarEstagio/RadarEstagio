@@ -544,14 +544,14 @@ Deno.test("menu do celular abre, leva às mesmas seções do computador e fecha"
   }
 });
 
-Deno.test("menu do celular tem Entrar e cadastro para o visitante e só Minha conta para quem entrou", async () => {
+Deno.test("menu do celular oferece o cadastro só ao visitante, sem Entrar nem Minha conta", async () => {
   const visitante = app();
   try {
     await settle();
     const doc = visitante.w.document;
-    const entrar = doc.querySelector("#menu-celular .js-open-login");
     const cadastro = doc.querySelector("#menu-celular .js-open-signup");
-    assert.equal(entrar.hidden, false);
+    assert.equal(doc.querySelector("#menu-celular .js-open-login"), null);
+    assert.equal(doc.querySelector(".menu-celular-acoes").hidden, false);
     assert.equal(cadastro.textContent.trim(), "Cadastrar meu perfil");
     doc.querySelector("#menu-toggle").click();
     cadastro.click();
@@ -571,8 +571,39 @@ Deno.test("menu do celular tem Entrar e cadastro para o visitante e só Minha co
   try {
     await settle();
     const doc = dono.w.document;
-    assert.equal(doc.querySelector("#menu-celular .js-open-login").hidden, true);
-    assert.equal(doc.querySelector("#menu-celular .js-open-signup").textContent.trim(), "Minha conta");
+    assert.equal(doc.querySelector(".menu-celular-acoes").hidden, true);
+  } finally {
+    dono.close();
+  }
+});
+
+Deno.test("ícone da conta no cabeçalho abre o login do visitante e a conta de quem entrou", async () => {
+  const visitante = app();
+  try {
+    await settle();
+    const doc = visitante.w.document;
+    const icone = doc.querySelector("#atalho-da-conta");
+    assert.ok(icone.matches(".header-utilities > button"));
+    assert.equal(icone.textContent.trim(), "");
+    assert.equal(icone.getAttribute("aria-label"), "Entrar");
+    icone.click();
+    await settle();
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    assert.equal(doc.querySelector("#conta-titulo").textContent, "Entre na sua conta");
+  } finally {
+    visitante.close();
+  }
+
+  const dono = app({ session: { user }, savedProfile: { ...profile } });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    const icone = doc.querySelector("#atalho-da-conta");
+    assert.equal(icone.hidden, false);
+    assert.equal(icone.getAttribute("aria-label"), "Minha conta");
+    icone.click();
+    await settle();
+    assert.equal(doc.querySelector("#account-page").hidden, false);
   } finally {
     dono.close();
   }

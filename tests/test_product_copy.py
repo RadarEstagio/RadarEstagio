@@ -253,6 +253,8 @@ def test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu():
     assert "grid-column" not in declaracoes_do_css(css, ".header-actions > .button", media=celular)
     assert declaracoes_do_css(css, ".menu-celular-acoes")["display"] == "none"
     assert declaracoes_do_css(css, ".menu-celular-acoes", media=celular)["display"] == "grid"
+    assert declaracoes_do_css(css, ".atalho-da-conta")["display"] == "none"
+    assert declaracoes_do_css(css, ".atalho-da-conta", media=celular)["display"] == "grid"
 
 
 def _regras_das_telas_estreitas(css):

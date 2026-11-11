@@ -129,6 +129,8 @@ const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
 const chamadasDeLogin = [...document.querySelectorAll(".js-open-login")];
+const atalhoDaConta = document.querySelector("#atalho-da-conta");
+const acoesDoMenuCelular = document.querySelector(".menu-celular-acoes");
 const rotulosDeCadastro = new Map(
   chamadasDeCadastro.map((botao) => [botao, botao.firstChild.textContent]),
 );
@@ -1216,6 +1218,8 @@ function mostrarChamadaDeConta(autenticado) {
   chamadasDeLogin.forEach((botao) => {
     botao.hidden = autenticado;
   });
+  atalhoDaConta.setAttribute("aria-label", autenticado ? "Minha conta" : "Entrar");
+  acoesDoMenuCelular.hidden = autenticado;
 }
 
 function rotularDialogo(idDoTitulo) {
@@ -1790,16 +1794,17 @@ function voltarPasso() {
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
 }
 
-chamadasDeLogin.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (usuarioAutenticado) {
-      openSignup();
-      return;
-    }
-    limparRascunhoDoCadastro();
-    abrirLogin();
-  });
-});
+function abrirContaOuLogin() {
+  if (usuarioAutenticado) {
+    openSignup();
+    return;
+  }
+  limparRascunhoDoCadastro();
+  abrirLogin();
+}
+
+chamadasDeLogin.forEach((button) => button.addEventListener("click", abrirContaOuLogin));
+atalhoDaConta.addEventListener("click", abrirContaOuLogin);
 
 async function abrirCadastroPelaArea(nomeDaArea) {
   if (!usuarioAutenticado) void registerEvent("cta_cadastro_aberto", { origem: "faixa_de_areas" });
