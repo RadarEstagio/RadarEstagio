@@ -1398,6 +1398,32 @@ Deno.test("cada aba da conta tem um título só, sem o painel repetir o nome da 
   } finally { a.close(); }
 });
 
+Deno.test("recarregar a conta numa aba volta ao topo depois que o navegador rola até o painel", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta#account-data-panel",
+  });
+  try {
+    await settle();
+    const rolagens: unknown[] = [];
+    a.w.scrollTo = (...args: unknown[]) => rolagens.push(args);
+    a.w.dispatchEvent(new a.w.Event("load"));
+    assert.equal(JSON.stringify(rolagens), JSON.stringify([[{ top: 0, behavior: "instant" }]]));
+  } finally { a.close(); }
+});
+
+Deno.test("carregar o site sem a conta aberta não mexe na rolagem", async () => {
+  const a = app({ url: "https://radarestagio.com/#faq" });
+  try {
+    await settle();
+    const rolagens: unknown[] = [];
+    a.w.scrollTo = (...args: unknown[]) => rolagens.push(args);
+    a.w.dispatchEvent(new a.w.Event("load"));
+    assert.deepEqual(rolagens, []);
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
   const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
   try {

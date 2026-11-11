@@ -283,6 +283,12 @@ window.addEventListener("hashchange", () => {
   document.querySelector("#account-title").focus({ preventScroll: true });
 });
 
+window.addEventListener("load", () => {
+  if (accountPage.hidden || accountState.hidden) return;
+  if (!accountNavEntries.some(({ link }) => link.hash === window.location.hash)) return;
+  window.scrollTo({ top: 0, behavior: "instant" });
+});
+
 function normalizarTexto(texto) {
   return texto
     .replace(/[\u2010\u2011\u2013\u2014\u2212]/g, "-")
