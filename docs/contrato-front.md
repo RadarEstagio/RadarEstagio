@@ -685,3 +685,18 @@ O teste `menu do celular abre, leva às mesmas seções do computador e fecha` c
 menu com os da `.desktop-nav`: seção nova no cabeçalho do computador entra nos dois. Como o JSDOM
 não avalia media query, `test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu` lê o
 CSS e recusa a volta do botão de cadastro ao cabeçalho do celular.
+
+### Cadastro do celular abre no formulário (11/11/2026)
+
+Até 760px, o cadastro abria com o bloco verde de apresentação em cima: a marca, "Ative seu radar",
+o título e o aviso de privacidade ocupavam cerca de 310px de uma tela de 667px, e o primeiro campo
+ficava no limite de baixo. O Igor pediu que o primeiro clique mostrasse o funil. Agora, no celular,
+o cadastro abre direto na barra de progresso, com o X ao lado dela, e na pergunta da etapa.
+
+O bloco de apresentação perde o verde e vai para depois do formulário (`order: 1`). A marca e os
+dois parágrafos somem, e o título "Seu perfil deixa cada busca mais certeira" fica só para leitor
+de tela, recortado com `clip-path` e não com `display: none`, porque é ele que dá nome ao
+`<dialog>` (`aria-labelledby`). O aviso de privacidade continua visível, como nota em cinza sob o
+formulário: `test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular` segue cobrando isso,
+e `test_cadastro_no_celular_abre_no_formulario_e_leva_a_apresentacao_para_baixo` recusa a volta do
+bloco para cima. No computador nada mudou.
