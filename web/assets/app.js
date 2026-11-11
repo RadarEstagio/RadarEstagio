@@ -23,6 +23,28 @@ botaoDoTema.addEventListener("click", () => {
   } catch {}
 });
 
+const botaoDoMenu = document.querySelector("#menu-toggle");
+const menuCelular = document.querySelector("#menu-celular");
+
+function mostrarMenuCelular(aberto) {
+  menuCelular.hidden = !aberto;
+  botaoDoMenu.setAttribute("aria-expanded", String(aberto));
+  botaoDoMenu.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+}
+
+botaoDoMenu.addEventListener("click", () => mostrarMenuCelular(menuCelular.hidden));
+menuCelular.addEventListener("click", (event) => {
+  if (event.target.closest("a, button")) mostrarMenuCelular(false);
+});
+document.addEventListener("click", (event) => {
+  if (!menuCelular.hidden && !event.target.closest(".site-header")) mostrarMenuCelular(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || menuCelular.hidden) return;
+  mostrarMenuCelular(false);
+  botaoDoMenu.focus();
+});
+
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const ROLAGEM_MINIMA_ATE_CHAT = 90;

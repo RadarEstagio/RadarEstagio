@@ -510,6 +510,74 @@ Deno.test("tema e login são controles separados com ações independentes", asy
   }
 });
 
+Deno.test("menu do celular abre, leva às mesmas seções do computador e fecha", async () => {
+  const a = app();
+  try {
+    await settle();
+    const doc = a.w.document;
+    const botao = doc.querySelector("#menu-toggle");
+    const menu = doc.querySelector("#menu-celular");
+    const secoes = (seletor: string) => [...doc.querySelectorAll(`${seletor} a`)].map((link) => link.getAttribute("href"));
+    assert.deepEqual(secoes("#menu-celular nav"), secoes(".desktop-nav"));
+    assert.equal(menu.hidden, true);
+    assert.equal(botao.getAttribute("aria-controls"), "menu-celular");
+
+    botao.click();
+    assert.equal(menu.hidden, false);
+    assert.equal(botao.getAttribute("aria-expanded"), "true");
+    assert.equal(botao.getAttribute("aria-label"), "Fechar menu");
+    menu.querySelector('a[href="#precos"]').click();
+    assert.equal(menu.hidden, true);
+    assert.equal(botao.getAttribute("aria-expanded"), "false");
+    assert.equal(botao.getAttribute("aria-label"), "Abrir menu");
+
+    botao.click();
+    doc.dispatchEvent(new a.w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    assert.equal(menu.hidden, true);
+    assert.equal(doc.activeElement, botao);
+
+    botao.click();
+    doc.querySelector("#inicio").click();
+    assert.equal(menu.hidden, true);
+  } finally {
+    a.close();
+  }
+});
+
+Deno.test("menu do celular tem Entrar e cadastro para o visitante e só Minha conta para quem entrou", async () => {
+  const visitante = app();
+  try {
+    await settle();
+    const doc = visitante.w.document;
+    const entrar = doc.querySelector("#menu-celular .js-open-login");
+    const cadastro = doc.querySelector("#menu-celular .js-open-signup");
+    assert.equal(entrar.hidden, false);
+    assert.equal(cadastro.textContent.trim(), "Cadastrar meu perfil");
+    doc.querySelector("#menu-toggle").click();
+    cadastro.click();
+    await settle();
+    assert.equal(doc.querySelector("#menu-celular").hidden, true);
+    assert.equal(doc.querySelector("#signup-dialog").open, true);
+    const aberturas = visitante.calls
+      .filter(([nome, tabela]) => nome === "insert" && tabela === "eventos_produto")
+      .map(([, , payload]) => payload as unknown as { nome: string; propriedades: Record<string, unknown> })
+      .filter((evento) => evento.nome === "cta_cadastro_aberto");
+    assert.deepEqual(aberturas.map((evento) => evento.propriedades.origem), ["menu"]);
+  } finally {
+    visitante.close();
+  }
+
+  const dono = app({ session: { user }, savedProfile: { ...profile } });
+  try {
+    await settle();
+    const doc = dono.w.document;
+    assert.equal(doc.querySelector("#menu-celular .js-open-login").hidden, true);
+    assert.equal(doc.querySelector("#menu-celular .js-open-signup").textContent.trim(), "Minha conta");
+  } finally {
+    dono.close();
+  }
+});
+
 Deno.test("site começa no claro mesmo com o sistema no escuro", () => {
   const a = app({ temaDoSistema: "escuro" });
   try {

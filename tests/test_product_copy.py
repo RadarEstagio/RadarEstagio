@@ -239,6 +239,22 @@ def test_cadastro_rola_no_computador_em_vez_de_cortar_o_botao():
     assert declaracoes_do_css(css, ".dialog-form-area")["position"] == "relative"
 
 
+def test_cabecalho_do_celular_cabe_numa_linha_e_guarda_o_resto_no_menu():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    celular = "@media (max-width: 580px)"
+    sem_navegacao = "@media (max-width: 980px)"
+    tela_larga = "@media (min-width: 981px)"
+
+    assert declaracoes_do_css(css, ".menu-toggle")["display"] == "none"
+    assert declaracoes_do_css(css, ".menu-toggle", media=sem_navegacao)["display"] == "grid"
+    assert declaracoes_do_css(css, ".menu-celular", media=tela_larga)["display"] == "none"
+    assert declaracoes_do_css(css, ".header-login", media=celular)["display"] == "none"
+    assert declaracoes_do_css(css, ".header-actions > .button", media=celular)["display"] == "none"
+    assert "grid-column" not in declaracoes_do_css(css, ".header-actions > .button", media=celular)
+    assert declaracoes_do_css(css, ".menu-celular-acoes")["display"] == "none"
+    assert declaracoes_do_css(css, ".menu-celular-acoes", media=celular)["display"] == "grid"
+
+
 def _regras_das_telas_estreitas(css):
     regras = []
     for abertura in re.finditer(r"@media \(max-width: \d+px\) \{", css):
