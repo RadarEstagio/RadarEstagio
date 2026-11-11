@@ -501,24 +501,20 @@
           <section class="account-state" id="account-state" aria-labelledby="account-title" hidden>
             <div class="account-heading">
               <p class="eyebrow">Sua conta</p>
-              <h1 id="account-title" tabindex="-1">Conta</h1>
-              <p>Confira seu perfil de busca e controle como o Radar entrega suas recomendações.</p>
+              <h1 id="account-title" tabindex="-1">Perfil</h1>
+              <p>Curso, cidade e habilidades que o Radar usa para escolher suas vagas.</p>
             </div>
             <div class="account-panel">
               <p class="form-message" id="account-message" role="alert"></p>
               <p class="form-message form-message-aviso" id="account-notice" role="status"></p>
               <div class="account-tab-panel" id="account-overview-panel">
-                <section class="account-profile-card account-row" id="account-overview-section" aria-labelledby="account-profile-title">
+                <div class="account-profile-card account-row" id="account-overview-section">
                   <div class="account-row-content">
-                    <div class="account-card-heading">
-                      <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span>
-                      <div><p>Perfil de busca</p><h2 id="account-profile-title">Seu Radar</h2></div>
-                    </div>
                     <p id="account-summary"></p>
                     <div class="account-skills" id="account-skills" aria-label="Habilidades do perfil"></div>
                   </div>
                   <button class="button button-primary" type="button" id="edit-profile">Editar perfil</button>
-                </section>
+                </div>
               </div>
               <div class="account-tab-panel" id="account-delivery-panel" hidden>
                 <section class="account-delivery-card account-row" id="account-delivery-card" aria-labelledby="account-delivery-title">
@@ -548,30 +544,28 @@
                 </section>
               </div>
               <div class="account-tab-panel" id="account-data-panel" hidden>
-                <section class="account-settings account-row" id="account-data-section" aria-labelledby="account-data-title">
-                  <div class="account-section-heading"><p>Seus dados</p><h2 id="account-data-title">Dados e acesso</h2><span>Baixe uma cópia das suas informações ou encerre esta sessão.</span></div>
+                <div class="account-settings account-row" id="account-data-section">
                   <div class="account-actions account-actions-secondary">
                     <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
                     <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
                     <button class="button button-ghost" type="button" id="close-account">Voltar ao site</button>
                   </div>
-                </section>
+                </div>
               </div>
               <div class="account-tab-panel" id="account-privacy-panel" hidden>
-                <section class="account-danger" id="account-danger-section" aria-labelledby="account-danger-title">
-                <div class="account-section-heading account-danger-heading"><p>Privacidade</p><h2 id="account-danger-title">Ações sensíveis</h2><span>Revise as consequências antes de alterar o vínculo ou excluir sua conta.</span></div>
+                <div class="account-danger" id="account-danger-section">
                 <div class="account-danger-list">
                   <section class="account-danger-row" aria-labelledby="unlink-telegram-title">
-                    <div><h3 id="unlink-telegram-title">Desvincular o Telegram</h3><p>Interrompe as entregas neste chat. Você poderá vinculá-lo novamente depois.</p></div>
+                    <div><h2 id="unlink-telegram-title">Desvincular o Telegram</h2><p>Interrompe as entregas neste chat. Você poderá vinculá-lo novamente depois.</p></div>
                     <button class="button button-danger-ghost" type="button" id="unlink-telegram">Desvincular</button>
                   </section>
                   <section class="account-danger-row" aria-labelledby="delete-account-title">
-                    <div><h3 id="delete-account-title">Excluir minha conta</h3><p>Interrompe as entregas agora e agenda a remoção definitiva dos seus dados.</p></div>
+                    <div><h2 id="delete-account-title">Excluir minha conta</h2><p>Interrompe as entregas agora e agenda a remoção definitiva dos seus dados.</p></div>
                     <button class="button button-danger" type="button" id="delete-account">Excluir conta</button>
                     <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
                   </section>
                 </div>
-                </section>
+                </div>
               </div>
             </div>
           </section>

@@ -231,8 +231,8 @@ function ativarSecaoDaConta(linkAtivo) {
 
 const conteudoDasSecoesDaConta = {
   "#account-overview-panel": {
-    titulo: "Conta",
-    descricao: "Confira seu perfil de busca e controle como o Radar entrega suas recomendações.",
+    titulo: "Perfil",
+    descricao: "Curso, cidade e habilidades que o Radar usa para escolher suas vagas.",
   },
   "#account-delivery-panel": {
     titulo: "Entregas",
@@ -244,7 +244,7 @@ const conteudoDasSecoesDaConta = {
   },
   "#account-privacy-panel": {
     titulo: "Privacidade",
-    descricao: "Gerencie o vínculo com o Telegram e as ações permanentes da sua conta.",
+    descricao: "Desvincule o Telegram ou exclua sua conta. As duas ações pedem confirmação antes.",
   },
 };
 

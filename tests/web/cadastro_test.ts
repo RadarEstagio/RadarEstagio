@@ -1372,6 +1372,32 @@ Deno.test("navegação da conta atualiza a seção ativa", async () => {
   } finally { a.close(); }
 });
 
+Deno.test("cada aba da conta tem um título só, sem o painel repetir o nome da página", async () => {
+  const a = app({
+    session: { user },
+    savedProfile: { ...profile, telegram_chat_id: "123" },
+    url: "https://radarestagio.com/?conta",
+  });
+  try {
+    await settle();
+    const doc = a.w.document;
+    const normalizar = (texto: string) => texto.trim().toLocaleLowerCase("pt-BR");
+    for (const link of doc.querySelectorAll(".account-nav a")) {
+      link.click();
+      await settle();
+      const titulo = normalizar(doc.querySelector("#account-title").textContent);
+      const painel = doc.querySelector(link.getAttribute("href"));
+      const rotulos = [...painel.querySelectorAll("h2, h3, .account-section-heading > p")]
+        .map((rotulo) => normalizar(rotulo.textContent));
+      assert.deepEqual(
+        rotulos.filter((rotulo) => rotulo === titulo),
+        [],
+        `aba ${link.textContent} repete o título`,
+      );
+    }
+  } finally { a.close(); }
+});
+
 Deno.test("recarregar a conta restaura ativação e sair retorna ao site", async () => {
   const a = app({ session: { user }, savedProfile: profile, url: "https://radarestagio.com/?conta" });
   try {
