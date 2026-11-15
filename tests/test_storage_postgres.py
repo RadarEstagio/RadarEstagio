@@ -206,6 +206,24 @@ def test_falhas_seguidas_sao_contadas_e_zeradas_pelo_envio(
     )
 
 
+def test_falhas_seguidas_sao_zeradas_a_pedido_sem_envio_nenhum(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    repositorio.registrar_falha_de_envio(usuario)
+    repositorio.registrar_falha_de_envio(usuario)
+
+    repositorio.zerar_falhas_de_envio(usuario)
+
+    assert (
+        conexao.execute(
+            "select falhas_de_envio from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        == 0
+    )
+    assert repositorio.registrar_falha_de_envio(usuario) == 1
+
+
 def test_pausar_desativa_o_perfil_e_registra_o_evento(
     conexao: psycopg.Connection, usuario: Usuario
 ):
