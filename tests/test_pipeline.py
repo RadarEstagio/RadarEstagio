@@ -919,6 +919,70 @@ def test_falhas_seguidas_de_envio_pausam_o_perfil():
     assert repositorio.pausados == [ID_USUARIO]
 
 
+def resumo_com_o_chat_recusando(
+    repositorio: RepositorioFalso, nota: int, dia: int = 0, falhas_ate_pausar: int = 3
+) -> ResumoDaExecucao:
+    return executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": nota}),
+        NotificadorFalso(chats_com_erro={"123"}),
+        repositorio,
+        parametros(nota_minima=40, falhas_ate_pausar=falhas_ate_pausar),
+        AGORA_DE_TESTE + timedelta(days=dia),
+        PontuadorFalso({"1": nota}),
+    )
+
+
+@pytest.mark.parametrize("nota", [90, 10], ids=["com-vagas", "sem-vagas"])
+def test_resumo_nomeia_quem_recusou_a_mensagem_do_dia(nota: int):
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, "456")])
+
+    resumo = resumo_com_o_chat_recusando(repositorio, nota)
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert resumo.usuarios_pausados_por_recusa == []
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+
+
+def test_resumo_nomeia_quem_foi_pausado_pela_recusa_que_completa_o_limite():
+    repositorio = RepositorioFalso([usuario()])
+
+    primeiro, segundo, terceiro = (
+        resumo_com_o_chat_recusando(repositorio, 90, dia) for dia in range(3)
+    )
+
+    assert primeiro.usuarios_pausados_por_recusa == []
+    assert segundo.usuarios_pausados_por_recusa == []
+    assert terceiro.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert terceiro.usuarios_pausados_por_recusa == [ID_USUARIO]
+
+
+def test_recusa_que_o_banco_nao_conta_aparece_no_resumo_sem_pausa():
+    repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
+
+    resumo = resumo_com_o_chat_recusando(repositorio, 90, falhas_ate_pausar=1)
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert resumo.usuarios_pausados_por_recusa == []
+
+
+def test_falha_temporaria_do_telegram_nao_entra_no_resumo_como_recusa():
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(chats_com_falha_temporaria={"123"}),
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == []
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+
+
 def test_envio_bem_sucedido_zera_as_falhas_acumuladas():
     repositorio = RepositorioFalso([usuario()])
     repositorio.falhas_por_usuario[ID_USUARIO] = 2
