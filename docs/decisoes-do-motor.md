@@ -1124,22 +1124,31 @@ No caso real, o bloqueio veio depois da entrega de 24/09. Em 25, 26 e 27/09 o di
 era a de outros dois perfis, então a Adzuna não fez busca a mais: o custo dos três dias foi a
 extração das candidatas dele e as linhas de `avaliacoes`.
 
-- **Qualquer mensagem entregue zera o contador.** Só `registrar_envios` zerava
+- **A mensagem do dia entregue zera o contador, com ou sem vagas.** Só `registrar_envios` zerava
   `falhas_de_envio`, e "nenhuma vaga compatível" não grava envio. Quem recebia só esse aviso
   seguia com as recusas antigas, e "três falhas seguidas" virava três falhas espalhadas por
   semanas: com duas recusas, cinco dias de aviso entregue e um novo bloqueio, a pausa vinha na
   primeira recusa nova. `avisar_que_nao_houve_vaga` passou a chamar `zerar_falhas_de_envio`; falha
-  ao zerar vira aviso no log e a mensagem continua contando como entregue.
+  ao zerar vira aviso no log e a mensagem continua contando como entregue. A de vagas segue
+  zerando na transação de `registrar_envios`: se essa gravação falha, o contador fica como estava.
+  A pergunta do dia seguinte não zera.
 - **O resumo de operação nomeia recusa e pausa.** As duas só existiam como aviso no log do
   Actions, e ninguém soube do caso de setembro. O resumo ganhou "⚠️ Recusaram a mensagem (bot
   bloqueado ou conversa inexistente): N" e "⚠️ Pausados por recusas seguidas: N", cada uma com o
   trecho do id que já sai no log, nunca o id inteiro. A recusa que o banco não conseguiu contar
   aparece mesmo assim; a pausa só aparece quando foi gravada. Falha temporária do Telegram segue
-  em "Usuários sem mensagem por falha" e fora dessas linhas.
+  em "Usuários sem mensagem por falha" e fora dessas linhas. Cada linha nomeia até dez perfis e
+  conta o resto ("e mais N"): o resumo não é dividido em partes, e uma recusa em massa (o token
+  trocado pelo de outro bot, por exemplo) passaria dos 4096 caracteres e a execução sairia sem
+  relato.
 - **Uma tentativa por dia para quem recusou.** Com uma abertura de ontem sem resposta, o diário
   ainda tentava a pergunta do dia seguinte de quem tinha acabado de recusar a mensagem do dia: uma
   segunda requisição recusada e um "Perguntas do dia seguinte com falha" no resumo. Quem recusou
   fica fora da pergunta, como já ficava quem não recebeu a mensagem por falha.
+- **Recusa no meio da mensagem.** Se o 403 chega depois de alguma parte entregue, a pessoa entra
+  em "Recusaram a mensagem" e também em "Receberam recomendação", e a falha contada é zerada logo
+  em seguida pela gravação dos envios, como já era. Na prática o bloqueio teria de cair entre duas
+  partes da mesma mensagem; a recusa do dia seguinte conta normalmente.
 - **Não mudou, de propósito.** A recusa não é falha da execução: o dia em que o único ativo
   bloqueou o bot termina com código zero. A recusa da pergunta do dia seguinte, quando o bloqueio
   vem entre a mensagem e a pergunta, não soma em `falhas_de_envio`: quem conta é a mensagem do

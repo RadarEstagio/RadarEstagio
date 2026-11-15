@@ -324,10 +324,10 @@ Regras para não afetar quem já usa:
 - **Todo dia tem mensagem, mas nenhuma é vazia.** Sem vaga aprovada, o estudante recebe que
   nada compatível apareceu e que a busca volta amanhã; o porquê e o aviso depois de dias de
   silêncio estão nas [decisões do motor](decisoes-do-motor.md#qualidade-da-mensagem-e-do-pré-filtro).
-- **Falhas seguidas pausam o perfil.** Cada erro de envio incrementa `perfis.falhas_de_envio`;
-  ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
-  Qualquer mensagem entregue zera a contagem, inclusive a de nenhuma vaga compatível. Sem isso,
-  quem bloqueia o bot vira custo diário eterno
+- **Recusas seguidas pausam o perfil.** Cada recusa do destinatário (403, ou o 400 que o nomeia)
+  incrementa `perfis.falhas_de_envio`; ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de
+  `ativo`, emitindo `entregas_pausadas`. A mensagem do dia entregue zera a contagem, seja a de
+  vagas ou a de nenhuma vaga compatível. Sem isso, quem bloqueia o bot vira custo diário eterno
   ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
 - **Transação por operação**: as avaliações de um usuário entram juntas ou não entram, e o mesmo
   vale para os envios e a ativação. A conexão é aberta em `autocommit`, então cada bloco

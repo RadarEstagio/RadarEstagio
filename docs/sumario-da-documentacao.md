@@ -24,7 +24,7 @@ que estudantes de fora do grupo o acham útil.
 | [`funcionalidades.md`](funcionalidades.md) | Catálogo do que o produto faz para quem usa e para quem opera, e o que não existe | 16/10, com a conferência de 17/10; falhas de entrega em 15/11 |
 | [`plano-geral.md`](plano-geral.md) | Fonte única de pendências e decisões, quadro dos 16 achados RCD, hipóteses H1 a H7 | 16/10, com as conferências de 17 e 22/10; G03, G04 e RCD-15 fechados; ideia do painel por usuário em 26/10 (seção 6); acesso sem login conferido em 15/10 (seção 2.3); pausa sem motivo e `my_chat_member` abertos em 15/11 (seção 5) |
 | [`arquitetura.md`](arquitetura.md) | Camadas, contratos e 11 decisões técnicas | Estável; as regras do motor são links |
-| [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.669 linhas, com o resumo do raciocínio de 19/10 e o bot bloqueado de 15/11 |
+| [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.678 linhas, com o resumo do raciocínio de 19/10 e o bot bloqueado de 15/11 |
 | [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0036` (21/10, dia do atendimento) |
 | [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") |
 | [`metricas.md`](metricas.md) | Eventos, denominadores, utilidade semanal, pergunta do dia seguinte | 05/10 |
