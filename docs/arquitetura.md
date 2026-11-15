@@ -326,7 +326,9 @@ Regras para não afetar quem já usa:
   silêncio estão nas [decisões do motor](decisoes-do-motor.md#qualidade-da-mensagem-e-do-pré-filtro).
 - **Falhas seguidas pausam o perfil.** Cada erro de envio incrementa `perfis.falhas_de_envio`;
   ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
-  Um envio bem-sucedido zera a contagem. Sem isso, quem bloqueia o bot vira custo diário eterno.
+  Qualquer mensagem entregue zera a contagem, inclusive a de nenhuma vaga compatível. Sem isso,
+  quem bloqueia o bot vira custo diário eterno
+  ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
 - **Transação por operação**: as avaliações de um usuário entram juntas ou não entram, e o mesmo
   vale para os envios e a ativação. A conexão é aberta em `autocommit`, então cada bloco
   `transaction()` confirma sozinho ao terminar. Sem isso, a primeira consulta abriria uma
@@ -354,6 +356,7 @@ Regras para não afetar quem já usa:
   coberto pelo passo `if: failure()` do workflow, que manda o link do run. O disparo é externo
   (cron-job.org): sem esse retorno, dois dias parados passam despercebidos, como já aconteceu.
 - **O que dá errado dentro da execução aparece no resumo.** Quem ficou sem mensagem por falha,
+  quem recusou a mensagem (bot bloqueado) e quem foi pausado por isso,
   as mensagens seguradas por vaga sem extração e por coleta incompleta, os envios que o banco
   não gravou e a limpeza de contas que falhou viram linhas com número e motivo, ao lado das que
   já existiam (vagas sem extração, extrações não gravadas, cota e coleta da Adzuna). O pipeline

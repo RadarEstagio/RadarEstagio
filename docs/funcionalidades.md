@@ -397,9 +397,12 @@ Job remove contas após carência e dados associados, incluindo sessões anônim
 
 #### 19. Falhas de entrega
 
-Contagem e pausa após falhas seguidas; resumo de operação.
+Contagem e pausa após recusas seguidas do destinatário (bot bloqueado ou conversa inexistente);
+qualquer mensagem entregue zera a contagem. O resumo de operação diz quem recusou a mensagem do
+dia e quem foi pausado.
 
-**Condições e limites:** Limiar configurável.
+**Condições e limites:** Limiar configurável. O bloqueio só é percebido no envio seguinte, a
+pausa automática não grava motivo e a retomada é pelo site.
 
 #### 20. Agendamento
 
