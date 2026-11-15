@@ -340,7 +340,9 @@ def executar_fluxo(
         f"{resumo.perguntas_do_dia_seguinte} perguntas do dia seguinte, "
         f"{resumo.perguntas_do_dia_seguinte_com_falha} com falha; "
         f"{cota.requisicoes} requisições à Adzuna; "
-        f"{ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje} já atendidos hoje"
+        f"{ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje} já atendidos hoje; "
+        f"{len(resumo.usuarios_que_recusaram_a_mensagem)} recusaram a mensagem, "
+        f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa"
     )
     resumo_entregue = avisar_operacao(
         settings,
@@ -378,6 +380,8 @@ def executar_fluxo(
             perguntas_do_dia_seguinte=resumo.perguntas_do_dia_seguinte,
             perguntas_do_dia_seguinte_com_falha=resumo.perguntas_do_dia_seguinte_com_falha,
             ja_atendidos_hoje=ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje,
+            recusaram_a_mensagem=resumo.usuarios_que_recusaram_a_mensagem,
+            pausados_por_recusa=resumo.usuarios_pausados_por_recusa,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():
