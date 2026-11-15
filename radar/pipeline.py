@@ -237,7 +237,10 @@ def executar(
         [
             usuario
             for usuario in usuarios
-            if usuario.id not in registro.sem_mensagem_por_falha | revalidacao.falhas
+            if usuario.id
+            not in registro.sem_mensagem_por_falha
+            | registro.recusaram_a_mensagem
+            | revalidacao.falhas
         ],
         notificador,
         repositorio,

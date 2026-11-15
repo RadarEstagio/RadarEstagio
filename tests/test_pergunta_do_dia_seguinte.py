@@ -355,3 +355,15 @@ def test_repositorio_sem_banco_nunca_pergunta_nada():
 
     assert len(notificador.textos) == 1
     assert resumo.perguntas_do_dia_seguinte == 0
+
+
+def test_quem_recusou_a_mensagem_do_dia_nao_recebe_a_tentativa_da_pergunta():
+    repositorio = RepositorioComAberturas([usuario()], {ID_USUARIO: abertura()})
+
+    resumo = rodar(repositorio, NotificadorFalso(chats_com_erro={"123"}))
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert repositorio.consultas == []
+    assert repositorio.reservas == []
+    assert resumo.perguntas_do_dia_seguinte_com_falha == 0
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 1}
