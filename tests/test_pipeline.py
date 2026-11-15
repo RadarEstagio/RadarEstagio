@@ -236,6 +236,12 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario[usuario.id] = self.falhas_por_usuario.get(usuario.id, 0) + 1
         return self.falhas_por_usuario[usuario.id]
 
+    def zerar_falhas_de_envio(self, usuario) -> None:
+        if self._falha_ao_gravar:
+            raise ErroDeArmazenamento("banco caiu")
+        if usuario.id in self.falhas_por_usuario:
+            self.falhas_por_usuario[usuario.id] = 0
+
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         self.carencias_aplicadas.append(dias_de_carencia)
         return 0
@@ -921,6 +927,56 @@ def test_envio_bem_sucedido_zera_as_falhas_acumuladas():
 
     assert repositorio.falhas_por_usuario == {ID_USUARIO: 0}
     assert repositorio.pausados == []
+
+
+def test_mensagem_sem_vagas_entregue_zera_as_falhas_acumuladas():
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.falhas_por_usuario[ID_USUARIO] = 2
+
+    _, notificador, _ = rodar([vaga(1)], {"1": 10}, nota_minima=40, repositorio=repositorio)
+
+    assert len(notificador.textos) == 1
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 0}
+    assert repositorio.pausados == []
+
+
+def test_recusas_separadas_por_mensagens_sem_vagas_entregues_nao_pausam_o_perfil():
+    repositorio = RepositorioFalso([usuario()])
+    recusa_em_cada_dia = [True, True, False, False, True]
+
+    for dia, recusa in enumerate(recusa_em_cada_dia):
+        rodar(
+            [vaga(dia + 1)],
+            {str(dia + 1): 10},
+            nota_minima=40,
+            repositorio=repositorio,
+            notificador=NotificadorFalso(chats_com_erro={"123"} if recusa else frozenset()),
+            falhas_ate_pausar=3,
+            agora=AGORA_DE_TESTE + timedelta(days=dia),
+        )
+
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 1}
+    assert repositorio.pausados == []
+
+
+def test_falha_ao_zerar_as_falhas_vira_aviso_e_a_mensagem_sem_vagas_conta_como_entregue(
+    caplog: pytest.LogCaptureFixture,
+):
+    repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 10}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 10}),
+    )
+
+    assert resumo.usuarios_com_mensagem == 1
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+    assert "as falhas de envio não foram zeradas" in caplog.text
 
 
 def test_falha_ao_gravar_nao_derruba_o_envio():

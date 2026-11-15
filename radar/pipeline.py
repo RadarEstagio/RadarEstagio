@@ -732,9 +732,19 @@ def avisar_que_nao_houve_vaga(
             return False
         return True
     registro.mensagem_entregue(usuario)
+    zerar_falhas_de_envio(repositorio, usuario)
     if dias is not None:
         registrar_silencio_avisado(repositorio, usuario, dias)
     return True
+
+
+def zerar_falhas_de_envio(repositorio: Repositorio, usuario: Usuario) -> None:
+    try:
+        repositorio.zerar_falhas_de_envio(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: as falhas de envio não foram zeradas: %s", trecho_do_id(usuario.id), erro
+        )
 
 
 def registrar_silencio_avisado(repositorio: Repositorio, usuario: Usuario, dias: int) -> None:
