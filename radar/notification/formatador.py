@@ -28,6 +28,7 @@ RETICENCIAS = "…"
 PADRAO_ENTIDADE_INCOMPLETA = re.compile(r"&[#a-zA-Z0-9]*$")
 PADRAO_DE_ESPACOS = re.compile(r"\s+")
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
+MAXIMO_DE_PERFIS_NOMEADOS = 10
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
@@ -247,8 +248,11 @@ def formatar_resumo_da_execucao(
 
 
 def linha_dos_perfis(rotulo: str, perfis: list[UUID]) -> str:
-    trechos = ", ".join(trecho_do_id(perfil) for perfil in perfis)
-    return f"⚠️ {rotulo}: {len(perfis)} ({trechos})"
+    nomeados = [trecho_do_id(perfil) for perfil in perfis[:MAXIMO_DE_PERFIS_NOMEADOS]]
+    restantes = len(perfis) - len(nomeados)
+    if restantes:
+        nomeados.append(f"e mais {restantes}")
+    return f"⚠️ {rotulo}: {len(perfis)} ({', '.join(nomeados)})"
 
 
 def linhas_dos_eventos_do_site(eventos: EventosDoSite) -> list[str]:

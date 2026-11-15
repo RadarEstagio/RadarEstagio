@@ -15,6 +15,7 @@ from radar.domain.models import (
 )
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
+    MAXIMO_DE_PERFIS_NOMEADOS,
     PROPORCAO_DE_ALERTA_DO_BANCO,
     SEPARADOR_ENTRE_VAGAS,
     dividir_em_mensagens,
@@ -396,6 +397,39 @@ def test_resumo_avisa_quem_recusou_a_mensagem_e_quem_foi_pausado_pelo_trecho_do_
     assert "⚠️ Pausados por recusas seguidas: 1 (...9f2a11bc...)" in texto
     assert str(bloqueou) not in texto
     assert str(pausado) not in texto
+
+
+def test_recusa_em_massa_nomeia_so_os_primeiros_e_o_resumo_cabe_numa_mensagem():
+    perfis = [UUID(int=numero) for numero in range(300)]
+
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        300,
+        0,
+        0,
+        40,
+        1,
+        recusaram_a_mensagem=perfis,
+        pausados_por_recusa=perfis,
+    )
+
+    recusa, pausa = (linha for linha in texto.splitlines() if "e mais" in linha)
+    assert recusa.count("...00000000...") == MAXIMO_DE_PERFIS_NOMEADOS
+    assert ": 300 (" in recusa
+    assert recusa.endswith(f"e mais {300 - MAXIMO_DE_PERFIS_NOMEADOS})")
+    assert pausa.endswith(f"e mais {300 - MAXIMO_DE_PERFIS_NOMEADOS})")
+    assert len(texto) < LIMITE_DE_CARACTERES_DO_TELEGRAM
+
+
+def test_recusas_ate_o_teto_de_nomeados_saem_todas_sem_o_e_mais():
+    perfis = [UUID(int=numero) for numero in range(MAXIMO_DE_PERFIS_NOMEADOS)]
+
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 20, 0, 0, 40, 1, recusaram_a_mensagem=perfis
+    )
+
+    assert texto.count("...00000000...") == MAXIMO_DE_PERFIS_NOMEADOS
+    assert "e mais" not in texto
 
 
 def test_resumo_sem_recusa_nem_pausa_nao_fala_delas():
