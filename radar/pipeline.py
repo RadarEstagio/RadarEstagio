@@ -96,6 +96,8 @@ class RegistroDasEntregas:
         self.seguradas_pela_coleta_incompleta: set[UUID] = set()
         self.com_envio_nao_gravado: set[UUID] = set()
         self.ja_atendidos_hoje: set[UUID] = set()
+        self.recusaram_a_mensagem: set[UUID] = set()
+        self.pausados_por_recusa: set[UUID] = set()
 
     def mensagem_entregue(self, usuario: Usuario) -> None:
         self.com_mensagem.add(usuario.id)
@@ -115,6 +117,12 @@ class RegistroDasEntregas:
     def ja_atendido_hoje(self, usuario: Usuario) -> None:
         self.ja_atendidos_hoje.add(usuario.id)
 
+    def destinatario_recusou(self, usuario: Usuario) -> None:
+        self.recusaram_a_mensagem.add(usuario.id)
+
+    def pausado_por_recusa(self, usuario: Usuario) -> None:
+        self.pausados_por_recusa.add(usuario.id)
+
 
 class RegistroDasPerguntas:
     def __init__(self) -> None:
@@ -133,6 +141,8 @@ class ResumoDaExecucao(BaseModel):
     mensagens_seguradas_pela_coleta_incompleta: int = 0
     usuarios_com_envio_nao_gravado: int = 0
     usuarios_ja_atendidos_hoje: int = 0
+    usuarios_que_recusaram_a_mensagem: list[UUID] = []
+    usuarios_pausados_por_recusa: list[UUID] = []
     falhas_de_limpeza: list[str] = []
     vagas_coletadas: int
     vagas_unicas: int
@@ -227,7 +237,10 @@ def executar(
         [
             usuario
             for usuario in usuarios
-            if usuario.id not in registro.sem_mensagem_por_falha | revalidacao.falhas
+            if usuario.id
+            not in registro.sem_mensagem_por_falha
+            | registro.recusaram_a_mensagem
+            | revalidacao.falhas
         ],
         notificador,
         repositorio,
@@ -248,6 +261,8 @@ def executar(
         mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
         usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
         usuarios_ja_atendidos_hoje=len(registro.ja_atendidos_hoje),
+        usuarios_que_recusaram_a_mensagem=sorted(registro.recusaram_a_mensagem),
+        usuarios_pausados_por_recusa=sorted(registro.pausados_por_recusa),
         falhas_de_limpeza=falhas_de_limpeza,
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
@@ -623,7 +638,9 @@ def atender_usuario_travado(
             len(selecionadas),
             erro,
         )
-        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(
+            repositorio, usuario, erro, parametros.falhas_ate_pausar, registro
+        )
         if not entregues:
             if isinstance(erro, DestinatarioRecusouAMensagem):
                 registrar_atendimento(repositorio, usuario, data_local(agora))
@@ -726,15 +743,27 @@ def avisar_que_nao_houve_vaga(
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", trecho_do_id(usuario.id), erro)
-        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(
+            repositorio, usuario, erro, parametros.falhas_ate_pausar, registro
+        )
         if not isinstance(erro, DestinatarioRecusouAMensagem):
             registro.mensagem_perdida(usuario)
             return False
         return True
     registro.mensagem_entregue(usuario)
+    zerar_falhas_de_envio(repositorio, usuario)
     if dias is not None:
         registrar_silencio_avisado(repositorio, usuario, dias)
     return True
+
+
+def zerar_falhas_de_envio(repositorio: Repositorio, usuario: Usuario) -> None:
+    try:
+        repositorio.zerar_falhas_de_envio(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: as falhas de envio não foram zeradas: %s", trecho_do_id(usuario.id), erro
+        )
 
 
 def registrar_silencio_avisado(repositorio: Repositorio, usuario: Usuario, dias: int) -> None:
@@ -767,6 +796,7 @@ def pausar_se_o_destinatario_recusou(
     usuario: Usuario,
     erro: ErroDeNotificacao,
     falhas_ate_pausar: int,
+    registro: RegistroDasEntregas,
 ) -> None:
     if not isinstance(erro, DestinatarioRecusouAMensagem):
         logger.info(
@@ -774,11 +804,15 @@ def pausar_se_o_destinatario_recusou(
             trecho_do_id(usuario.id),
         )
         return
-    pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
+    registro.destinatario_recusou(usuario)
+    pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar, registro)
 
 
 def pausar_apos_falhas_seguidas(
-    repositorio: Repositorio, usuario: Usuario, falhas_ate_pausar: int
+    repositorio: Repositorio,
+    usuario: Usuario,
+    falhas_ate_pausar: int,
+    registro: RegistroDasEntregas,
 ) -> None:
     try:
         falhas = repositorio.registrar_falha_de_envio(usuario)
@@ -790,6 +824,7 @@ def pausar_apos_falhas_seguidas(
             "usuário %s: falha de envio não registrada: %s", trecho_do_id(usuario.id), erro
         )
         return
+    registro.pausado_por_recusa(usuario)
     logger.warning(
         "usuário %s pausado após %d falhas seguidas de envio", trecho_do_id(usuario.id), falhas
     )

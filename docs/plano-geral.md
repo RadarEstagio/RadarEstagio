@@ -197,6 +197,13 @@ Continuam abertos:
   não quanto tempo levou; falta isso para medir o raciocínio `low` e a margem do prazo.
 - **G05, G08, G09 e G10**, prioridade baixa. O G10 é o mais visível: falha do disparo da
   primeira busca só aparece no log da Edge Function.
+- **Pausa automática sem motivo (15/11).** Quem é pausado por bloquear o bot fica com
+  `motivo_pausa` vazio: as métricas não separam essa pausa da que a pessoa fez no site, e o site
+  mostra a mesma frase para as duas
+  ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
+- **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
+  três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar
+  no desbloqueio; prioridade baixa enquanto houver um caso em dois meses.
 
 Qualidade das recomendações:
 

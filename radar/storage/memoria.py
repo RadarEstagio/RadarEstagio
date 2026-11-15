@@ -85,6 +85,9 @@ class RepositorioEmMemoria:
     def registrar_falha_de_envio(self, usuario: Usuario) -> int:
         return 0
 
+    def zerar_falhas_de_envio(self, usuario: Usuario) -> None:
+        return None
+
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         return 0
 

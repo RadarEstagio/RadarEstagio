@@ -737,3 +737,79 @@ def test_falha_de_um_usuario_nao_derruba_o_codigo_de_saida_dos_outros(
     assert mensagens_para(httpx_mock, OUTRO_CHAT_DO_ESTUDANTE) != []
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
     assert "⚠️ Usuários sem mensagem por falha: 1" in resumo
+
+
+def bloquear_o_bot_nos_chats(httpx_mock: HTTPXMock, chats: set[str]) -> None:
+    def telegram(requisicao: httpx.Request) -> httpx.Response:
+        if json.loads(requisicao.content)["chat_id"] in chats:
+            return httpx.Response(
+                403,
+                json={
+                    "ok": False,
+                    "error_code": 403,
+                    "description": "Forbidden: bot was blocked by the user",
+                },
+            )
+        return httpx.Response(200, json={"ok": True, "result": {"message_id": 1}})
+
+    httpx_mock.add_callback(telegram, url=URL_DO_TELEGRAM, is_reusable=True)
+
+
+ID_DE_QUEM_COMPLETA_O_LIMITE = UUID("814c6041-0000-4000-8000-000000000001")
+ID_DE_QUEM_RECUSA_PELA_PRIMEIRA_VEZ = UUID("9f2a11bc-0000-4000-8000-000000000002")
+CHAT_DA_PRIMEIRA_RECUSA = "557"
+
+
+class BancoEmQueUmaRecusaDeHojeCompletaOLimite(RepositorioEmMemoria):
+    def registrar_falha_de_envio(self, usuario: Usuario) -> int:
+        if usuario.id == ID_DE_QUEM_COMPLETA_O_LIMITE:
+            return settings_de_teste().falhas_de_envio_ate_pausar
+        return 1
+
+
+def test_resumo_de_operacao_avisa_quem_bloqueou_o_bot_e_quem_foi_pausado(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    no_limite = estudante_de_direito_no_rio().model_copy(
+        update={"id": ID_DE_QUEM_COMPLETA_O_LIMITE}
+    )
+    na_primeira = estudante_de_direito_no_rio().model_copy(
+        update={"id": ID_DE_QUEM_RECUSA_PELA_PRIMEIRA_VEZ, "chat_id": CHAT_DA_PRIMEIRA_RECUSA}
+    )
+    outra = estudante_de_direito_no_rio().model_copy(
+        update={"id": UUID(int=3), "chat_id": OUTRO_CHAT_DO_ESTUDANTE}
+    )
+    responder_com_vagas_de_ti(httpx_mock)
+    bloquear_o_bot_nos_chats(httpx_mock, {CHAT_DO_ESTUDANTE, CHAT_DA_PRIMEIRA_RECUSA})
+    repositorio = BancoEmQueUmaRecusaDeHojeCompletaOLimite([no_limite, na_primeira, outra])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    assert mensagens_para(httpx_mock, OUTRO_CHAT_DO_ESTUDANTE) != []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert (
+        "⚠️ Recusaram a mensagem (bot bloqueado ou conversa inexistente): 2 "
+        "(...814c6041..., ...9f2a11bc...)"
+    ) in resumo
+    assert "⚠️ Pausados por recusas seguidas: 1 (...814c6041...)" in resumo
+    assert "Usuários sem mensagem por falha" not in resumo
+    saida = capsys.readouterr().out
+    assert "2 recusaram a mensagem, 1 pausados por recusa" in saida
+    assert str(ID_DE_QUEM_COMPLETA_O_LIMITE) not in saida + resumo
+    assert str(ID_DE_QUEM_RECUSA_PELA_PRIMEIRA_VEZ) not in saida + resumo
+
+
+def test_bot_bloqueado_antes_do_limite_aparece_no_resumo_sem_pausa(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_com_vagas_de_ti(httpx_mock)
+    bloquear_o_bot_nos_chats(httpx_mock, {CHAT_DO_ESTUDANTE})
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    codigo = codigo_de_saida_do_rodar(monkeypatch, repositorio)
+
+    assert codigo == 0
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Recusaram a mensagem" in resumo
+    assert "Pausados" not in resumo

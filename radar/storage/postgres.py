@@ -648,6 +648,15 @@ class RepositorioPostgres:
                 f"Falha ao contar a falha de envio: {descrever(erro)}"
             ) from erro
 
+    def zerar_falhas_de_envio(self, usuario: Usuario) -> None:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_ZERAR_FALHAS_DE_ENVIO, {"perfil_id": usuario.id})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao zerar as falhas de envio: {descrever(erro)}"
+            ) from erro
+
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:

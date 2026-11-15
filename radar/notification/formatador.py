@@ -2,8 +2,10 @@ import re
 from datetime import datetime
 from html import escape
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from radar.domain.datas import data_de_publicacao, data_local
+from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import (
     AberturaSemResposta,
     BotaoDeFeedback,
@@ -26,6 +28,7 @@ RETICENCIAS = "…"
 PADRAO_ENTIDADE_INCOMPLETA = re.compile(r"&[#a-zA-Z0-9]*$")
 PADRAO_DE_ESPACOS = re.compile(r"\s+")
 MAXIMO_DE_REQUISITOS_EXIBIDOS = 8
+MAXIMO_DE_PERFIS_NOMEADOS = 10
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
@@ -169,6 +172,8 @@ def formatar_resumo_da_execucao(
     perguntas_do_dia_seguinte: int = 0,
     perguntas_do_dia_seguinte_com_falha: int = 0,
     ja_atendidos_hoje: int = 0,
+    recusaram_a_mensagem: list[UUID] | None = None,
+    pausados_por_recusa: list[UUID] | None = None,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -187,6 +192,15 @@ def formatar_resumo_da_execucao(
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:
         linhas.append(f"⚠️ Usuários sem mensagem por falha: {usuarios_sem_mensagem_por_falha}")
+    if recusaram_a_mensagem:
+        linhas.append(
+            linha_dos_perfis(
+                "Recusaram a mensagem (bot bloqueado ou conversa inexistente)",
+                recusaram_a_mensagem,
+            )
+        )
+    if pausados_por_recusa:
+        linhas.append(linha_dos_perfis("Pausados por recusas seguidas", pausados_por_recusa))
     if mensagens_seguradas_por_falta_de_extracao:
         linhas.append(
             "⚠️ Mensagens seguradas por vaga sem extração: "
@@ -231,6 +245,14 @@ def formatar_resumo_da_execucao(
     if banco_em_bytes is not None and banco_limite:
         linhas.extend(linhas_do_tamanho_do_banco(banco_em_bytes, banco_limite))
     return "\n".join(linhas)
+
+
+def linha_dos_perfis(rotulo: str, perfis: list[UUID]) -> str:
+    nomeados = [trecho_do_id(perfil) for perfil in perfis[:MAXIMO_DE_PERFIS_NOMEADOS]]
+    restantes = len(perfis) - len(nomeados)
+    if restantes:
+        nomeados.append(f"e mais {restantes}")
+    return f"⚠️ {rotulo}: {len(perfis)} ({', '.join(nomeados)})"
 
 
 def linhas_dos_eventos_do_site(eventos: EventosDoSite) -> list[str]:

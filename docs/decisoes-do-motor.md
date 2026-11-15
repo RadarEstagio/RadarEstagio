@@ -32,6 +32,7 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
   - [Viés conhecido do ranking](#viés-conhecido-do-ranking-03092026)
 - **Entrega e feedback**
   - [Entrega no Telegram](#entrega-no-telegram-10092026)
+  - [Bot bloqueado e pausa por recusa](#bot-bloqueado-e-pausa-por-recusa-15112026)
   - [Vaga fechada na origem](#vaga-fechada-na-origem-16092026)
   - [Pergunta do dia seguinte](#pergunta-do-dia-seguinte-05102026)
   - [Erro inesperado não derruba os outros usuários](#erro-inesperado-não-derruba-os-outros-usuários-18092026)
@@ -1109,6 +1110,52 @@ com desejável atendido ainda vale 0,5 com peso 80%) continuam dependendo de `va
   caracteres por bloco.
 - **A data da mensagem é a de Brasília**, não a do UTC. Entrega imediata entre 21:00 e 23:59
   chegava datada do dia seguinte; o diário das 07:23 nunca mostrou o problema.
+
+## Bot bloqueado e pausa por recusa (15/11/2026)
+
+O que acontece quando a pessoa bloqueia o bot, conferido no código e no único caso de produção.
+O Telegram só conta do bloqueio quando o bot tenta enviar: o 403 soma uma falha em
+`perfis.falhas_de_envio` e marca o dia como atendido; na terceira recusa seguida
+(`FALHAS_DE_ENVIO_ATE_PAUSAR`) o perfil sai de `ativo` e de `listar_ativos`, e a partir daí não
+entra na coleta, na pontuação nem no envio. O run segue verde e os outros perfis recebem.
+
+No caso real, o bloqueio veio depois da entrega de 24/09. Em 25, 26 e 27/09 o diário gravou 22,
+19 e 19 avaliações e nenhum envio, pausou o perfil em 27/09 e não gravou mais nada dele. A cidade
+era a de outros dois perfis, então a Adzuna não fez busca a mais: o custo dos três dias foi a
+extração das candidatas dele e as linhas de `avaliacoes`.
+
+- **A mensagem do dia entregue zera o contador, com ou sem vagas.** Só `registrar_envios` zerava
+  `falhas_de_envio`, e "nenhuma vaga compatível" não grava envio. Quem recebia só esse aviso
+  seguia com as recusas antigas, e "três falhas seguidas" virava três falhas espalhadas por
+  semanas: com duas recusas, cinco dias de aviso entregue e um novo bloqueio, a pausa vinha na
+  primeira recusa nova. `avisar_que_nao_houve_vaga` passou a chamar `zerar_falhas_de_envio`; falha
+  ao zerar vira aviso no log e a mensagem continua contando como entregue. A de vagas segue
+  zerando na transação de `registrar_envios`: se essa gravação falha, o contador fica como estava.
+  A pergunta do dia seguinte não zera.
+- **O resumo de operação nomeia recusa e pausa.** As duas só existiam como aviso no log do
+  Actions, e ninguém soube do caso de setembro. O resumo ganhou "⚠️ Recusaram a mensagem (bot
+  bloqueado ou conversa inexistente): N" e "⚠️ Pausados por recusas seguidas: N", cada uma com o
+  trecho do id que já sai no log, nunca o id inteiro. A recusa que o banco não conseguiu contar
+  aparece mesmo assim; a pausa só aparece quando foi gravada. Falha temporária do Telegram segue
+  em "Usuários sem mensagem por falha" e fora dessas linhas. Cada linha nomeia até dez perfis e
+  conta o resto ("e mais N"): o resumo não é dividido em partes, e uma recusa em massa (o token
+  trocado pelo de outro bot, por exemplo) passaria dos 4096 caracteres e a execução sairia sem
+  relato.
+- **Uma tentativa por dia para quem recusou.** Com uma abertura de ontem sem resposta, o diário
+  ainda tentava a pergunta do dia seguinte de quem tinha acabado de recusar a mensagem do dia: uma
+  segunda requisição recusada e um "Perguntas do dia seguinte com falha" no resumo. Quem recusou
+  fica fora da pergunta, como já ficava quem não recebeu a mensagem por falha.
+- **Recusa no meio da mensagem.** Se o 403 chega depois de alguma parte entregue, a pessoa entra
+  em "Recusaram a mensagem" e também em "Receberam recomendação", e a falha contada é zerada logo
+  em seguida pela gravação dos envios, como já era. Na prática o bloqueio teria de cair entre duas
+  partes da mesma mensagem; a recusa do dia seguinte conta normalmente.
+- **Não mudou, de propósito.** A recusa não é falha da execução: o dia em que o único ativo
+  bloqueou o bot termina com código zero. A recusa da pergunta do dia seguinte, quando o bloqueio
+  vem entre a mensagem e a pergunta, não soma em `falhas_de_envio`: quem conta é a mensagem do
+  dia seguinte.
+
+Ficou aberto, no [plano geral](plano-geral.md#5-confiabilidade-e-qualidade-do-motor): a pausa
+automática não grava `motivo_pausa`, e o webhook não recebe `my_chat_member`.
 
 ## Vaga fechada na origem (16/09/2026)
 
