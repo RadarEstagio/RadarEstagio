@@ -1,6 +1,7 @@
 import re
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 
@@ -371,6 +372,37 @@ def test_resumo_mostra_quem_ja_tinha_sido_atendido_hoje_so_quando_ha():
 
     assert "Já atendidos hoje, fora desta execução: 3" in com
     assert "Já atendidos hoje" not in sem
+
+
+def test_resumo_avisa_quem_recusou_a_mensagem_e_quem_foi_pausado_pelo_trecho_do_id():
+    bloqueou = UUID("814c6041-0000-4000-8000-000000000001")
+    pausado = UUID("9f2a11bc-0000-4000-8000-000000000002")
+
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        2,
+        14,
+        40,
+        1,
+        recusaram_a_mensagem=[bloqueou, pausado],
+        pausados_por_recusa=[pausado],
+    )
+
+    assert (
+        "⚠️ Recusaram a mensagem (bot bloqueado ou conversa inexistente): 2 "
+        "(...814c6041..., ...9f2a11bc...)"
+    ) in texto
+    assert "⚠️ Pausados por recusas seguidas: 1 (...9f2a11bc...)" in texto
+    assert str(bloqueou) not in texto
+    assert str(pausado) not in texto
+
+
+def test_resumo_sem_recusa_nem_pausa_nao_fala_delas():
+    texto = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 40, 1)
+
+    assert "Recusaram a mensagem" not in texto
+    assert "Pausados" not in texto
 
 
 def test_falha_da_execucao_escapa_a_mensagem_do_erro():
