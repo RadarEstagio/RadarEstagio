@@ -3,12 +3,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import pytest
 from pytest_httpx import HTTPXMock
 
-from radar.domain.models import Vaga
+from radar.domain.models import OrigemDoAnuncio, Vaga
 from radar.matching.enriquecimento import EnriquecedorDeDescricoes
 
 CAMINHO_DA_PAGINA = Path(__file__).parent / "fixtures" / "adzuna_detalhe.html"
+CAMINHO_DA_PAGINA_COM_PARCEIRO = (
+    Path(__file__).parent / "fixtures" / "adzuna_detalhe_com_parceiro.html"
+)
+URL_DA_PAGINA_COM_PARCEIRO = "https://www.adzuna.com.br/details/5967239538"
+
+
+def pagina_com_parceiro() -> str:
+    return CAMINHO_DA_PAGINA_COM_PARCEIRO.read_text(encoding="utf-8")
 
 
 def vaga_truncada() -> Vaga:
@@ -180,3 +189,150 @@ def test_descricao_lida_da_pagina_chega_sem_nul(httpx_mock: HTTPXMock):
 
     assert enriquecidas[0].descricao == "Vaga com C# e SQL"
     assert enriquecidas[0].descricao_completa
+
+
+def vaga_do_parceiro() -> Vaga:
+    return anuncio_da_adzuna("5967239538", URL_DA_PAGINA_COM_PARCEIRO)
+
+
+def origem_lida_de(pagina: str, httpx_mock: HTTPXMock) -> OrigemDoAnuncio | None:
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina)
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
+    return enriquecidas[0].origem_lida_da_pagina
+
+
+def test_guarda_na_vaga_o_parceiro_e_o_identificador_que_a_pagina_informa(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina_com_parceiro())
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
+
+    assert enriquecidas[0].origem_lida_da_pagina == OrigemDoAnuncio(
+        parceiro="Emprego", id_do_parceiro="79986"
+    )
+    assert enriquecidas[0].descricao_completa
+    assert "Python e SQL" in enriquecidas[0].descricao
+
+
+def test_le_outro_parceiro_com_o_logo_em_outro_caminho(httpx_mock: HTTPXMock):
+    pagina = (
+        pagina_com_parceiro()
+        .replace(
+            'src="//zunastatic-abf.kxcdn.com/images/br/jobs/partners/logo_emprego.png" '
+            'alt="Emprego"',
+            'src="//zunastatic-abf.kxcdn.com/images/BR/partners/et17fTACZn_d7RSBLqbl6boew5M.png" '
+            'alt="SourceStack"',
+        )
+        .replace('"source_id" : "79986"', '"source_id" : "506674"')
+    )
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(
+        parceiro="SourceStack", id_do_parceiro="506674"
+    )
+
+
+def test_pagina_lida_sem_logo_nem_identificador_fica_sem_origem_identificada(
+    httpx_mock: HTTPXMock,
+):
+    origem = origem_lida_de(CAMINHO_DA_PAGINA.read_text(encoding="utf-8"), httpx_mock)
+
+    assert origem == OrigemDoAnuncio()
+    assert not origem.identificada()
+
+
+def test_logo_sem_alt_deixa_so_o_identificador(httpx_mock: HTTPXMock):
+    pagina = pagina_com_parceiro().replace(' alt="Emprego"', "")
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(id_do_parceiro="79986")
+
+
+def test_logo_com_alt_em_branco_deixa_so_o_identificador(httpx_mock: HTTPXMock):
+    pagina = pagina_com_parceiro().replace('alt="Emprego"', 'alt="  "')
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(id_do_parceiro="79986")
+
+
+def test_pagina_so_com_o_identificador_guarda_o_identificador(httpx_mock: HTTPXMock):
+    pagina = '<section class="adp-body">Vaga</section><script>{"source_id" : "79986"}</script>'
+
+    origem = origem_lida_de(pagina, httpx_mock)
+
+    assert origem == OrigemDoAnuncio(id_do_parceiro="79986")
+    assert origem.identificada()
+
+
+def test_pagina_so_com_o_logo_guarda_o_nome_do_parceiro(httpx_mock: HTTPXMock):
+    pagina = (
+        '<img src="//zunastatic-abf.kxcdn.com/images/br/jobs/partners/logo_emprego.png" '
+        'alt=" Emprego "><section class="adp-body">Vaga</section>'
+    )
+
+    origem = origem_lida_de(pagina, httpx_mock)
+
+    assert origem == OrigemDoAnuncio(parceiro="Emprego")
+    assert origem.identificada()
+
+
+def test_imagem_fora_da_pasta_de_parceiros_nao_e_lida_como_parceiro(httpx_mock: HTTPXMock):
+    pagina = (
+        '<img src="//zunastatic-abf.kxcdn.com/images/global/jobs/logo.png" alt="Adzuna">'
+        '<section class="adp-body">Vaga</section>'
+    )
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio()
+
+
+def test_identificador_escrito_no_texto_do_anuncio_nao_e_lido_como_origem(httpx_mock: HTTPXMock):
+    pagina = '<section class="adp-body">Vaga com "source_id" : "79986" no texto</section>'
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio()
+
+
+def test_pagina_lida_sem_descricao_ainda_guarda_a_origem(httpx_mock: HTTPXMock):
+    pagina = (
+        '<img src="//zunastatic-abf.kxcdn.com/images/br/jobs/partners/logo_emprego.png" '
+        'alt="Emprego"><script>{"source_id" : "79986"}</script>'
+    )
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina)
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
+
+    assert enriquecidas[0].origem_lida_da_pagina == OrigemDoAnuncio(
+        parceiro="Emprego", id_do_parceiro="79986"
+    )
+    assert not enriquecidas[0].descricao_completa
+    assert enriquecidas[0].descricao == vaga_do_parceiro().descricao
+
+
+@pytest.mark.parametrize("status", [403, 404, 410, 503])
+def test_pagina_que_nao_foi_lida_deixa_a_vaga_sem_origem(httpx_mock: HTTPXMock, status: int):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=status)
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
+
+    assert enriquecidas[0].origem_lida_da_pagina is None
+
+
+def test_vaga_que_nao_passa_pela_pagina_segue_sem_origem(httpx_mock: HTTPXMock):
+    curta = vaga_do_parceiro().model_copy(
+        update={"descricao": "Descrição curta que a API já dá inteira", "descricao_completa": True}
+    )
+    land_ad = anuncio_da_adzuna("5880177309", "https://www.adzuna.com.br/land/ad/5880177309?se=x")
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([curta, land_ad])
+
+    assert httpx_mock.get_requests() == []
+    assert [vaga.origem_lida_da_pagina for vaga in enriquecidas] == [None, None]
+
+
+def test_ler_a_origem_nao_acrescenta_requisicao_a_pagina(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina_com_parceiro())
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+
+        enriquecedor.enriquecer([vaga_do_parceiro()])
+        enriquecedor.enriquecer([vaga_do_parceiro()])
+
+    assert len(httpx_mock.get_requests()) == 1
