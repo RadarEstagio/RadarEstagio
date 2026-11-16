@@ -178,6 +178,7 @@ def formatar_resumo_da_execucao(
     vagas_de_origem_bloqueada: int = 0,
     paginas_de_anuncio_lidas: int = 0,
     paginas_de_anuncio_sem_origem: int = 0,
+    paginas_de_anuncio_nao_lidas: int = 0,
     jooble_hoje: int | None = None,
     jooble_limite: int | None = None,
     jooble_esgotada: bool = False,
@@ -204,6 +205,11 @@ def formatar_resumo_da_execucao(
             "⚠️ Páginas da Adzuna lidas sem origem identificada: "
             f"{paginas_de_anuncio_sem_origem} de {paginas_de_anuncio_lidas} "
             "(o corte do emprego.pt pode não estar funcionando)"
+        )
+    if paginas_de_anuncio_nao_lidas:
+        linhas.append(
+            f"⚠️ Páginas da Adzuna não lidas: {paginas_de_anuncio_nao_lidas} "
+            "(o corte do emprego.pt não vale para elas)"
         )
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")

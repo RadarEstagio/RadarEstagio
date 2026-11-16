@@ -483,6 +483,48 @@ def test_resumo_mostra_o_descarte_e_o_alerta_de_origem_no_mesmo_dia():
     assert "⚠️ Páginas da Adzuna lidas sem origem identificada: 15 de 20" in texto
 
 
+def test_resumo_avisa_quantas_paginas_da_adzuna_nao_foram_lidas():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, paginas_de_anuncio_nao_lidas=156
+    )
+
+    assert (
+        "⚠️ Páginas da Adzuna não lidas: 156 (o corte do emprego.pt não vale para elas)"
+        in texto.splitlines()
+    )
+
+
+def test_resumo_sem_pagina_nao_lida_nao_ganha_a_linha():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, paginas_de_anuncio_nao_lidas=0
+    )
+
+    assert "não lidas" not in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_mostra_as_paginas_nao_lidas_ao_lado_do_alerta_das_lidas_sem_origem():
+    linhas = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        9,
+        480,
+        2,
+        paginas_de_anuncio_lidas=4,
+        paginas_de_anuncio_sem_origem=3,
+        paginas_de_anuncio_nao_lidas=16,
+    ).splitlines()
+
+    posicao = linhas.index(
+        "⚠️ Páginas da Adzuna lidas sem origem identificada: 3 de 4 "
+        "(o corte do emprego.pt pode não estar funcionando)"
+    )
+    assert linhas[posicao + 1] == (
+        "⚠️ Páginas da Adzuna não lidas: 16 (o corte do emprego.pt não vale para elas)"
+    )
+
+
 def test_resumo_avisa_quem_recusou_a_mensagem_e_quem_foi_pausado_pelo_trecho_do_id():
     bloqueou = UUID("814c6041-0000-4000-8000-000000000001")
     pausado = UUID("9f2a11bc-0000-4000-8000-000000000002")
