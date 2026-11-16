@@ -2770,3 +2770,27 @@ def test_vaga_da_jooble_fica_atras_da_vaga_completa_de_nota_maior_que_a_trava():
     selecionadas, _, _ = rodar([da_jooble, completa], {"1": 95, "2": 61})
 
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2", "1"]
+
+
+def test_mesmo_anuncio_nas_duas_fontes_sai_com_a_copia_da_adzuna_e_sem_a_trava_de_60():
+    da_adzuna = vaga(1).model_copy(
+        update={"descricao": "Estágio em Python para apoiar o time de dados.", "modalidade": None}
+    )
+    trecho_da_jooble = da_adzuna.model_copy(
+        update={
+            "id_externo": "2",
+            "fonte": "jooble",
+            "url": "https://br.jooble.org/jdp/2",
+            "descricao": "...apoiar o time de dados nas rotinas de análise com Python " * 5,
+            "descricao_completa": False,
+        }
+    )
+
+    selecionadas, notificador, _ = rodar([trecho_da_jooble, da_adzuna], {"1": 95, "2": 95})
+
+    assert [(resultado.vaga.fonte, resultado.nota) for resultado in selecionadas] == [
+        ("adzuna", 95)
+    ]
+    assert "Adzuna" in notificador.textos[0]
+    assert "Jooble" not in notificador.textos[0]
+    assert "nota limitada a 60" not in notificador.textos[0]
