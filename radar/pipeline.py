@@ -151,6 +151,9 @@ class ResumoDaExecucao(BaseModel):
     vagas_extraidas_agora: int
     vagas_sem_extracao: int = 0
     extracoes_nao_gravadas: int = 0
+    vagas_de_origem_bloqueada: int = 0
+    paginas_de_anuncio_lidas: int = 0
+    paginas_de_anuncio_sem_origem: int = 0
     perguntas_do_dia_seguinte: int = 0
     perguntas_do_dia_seguinte_com_falha: int = 0
     enviadas_por_usuario: dict[UUID, list[Recomendacao]]
@@ -194,6 +197,11 @@ def executar(
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
     enriquecidas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
+    origens_lidas = [
+        vaga.origem_lida_da_pagina
+        for vaga in enriquecidas
+        if vaga.origem_lida_da_pagina is not None
+    ]
     candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
     unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
     if de_origem_bloqueada:
@@ -277,6 +285,9 @@ def executar(
         vagas_extraidas_agora=balanco.extraidas_agora,
         vagas_sem_extracao=balanco.sem_extracao,
         extracoes_nao_gravadas=balanco.nao_gravadas,
+        vagas_de_origem_bloqueada=len(de_origem_bloqueada),
+        paginas_de_anuncio_lidas=len(origens_lidas),
+        paginas_de_anuncio_sem_origem=sum(not origem.identificada() for origem in origens_lidas),
         perguntas_do_dia_seguinte=len(perguntas.enviadas),
         perguntas_do_dia_seguinte_com_falha=len(perguntas.com_falha),
         enviadas_por_usuario=enviadas_por_usuario,

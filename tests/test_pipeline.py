@@ -2648,3 +2648,42 @@ def test_execucao_sem_vaga_de_origem_bloqueada_nao_fala_dela_no_log(
     executar_com_origens({"1": ORIGEM_SOURCESTACK, "2": None})
 
     assert "origem bloqueada" not in caplog.text
+
+
+def test_resumo_conta_as_vagas_que_sairam_pela_origem_e_as_paginas_sem_origem():
+    resumo, _, _, _ = executar_com_origens(
+        {
+            "1": ORIGEM_EMPREGO_PT,
+            "2": ORIGEM_SOURCESTACK,
+            "3": None,
+            "4": OrigemDoAnuncio(),
+            "5": ORIGEM_EMPREGO_PT,
+        }
+    )
+
+    assert resumo.vagas_de_origem_bloqueada == 2
+    assert resumo.paginas_de_anuncio_lidas == 4
+    assert resumo.paginas_de_anuncio_sem_origem == 1
+    assert resumo.vagas_coletadas == 5
+    assert resumo.vagas_unicas == 3
+    assert resumo.vagas_candidatas == 3
+    assert resumo.vagas_extraidas_agora == 3
+
+
+def test_resumo_sem_pagina_lida_nao_conta_origem_nenhuma():
+    resumo, _, _, _ = executar_com_origens({"1": None, "2": None})
+
+    assert resumo.vagas_de_origem_bloqueada == 0
+    assert resumo.paginas_de_anuncio_lidas == 0
+    assert resumo.paginas_de_anuncio_sem_origem == 0
+
+
+def test_resumo_conta_a_pagina_de_cada_vaga_uma_vez_mesmo_candidata_de_dois_perfis():
+    resumo, _, _, _ = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": OrigemDoAnuncio()},
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+    )
+
+    assert resumo.vagas_de_origem_bloqueada == 1
+    assert resumo.paginas_de_anuncio_lidas == 2
+    assert resumo.paginas_de_anuncio_sem_origem == 1
