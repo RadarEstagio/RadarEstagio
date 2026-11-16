@@ -38,7 +38,8 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado
   (`employability-portal.gupy.io/api/v1/jobs`) é interno. Era 7% dos envios (17 de 252). O
-  coletor fica no código para o caso de autorização; sem ela, não religar.
+  coletor fica no código para o caso de autorização; sem ela, não religar. Desde 16/11 `Settings`
+  recusa `gupy` em `FONTES`: religar passou a exigir commit, e não só a variável do repositório.
 - **Jooble (lida em 16/11/2026).** API oficial e gratuita, desligada em produção nessa data. O
   limite de 12/09, "a total lifetime limit of 500 requests per key", não aparece na documentação
   da API modificada em 11/11/2026, que dá 100 requisições por dia. O que está escrito:

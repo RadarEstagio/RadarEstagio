@@ -37,8 +37,9 @@ Para o primeiro teste, use um bot próprio e deixe `DATABASE_URL` vazio: o Radar
 O `.env.example` seleciona `agy`, que exige o CLI instalado e autenticado e lê o modelo de
 `AGY_MODELO`. O padrão de `Settings` e o workflow usam `gemini_api`. Jooble exige
 `JOOBLE_API_KEY` quando entra em `FONTES` (`FONTES=adzuna,jooble`), e sem a chave a configuração
-inteira é recusada; a chave é a de `br.jooble.org` e vale 100 requisições por dia. A Gupy fica
-fora por causa dos termos. Os demais
+inteira é recusada; a chave é a de `br.jooble.org` e vale 100 requisições por dia. `FONTES` aceita
+`adzuna` e `jooble`; `gupy` é recusada na configuração, porque a Gupy está desligada pelos termos
+de uso ([frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026)). Os demais
 parâmetros e padrões estão em [radar/settings.py](../radar/settings.py): o padrão local considera
 anúncios dos últimos três dias, e o workflow usa cinco.
 

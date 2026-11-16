@@ -217,7 +217,7 @@ Continuam abertos:
   no mesmo dia, com o teste que reproduz cada um: a fonte que falha por inteiro com outra
   respondendo aparece no resumo como coleta incompleta e segura a mensagem; o trecho da Jooble
   não vence mais a cópia de outra fonte na deduplicação; a chave com espaço ou quebra de linha e
-  a data extrema num anúncio não derrubam a execução
+  a data extrema num anúncio não derrubam a execução; e `gupy` em `FONTES` é recusada
   ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
 - **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
   três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar

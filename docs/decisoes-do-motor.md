@@ -425,7 +425,10 @@ mesma estrutura que recebe o parceiro lido da página da Adzuna. Vaga com origem
 `linkedin.com` ou `emprego.pt`, ou em subdomínio deles, não sai do coletor: não chega à
 deduplicação, ao banco, à extração, à mensagem nem aos comandos `coletar`, `avaliar` e
 `descartes`. A Gupy foi desligada porque os termos dela proíbem agregar as vagas, e receber o
-mesmo conteúdo por um intermediário não muda a origem. A lista e o motivo de cada bloqueio ficam
+mesmo conteúdo por um intermediário não muda a origem. Pelo mesmo motivo `Settings` recusa `gupy`
+em `FONTES` desde 16/11: enquanto o workflow não passava `FONTES`, a Gupy só voltaria por commit;
+com a variável do repositório, o valor `adzuna,gupy` religaria a fonte sem commit. O coletor da
+Gupy continua no código. A lista e o motivo de cada bloqueio ficam
 num lugar só, `MOTIVO_DE_CADA_DOMINIO_BLOQUEADO` em `filtering/origem.py`, e o corte do pipeline
 depois do enriquecimento usa a mesma regra como segunda barreira. Anúncio sem `source` segue sem
 origem, como no corte do emprego.pt. Um log por coleta conta as vagas mantidas por domínio e as

@@ -279,7 +279,8 @@ As fontes ligadas em `FONTES` são somadas por `ColetorComposto` (`collectors/co
 cumpre `ColetorDeVagas` como qualquer coletor: o pipeline não sabe quantas fontes existem. Uma
 fonte fora do ar vira `warning` e, desde 16/11/2026, entra no resumo de operação como coleta
 incompleta, o que segura a mensagem de quem ficou sem vaga; a execução só falha se nenhuma
-responder. `FONTES` liga e desliga fontes sem mexer no código.
+responder. `FONTES` liga e desliga fontes sem mexer no código, entre `adzuna` e `jooble`; `gupy`
+é recusada na configuração desde 16/11/2026.
 
 Hoje só a Adzuna está ligada, e ela devolve descrição truncada e raramente informa modalidade.
 A Gupy, que tinha `workplaceType` estruturado e descrição completa, saiu em 12/09/2026 porque os

@@ -355,7 +355,13 @@ Variável com `jooble` e secret vazio: `Settings` recusa a configuração ("JOOB
 obrigatória quando a fonte jooble está ativa") e o `rodar` sai com código 1 antes de coletar. O
 diário inteiro e toda entrega imediata param, ninguém recebe mensagem, e o que chega ao chat de
 operação é o aviso "o job diário não terminou". Nome de fonte desconhecido na variável dá a mesma
-falha. `tests/test_settings.py` e `tests/test_workflow_radar_diario.py` guardam as duas pontas.
+falha, e `gupy` também: a fonte está desligada pelos termos de uso, e `Settings` a recusa dizendo
+isso e apontando para as [frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026).
+O valor da variável é a lista inteira das fontes, não um acréscimo: sem `adzuna` nela, a Adzuna
+desliga. A chave colada com espaço ou quebra de linha nas pontas é guardada limpa.
+`tests/test_settings.py` e `tests/test_workflow_radar_diario.py` guardam as duas pontas, que são
+a leitura das variáveis de ambiente por `Settings` e o texto do workflow. O comportamento da
+variável `FONTES` no Actions não foi conferido em execução real em 16/11.
 
 Para desligar, apagar a variável `FONTES` ou voltar o valor para `adzuna`; o secret pode ficar. Se
 o resumo trouxer "Coleta da Jooble incompleta" com erro HTTP todo dia, desligar: a busca no país
