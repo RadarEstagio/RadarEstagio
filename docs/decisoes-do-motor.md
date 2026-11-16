@@ -229,9 +229,9 @@ portal português emprego.pt, que publica como novos anúncios brasileiros já v
 de duas formas: o logo do parceiro, um `<img>` cujo `src` contém `/partners/` e cujo `alt` traz o
 nome, e `"source_id"` num script de dados. Nas 113 vagas enviadas de 12 a 16/11 os nomes vistos
 foram Emprego, SourceStack, Buscar Vagas, Divulgar Vagas, Empregos, NUBE, PandaPé, Infojobs,
-SuccessFactors e Recruta Simples. `ler_pagina_do_anuncio` guarda os dois em
-`Vaga.origem_lida_da_pagina` (`OrigemDoAnuncio`), na mesma leitura que já fazia: sem requisição a
-mais na execução, sem coluna no banco e fora do prompt, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+SuccessFactors e Recruta Simples. `ler_pagina_do_anuncio` guarda os dois em `Vaga.origem`
+(`OrigemDoAnuncio`), na mesma leitura que já fazia: sem requisição a mais na execução, sem coluna
+no banco e fora do prompt, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
 Vale o primeiro logo de parceiro da página; logo sem `alt` deixa só o identificador, e
 `source_id` fora de script não conta. As 30 vagas confirmadas do emprego.pt chegaram da API com a
 descrição cortada em 500 caracteres, então todas já passavam pelo enriquecimento.

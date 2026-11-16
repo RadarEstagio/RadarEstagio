@@ -13,6 +13,6 @@ def origem_bloqueada(origem: OrigemDoAnuncio | None) -> bool:
 
 
 def separar_as_de_origem_bloqueada(vagas: list[Vaga]) -> tuple[list[Vaga], list[Vaga]]:
-    seguem = [vaga for vaga in vagas if not origem_bloqueada(vaga.origem_lida_da_pagina)]
-    bloqueadas = [vaga for vaga in vagas if origem_bloqueada(vaga.origem_lida_da_pagina)]
+    seguem = [vaga for vaga in vagas if not origem_bloqueada(vaga.origem)]
+    bloqueadas = [vaga for vaga in vagas if origem_bloqueada(vaga.origem)]
     return seguem, bloqueadas

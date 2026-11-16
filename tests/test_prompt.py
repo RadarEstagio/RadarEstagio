@@ -93,9 +93,7 @@ def test_resumo_do_raciocinio_fica_fora_do_formato_e_nao_reextrai_as_vagas():
 
 def test_origem_do_anuncio_fica_fora_do_prompt_e_do_formato_pedido_a_ia():
     com_origem = vaga().model_copy(
-        update={
-            "origem_lida_da_pagina": OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
-        }
+        update={"origem": OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")}
     )
     formato = json.dumps(ExtracoesDeVagas.model_json_schema())
 

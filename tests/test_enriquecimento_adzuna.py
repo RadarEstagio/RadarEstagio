@@ -199,7 +199,7 @@ def origem_lida_de(pagina: str, httpx_mock: HTTPXMock) -> OrigemDoAnuncio | None
     httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina)
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
-    return enriquecidas[0].origem_lida_da_pagina
+    return enriquecidas[0].origem
 
 
 def test_guarda_na_vaga_o_parceiro_e_o_identificador_que_a_pagina_informa(
@@ -209,9 +209,7 @@ def test_guarda_na_vaga_o_parceiro_e_o_identificador_que_a_pagina_informa(
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
 
-    assert enriquecidas[0].origem_lida_da_pagina == OrigemDoAnuncio(
-        parceiro="Emprego", id_do_parceiro="79986"
-    )
+    assert enriquecidas[0].origem == OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
     assert enriquecidas[0].descricao_completa
     assert "Python e SQL" in enriquecidas[0].descricao
 
@@ -299,9 +297,7 @@ def test_pagina_lida_sem_descricao_ainda_guarda_a_origem(httpx_mock: HTTPXMock):
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
 
-    assert enriquecidas[0].origem_lida_da_pagina == OrigemDoAnuncio(
-        parceiro="Emprego", id_do_parceiro="79986"
-    )
+    assert enriquecidas[0].origem == OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
     assert not enriquecidas[0].descricao_completa
     assert enriquecidas[0].descricao == vaga_do_parceiro().descricao
 
@@ -312,7 +308,7 @@ def test_pagina_que_nao_foi_lida_deixa_a_vaga_sem_origem(httpx_mock: HTTPXMock, 
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([vaga_do_parceiro()])
 
-    assert enriquecidas[0].origem_lida_da_pagina is None
+    assert enriquecidas[0].origem is None
 
 
 def test_vaga_que_nao_passa_pela_pagina_segue_sem_origem(httpx_mock: HTTPXMock):
@@ -324,7 +320,7 @@ def test_vaga_que_nao_passa_pela_pagina_segue_sem_origem(httpx_mock: HTTPXMock):
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([curta, land_ad])
 
     assert httpx_mock.get_requests() == []
-    assert [vaga.origem_lida_da_pagina for vaga in enriquecidas] == [None, None]
+    assert [vaga.origem for vaga in enriquecidas] == [None, None]
 
 
 def test_ler_a_origem_nao_acrescenta_requisicao_a_pagina(httpx_mock: HTTPXMock):

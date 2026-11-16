@@ -51,7 +51,7 @@ class Vaga(BaseModel):
     publicada_em: datetime
     modalidade: Modalidade | None = None
     descricao_completa: bool = True
-    origem_lida_da_pagina: OrigemDoAnuncio | None = None
+    origem: OrigemDoAnuncio | None = None
 
     @field_validator("id_externo", "fonte", "titulo", "empresa", "localizacao", "descricao", "url")
     @classmethod

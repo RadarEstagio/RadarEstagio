@@ -92,9 +92,7 @@ def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
             type(erro).__name__,
         )
         return vaga
-    com_origem = vaga.model_copy(
-        update={"origem_lida_da_pagina": extrair_origem_da_pagina(resposta.text)}
-    )
+    com_origem = vaga.model_copy(update={"origem": extrair_origem_da_pagina(resposta.text)})
     descricao = extrair_descricao_da_pagina(resposta.text)
     if not descricao:
         logger.warning("Página da vaga %s da Adzuna não contém a descrição", vaga.id_externo)

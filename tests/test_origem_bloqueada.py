@@ -16,7 +16,7 @@ def vaga(numero: int, origem: OrigemDoAnuncio | None) -> Vaga:
         descricao="descrição",
         url=f"https://www.adzuna.com.br/details/{numero}",
         publicada_em=datetime(2026, 11, 15, tzinfo=UTC),
-        origem_lida_da_pagina=origem,
+        origem=origem,
     )
 
 

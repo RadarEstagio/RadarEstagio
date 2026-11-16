@@ -297,15 +297,11 @@ def test_abertura_de_ontem_sem_resposta_vira_pergunta_reservada_e_liberada(
     assert repositorio.abertura_sem_resposta(usuario, amanha) == abertura
 
 
-def test_vaga_com_origem_lida_da_pagina_e_guardada_sem_coluna_para_a_origem(
+def test_vaga_com_origem_e_guardada_sem_coluna_para_a_origem(
     conexao: psycopg.Connection,
 ):
     com_origem = vaga(1).model_copy(
-        update={
-            "origem_lida_da_pagina": OrigemDoAnuncio(
-                parceiro="SourceStack", id_do_parceiro="506674"
-            )
-        }
+        update={"origem": OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")}
     )
 
     guardar_vaga(conexao.cursor(), com_origem)

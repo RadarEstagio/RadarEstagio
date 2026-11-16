@@ -2541,8 +2541,7 @@ class EnriquecedorComOrigens:
 
     def __call__(self, vagas: list[Vaga]) -> list[Vaga]:
         return [
-            item.model_copy(update={"origem_lida_da_pagina": self._origens.get(item.id_externo)})
-            for item in vagas
+            item.model_copy(update={"origem": self._origens.get(item.id_externo)}) for item in vagas
         ]
 
 

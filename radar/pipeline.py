@@ -197,11 +197,7 @@ def executar(
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
     enriquecidas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
-    origens_lidas = [
-        vaga.origem_lida_da_pagina
-        for vaga in enriquecidas
-        if vaga.origem_lida_da_pagina is not None
-    ]
+    origens_lidas = [vaga.origem for vaga in enriquecidas if vaga.origem is not None]
     candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
     unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
     if de_origem_bloqueada:
