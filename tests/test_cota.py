@@ -5,7 +5,8 @@ from uuid import UUID
 
 import pytest
 
-from radar.collectors.adzuna import LIMITE_POR_MINUTO, CotaDaAdzuna, CotaDaAdzunaEsgotada
+from radar.collectors.adzuna import LIMITE_POR_MINUTO, CotaDaAdzuna
+from radar.collectors.cota import CotaEsgotada
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import (
     FONTE_DO_DIARIO,
@@ -40,7 +41,7 @@ def test_saldo_do_dia_no_banco_limita_a_cota_da_execucao():
     for _ in range(10):
         cota.reservar()
 
-    with pytest.raises(CotaDaAdzunaEsgotada):
+    with pytest.raises(CotaEsgotada):
         cota.reservar()
 
 
@@ -143,7 +144,7 @@ def test_entrega_imediata_nao_gasta_a_reserva_do_diario():
     for _ in range(10):
         cota.reservar()
 
-    with pytest.raises(CotaDaAdzunaEsgotada):
+    with pytest.raises(CotaEsgotada):
         cota.reservar()
 
 
@@ -168,7 +169,7 @@ def requisicoes_permitidas(cota: CotaDaAdzuna) -> int:
     for feitas in range(LIMITE_POR_MINUTO):
         try:
             cota.reservar()
-        except CotaDaAdzunaEsgotada:
+        except CotaEsgotada:
             return feitas
     return LIMITE_POR_MINUTO
 
