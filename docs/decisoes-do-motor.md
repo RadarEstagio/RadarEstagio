@@ -70,7 +70,9 @@ primeiras palavras da descrição coincidam em 80% — só o início conta porqu
 descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias (04/09/2026): a
 candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
 repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
-modalidade e, em empate, a de descrição mais longa.
+modalidade e, em empate, a de descrição mais longa; desde 16/11, antes do tamanho, a cópia de
+fonte que só entrega trecho (a Jooble) perde para a de outra fonte
+([Jooble](#jooble-16112026)).
 
 **Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
 três casos, e a pessoa perdia uma delas sem aviso:
@@ -155,6 +157,18 @@ só um kill durante a própria coleta perde a contagem. A Adzuna busca as cidade
 nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem perde é o perfil
 remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
 de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
+
+**Fonte que falha inteira com outra respondendo (16/11/2026).** Com mais de uma fonte ligada, a
+que levantava `ErroDeColeta` sem vaga nenhuma ficava só no log do `ColetorComposto` enquanto
+outra respondesse. Reproduzido com `FONTES=adzuna,jooble`: a Adzuna responde 503 em todas as
+tentativas, a Jooble não traz vaga para o perfil, e o estudante recebia "Nenhuma vaga nova
+compatível", era marcado como atendido e o resumo de operação não avisava; com só a Adzuna, o
+mesmo dia sai com código 1 e ninguém recebe mensagem. O sentido inverso, a Jooble com 403, também
+passava calado. O composto registra agora essa falha em `incompletas`, como já fazia com a
+`ColetaIncompleta`: o resumo mostra "⚠️ Coleta da <fonte> incompleta: <motivo>" e quem fica sem
+vaga selecionada tem a mensagem segurada, sem ser marcado como atendido. Quem tem vaga da fonte
+que respondeu recebe a mensagem. Com nenhuma fonte respondendo continua `ErroDeColeta` ("Nenhuma
+fonte respondeu"), aviso de falha no chat de operação e código 1; com uma fonte só nada mudou.
 
 ## Enriquecimento: a descrição completa da Adzuna
 
@@ -357,14 +371,29 @@ antes do país, como na Adzuna: com saldo curto a coleta gasta na cidade da pess
 busca do país não joga fora o que as cidades trouxeram. O filtro de recência continua no cliente
 como segunda barreira e compara o dia, não a hora: metade dos anúncios traz só a data, e comparar
 com a hora da execução cortaria os do primeiro dia da janela, que o filtro da própria Jooble
-aceita. Anúncio sem `updated` legível ou sem título é pulado com aviso.
+aceita. Anúncio sem `updated` legível ou sem o campo `title` é pulado com aviso. O mesmo vale
+para a data que não cabe em UTC (ano 1 com deslocamento positivo, ano 9999 com negativo): a
+comparação com o dia de corte rodava fora da conversão e um anúncio assim derrubava a execução
+com `OverflowError`; a data agora é levada a UTC na conversão.
 
 **Falha não é zero vagas.** Corpo que não é JSON, sem `jobs` ou com `jobs` fora de lista vira
-`ErroDeColeta`. Com pelo menos uma vaga em mãos, a falha levanta `ColetaIncompleta` com o que já
-veio, e o resumo mostra "⚠️ Coleta da Jooble incompleta: <motivo>"; sem nenhuma, a fonte fica de
-fora da execução pelo `ColetorComposto`, que só falha se nenhuma fonte responder. É a mesma regra
-da [coleta resiliente](#coleta-resiliente-13092026). A chave da API vai no caminho da URL e não
-entra em mensagem de erro nem em log.
+`ErroDeColeta`. Com pelo menos uma vaga mantida em mãos, a falha levanta `ColetaIncompleta` com o
+que já veio; sem nenhuma, levanta `ErroDeColeta`, e o `ColetorComposto` registra a fonte como
+incompleta enquanto outra responder. Nos dois casos o resumo mostra "⚠️ Coleta da Jooble
+incompleta: <motivo>" e quem fica sem vaga selecionada tem a mensagem segurada; se nenhuma fonte
+responder, a execução falha. Vale para a busca no país: se ela falhar depois de as cidades
+trazerem vaga, é `ColetaIncompleta`; se as cidades não trouxeram nenhuma, é a falha inteira da
+fonte. É a mesma regra da [coleta resiliente](#coleta-resiliente-13092026).
+
+**Chave da API.** A chave vai no caminho da URL e não entra em mensagem de erro nem em log.
+`Settings` a guarda sem espaços nem quebra de linha nas pontas, que é como um secret colado
+costuma chegar. Chave que ainda assim não cabe na URL (quebra de linha ou tabulação no meio) faz
+o httpx levantar `InvalidURL`, que não é `HTTPError` e atravessava as tentativas e o composto,
+derrubando a execução; `requisitar_com_tentativas` a trata agora como falha da fonte, sem nova
+tentativa e sem a URL na mensagem ("Requisição inválida ao buscar vagas na Jooble
+(InvalidURL)"). A reserva da cota vem antes da requisição, então essa que não saiu conta uma vez
+no uso do dia. O httpx escreveria a URL de cada requisição em nível `INFO`; o `__main__` o põe em
+`WARNING`, e um teste de fluxo falha se essa linha sair.
 
 **Cota de 100 por dia.** A contagem usa `CotaDeRequisicoes`, a parte de `CotaDaAdzuna` que não
 depende do ritmo por minuto (a Jooble não publica limite por minuto). Cada chamada, tentativa
@@ -408,6 +437,17 @@ Jooble" e o link "Ver vaga em br.jooble.org"; a atribuição "Jobs by Adzuna" s�
 Adzuna. O enriquecimento não lê a página da vaga no site da Jooble, e não pode passar a ler: os
 termos do site proíbem robôs.
 
+**Duplicata entre fontes.** Quando o mesmo anúncio chega das duas fontes, `mais_completa`
+(`filtering/duplicatas.py`) decide em três passos: quem informa modalidade vence; depois, quando
+só uma das cópias vem de fonte que só entrega trecho (`FONTES_QUE_SO_ENTREGAM_TRECHO`, hoje a
+Jooble), vence a outra; por fim, a descrição mais longa. O passo do meio entrou em 16/11: o
+trecho da Jooble, que o enriquecimento nunca completa, vencia a cópia mais curta que a Adzuna já
+dá inteira, e a vaga passava a levar a trava de 60 e o link da Jooble (reproduzido com vagas
+sintéticas, hoje teste). A regra não é "prefere `descricao_completa`": entre duas cópias da
+Adzuna, a cortada em 500 caracteres continua vencendo a curta completa, porque o enriquecimento
+a completa depois. Entre duas da Jooble, ou entre duas que não são da Jooble, nada mudou. A
+frequência do caso não foi medida.
+
 **Pré-filtro sobre as sondagens (16/11), medição parcial.** O pré-filtro do projeto, sem extração
 nem nota, rodou sobre os arquivos salvos das sondagens, só a primeira página de cada uma, com três
 perfis sintéticos presenciais do Rio, 4º período. A linha que corresponde à busca do coletor é a
@@ -450,12 +490,6 @@ pandape.com.br (44). Passaram no pré-filtro, com perfis sintéticos do Rio no 4
   a variação de um dia para outro não foram medidas.
 - Não foi medido quantas vagas da Jooble repetem as da Adzuna, nem quantas recebem nota acima do
   corte: a medição acima para no pré-filtro. A cobertura real só sai depois de ligar.
-- Quando o mesmo anúncio chega das duas fontes com título, empresa e cidade iguais, a
-  deduplicação fica com a descrição mais longa, sem olhar se ela é completa. Reproduzido em
-  16/11 com vagas sintéticas: a cópia da Adzuna cortada em 500 caracteres vence o trecho da
-  Jooble e segue para o enriquecimento, mas a cópia curta que a Adzuna já dá inteira perde para
-  um trecho mais longo da Jooble, e a vaga passa a levar a trava de 60. A regra da duplicata não
-  foi mudada, e a frequência do caso não foi medida.
 - O bloqueio de republicação entre dias compara as 40 primeiras palavras da descrição. Nas
   sondagens, de 69 a 86 de cada 100 trechos da Jooble começam com reticências, no meio do
   anúncio, e um trecho assim não é reconhecido como a vaga já enviada pela Adzuna (reproduzido
@@ -468,9 +502,9 @@ pandape.com.br (44). Passaram no pré-filtro, com perfis sintéticos do Rio no 4
   agregador (jobleads.com, por exemplo) não é reconhecido, e isso não foi medido.
 - `coletar`, `avaliar` e `descartes` consultam a Jooble sem gravar o uso, como já fazem com a
   Adzuna. O que eles gastam só aparece quando a Jooble responde 429.
-- Uma fonte que falha por inteiro (chave recusada, rede) fica de fora da execução com aviso só no
-  log, enquanto outra fonte responder: é a regra do `ColetorComposto`, e o resumo de operação não
-  ganha linha.
+- A retenção por coleta incompleta vale para todos os perfis: com a Jooble falhando inteira todo
+  dia, quem fica sem vaga selecionada da Adzuna tem a mensagem segurada todo dia, até a fonte
+  voltar ou a variável ser desligada.
 - A reserva do diário não conta tentativa repetida, e um segundo diário no mesmo dia, para quem
   ficou sem mensagem, coleta de novo.
 - A vaga cortada pela origem volta em toda coleta enquanto a Jooble a devolver, sem custo de

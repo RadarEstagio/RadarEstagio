@@ -277,8 +277,9 @@ nunca é commitado; no GitHub as mesmas variáveis vêm dos secrets.
 
 As fontes ligadas em `FONTES` são somadas por `ColetorComposto` (`collectors/composto.py`), que
 cumpre `ColetorDeVagas` como qualquer coletor: o pipeline não sabe quantas fontes existem. Uma
-fonte fora do ar vira `warning`; só falha se nenhuma responder. `FONTES` liga e desliga fontes
-sem mexer no código.
+fonte fora do ar vira `warning` e, desde 16/11/2026, entra no resumo de operação como coleta
+incompleta, o que segura a mensagem de quem ficou sem vaga; a execução só falha se nenhuma
+responder. `FONTES` liga e desliga fontes sem mexer no código.
 
 Hoje só a Adzuna está ligada, e ela devolve descrição truncada e raramente informa modalidade.
 A Gupy, que tinha `workplaceType` estruturado e descrição completa, saiu em 12/09/2026 porque os
@@ -290,7 +291,8 @@ origem, pelo qual a da Gupy é descartada no coletor
 código.
 
 Com mais de uma fonte, a mesma vaga pode chegar duas vezes. `filtering/duplicatas.py` agrupa por título + empresa +
-cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
+cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; depois,
+a cópia de fonte que só entrega trecho (a Jooble) perde para a de outra fonte; empate →
 descrição mais longa. Empresa sem nome ("Empresa não informada", "Confidencial") não distingue
 anúncio algum, então nesse caso a chave leva também a descrição. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
 que muda é a informação que chega ao extrator.

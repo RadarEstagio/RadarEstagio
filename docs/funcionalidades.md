@@ -279,7 +279,9 @@ produção é uma variável do repositório. Busca só "estágio" em cada cidade
 até 5 páginas de 100 por região, e para no saldo das 100 requisições diárias da chave; a entrega
 imediata guarda o que o diário ainda vai gastar. Cada vaga traz o domínio de origem que a Jooble
 informa, e a que vem de gupy.io, linkedin.com ou emprego.pt é descartada no coletor. Com a fonte
-ligada, o resumo de operação mostra as requisições do dia e avisa quando a cota esgota (16/11/2026).
+ligada, o resumo de operação mostra as requisições do dia e avisa quando a cota esgota ou quando
+a fonte falha, inteira ou no meio (16/11/2026). O mesmo anúncio vindo também da Adzuna fica com a
+cópia da Adzuna.
 
 **Condições e limites:** A Jooble só dá um trecho da descrição, então a vaga leva a nota limitada
 a 60, e a página da vaga no site da Jooble nunca é lida. Os termos da API não estão publicados e

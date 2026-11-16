@@ -98,8 +98,8 @@ motivo e o webhook sem `my_chat_member`. Do corte do emprego.pt (16/11) ficaram 
 curta ou `/land/ad/`, que não é identificada, e o volume diário, que deve cair; quanto, e se a
 Jooble repõe, não foi medido.
 Da Jooble (16/11) ficaram a busca no país com `location` vazio, aceita numa única execução de
-16/11, fora da documentação, e a fonte que falha
-por inteiro só com aviso no log. O token do cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
+16/11, fora da documentação, e o trecho que não é reconhecido como vaga já enviada pela Adzuna;
+a fonte que falha por inteiro passou a aparecer no resumo de operação. O token do cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
 automático não está validado (precisa de 75% ou mais de concordância).
 
 **Produto:**

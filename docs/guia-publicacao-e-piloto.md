@@ -341,9 +341,15 @@ Turnstile:
 1. Criar o **secret** `JOOBLE_API_KEY` (Settings → Secrets and variables → Actions → Secrets) com
    a chave de `br.jooble.org`.
 2. Só depois criar a **variável** `FONTES` (aba Variables) com `adzuna,jooble`.
-3. No primeiro diário, conferir o resumo de operação: "Requisições à Jooble: N de 100 hoje"
-   aparece, e "⚠️ Coleta da Jooble incompleta" e "⚠️ Cota da Jooble esgotada" não. No log do run,
-   a linha "Jooble: N vagas mantidas por origem (...)" conta as vagas por domínio e as cortadas.
+3. No primeiro diário, conferir o resumo de operação e o log do run. No resumo, "Requisições à
+   Jooble: N de 100 hoje" aparece, e "⚠️ Coleta da Jooble incompleta: <motivo>" e "⚠️ Cota da
+   Jooble esgotada: a coleta parou antes do fim" não. A linha das requisições sozinha não prova
+   que a fonte entregou, porque conta também a requisição que falhou. Desde 16/11 a fonte que
+   falha inteira (chave recusada, 403, rede) aparece no resumo como "⚠️ Coleta da Jooble
+   incompleta: <motivo>", com o mesmo texto da coleta que para no meio, e segura a mensagem de
+   quem ficou sem vaga. No log, conferir "N vagas coletadas em jooble" com N maior que zero e a
+   linha "Jooble: N vagas mantidas por origem (...)", que conta as vagas por domínio e as
+   cortadas.
 
 Variável com `jooble` e secret vazio: `Settings` recusa a configuração ("JOOBLE_API_KEY é
 obrigatória quando a fonte jooble está ativa") e o `rodar` sai com código 1 antes de coletar. O
