@@ -1,4 +1,5 @@
 import json
+import traceback
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -330,6 +331,44 @@ def test_chave_da_api_nao_aparece_no_erro_nem_no_log(
 
     assert CHAVE not in str(incompleta.value)
     assert CHAVE not in caplog.text
+
+
+INICIO_DA_CHAVE_INVALIDA = "chave-secreta"
+FIM_DA_CHAVE_INVALIDA = "colada"
+
+
+def chave_que_nao_cabe_na_url(separador: str = "\n") -> str:
+    return f"{INICIO_DA_CHAVE_INVALIDA}{separador}{FIM_DA_CHAVE_INVALIDA}"
+
+
+@pytest.mark.parametrize("separador", ["\n", "\r", "\t"])
+def test_chave_que_nao_cabe_na_url_e_falha_da_fonte_sem_nova_tentativa(
+    httpx_mock: HTTPXMock, separador: str
+):
+    esperas: list[float] = []
+    chave = chave_que_nao_cabe_na_url(separador)
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta) as erro:
+        ColetorJooble(chave, cliente_http, PUBLICADAS_DESDE, esperar=esperas.append).coletar()
+
+    assert str(erro.value) == "Requisição inválida ao buscar vagas na Jooble (InvalidURL)"
+    assert esperas == []
+    assert httpx_mock.get_requests() == []
+
+
+def test_requisicao_que_nao_saiu_nao_deixa_a_chave_no_erro_nem_no_log(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level("DEBUG")
+    chave = chave_que_nao_cabe_na_url()
+    with httpx.Client() as cliente_http, pytest.raises(ErroDeColeta) as erro:
+        ColetorJooble(chave, cliente_http, PUBLICADAS_DESDE).coletar()
+
+    relato = "".join(traceback.format_exception(erro.value))
+    for texto in (relato, caplog.text):
+        assert INICIO_DA_CHAVE_INVALIDA not in texto
+        assert FIM_DA_CHAVE_INVALIDA not in texto
+    assert URL_BUSCA not in relato
+    assert httpx_mock.get_requests() == []
 
 
 def test_texto_com_nul_e_metade_solta_de_emoji_chega_limpo(httpx_mock: HTTPXMock):

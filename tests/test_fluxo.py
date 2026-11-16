@@ -1342,3 +1342,38 @@ def test_adzuna_fora_do_ar_como_unica_fonte_continua_terminando_com_codigo_de_er
     [aviso] = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)
     assert "falhou" in aviso
     assert "Nenhuma fonte respondeu: adzuna: Adzuna respondeu HTTP 503 ao buscar vagas" in aviso
+
+
+def test_chave_da_jooble_que_nao_cabe_na_url_nao_derruba_a_execucao_nem_aparece_em_lugar_algum(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture,
+):
+    caplog.set_level("DEBUG")
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        json=vagas_de_desenvolvimento_no_rio(2),
+        is_reusable=True,
+    )
+    responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+    settings = settings_com_a_jooble().model_copy(
+        update={"jooble_api_key": "chave-secreta\ncolada"}
+    )
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings) == 0
+
+    assert httpx_mock.get_requests(url=URL_DA_JOOBLE) == []
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" in mensagem
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert (
+        "⚠️ Coleta da Jooble incompleta: "
+        "Requisição inválida ao buscar vagas na Jooble (InvalidURL)" in resumo
+    )
+    saida = capsys.readouterr()
+    for texto in (resumo, mensagem, caplog.text, saida.out, saida.err):
+        assert "chave-secreta" not in texto
+        assert "colada" not in texto
