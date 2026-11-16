@@ -16,7 +16,6 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
-from radar.collectors.gupy import URL_BUSCA as URL_GUPY
 from radar.collectors.jooble import URL_BUSCA as URL_JOOBLE
 from radar.domain.models import Modalidade, Perfil, Usuario
 from radar.settings import Settings
@@ -74,15 +73,24 @@ def test_jooble_selecionado_consulta_o_endpoint_do_jooble(httpx_mock: HTTPXMock)
     assert hosts_consultados(httpx_mock) == {httpx.URL(URL_JOOBLE).host}
 
 
-def test_consulta_todas_as_fontes_por_padrao(httpx_mock: HTTPXMock):
+def settings_com_a_adzuna_e_a_jooble() -> Settings:
+    return settings_de_teste("adzuna").model_copy(
+        update={"fontes": "adzuna, jooble", "jooble_api_key": "chave-jooble"}
+    )
+
+
+def test_consulta_as_duas_fontes_quando_as_duas_estao_selecionadas(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url=re.compile(re.escape(URL_ADZUNA)), json={"results": []})
     httpx_mock.add_response(
-        url=re.compile(re.escape(URL_GUPY)), json={"data": []}, is_reusable=True
+        url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []}, is_reusable=True
     )
     with httpx.Client() as cliente_http:
-        criar_coletor(settings_de_teste("adzuna, gupy"), cliente_http, AGORA).coletar()
+        criar_coletor(settings_com_a_adzuna_e_a_jooble(), cliente_http, AGORA).coletar()
 
-    assert hosts_consultados(httpx_mock) == {httpx.URL(URL_ADZUNA).host, httpx.URL(URL_GUPY).host}
+    assert hosts_consultados(httpx_mock) == {
+        httpx.URL(URL_ADZUNA).host,
+        httpx.URL(URL_JOOBLE).host,
+    }
 
 
 def test_repassa_cidades_para_todas_as_fontes(httpx_mock: HTTPXMock):
@@ -90,15 +98,21 @@ def test_repassa_cidades_para_todas_as_fontes(httpx_mock: HTTPXMock):
         url=re.compile(re.escape(URL_ADZUNA)), json={"results": []}, is_reusable=True
     )
     httpx_mock.add_response(
-        url=re.compile(re.escape(URL_GUPY)), json={"data": []}, is_reusable=True
+        url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []}, is_reusable=True
     )
     with httpx.Client() as cliente_http:
-        criar_coletor(settings_de_teste("adzuna, gupy"), cliente_http, AGORA, ["Niterói"]).coletar()
+        criar_coletor(
+            settings_com_a_adzuna_e_a_jooble(), cliente_http, AGORA, ["Niterói"]
+        ).coletar()
 
-    parametros = [requisicao.url.params for requisicao in httpx_mock.get_requests()]
+    pedidos_a_adzuna = httpx_mock.get_requests(url=re.compile(re.escape(URL_ADZUNA)))
+    pedidos_a_jooble = httpx_mock.get_requests(url=re.compile(re.escape(URL_JOOBLE)))
 
-    assert [p.get("where") for p in parametros if "app_id" in p] == ["Niterói", None]
-    assert [p.get("city") for p in parametros if "jobName" in p] == [None, "Niterói"]
+    assert [pedido.url.params.get("where") for pedido in pedidos_a_adzuna] == ["Niterói", None]
+    assert [json.loads(pedido.content)["location"] for pedido in pedidos_a_jooble] == [
+        "Niterói",
+        "",
+    ]
 
 
 def test_cidades_de_interesse_vem_de_perfis_que_aceitam_presenca_sem_repetir():

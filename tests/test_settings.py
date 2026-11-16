@@ -114,15 +114,33 @@ def test_chave_da_jooble_so_com_espacos_continua_valendo_como_ausente(
 
 
 def test_fontes_aceitam_espacos_e_maiusculas():
-    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Gupy "))
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Adzuna "))
 
-    assert settings.fontes_selecionadas() == ["gupy"]
+    assert settings.fontes_selecionadas() == ["adzuna"]
 
 
 @pytest.mark.parametrize("fontes", ["", "linkedin", "adzuna,linkedin"])
 def test_fontes_desconhecidas_ou_vazias_sao_rejeitadas(fontes: str):
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="ao menos uma entre adzuna, jooble"):
         Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=fontes))
+
+
+@pytest.mark.parametrize("fontes", ["gupy", "adzuna,gupy", "adzuna, Gupy ", "gupy,linkedin"])
+def test_gupy_e_recusada_em_fontes_com_o_motivo_e_onde_ler(fontes: str):
+    with pytest.raises(ValidationError) as erro:
+        Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=fontes))
+
+    assert "gupy está desligada pelos termos de uso" in str(erro.value)
+    assert "docs/frentes-externas.md" in str(erro.value)
+
+
+def test_variavel_do_repositorio_com_a_gupy_invalida_a_configuracao_inteira(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,gupy", chave_da_jooble="")
+
+    with pytest.raises(ValidationError, match="gupy está desligada pelos termos de uso"):
+        Settings(_env_file=None)
 
 
 def test_sem_banco_exige_chat_id_do_telegram():

@@ -3,7 +3,8 @@ from typing import Literal, Self
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-FONTES_DISPONIVEIS = ("adzuna", "gupy", "jooble")
+FONTES_DISPONIVEIS = ("adzuna", "jooble")
+FONTES_DESLIGADAS_PELOS_TERMOS = ("gupy",)
 FONTES_PADRAO = ("adzuna",)
 SEPARADOR_DE_FONTES = ","
 
@@ -44,6 +45,12 @@ class Settings(BaseSettings):
     @classmethod
     def exigir_fontes_conhecidas(cls, valor: str) -> str:
         nomes = separar_fontes(valor)
+        desligadas = [nome for nome in nomes if nome in FONTES_DESLIGADAS_PELOS_TERMOS]
+        if desligadas:
+            raise ValueError(
+                f"{', '.join(desligadas)} está desligada pelos termos de uso e não entra em "
+                "FONTES; ver docs/frentes-externas.md"
+            )
         desconhecidas = [nome for nome in nomes if nome not in FONTES_DISPONIVEIS]
         if not nomes or desconhecidas:
             raise ValueError(
