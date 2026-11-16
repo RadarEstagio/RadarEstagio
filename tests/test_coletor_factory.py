@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import UTC, datetime
 from uuid import UUID
@@ -210,13 +211,34 @@ def test_sem_curso_desconhecido_nao_ha_busca_geral(httpx_mock):
     assert all("what_or" in requisicao.url.params for requisicao in httpx_mock.get_requests())
 
 
-def test_busca_geral_jooble_nao_retorna_a_tecnologia(httpx_mock):
-    import json
-
-    httpx_mock.add_response(url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []})
+def test_jooble_busca_so_estagio_mesmo_com_termos_de_area_e_busca_geral(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []}, is_reusable=True
+    )
+    grupo = [
+        usuario(1, "Rio", Modalidade.REMOTO),
+        usuario(2, "Rio", Modalidade.REMOTO, "Agronomia"),
+    ]
     settings = settings_de_teste("adzuna").model_copy(
-        update={"fontes": "jooble", "jooble_api_key": "teste"}
+        update={"fontes": "jooble", "jooble_api_key": "teste", "dias_recentes": 5}
     )
     with httpx.Client() as cliente:
-        criar_coletor(settings, cliente, AGORA, termos=()).coletar()
-    assert json.loads(httpx_mock.get_request().content)["keywords"] == "estágio"
+        criar_coletor(
+            settings,
+            cliente,
+            AGORA,
+            ["Niterói"],
+            termos=termos_de_interesse(grupo),
+            busca_geral=ha_curso_desconhecido(grupo),
+        ).coletar()
+
+    assert [json.loads(requisicao.content) for requisicao in httpx_mock.get_requests()] == [
+        {
+            "keywords": "estágio",
+            "location": regiao,
+            "page": 1,
+            "ResultOnPage": 100,
+            "datecreatedfrom": "2026-08-22",
+        }
+        for regiao in ["Niterói", ""]
+    ]

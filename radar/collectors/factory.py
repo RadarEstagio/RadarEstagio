@@ -41,12 +41,7 @@ def criar_coletor(
         ),
         "gupy": ColetorGupy(cliente_http, publicadas_desde, cidades_de_busca),
         "jooble": ColetorJooble(
-            settings.jooble_api_key,
-            cliente_http,
-            publicadas_desde,
-            cidades_de_busca,
-            termos=termos_de_interesse,
-            busca_geral=busca_geral,
+            settings.jooble_api_key, cliente_http, publicadas_desde, cidades_de_busca
         ),
     }
     return ColetorComposto(
