@@ -342,7 +342,10 @@ def executar_fluxo(
         f"{cota.requisicoes} requisições à Adzuna; "
         f"{ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje} já atendidos hoje; "
         f"{len(resumo.usuarios_que_recusaram_a_mensagem)} recusaram a mensagem, "
-        f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa"
+        f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa; "
+        f"{resumo.vagas_de_origem_bloqueada} vagas descartadas por virem do emprego.pt, "
+        f"{resumo.paginas_de_anuncio_sem_origem} de {resumo.paginas_de_anuncio_lidas} "
+        "páginas de anúncio lidas sem origem identificada"
     )
     resumo_entregue = avisar_operacao(
         settings,
@@ -382,6 +385,9 @@ def executar_fluxo(
             ja_atendidos_hoje=ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje,
             recusaram_a_mensagem=resumo.usuarios_que_recusaram_a_mensagem,
             pausados_por_recusa=resumo.usuarios_pausados_por_recusa,
+            vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
+            paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
+            paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():

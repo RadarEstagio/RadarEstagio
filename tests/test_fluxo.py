@@ -813,3 +813,112 @@ def test_bot_bloqueado_antes_do_limite_aparece_no_resumo_sem_pausa(
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
     assert "⚠️ Recusaram a mensagem" in resumo
     assert "Pausados" not in resumo
+
+
+CAMINHO_DA_PAGINA_DO_EMPREGO_PT = (
+    Path(__file__).parent / "fixtures" / "adzuna_detalhe_com_parceiro.html"
+)
+CAMINHO_DA_PAGINA_SEM_PARCEIRO = Path(__file__).parent / "fixtures" / "adzuna_detalhe.html"
+URL_DA_PAGINA_DO_ANUNCIO = re.compile(r"https://www\.adzuna\.com\.br/details/\d+")
+
+
+def pagina_do_emprego_pt() -> str:
+    return CAMINHO_DA_PAGINA_DO_EMPREGO_PT.read_text(encoding="utf-8")
+
+
+def pagina_do_sourcestack() -> str:
+    return (
+        pagina_do_emprego_pt()
+        .replace("/images/br/jobs/partners/logo_emprego.png", "/images/BR/partners/logo.png")
+        .replace('alt="Emprego"', 'alt="SourceStack"')
+        .replace('"source_id" : "79986"', '"source_id" : "506674"')
+    )
+
+
+def vagas_com_descricao_cortada_pela_api(quantidade: int) -> dict:
+    pagina = vagas_de_desenvolvimento_no_rio(quantidade)
+    for item in pagina["results"]:
+        item["description"] = item["description"].ljust(499) + "…"
+    return pagina
+
+
+def rodar_com_as_paginas_dos_anuncios(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+) -> list[str]:
+    ids_pedidos_ao_gemini: list[str] = []
+
+    def gemini(requisicao: httpx.Request) -> httpx.Response:
+        prompt = json.loads(requisicao.content)["contents"][0]["parts"][0]["text"]
+        ids = re.findall(r"Vaga id=(\S+)", prompt)
+        ids_pedidos_ao_gemini.extend(ids)
+        extracoes = [{"id_vaga": id_vaga, "area_da_vaga": "computacao"} for id_vaga in ids]
+        texto = json.dumps({"extracoes": extracoes})
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": texto}], "role": "model"}}]}
+        )
+
+    def pagina_do_anuncio(requisicao: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=pagina_de_cada_anuncio[requisicao.url.path.split("/")[-1]])
+
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        json=vagas_com_descricao_cortada_pela_api(len(pagina_de_cada_anuncio)),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(pagina_do_anuncio, url=URL_DA_PAGINA_DO_ANUNCIO, is_reusable=True)
+    httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio) == 0
+    return ids_pedidos_ao_gemini
+
+
+def test_diario_corta_a_vaga_do_emprego_pt_antes_da_ia_e_relata_no_resumo(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {
+            "9101": pagina_do_emprego_pt(),
+            "9102": pagina_do_sourcestack(),
+            "9103": pagina_do_sourcestack(),
+        },
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9102", "adzuna:9103"]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" not in mensagem
+    assert "Desenvolvimento de Software 2</b>" in mensagem
+    assert "Desenvolvimento de Software 3</b>" in mensagem
+    assert len(httpx_mock.get_requests(url=URL_DA_PAGINA_DO_ANUNCIO)) == 3
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas descartadas por virem do emprego.pt: 1" in resumo
+    assert "sem origem identificada" not in resumo
+    saida = capsys.readouterr().out
+    assert "1 vagas descartadas por virem do emprego.pt" in saida
+    assert "0 de 3 páginas de anúncio lidas sem origem identificada" in saida
+
+
+def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_nada(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    sem_parceiro = CAMINHO_DA_PAGINA_SEM_PARCEIRO.read_text(encoding="utf-8")
+
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {"9101": sem_parceiro, "9102": sem_parceiro, "9103": pagina_do_sourcestack()},
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102", "adzuna:9103"]
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert (
+        "⚠️ Páginas da Adzuna lidas sem origem identificada: 2 de 3 "
+        "(o corte do emprego.pt pode não estar funcionando)"
+    ) in resumo
+    assert "Vagas descartadas por virem do emprego.pt" not in resumo
+    saida = capsys.readouterr().out
+    assert "0 vagas descartadas por virem do emprego.pt" in saida
+    assert "2 de 3 páginas de anúncio lidas sem origem identificada" in saida
