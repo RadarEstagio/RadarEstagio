@@ -13,7 +13,7 @@ from pytest_httpx import HTTPXMock
 from radar.__main__ import avaliar, executar_fluxo, main
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
-from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
+from radar.cota import FONTE_DO_DIARIO, reserva_do_diario, reserva_do_diario_na_jooble
 from radar.domain.datas import data_local
 from radar.domain.models import EventosDoSite, Modalidade, Perfil, Usuario, Vaga
 from radar.domain.ports import ColetorDeVagas
@@ -289,6 +289,7 @@ def test_coleta_completa_continua_dizendo_ao_estudante_que_nao_ha_vaga(httpx_moc
 
 
 HORARIO_DO_DIARIO = datetime(2026, 9, 14, 10, 23, tzinfo=UTC)
+ANTES_DO_DIARIO_DO_DIA = datetime(2026, 9, 14, 3, 0, tzinfo=UTC)
 TARDE_DO_DIARIO = datetime(2026, 9, 14, 15, 0, tzinfo=UTC)
 
 
@@ -996,3 +997,253 @@ def test_avaliacao_manual_segue_com_a_vaga_sem_origem_identificada(
 
     assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102"]
     assert "emprego.pt" not in capsys.readouterr().out
+
+
+URL_DA_JOOBLE = re.compile(r"https://br\.jooble\.org/.*")
+CHAVE_DA_JOOBLE = "chave-jooble-de-teste"
+
+
+def settings_com_a_jooble() -> Settings:
+    return settings_de_teste().model_copy(
+        update={"fontes": "adzuna,jooble", "jooble_api_key": CHAVE_DA_JOOBLE}
+    )
+
+
+def vaga_da_jooble(numero: int, source: str) -> dict:
+    publicada = (datetime.now(UTC) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.0000000")
+    return {
+        "title": f"Estágio em Desenvolvimento de Software {numero}",
+        "location": "Rio de Janeiro, RJ",
+        "snippet": "&nbsp;...Estágio para estudantes de Ciência da Computação com <b>Python</b>...",
+        "salary": "",
+        "source": source,
+        "type": "",
+        "link": f"https://br.jooble.org/jdp/{numero}",
+        "company": f"Empresa {numero}",
+        "updated": publicada,
+        "id": numero,
+    }
+
+
+def responder_a_jooble(httpx_mock: HTTPXMock, vagas_de_cada_regiao: dict[str, list[dict]]) -> None:
+    def jooble(requisicao: httpx.Request) -> httpx.Response:
+        regiao = json.loads(requisicao.content)["location"]
+        vagas = vagas_de_cada_regiao.get(regiao, [])
+        return httpx.Response(200, json={"totalCount": len(vagas), "jobs": vagas})
+
+    httpx_mock.add_callback(jooble, url=URL_DA_JOOBLE, is_reusable=True)
+
+
+def responder_o_gemini(httpx_mock: HTTPXMock) -> list[str]:
+    ids_pedidos: list[str] = []
+
+    def gemini(requisicao: httpx.Request) -> httpx.Response:
+        prompt = json.loads(requisicao.content)["contents"][0]["parts"][0]["text"]
+        ids = re.findall(r"Vaga id=(\S+)", prompt)
+        ids_pedidos.extend(ids)
+        extracoes = [{"id_vaga": id_vaga, "area_da_vaga": "computacao"} for id_vaga in ids]
+        texto = json.dumps({"extracoes": extracoes})
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": texto}], "role": "model"}}]}
+        )
+
+    httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True, is_optional=True)
+    return ids_pedidos
+
+
+def adzuna_sem_vagas(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json={"results": []}, is_reusable=True
+    )
+
+
+def uso_gravado_da_jooble(repositorio: RepositorioEmMemoria) -> int:
+    return repositorio.requisicoes_da_fonte_desde("jooble", date.min)
+
+
+def test_diario_com_a_jooble_entrega_a_vaga_dela_sem_a_da_gupy_e_relata_o_uso(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    adzuna_sem_vagas(httpx_mock)
+    responder_a_jooble(
+        httpx_mock,
+        {
+            "Rio de Janeiro": [
+                vaga_da_jooble(1, "empregos.com.br"),
+                vaga_da_jooble(2, "gupy.io"),
+                vaga_da_jooble(3, "infojobs.com.br"),
+            ]
+        },
+    )
+    ids_pedidos_ao_gemini = responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioQueGuardaExtracoes([estudante_de_computacao_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert sorted(ids_pedidos_ao_gemini) == ["jooble:1", "jooble:3"]
+    assert sorted(repositorio.extracoes_guardadas) == ["jooble:1", "jooble:3"]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" in mensagem
+    assert "Desenvolvimento de Software 3</b>" in mensagem
+    assert "Desenvolvimento de Software 2</b>" not in mensagem
+    assert "🏷️ Fonte: Jooble" in mensagem
+    assert "Adzuna" not in mensagem
+    assert "Ver vaga em br.jooble.org" in mensagem
+    assert "nota limitada a 60" in mensagem
+    assert uso_gravado_da_jooble(repositorio) == 2
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Requisições à Jooble: 2 de 100 hoje (2%)" in resumo
+    assert "Cota da Jooble esgotada" not in resumo
+    assert "2 requisições à Jooble" in capsys.readouterr().out
+
+
+def test_diario_com_a_jooble_nunca_le_a_pagina_da_vaga_no_site_da_jooble(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+    responder_a_jooble(httpx_mock, {"Rio de Janeiro": [vaga_da_jooble(1, "empregos.com.br")]})
+    responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    pedidos_a_jooble = httpx_mock.get_requests(url=URL_DA_JOOBLE)
+    assert [(pedido.method, pedido.url.path) for pedido in pedidos_a_jooble] == [
+        ("POST", f"/api/{CHAVE_DA_JOOBLE}"),
+        ("POST", f"/api/{CHAVE_DA_JOOBLE}"),
+    ]
+
+
+def test_diario_sem_a_jooble_ligada_nao_a_consulta_nem_fala_dela(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio) == 0
+
+    assert httpx_mock.get_requests(url=URL_DA_JOOBLE) == []
+    assert uso_gravado_da_jooble(repositorio) == 0
+    assert "Jooble" not in mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+
+
+def test_cota_da_jooble_que_acaba_no_meio_nao_diz_ao_estudante_que_nao_ha_vaga(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+    responder_a_jooble(httpx_mock, {"Rio de Janeiro": [vaga_da_jooble(1, "empregos.com.br")]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+    repositorio.registrar_requisicoes_da_fonte("jooble", datetime.now(UTC).date(), 99)
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 1
+    assert uso_gravado_da_jooble(repositorio) == 100
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Requisições à Jooble: 100 de 100 hoje (100%)" in resumo
+    assert "⚠️ Cota da Jooble esgotada: a coleta parou antes do fim" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+
+
+def test_jooble_sem_saldo_no_dia_fica_fora_da_execucao_e_a_adzuna_entrega(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        json=vagas_de_desenvolvimento_no_rio(2),
+        is_reusable=True,
+    )
+    responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+    repositorio.registrar_requisicoes_da_fonte("jooble", datetime.now(UTC).date(), 100)
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert httpx_mock.get_requests(url=URL_DA_JOOBLE) == []
+    assert uso_gravado_da_jooble(repositorio) == 100
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" in mensagem
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Cota da Jooble esgotada: a coleta parou antes do fim" in resumo
+
+
+def test_limite_diario_excedido_na_jooble_gasta_uma_requisicao_e_aparece_no_resumo(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+    httpx_mock.add_response(
+        url=URL_DA_JOOBLE, status_code=429, text="Too Many Requests", is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 1
+    assert uso_gravado_da_jooble(repositorio) == 1
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Cota da Jooble esgotada: a coleta parou antes do fim" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+
+
+def test_busca_da_jooble_que_falha_depois_da_cidade_aparece_como_coleta_incompleta(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+
+    def jooble(requisicao: httpx.Request) -> httpx.Response:
+        if json.loads(requisicao.content)["location"]:
+            return httpx.Response(
+                200, json={"totalCount": 1, "jobs": [vaga_da_jooble(1, "empregos.com.br")]}
+            )
+        return httpx.Response(400, text="location is required")
+
+    httpx_mock.add_callback(jooble, url=URL_DA_JOOBLE, is_reusable=True)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_direito_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Coleta da Jooble incompleta: Jooble respondeu HTTP 400 ao buscar vagas" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+    assert CHAVE_DA_JOOBLE not in resumo
+
+
+def test_entrega_imediata_antes_do_diario_deixa_para_ele_a_reserva_da_jooble(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+    reserva = reserva_do_diario_na_jooble([estudante])
+    hoje = ANTES_DO_DIARIO_DO_DIA.date()
+    repositorio.registrar_requisicoes_da_fonte("jooble", hoje, 100 - reserva - 1)
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)), json=pagina_de_ti(10), is_reusable=True
+    )
+    responder_a_jooble(httpx_mock, {"Rio de Janeiro": [vaga_da_jooble(1, "empregos.com.br")]})
+    aceitar_mensagens_do_telegram(httpx_mock)
+    parar_o_relogio(monkeypatch, ANTES_DO_DIARIO_DO_DIA)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(
+            settings_com_a_jooble(), cliente_http, repositorio, apenas_o_perfil=estudante.id
+        )
+
+    assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 1
+    assert repositorio.requisicoes_da_fonte_desde("jooble", hoje) == 100 - reserva
+    parar_o_relogio(monkeypatch, HORARIO_DO_DIARIO)
+
+    with httpx.Client() as cliente_http:
+        executar_fluxo(settings_com_a_jooble(), cliente_http, repositorio)
+
+    assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 3
+    assert repositorio.requisicoes_da_fonte_desde("jooble", hoje) == 100 - reserva + 2
