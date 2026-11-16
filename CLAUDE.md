@@ -19,10 +19,11 @@ Python 3.12 com uv (`pyproject.toml`), Supabase (Postgres, Auth e Edge Functions
 estático em `web/` no Cloudflare Workers, bot do Telegram que só envia e job diário no GitHub
 Actions.
 
-- **Fontes**: só a Adzuna (`FONTES`, padrão `adzuna`), somada por `ColetorComposto`. A Gupy está
-  desligada pelos termos e não volta sem autorização; o Jooble está pronto e desligado, e não liga
-  em produção sem parceria (a chave tem 500 requisições no total); LinkedIn está fora. Fonte nova
-  só entra se a validação comprovar cobertura insuficiente.
+- **Fontes**: só a Adzuna (`FONTES`, padrão `adzuna`), somada por `ColetorComposto`. Gupy (não
+  volta sem autorização) e LinkedIn estão fora, também por intermediário: `filtering/origem.py`
+  corta a origem. A Jooble está pronta e desligada: 100 requisições por dia, liga pela variável
+  `FONTES` do repositório (secret antes) e a página da vaga no site dela nunca é lida
+  ([termos](docs/frentes-externas.md)). Fonte nova só entra com cobertura insuficiente comprovada.
 - **A IA só extrai fatos da vaga** (Gemini Flash; `AVALIADOR=gemini_api`, o padrão e o do Actions,
   ou `agy` local). Quem compara com o perfil e calcula a nota é Python, sem IA.
 - **Agendamento**: o workflow diário só tem `workflow_dispatch`, disparado às 07:23 de Brasília
