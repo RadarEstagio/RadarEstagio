@@ -872,6 +872,59 @@ def test_resumo_avisa_coleta_incompleta_de_cada_fonte():
     ) in texto
 
 
+def test_resumo_mostra_o_uso_da_jooble_no_dia_e_avisa_perto_do_limite():
+    tranquilo = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=12, jooble_limite=100
+    )
+    perto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=80, jooble_limite=100
+    )
+
+    assert "Requisições à Jooble: 12 de 100 hoje (12%)" in tranquilo
+    assert "⚠️" not in tranquilo
+    assert "Requisições à Jooble: 80 de 100 hoje (80%)" in perto
+    assert "⚠️ Jooble passou de 80% do limite diário" in perto
+
+
+def test_resumo_com_a_jooble_ligada_e_sem_uso_no_dia_mostra_zero():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=0, jooble_limite=100
+    )
+
+    assert "Requisições à Jooble: 0 de 100 hoje (0%)" in texto
+
+
+def test_resumo_sem_a_jooble_ligada_nao_fala_dela():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=540, adzuna_limite=2500
+    )
+
+    assert "Jooble" not in texto
+
+
+def test_resumo_avisa_quando_a_cota_da_jooble_esgotou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=100, jooble_limite=100, jooble_esgotada=True
+    )
+
+    assert "⚠️ Cota da Jooble esgotada: a coleta parou antes do fim" in texto
+    assert "Cota da Adzuna esgotada" not in texto
+
+
+def test_resumo_avisa_coleta_incompleta_da_jooble_com_o_nome_dela():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        coletas_incompletas={"jooble": "Jooble respondeu HTTP 400 ao buscar vagas"},
+    )
+
+    assert "⚠️ Coleta da Jooble incompleta: Jooble respondeu HTTP 400 ao buscar vagas" in texto
+
+
 def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():
     assert "Adzuna" not in formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 2, 2, 13, 830, 7)
 

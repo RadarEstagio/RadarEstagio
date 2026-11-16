@@ -178,6 +178,9 @@ def formatar_resumo_da_execucao(
     vagas_de_origem_bloqueada: int = 0,
     paginas_de_anuncio_lidas: int = 0,
     paginas_de_anuncio_sem_origem: int = 0,
+    jooble_hoje: int | None = None,
+    jooble_limite: int | None = None,
+    jooble_esgotada: bool = False,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -252,6 +255,15 @@ def formatar_resumo_da_execucao(
             linhas.append(f"⚠️ Adzuna passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite mensal")
     if adzuna_esgotada:
         linhas.append("⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim")
+    if jooble_hoje is not None and jooble_limite:
+        linhas.append(
+            f"Requisições à Jooble: {formatar_milhar(jooble_hoje)} de "
+            f"{formatar_milhar(jooble_limite)} hoje ({round(100 * jooble_hoje / jooble_limite)}%)"
+        )
+        if jooble_hoje >= PROPORCAO_DE_ALERTA_DA_COTA * jooble_limite:
+            linhas.append(f"⚠️ Jooble passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite diário")
+    if jooble_esgotada:
+        linhas.append("⚠️ Cota da Jooble esgotada: a coleta parou antes do fim")
     for fonte, motivo in (coletas_incompletas or {}).items():
         linhas.append(f"⚠️ Coleta da {escape(rotulo_fonte(fonte))} incompleta: {escape(motivo)}")
     if eventos_do_site is not None:
