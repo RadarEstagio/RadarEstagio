@@ -117,6 +117,10 @@ class ColetorJooble:
         return vaga.publicada_em.astimezone(UTC).date() >= self._criadas_desde
 
 
+def saldo_da_jooble(hoje: int) -> int:
+    return max(0, LIMITE_POR_DIA - hoje)
+
+
 def interpretar_data_de_publicacao(texto: str) -> datetime:
     data = datetime.fromisoformat(texto)
     if data.tzinfo is None:
