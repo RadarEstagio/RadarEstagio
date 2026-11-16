@@ -211,8 +211,10 @@ Continuam abertos:
 - **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio, que
   não foi sondado nessa data; fonte que falha por inteiro fica de fora só com aviso no log,
   enquanto outra responder; `coletar`, `avaliar` e `descartes` gastam a cota da Jooble sem gravar
-  o uso; e a repetição com a Adzuna e as notas das vagas dela não foram medidas
-  ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
+  o uso; a cópia curta e completa de um anúncio na Adzuna perde na deduplicação para um trecho
+  mais longo da Jooble e passa a levar a trava de 60; o trecho que começa no meio do anúncio não
+  é reconhecido como vaga já enviada pela Adzuna; e a repetição com a Adzuna e as notas das vagas
+  dela não foram medidas ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
 - **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
   três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar
   no desbloqueio; prioridade baixa enquanto houver um caso em dois meses.

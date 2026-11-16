@@ -362,8 +362,8 @@ fim". Com a fonte ligada o resumo traz "Requisições à Jooble: N de 100 hoje" 
 80%. Com os perfis de 16/11 (duas cidades de busca) o diário faz no máximo 15 requisições à
 Jooble, e cada cidade de busca nova soma até 5. A entrega imediata de um perfil faz no máximo 15
 (5 por região: a cidade da pessoa, a maior cidade da região dela e o país) e 5 se o perfil é
-remoto. Os dois números não contam tentativa repetida depois de erro 5xx ou de rede, e o saldo do
-dia segura qualquer excesso.
+remoto; perfil que ficou pendente em outra cidade soma as regiões dele. Os números não contam
+tentativa repetida depois de erro 5xx ou de rede, e o saldo do dia segura qualquer excesso.
 
 **Origem e bloqueio.** A vaga guarda o `source` em `Vaga.origem` (`OrigemDoAnuncio.dominio`), a
 mesma estrutura que recebe o parceiro lido da página da Adzuna. Vaga com origem em `gupy.io`,
@@ -410,6 +410,16 @@ que a busca de seis palavras de TI. As 3 vêm de empregos.com.br.
   medidos.
 - Não foi medido quantas vagas da Jooble repetem as da Adzuna, nem quantas recebem nota acima do
   corte: a medição acima para no pré-filtro. A cobertura real só sai depois de ligar.
+- Quando o mesmo anúncio chega das duas fontes com título, empresa e cidade iguais, a
+  deduplicação fica com a descrição mais longa, sem olhar se ela é completa. Reproduzido em
+  16/11 com vagas sintéticas: a cópia da Adzuna cortada em 500 caracteres vence o trecho da
+  Jooble e segue para o enriquecimento, mas a cópia curta que a Adzuna já dá inteira perde para
+  um trecho mais longo da Jooble, e a vaga passa a levar a trava de 60. A regra da duplicata não
+  foi mudada, e a frequência do caso não foi medida.
+- O bloqueio de republicação entre dias compara as 40 primeiras palavras da descrição. Nas
+  sondagens, de 69 a 86 de cada 100 trechos da Jooble começam com reticências, no meio do
+  anúncio, e um trecho assim não é reconhecido como a vaga já enviada pela Adzuna (reproduzido
+  com texto sintético). Quantas vagas voltariam por isso não foi medido.
 - A resposta da Jooble para uma busca sem resultado não foi sondada. `jobs` vazio é coleta vazia;
   resposta sem `jobs` é falha da fonte.
 - `datecreatedfrom` está fora da documentação e pode deixar de funcionar; a barreira que sobra é
