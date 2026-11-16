@@ -114,7 +114,7 @@ class ColetorJooble:
         }
 
     def _e_recente(self, vaga: Vaga) -> bool:
-        return vaga.publicada_em.astimezone(UTC).date() >= self._criadas_desde
+        return vaga.publicada_em.date() >= self._criadas_desde
 
 
 def saldo_da_jooble(hoje: int) -> int:
@@ -125,13 +125,13 @@ def interpretar_data_de_publicacao(texto: str) -> datetime:
     data = datetime.fromisoformat(texto)
     if data.tzinfo is None:
         return data.replace(tzinfo=UTC)
-    return data
+    return data.astimezone(UTC)
 
 
 def converter_ou_ignorar(item: dict) -> Vaga | None:
     try:
         return converter_em_vaga(item)
-    except (KeyError, TypeError, ValueError, AttributeError) as erro:
+    except (KeyError, TypeError, ValueError, AttributeError, OverflowError) as erro:
         identificador = item.get("id") if isinstance(item, dict) else None
         logger.warning(
             "Vaga da Jooble ignorada por formato inesperado (id %s): %s",

@@ -218,6 +218,30 @@ def test_vaga_sem_data_legivel_e_pulada_com_aviso(
     assert "Vaga da Jooble ignorada por formato inesperado (id 2)" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "updated",
+    ["0001-01-01T00:00:00.0000000+03:00", "9999-12-31T23:59:59.9999999-03:00"],
+)
+def test_vaga_com_data_que_nao_cabe_em_utc_e_pulada_com_aviso_sem_derrubar_a_coleta(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture, updated: str
+):
+    httpx_mock.add_response(json=resposta(item(1), item(2, updated=updated), item(3)))
+
+    assert [vaga.id_externo for vaga in coletar()] == ["1", "3"]
+    assert "Vaga da Jooble ignorada por formato inesperado (id 2): OverflowError" in caplog.text
+
+
+def test_data_com_deslocamento_e_comparada_pelo_dia_em_utc(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        json=resposta(
+            item(1, updated="2026-11-10T22:30:00.0000000-03:00"),
+            item(2, updated="2026-11-11T01:30:00.0000000+03:00"),
+        )
+    )
+
+    assert [vaga.id_externo for vaga in coletar()] == ["1"]
+
+
 def test_item_que_nao_converte_e_pulado_sem_perder_os_outros(
     httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
 ):
