@@ -20,6 +20,9 @@ O enriquecimento lê, na mesma página que completa a descrição, de qual parce
 anúncio veio. A vaga de parceiro bloqueado (em 16/11/2026, só o emprego.pt) sai antes da extração
 e de todos os perfis; a vaga sem origem identificada segue. A regra fica em `filtering/origem.py`,
 e a medição e os limites, nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
+A mesma regra bloqueia pelo domínio a origem que a fonte informa na coleta: a vaga que a Jooble
+tira de gupy.io, linkedin.com ou emprego.pt não sai do coletor
+([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
 
 A extração é reaproveitada entre usuários; pontuação e seleção são individuais. Ela guarda se
 leu a descrição completa, e a nota limitada a 60 segue o que ela leu, não a vaga do dia; a extração
@@ -56,8 +59,10 @@ Menção ao curso do perfil ou abertura a qualquer formação na descrição imp
 por título, e nomes de curso são comparados inteiros depois da normalização (aliases, prefixos,
 complementos e abreviações). As regras e as medições estão nas
 [decisões do motor](decisoes-do-motor.md#áreas-uma-fonte-só-para-curso-vaga-banco-e-site-08092026).
-Quando algum perfil não tem área reconhecida, Adzuna e Jooble fazem busca geral de estágio,
-respeitando os limites de paginação existentes; isso não garante cobertura integral.
+Quando algum perfil não tem área reconhecida, a Adzuna soma uma busca geral de estágio,
+respeitando os limites de paginação existentes; isso não garante cobertura integral. A Jooble
+não usa os termos de busca das áreas: busca só "estágio" por região e deixa a área para o
+pré-filtro.
 
 As notas são recalculadas em Python a cada execução, usando extrações compartilhadas.
 Avaliações armazenadas permanecem como registro, mas não alimentam a seleção; isso evita
@@ -277,8 +282,12 @@ sem mexer no código.
 
 Hoje só a Adzuna está ligada, e ela devolve descrição truncada e raramente informa modalidade.
 A Gupy, que tinha `workplaceType` estruturado e descrição completa, saiu em 12/09/2026 porque os
-termos proíbem agregar vagas; a Jooble segue desligada sem parceria. Os dois coletores continuam
-no código.
+termos proíbem agregar vagas. A Jooble segue desligada, e desde 16/11/2026 pode ser ligada em
+produção pela variável `FONTES` do repositório: a chave gratuita dá 100 requisições por dia, que
+passam por `CotaDeRequisicoes` e ficam gravadas em `uso_das_fontes`, e a vaga traz o domínio de
+origem, pelo qual a da Gupy é descartada no coletor
+([decisões do motor](decisoes-do-motor.md#jooble-16112026)). Os dois coletores continuam no
+código.
 
 Com mais de uma fonte, a mesma vaga pode chegar duas vezes. `filtering/duplicatas.py` agrupa por título + empresa +
 cidade normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
@@ -402,7 +411,8 @@ fabrica comportamento que nenhum emissor produz.
 Banco, múltiplos usuários, cadastro, controle da conta, feedback, métricas e entrega após
 vínculo estão implementados. O cadastro é validado e criado pelo banco após confirmação;
 a interface edita campos permitidos e chama RPCs para operações protegidas. As Edge Functions
-tratam vínculo, feedback e navegação. Jooble existe como fonte opcional, desligada por padrão.
+tratam vínculo, feedback e navegação. Jooble existe como fonte opcional, desligada por padrão e
+ligável pela variável `FONTES` do repositório.
 
 As medições por trás de cada regra do motor estão nas [decisões do motor](decisoes-do-motor.md).
 O [catálogo](funcionalidades.md) detalha as capacidades. Publicação e validação estão no
@@ -448,6 +458,7 @@ As decisões de cálculo e apresentação estão em [Métricas](metricas.md).
 
 Limites ainda registrados: republicação entre fontes com descrição curta pode passar pela
 deduplicação; banco aceita subárea de outro curso,
-mitigada no carregamento; Jooble multiplica consultas por termo e permanece opcional.
+mitigada no carregamento. A Jooble multiplicava consultas por termo; desde 16/11/2026 busca só
+"estágio" por região e permanece opcional.
 Novos casos devem entrar na [matriz de cobertura](frentes-externas.md#e02--cobertura-de-estágios), com entrada,
 esperado, observado e teste por causa. Não reabrir os seis bugs apenas por ler o relatório antigo.
