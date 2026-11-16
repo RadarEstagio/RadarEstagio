@@ -35,9 +35,10 @@ type ChaveDaEntrega = tuple[UUID, str, str]
 class OrigemDoAnuncio(BaseModel):
     parceiro: str | None = None
     id_do_parceiro: str | None = None
+    dominio: str | None = None
 
     def identificada(self) -> bool:
-        return bool(self.parceiro or self.id_do_parceiro)
+        return bool(self.parceiro or self.id_do_parceiro or self.dominio)
 
 
 class Vaga(BaseModel):

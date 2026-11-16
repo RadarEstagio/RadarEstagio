@@ -3,7 +3,12 @@ from datetime import UTC, datetime
 import pytest
 
 from radar.domain.models import OrigemDoAnuncio, Vaga
-from radar.filtering.origem import origem_bloqueada, separar_as_de_origem_bloqueada
+from radar.filtering.origem import (
+    MOTIVO_DE_CADA_DOMINIO_BLOQUEADO,
+    motivo_do_bloqueio,
+    origem_bloqueada,
+    separar_as_de_origem_bloqueada,
+)
 
 
 def vaga(numero: int, origem: OrigemDoAnuncio | None) -> Vaga:
@@ -75,3 +80,76 @@ def test_separa_as_bloqueadas_mantendo_a_ordem_das_que_seguem():
 
     assert seguem == [sem_pagina, do_empregos, sem_origem]
     assert bloqueadas == [do_emprego_pt, so_com_o_id]
+
+
+@pytest.mark.parametrize(
+    "dominio",
+    [
+        "gupy.io",
+        "empresa.gupy.io",
+        "vagas.empresa.gupy.io",
+        "GUPY.IO",
+        "  gupy.io  ",
+        "linkedin.com",
+        "br.linkedin.com",
+        "emprego.pt",
+        "www.emprego.pt",
+    ],
+)
+def test_dominio_bloqueado_vale_para_ele_e_para_os_subdominios(dominio: str):
+    assert origem_bloqueada(OrigemDoAnuncio(dominio=dominio))
+
+
+@pytest.mark.parametrize(
+    "dominio",
+    [
+        "empregos.com.br",
+        "infojobs.com.br",
+        "pandape.com.br",
+        "nube.com.br",
+        "boards.greenhouse.io",
+        "meugupy.io",
+        "gupy.io.exemplo.com.br",
+        "emprego.pt.exemplo.com.br",
+        "",
+        None,
+    ],
+)
+def test_outro_dominio_nao_e_bloqueado_nem_o_que_so_contem_o_nome(dominio: str | None):
+    assert not origem_bloqueada(OrigemDoAnuncio(dominio=dominio))
+
+
+def test_cada_dominio_bloqueado_tem_o_motivo_escrito():
+    assert set(MOTIVO_DE_CADA_DOMINIO_BLOQUEADO) == {"gupy.io", "linkedin.com", "emprego.pt"}
+    assert all(motivo.strip() for motivo in MOTIVO_DE_CADA_DOMINIO_BLOQUEADO.values())
+
+
+def test_motivo_do_bloqueio_e_o_do_dominio_ou_o_do_parceiro_da_adzuna():
+    da_gupy = motivo_do_bloqueio(OrigemDoAnuncio(dominio="empresa.gupy.io"))
+    do_linkedin = motivo_do_bloqueio(OrigemDoAnuncio(dominio="linkedin.com"))
+    do_parceiro = motivo_do_bloqueio(OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986"))
+
+    assert da_gupy == MOTIVO_DE_CADA_DOMINIO_BLOQUEADO["gupy.io"]
+    assert do_linkedin == MOTIVO_DE_CADA_DOMINIO_BLOQUEADO["linkedin.com"]
+    assert do_parceiro == MOTIVO_DE_CADA_DOMINIO_BLOQUEADO["emprego.pt"]
+    assert motivo_do_bloqueio(OrigemDoAnuncio(dominio="empregos.com.br")) is None
+    assert motivo_do_bloqueio(None) is None
+
+
+def test_origem_so_com_o_dominio_conta_como_identificada():
+    assert OrigemDoAnuncio(dominio="empregos.com.br").identificada()
+    assert not OrigemDoAnuncio(dominio="").identificada()
+
+
+def test_separa_pelo_dominio_e_mantem_as_de_dominio_permitido():
+    da_gupy = vaga(1, OrigemDoAnuncio(dominio="gupy.io"))
+    do_empregos = vaga(2, OrigemDoAnuncio(dominio="empregos.com.br"))
+    do_linkedin = vaga(3, OrigemDoAnuncio(dominio="br.linkedin.com"))
+    do_infojobs = vaga(4, OrigemDoAnuncio(dominio="infojobs.com.br"))
+
+    seguem, bloqueadas = separar_as_de_origem_bloqueada(
+        [da_gupy, do_empregos, do_linkedin, do_infojobs]
+    )
+
+    assert seguem == [do_empregos, do_infojobs]
+    assert bloqueadas == [da_gupy, do_linkedin]
