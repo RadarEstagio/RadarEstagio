@@ -10,7 +10,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from radar.__main__ import executar_fluxo, main
+from radar.__main__ import avaliar, executar_fluxo, main
 from radar.collectors.adzuna import LIMITE_POR_DIA, RESULTADOS_POR_PAGINA, URL_BUSCA
 from radar.collectors.errors import ErroDeColeta
 from radar.cota import FONTE_DO_DIARIO, reserva_do_diario
@@ -842,8 +842,8 @@ def vagas_com_descricao_cortada_pela_api(quantidade: int) -> dict:
     return pagina
 
 
-def rodar_com_as_paginas_dos_anuncios(
-    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+def responder_com_as_paginas_dos_anuncios(
+    httpx_mock: HTTPXMock, pagina_de_cada_anuncio: dict[str, str]
 ) -> list[str]:
     ids_pedidos_ao_gemini: list[str] = []
 
@@ -866,7 +866,16 @@ def rodar_com_as_paginas_dos_anuncios(
         is_reusable=True,
     )
     httpx_mock.add_callback(pagina_do_anuncio, url=URL_DA_PAGINA_DO_ANUNCIO, is_reusable=True)
-    httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True)
+    httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True, is_optional=True)
+    return ids_pedidos_ao_gemini
+
+
+def rodar_com_as_paginas_dos_anuncios(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+) -> list[str]:
+    ids_pedidos_ao_gemini = responder_com_as_paginas_dos_anuncios(
+        httpx_mock, pagina_de_cada_anuncio
+    )
     aceitar_mensagens_do_telegram(httpx_mock)
     repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
 
@@ -922,3 +931,68 @@ def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_n
     saida = capsys.readouterr().out
     assert "0 vagas descartadas por virem do emprego.pt" in saida
     assert "2 de 3 páginas de anúncio lidas sem origem identificada" in saida
+
+
+def avaliar_com_as_paginas_dos_anuncios(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+) -> list[str]:
+    ids_pedidos_ao_gemini = responder_com_as_paginas_dos_anuncios(
+        httpx_mock, pagina_de_cada_anuncio
+    )
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+    monkeypatch.setattr(
+        "radar.__main__.abrir_repositorio", lambda _settings: nullcontext(repositorio)
+    )
+
+    avaliar(settings_de_teste())
+
+    return ids_pedidos_ao_gemini
+
+
+def test_avaliacao_manual_nao_pede_a_ia_a_vaga_do_emprego_pt(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    ids_pedidos_ao_gemini = avaliar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {
+            "9101": pagina_do_emprego_pt(),
+            "9102": pagina_do_sourcestack(),
+            "9103": pagina_do_sourcestack(),
+        },
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9102", "adzuna:9103"]
+    assert len(httpx_mock.get_requests(url=URL_DA_PAGINA_DO_ANUNCIO)) == 3
+    saida = capsys.readouterr().out
+    assert "1 vagas descartadas por virem do emprego.pt" in saida
+    assert "extraindo 2 com" in saida
+
+
+def test_avaliacao_manual_so_com_vaga_do_emprego_pt_nao_chama_a_ia(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    ids_pedidos_ao_gemini = avaliar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {"9101": pagina_do_emprego_pt(), "9102": pagina_do_emprego_pt()},
+    )
+
+    assert ids_pedidos_ao_gemini == []
+    assert httpx_mock.get_requests(url=URL_DO_GEMINI) == []
+    saida = capsys.readouterr().out
+    assert "2 vagas descartadas por virem do emprego.pt" in saida
+    assert "extraindo 0 com" in saida
+
+
+def test_avaliacao_manual_segue_com_a_vaga_sem_origem_identificada(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    sem_parceiro = CAMINHO_DA_PAGINA_SEM_PARCEIRO.read_text(encoding="utf-8")
+
+    ids_pedidos_ao_gemini = avaliar_com_as_paginas_dos_anuncios(
+        httpx_mock, monkeypatch, {"9101": sem_parceiro, "9102": pagina_do_sourcestack()}
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102"]
+    assert "emprego.pt" not in capsys.readouterr().out

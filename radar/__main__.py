@@ -45,6 +45,7 @@ from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
 from radar.entrega_imediata import repositorio_da_execucao, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
+from radar.filtering.origem import separar_as_de_origem_bloqueada
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.enriquecimento import EnriquecedorDeDescricoes
@@ -145,9 +146,12 @@ def avaliar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
         vagas = filtrar(remover_duplicatas(coletadas), perfil)
-        selecionadas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
+        enriquecidas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
             vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
         )
+        selecionadas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+        if de_origem_bloqueada:
+            print(f"{len(de_origem_bloqueada)} vagas descartadas por virem do emprego.pt")
         print(
             f"{len(vagas)} vagas após o pré-filtro; "
             f"extraindo {len(selecionadas)} com {settings.avaliador}"
