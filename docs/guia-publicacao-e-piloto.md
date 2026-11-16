@@ -333,6 +333,33 @@ atividade, e o cron-job.org continuaria disparando sem vigia; reative em Actions
 parar. Motivo: em 21/10/2026 o cron-job.org deu timeout no disparo, nenhum run nasceu e o
 único aviso foi o e-mail dele na caixa pessoal de quem tem a conta.
 
+**Ligar e desligar a Jooble sem commit (16/11/2026).** O diário e a entrega imediata leem as
+fontes da variável do repositório (`FONTES: ${{ vars.FONTES || 'adzuna' }}`) e a chave do secret
+`JOOBLE_API_KEY`. Sem a variável vale `adzuna`, e nada muda em produção. A ordem importa, como no
+Turnstile:
+
+1. Criar o **secret** `JOOBLE_API_KEY` (Settings → Secrets and variables → Actions → Secrets) com
+   a chave de `br.jooble.org`.
+2. Só depois criar a **variável** `FONTES` (aba Variables) com `adzuna,jooble`.
+3. No primeiro diário, conferir o resumo de operação: "Requisições à Jooble: N de 100 hoje"
+   aparece, e "⚠️ Coleta da Jooble incompleta" e "⚠️ Cota da Jooble esgotada" não. No log do run,
+   a linha "Jooble: N vagas mantidas por origem (...)" conta as vagas por domínio e as cortadas.
+
+Variável com `jooble` e secret vazio: `Settings` recusa a configuração ("JOOBLE_API_KEY é
+obrigatória quando a fonte jooble está ativa") e o `rodar` sai com código 1 antes de coletar. O
+diário inteiro e toda entrega imediata param, ninguém recebe mensagem, e o que chega ao chat de
+operação é o aviso "o job diário não terminou". Nome de fonte desconhecido na variável dá a mesma
+falha. `tests/test_settings.py` e `tests/test_workflow_radar_diario.py` guardam as duas pontas.
+
+Para desligar, apagar a variável `FONTES` ou voltar o valor para `adzuna`; o secret pode ficar. Se
+o resumo trouxer "Coleta da Jooble incompleta" com erro HTTP todo dia, desligar: a busca no país
+manda `location` vazio, que não foi sondado em 16/11, e enquanto ela falhar quem fica sem vaga tem
+a mensagem segurada. Em 16/11 criar o secret e a variável segue pendente
+([plano geral](plano-geral.md#4-pendências-externas)), e a pergunta à Jooble sobre o uso também
+([frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026)); ligar antes da
+resposta é decisão do dono do projeto. A cota e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#jooble-16112026).
+
 Na transferência de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio` (08/09/2026), commits,
 autores, issues e PRs foram preservados e o GitHub redireciona o endereço antigo; o que quebrou foi
 a ligação das automações, porque cada uma guardava o dono no nome:
