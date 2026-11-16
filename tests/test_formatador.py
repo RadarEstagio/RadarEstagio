@@ -249,6 +249,49 @@ def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     assert "Publicada em 25/08/2026" in texto
 
 
+def vaga_da_jooble(numero: int = 2) -> Vaga:
+    return vaga(numero=numero).model_copy(
+        update={
+            "fonte": "jooble",
+            "url": f"https://br.jooble.org/jdp/{numero}",
+            "descricao_completa": False,
+        }
+    )
+
+
+def test_vaga_da_jooble_sai_com_a_fonte_dela_e_sem_a_atribuicao_da_adzuna():
+    da_jooble = resultado(60, numero=2).model_copy(update={"vaga": vaga_da_jooble()})
+
+    texto = mensagem([da_jooble], MOMENTO_DE_TESTE)
+
+    assert "🏷️ Fonte: Jooble · Publicada em 25/08/2026" in texto
+    assert "Ver vaga em br.jooble.org</a>" in texto
+    assert "Adzuna" not in texto
+    assert "adzuna" not in texto
+    assert "Jobs" not in texto
+
+
+def test_mensagem_com_as_duas_fontes_atribui_a_adzuna_so_a_vaga_dela():
+    da_adzuna = resultado(85, numero=1)
+    da_jooble = resultado(60, numero=2).model_copy(update={"vaga": vaga_da_jooble()})
+
+    bloco_da_adzuna, bloco_da_jooble = mensagem([da_adzuna, da_jooble], MOMENTO_DE_TESTE).split(
+        SEPARADOR_ENTRE_VAGAS
+    )
+
+    assert ATRIBUICAO in bloco_da_adzuna
+    assert "Adzuna" not in bloco_da_jooble
+    assert "🏷️ Fonte: Jooble" in bloco_da_jooble
+
+
+def test_vaga_da_jooble_presa_na_trava_nao_diz_que_a_descricao_nao_informa_requisitos():
+    sem_requisitos = resultado(60, numero=2, requisitos_analisados=True).model_copy(
+        update={"vaga": vaga_da_jooble()}
+    )
+
+    assert "não informados na descrição" not in mensagem([sem_requisitos], MOMENTO_DE_TESTE)
+
+
 def test_modalidade_nao_informada_aparece_explicitamente():
     texto = mensagem([resultado(85)], MOMENTO_DE_TESTE)
 

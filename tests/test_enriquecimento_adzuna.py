@@ -73,6 +73,23 @@ def test_nao_abre_pagina_de_vaga_que_nao_e_resumo_truncado(httpx_mock: HTTPXMock
     assert httpx_mock.get_requests() == []
 
 
+def test_nunca_pede_a_pagina_da_vaga_no_site_da_jooble(httpx_mock: HTTPXMock):
+    da_jooble = vaga_truncada().model_copy(
+        update={
+            "fonte": "jooble",
+            "descricao": "...Apoiar o time de desenvolvimento web...",
+            "url": "https://br.jooble.org/jdp/1000000000000000001",
+            "origem": OrigemDoAnuncio(dominio="empregos.com.br"),
+        }
+    )
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([da_jooble])
+
+    assert enriquecidas == [da_jooble]
+    assert not enriquecidas[0].descricao_completa
+    assert httpx_mock.get_requests() == []
+
+
 def anuncio_da_adzuna(id_externo: str, url: str) -> Vaga:
     return vaga_truncada().model_copy(update={"id_externo": id_externo, "url": url})
 

@@ -20,7 +20,7 @@ from radar.domain.models import (
 )
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.lotes import ExtratorEmLotes
-from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA
+from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA, LIMITE_DESCRICAO_INCOMPLETA
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import (
     ParametrosDaExecucao,
@@ -30,6 +30,7 @@ from radar.pipeline import (
     executar,
     manter_descricoes_como_estao,
 )
+from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioDoModoLocal, RepositorioEmMemoria
 
@@ -2748,3 +2749,24 @@ def test_vaga_que_chega_da_coleta_com_dominio_bloqueado_tambem_sai_antes_da_extr
     assert extrator.extraidas == ["2"]
     assert resumo.vagas_de_origem_bloqueada == 2
     assert resumo.paginas_de_anuncio_lidas == 0
+
+
+def test_vaga_da_jooble_presa_na_trava_de_60_entra_na_mensagem_com_a_nota_minima_padrao():
+    nota_minima_padrao = Settings.model_fields["nota_minima"].default
+    da_jooble = vaga(1, fonte="jooble").model_copy(update={"descricao_completa": False})
+
+    selecionadas, notificador, _ = rodar([da_jooble], {"1": 95}, nota_minima=nota_minima_padrao)
+
+    assert nota_minima_padrao <= LIMITE_DESCRICAO_INCOMPLETA
+    assert [resultado.nota for resultado in selecionadas] == [LIMITE_DESCRICAO_INCOMPLETA]
+    assert "Fonte: Jooble" in notificador.textos[0]
+    assert "nota limitada a 60" in notificador.textos[0]
+
+
+def test_vaga_da_jooble_fica_atras_da_vaga_completa_de_nota_maior_que_a_trava():
+    da_jooble = vaga(1, fonte="jooble").model_copy(update={"descricao_completa": False})
+    completa = vaga(2)
+
+    selecionadas, _, _ = rodar([da_jooble, completa], {"1": 95, "2": 61})
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2", "1"]
