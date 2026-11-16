@@ -1247,3 +1247,98 @@ def test_entrega_imediata_antes_do_diario_deixa_para_ele_a_reserva_da_jooble(
 
     assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 3
     assert repositorio.requisicoes_da_fonte_desde("jooble", hoje) == 100 - reserva + 2
+
+
+def responder_sem_esperar_entre_as_tentativas(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("radar.collectors.tentativas.ESPERAS_ENTRE_TENTATIVAS_EM_SEGUNDOS", (0, 0))
+
+
+def adzuna_fora_do_ar(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        status_code=503,
+        text="Service Unavailable",
+        is_reusable=True,
+    )
+
+
+def test_adzuna_fora_do_ar_com_a_jooble_respondendo_nao_diz_ao_estudante_que_nao_ha_vaga(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_sem_esperar_entre_as_tentativas(monkeypatch)
+    adzuna_fora_do_ar(httpx_mock)
+    responder_a_jooble(httpx_mock, {"Rio de Janeiro": []})
+    aceitar_mensagens_do_telegram(httpx_mock)
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert not repositorio.atendido_no_dia(estudante, data_local(datetime.now(UTC)))
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Coleta da Adzuna incompleta: Adzuna respondeu HTTP 503 ao buscar vagas" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+
+
+def test_jooble_recusada_com_a_adzuna_respondendo_nao_diz_ao_estudante_que_nao_ha_vaga(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    adzuna_sem_vagas(httpx_mock)
+    httpx_mock.add_response(
+        url=URL_DA_JOOBLE, status_code=403, text="Access Denied", is_reusable=True
+    )
+    aceitar_mensagens_do_telegram(httpx_mock)
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert not repositorio.atendido_no_dia(estudante, data_local(datetime.now(UTC)))
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Coleta da Jooble incompleta: Jooble respondeu HTTP 403 ao buscar vagas" in resumo
+    assert "⚠️ Mensagens seguradas pela coleta incompleta: 1" in resumo
+    assert CHAVE_DA_JOOBLE not in resumo
+
+
+def test_fonte_que_falha_inteira_nao_segura_a_mensagem_de_quem_tem_vaga_da_outra(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_BUSCA)),
+        json=vagas_de_desenvolvimento_no_rio(2),
+        is_reusable=True,
+    )
+    httpx_mock.add_response(
+        url=URL_DA_JOOBLE, status_code=403, text="Access Denied", is_reusable=True
+    )
+    responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings_com_a_jooble()) == 0
+
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" in mensagem
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "⚠️ Coleta da Jooble incompleta: Jooble respondeu HTTP 403 ao buscar vagas" in resumo
+    assert "Mensagens seguradas pela coleta incompleta" not in resumo
+
+
+def test_adzuna_fora_do_ar_como_unica_fonte_continua_terminando_com_codigo_de_erro(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    responder_sem_esperar_entre_as_tentativas(monkeypatch)
+    adzuna_fora_do_ar(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    estudante = estudante_de_direito_no_rio()
+    repositorio = RepositorioEmMemoria([estudante])
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio) == 1
+
+    assert mensagens_para(httpx_mock, CHAT_DO_ESTUDANTE) == []
+    assert not repositorio.atendido_no_dia(estudante, data_local(datetime.now(UTC)))
+    [aviso] = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)
+    assert "falhou" in aviso
+    assert "Nenhuma fonte respondeu: adzuna: Adzuna respondeu HTTP 503 ao buscar vagas" in aviso
