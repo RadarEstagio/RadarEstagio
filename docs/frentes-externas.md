@@ -39,8 +39,40 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
   and Selection, including expired job opportunities", e o endpoint usado
   (`employability-portal.gupy.io/api/v1/jobs`) é interno. Era 7% dos envios (17 de 252). O
   coletor fica no código para o caso de autorização; sem ela, não religar.
-- **Jooble não é saída sem parceria**: a chave gratuita tem "a total lifetime limit of 500
-  requests per key" e devolve só um trecho da descrição.
+- **Jooble (lida em 16/11/2026).** API oficial e gratuita, desligada em produção nessa data. O
+  limite de 12/09, "a total lifetime limit of 500 requests per key", não aparece mais em texto da
+  Jooble. O que está escrito:
+  - **Limite.** "The free REST API plan includes a limit of 100 requests per day per key for a
+    specific country. This limit resets at midnight UTC. If you require a higher daily limit, you
+    can contact us to request a custom limit increase for your key." e "429 Too Many Requests:
+    Daily request limit exceeded."
+    ([documentação da API](https://help.jooble.org/en/support/solutions/articles/60001448238-rest-api-documentation),
+    modificada em 11/11/2026).
+  - **Chave por país.** "Each Jooble domain (country) requires its own unique REST API key." A
+    chave do projeto é de br.jooble.org.
+  - **Uso descrito.** "você pode fazer consultas de pesquisa ao Jooble e publicar as respostas em
+    seu site com seu próprio design" ([br.jooble.org/api/about](https://br.jooble.org/api/about)).
+  - **Termos da API.** O
+    [artigo de conexão](https://help.jooble.org/en/support/solutions/articles/60000922689) diz
+    "all API requests must comply with the Jooble API Terms of Use", documento que não está
+    publicado.
+  - **Termos gerais do site** ([jooble.org/info/terms](https://jooble.org/info/terms), vigentes
+    desde 08/01/2019). 4(i): "Our Site content may not be copied for republication, either online
+    or on paper, without our prior express written permission". 4(m) proíbe "web spiders, bots,
+    indexers, robots, crawlers, harvesters" sobre o site. Não mencionam a API.
+  - **Não escrito.** Guardar em banco, enviar por Telegram e mandar o texto a um serviço de IA não
+    aparecem em nenhum texto da Jooble, nem como permitidos nem como proibidos. Não há exigência
+    escrita de atribuição; a mensagem do Radar diz "Fonte: Jooble" e o link leva à página da vaga
+    na Jooble.
+  - **Conclusão.** A API é oficial e gratuita, e o uso em Telegram, banco e IA não está escrito.
+    A pergunta por escrito à Jooble está pendente, e quem a envia é o dono do projeto. **Nunca ler
+    a página da vaga no site da Jooble** para completar a descrição: a cláusula 4(m) proíbe, e o
+    enriquecimento só lê página da Adzuna.
+  - **Conteúdo de terceiros.** A Jooble informa em `source` o domínio de onde tirou cada anúncio,
+    e de 6 a 11 de cada 100 da sondagem de 16/11 vinham de gupy.io. Vaga com origem na Gupy, no
+    LinkedIn ou no emprego.pt é descartada no coletor: receber o mesmo conteúdo por um
+    intermediário não muda a origem. A cota, a busca e as medições estão nas
+    [decisões do motor](decisoes-do-motor.md#jooble-16112026).
 - **LinkedIn** está fora de escopo: bloqueia coleta automatizada.
 - **Alternativas medidas.** Greenhouse, Lever e Ashby têm API pública de vagas sem login, mas a
   documentação trata das vagas da própria empresa e não dá licença a terceiros; em 12/09 havia 36
@@ -78,6 +110,13 @@ de origem: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Ad
 que republica anúncios vencidos. Essas vagas passaram a ser cortadas antes da extração, e o volume
 diário cai até fontes novas entrarem. Os números, a decisão e os limites estão nas
 [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
+
+**Jooble sobre o pré-filtro (16/11/2026).** Também sem linha real na matriz, porque a fonte está
+desligada. Sobre as respostas das sondagens desse dia, a primeira página da busca "estágio" no Rio
+em 5 dias (100 dos 137 anúncios) deixou 87 vagas únicas depois do corte por origem, e o pré-filtro
+aprovou 3 para um perfil de computação, 8 para um de Direito e 14 para um de Administração. Não
+mede extração, nota nem repetição com a Adzuna. A tabela e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#jooble-16112026).
 
 ### Casos de qualidade
 
@@ -162,6 +201,7 @@ repositório não guarda faturas.
 | GitHub Actions | franquia | não medido | job de até 30 min; de 7,6 a 13,7 min entre 30/08 e 11/09 ([auditoria do agendamento](auditorias/2026-09-10-agendamento-diario.md)) | billing, a consultar | a definir |
 | cron-job.org | fixo | não medido | um disparo diário às 07:23 | conta, a consultar | a definir |
 | Adzuna | franquia | não medido | até 2.500 requisições por mês, pelos termos | conta/API, a consultar | a definir |
+| Jooble | franquia | não medido | desligada em 16/11; até 100 requisições por dia, pela documentação da API | chave do projeto, uso em `uso_das_fontes` depois de ligar | a definir |
 | Gemini | variável | não medido | R$ 0,066 por lote de 10 vagas em raciocínio `low` (11/09); ~R$ 14 em 30 dias por estimativa ([acompanhamento RCD](auditorias/2026-10-05-revenue-centric-design.md)) | billing, a consultar | a definir |
 | Telegram | — | não medido | envio pelo bot; tarifa não inferida | termos, a consultar | a definir |
 | Resend/SMTP | variável | não medido | confirmação e recuperação | conta, a consultar | a definir |
