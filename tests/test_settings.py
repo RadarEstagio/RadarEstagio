@@ -48,6 +48,53 @@ def test_jooble_nao_entra_nas_fontes_padrao_e_exige_chave():
         Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes="jooble"))
 
 
+def configurar_o_ambiente_do_workflow(
+    monkeypatch: pytest.MonkeyPatch, fontes: str, chave_da_jooble: str
+) -> None:
+    ambiente = {
+        "ADZUNA_APP_ID": "adzuna-id",
+        "ADZUNA_APP_KEY": "adzuna-chave",
+        "GEMINI_API_KEY": "gemini-chave",
+        "TELEGRAM_BOT_TOKEN": "telegram-token",
+        "TELEGRAM_CHAT_ID": "123",
+        "FONTES": fontes,
+        "JOOBLE_API_KEY": chave_da_jooble,
+    }
+    for nome, valor in ambiente.items():
+        monkeypatch.setenv(nome, valor)
+
+
+def test_workflow_sem_a_variavel_e_sem_o_secret_da_jooble_roda_so_com_a_adzuna(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna", chave_da_jooble="")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna"]
+
+
+def test_variavel_ligada_sem_o_secret_da_jooble_invalida_a_configuracao_inteira(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble="")
+
+    with pytest.raises(ValidationError, match="JOOBLE_API_KEY é obrigatória"):
+        Settings(_env_file=None)
+
+
+def test_secret_da_jooble_sem_a_variavel_ligada_nao_liga_a_fonte(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna", chave_da_jooble="chave")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna"]
+
+
+def test_variavel_e_secret_da_jooble_ligam_as_duas_fontes(monkeypatch: pytest.MonkeyPatch):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble="chave")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna", "jooble"]
+
+
 def test_fontes_aceitam_espacos_e_maiusculas():
     settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Gupy "))
 
