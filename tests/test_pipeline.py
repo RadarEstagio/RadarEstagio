@@ -10,6 +10,7 @@ from radar.domain.models import (
     ChaveDaVaga,
     ExtracaoDaVaga,
     Modalidade,
+    OrigemDoAnuncio,
     Perfil,
     PerguntaDeFeedback,
     RecusasDoUsuario,
@@ -2527,3 +2528,123 @@ def test_texto_invalido_da_fonte_e_da_ia_nao_impede_gravar_extracao_e_envio():
     assert set(repositorio.extracoes_guardadas) == {("adzuna", "1"), ("adzuna", "2")}
     assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
     assert NUL not in notificador.textos[0]
+
+
+ORIGEM_EMPREGO_PT = OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
+ORIGEM_EMPREGOS = OrigemDoAnuncio(parceiro="Empregos")
+ORIGEM_SOURCESTACK = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
+
+
+class EnriquecedorComOrigens:
+    def __init__(self, origens: dict[str, OrigemDoAnuncio | None]) -> None:
+        self._origens = origens
+
+    def __call__(self, vagas: list[Vaga]) -> list[Vaga]:
+        return [
+            item.model_copy(update={"origem_lida_da_pagina": self._origens.get(item.id_externo)})
+            for item in vagas
+        ]
+
+
+def executar_com_origens(
+    origens: dict[str, OrigemDoAnuncio | None], usuarios: list[Usuario] | None = None
+) -> tuple[ResumoDaExecucao, ExtratorFalso, NotificadorFalso, RepositorioFalso]:
+    extrator = ExtratorFalso({})
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso(usuarios or [usuario()])
+    resumo = executar(
+        ColetorFalso([vaga(int(numero)) for numero in origens]),
+        extrator,
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({numero: 90 - int(numero) for numero in origens}),
+        enriquecer=EnriquecedorComOrigens(origens),
+    )
+    return resumo, extrator, notificador, repositorio
+
+
+def ids_enviados(resumo: ResumoDaExecucao, id_usuario: UUID = ID_USUARIO) -> list[str]:
+    return [item.resultado.vaga.id_externo for item in resumo.enviadas_por_usuario[id_usuario]]
+
+
+def test_vaga_do_emprego_pt_nao_chega_a_extracao_nem_ao_estudante():
+    resumo, extrator, notificador, repositorio = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_SOURCESTACK}
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert ids_enviados(resumo) == ["2"]
+    assert "Empresa 2" in notificador.textos[0]
+    assert "Empresa 1" not in notificador.textos[0]
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["2"])]
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
+    assert set(repositorio.extracoes_guardadas) == {("adzuna", "2")}
+
+
+def test_vaga_do_emprego_pt_sai_para_todos_os_perfis_que_a_tinham_como_candidata():
+    resumo, extrator, notificador, _ = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_SOURCESTACK},
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert ids_enviados(resumo) == ["2"]
+    assert ids_enviados(resumo, ID_OUTRO_USUARIO) == ["2"]
+    assert all("Empresa 1" not in texto for texto in notificador.textos)
+
+
+def test_dia_so_com_vaga_do_emprego_pt_vira_mensagem_sem_vagas_e_nao_mensagem_segurada():
+    resumo, extrator, notificador, _ = executar_com_origens({"1": ORIGEM_EMPREGO_PT})
+
+    assert extrator.extraidas == []
+    assert resumo.enviadas_por_usuario == {}
+    assert resumo.mensagens_seguradas_por_falta_de_extracao == 0
+    assert resumo.vagas_sem_extracao == 0
+    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+
+
+def test_vaga_do_emprego_pt_e_reconhecida_so_pelo_identificador_ou_so_pelo_nome():
+    _, extrator, _, _ = executar_com_origens(
+        {
+            "1": OrigemDoAnuncio(id_do_parceiro="79986"),
+            "2": OrigemDoAnuncio(parceiro=" emprego "),
+            "3": ORIGEM_SOURCESTACK,
+        }
+    )
+
+    assert extrator.extraidas == ["3"]
+
+
+def test_vaga_sem_origem_identificada_segue_no_fluxo():
+    resumo, extrator, _, _ = executar_com_origens({"1": None, "2": OrigemDoAnuncio()})
+
+    assert extrator.extraidas == ["1", "2"]
+    assert ids_enviados(resumo) == ["1", "2"]
+
+
+def test_vaga_do_empregos_de_nome_parecido_segue_no_fluxo():
+    resumo, extrator, notificador, _ = executar_com_origens({"1": ORIGEM_EMPREGOS})
+
+    assert extrator.extraidas == ["1"]
+    assert ids_enviados(resumo) == ["1"]
+    assert "Empresa 1" in notificador.textos[0]
+
+
+def test_informa_no_log_quantas_vagas_sairam_pela_origem(caplog: pytest.LogCaptureFixture):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    executar_com_origens({"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_EMPREGO_PT, "3": ORIGEM_SOURCESTACK})
+
+    assert "2 vagas de origem bloqueada ficaram de fora antes da extração" in caplog.text
+
+
+def test_execucao_sem_vaga_de_origem_bloqueada_nao_fala_dela_no_log(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    executar_com_origens({"1": ORIGEM_SOURCESTACK, "2": None})
+
+    assert "origem bloqueada" not in caplog.text

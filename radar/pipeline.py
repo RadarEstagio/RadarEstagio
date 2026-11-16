@@ -25,6 +25,7 @@ from radar.filtering.duplicatas import (
     remover_republicacoes_de,
     republicacao_da_mesma_empresa,
 )
+from radar.filtering.origem import separar_as_de_origem_bloqueada
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
@@ -192,8 +193,14 @@ def executar(
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
-    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
-    unicas = substituir_enriquecidas(unicas, candidatas)
+    enriquecidas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
+    candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+    unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
+    if de_origem_bloqueada:
+        logger.info(
+            "%d vagas de origem bloqueada ficaram de fora antes da extração",
+            len(de_origem_bloqueada),
+        )
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
         len(coletadas),
@@ -346,6 +353,11 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
     if len(abertas) < len(vagas):
         logger.info("%d vagas marcadas como encerradas ficaram de fora", len(vagas) - len(abertas))
     return abertas
+
+
+def sem_as_vagas(vagas: list[Vaga], retiradas: list[Vaga]) -> list[Vaga]:
+    chaves_retiradas = {vaga.chave() for vaga in retiradas}
+    return [vaga for vaga in vagas if vaga.chave() not in chaves_retiradas]
 
 
 def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:
