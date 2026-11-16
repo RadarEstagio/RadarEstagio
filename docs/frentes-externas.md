@@ -79,6 +79,35 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
   estágios em 6 empresas brasileiras nesses boards, quase todos em SP e BH. A Adzuna tem programa
   de parceiros ("a sponsored feed of ads for your site… generate more revenue for you"), o
   caminho para receita sem cobrar do estudante.
+- **Google for Jobs por JSearch (OpenWeb Ninja) ou SerpApi: recusada em 16/11/2026.** Os dois
+  serviços entregam o resultado de uma raspagem da busca do Google, que os termos do Google
+  proíbem, e a responsabilidade pelo uso do dado fica com quem o recebe; além disso, as vagas da
+  Gupy e do LinkedIn voltariam pelo painel do Google. O que foi lido:
+  - Os dois declaram a raspagem: "Our Google Jobs API allows you to scrape results from the Google
+    Jobs search page" ([serpapi.com/google-jobs-api](https://serpapi.com/google-jobs-api)) e
+    "pulled directly from Google for Jobs"
+    ([openwebninja.com/api/jsearch](https://openwebninja.com/api/jsearch)).
+  - Os Termos do Google, vigentes desde 30/07/2026, proíbem "using automated means to access
+    content from any of our services in violation of the machine-readable instructions on our web
+    pages", e o `robots.txt` do Google tem `Disallow: /search`.
+  - Os termos da OpenWeb Ninja (14/10/2026) dão a licença "only to the extent of our rights" e
+    dizem "You are solely responsible for ensuring that your use, storage, and redistribution of
+    API Data complies with ... any terms that apply to the original source of such data".
+  - O Google processa a SerpApi desde 19/12/2025 (Google LLC v. SerpApi, N.D. Cal.,
+    4:25-cv-10826). Em 09/11/2026 a petição foi rejeitada com direito a emenda, sem decisão sobre
+    a licitude da raspagem.
+- **TheirStack: recusada em 16/11/2026.** A base vem de raspagem direta e de agregadores, mais de
+  um quarto do volume brasileiro é de LinkedIn e Gupy, e os termos deixam todo o risco do uso e
+  da redistribuição com o usuário, sem indenização. O que foi lido:
+  - "We scrape some websites directly, while others are accessed indirectly through job board
+    aggregations"
+    ([theirstack.com/en/docs/data/job/sources](https://theirstack.com/en/docs/data/job/sources)).
+  - No Brasil, indeed.com responde por 45,4% do volume, linkedin.com por 17,5% e gupy.io por 9,6%
+    ([theirstack.com/en/job-postings-data/brazil](https://theirstack.com/en/job-postings-data/brazil),
+    novembro de 2026).
+  - Os Termos (§8.4) dizem que o usuário "assumes all risk arising from its use, redistribution,
+    and integration", e o §4.11 exige que cada destinatário esteja vinculado por termos escritos.
+  - O plano gratuito dá 200 créditos por mês, 1 por vaga.
 
 ## E02 · Cobertura de estágios
 
