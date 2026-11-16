@@ -12,6 +12,7 @@ from radar.domain.models import (
     AberturaSemResposta,
     ChaveDaVaga,
     ExtracaoDaVaga,
+    OrigemDoAnuncio,
     Perfil,
     Recomendacao,
     RecusasDoUsuario,
@@ -196,8 +197,9 @@ def executar(
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
-    enriquecidas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
-    origens_lidas = [vaga.origem for vaga in enriquecidas if vaga.origem is not None]
+    a_enriquecer = candidatas_de_algum_perfil(unicas, usuarios, repositorio)
+    enriquecidas = enriquecer(a_enriquecer)
+    origens_lidas = origens_lidas_no_enriquecimento(a_enriquecer, enriquecidas)
     candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
     unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
     if de_origem_bloqueada:
@@ -360,6 +362,15 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
     if len(abertas) < len(vagas):
         logger.info("%d vagas marcadas como encerradas ficaram de fora", len(vagas) - len(abertas))
     return abertas
+
+
+def origens_lidas_no_enriquecimento(antes: list[Vaga], depois: list[Vaga]) -> list[OrigemDoAnuncio]:
+    ja_tinham_origem = {vaga.chave() for vaga in antes if vaga.origem is not None}
+    return [
+        vaga.origem
+        for vaga in depois
+        if vaga.origem is not None and vaga.chave() not in ja_tinham_origem
+    ]
 
 
 def sem_as_vagas(vagas: list[Vaga], retiradas: list[Vaga]) -> list[Vaga]:

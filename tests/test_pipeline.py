@@ -2686,3 +2686,65 @@ def test_resumo_conta_a_pagina_de_cada_vaga_uma_vez_mesmo_candidata_de_dois_perf
     assert resumo.vagas_de_origem_bloqueada == 1
     assert resumo.paginas_de_anuncio_lidas == 2
     assert resumo.paginas_de_anuncio_sem_origem == 1
+
+
+def vaga_com_origem_informada_pela_fonte(numero: int, dominio: str) -> Vaga:
+    return vaga(numero, fonte="jooble").model_copy(
+        update={"origem": OrigemDoAnuncio(dominio=dominio)}
+    )
+
+
+def executar_com_vagas_que_ja_trazem_a_origem(
+    vagas: list[Vaga], origens_das_paginas: dict[str, OrigemDoAnuncio | None]
+) -> tuple[ResumoDaExecucao, ExtratorFalso]:
+    def enriquecer(candidatas: list[Vaga]) -> list[Vaga]:
+        return [
+            item.model_copy(update={"origem": origens_das_paginas[item.id_externo]})
+            if item.id_externo in origens_das_paginas
+            else item
+            for item in candidatas
+        ]
+
+    extrator = ExtratorFalso({})
+    resumo = executar(
+        ColetorFalso(vagas),
+        extrator,
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({item.id_externo: 90 - int(item.id_externo) for item in vagas}),
+        enriquecer=enriquecer,
+    )
+    return resumo, extrator
+
+
+def test_origem_que_a_fonte_ja_informou_nao_conta_como_pagina_de_anuncio_lida():
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem(
+        [
+            vaga(1),
+            vaga_com_origem_informada_pela_fonte(2, "empregos.com.br"),
+            vaga_com_origem_informada_pela_fonte(3, "infojobs.com.br"),
+            vaga_com_origem_informada_pela_fonte(4, "nube.com.br"),
+        ],
+        {"1": OrigemDoAnuncio()},
+    )
+
+    assert extrator.extraidas == ["1", "2", "3", "4"]
+    assert resumo.paginas_de_anuncio_lidas == 1
+    assert resumo.paginas_de_anuncio_sem_origem == 1
+
+
+def test_vaga_que_chega_da_coleta_com_dominio_bloqueado_tambem_sai_antes_da_extracao():
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem(
+        [
+            vaga_com_origem_informada_pela_fonte(1, "empresa.gupy.io"),
+            vaga_com_origem_informada_pela_fonte(2, "empregos.com.br"),
+            vaga_com_origem_informada_pela_fonte(3, "br.linkedin.com"),
+        ],
+        {},
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert resumo.vagas_de_origem_bloqueada == 2
+    assert resumo.paginas_de_anuncio_lidas == 0
