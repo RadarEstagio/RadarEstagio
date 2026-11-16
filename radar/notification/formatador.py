@@ -41,6 +41,7 @@ FONTE_ADZUNA = "adzuna"
 URL_DA_ADZUNA = "https://www.adzuna.com.br"
 PROPORCAO_DE_ALERTA_DA_COTA = 0.8
 PROPORCAO_DE_ALERTA_DO_BANCO = 0.7
+PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM = 0.5
 BYTES_POR_MEGABYTE = 1024 * 1024
 ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
@@ -174,6 +175,9 @@ def formatar_resumo_da_execucao(
     ja_atendidos_hoje: int = 0,
     recusaram_a_mensagem: list[UUID] | None = None,
     pausados_por_recusa: list[UUID] | None = None,
+    vagas_de_origem_bloqueada: int = 0,
+    paginas_de_anuncio_lidas: int = 0,
+    paginas_de_anuncio_sem_origem: int = 0,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -188,6 +192,16 @@ def formatar_resumo_da_execucao(
     ]
     if ja_atendidos_hoje:
         linhas.append(f"Já atendidos hoje, fora desta execução: {ja_atendidos_hoje}")
+    if vagas_de_origem_bloqueada:
+        linhas.append(f"Vagas descartadas por virem do emprego.pt: {vagas_de_origem_bloqueada}")
+    if paginas_de_anuncio_sem_origem > (
+        PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM * paginas_de_anuncio_lidas
+    ):
+        linhas.append(
+            "⚠️ Páginas da Adzuna lidas sem origem identificada: "
+            f"{paginas_de_anuncio_sem_origem} de {paginas_de_anuncio_lidas} "
+            "(o corte do emprego.pt pode não estar funcionando)"
+        )
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:

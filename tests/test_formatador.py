@@ -375,6 +375,71 @@ def test_resumo_mostra_quem_ja_tinha_sido_atendido_hoje_so_quando_ha():
     assert "Já atendidos hoje" not in sem
 
 
+def test_resumo_mostra_as_vagas_descartadas_por_virem_do_emprego_pt_so_quando_ha():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_de_origem_bloqueada=20
+    )
+    sem = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 480, 2)
+
+    assert "Vagas descartadas por virem do emprego.pt: 20" in com
+    assert "⚠️" not in com
+    assert "emprego.pt" not in sem
+
+
+def resumo_com_paginas(lidas: int, sem_origem: int) -> str:
+    return formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        28,
+        480,
+        2,
+        paginas_de_anuncio_lidas=lidas,
+        paginas_de_anuncio_sem_origem=sem_origem,
+    )
+
+
+@pytest.mark.parametrize(("lidas", "sem_origem"), [(10, 6), (10, 10), (1, 1), (3, 2), (21, 11)])
+def test_resumo_avisa_quando_a_maioria_das_paginas_lidas_veio_sem_origem(
+    lidas: int, sem_origem: int
+):
+    texto = resumo_com_paginas(lidas, sem_origem)
+
+    assert (
+        f"⚠️ Páginas da Adzuna lidas sem origem identificada: {sem_origem} de {lidas} "
+        "(o corte do emprego.pt pode não estar funcionando)"
+    ) in texto
+
+
+@pytest.mark.parametrize(
+    ("lidas", "sem_origem"), [(10, 5), (10, 0), (2, 1), (20, 10), (21, 10), (0, 0)]
+)
+def test_resumo_nao_avisa_enquanto_as_paginas_sem_origem_nao_sao_a_maioria(
+    lidas: int, sem_origem: int
+):
+    texto = resumo_com_paginas(lidas, sem_origem)
+
+    assert "sem origem identificada" not in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_mostra_o_descarte_e_o_alerta_de_origem_no_mesmo_dia():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        9,
+        480,
+        2,
+        vagas_de_origem_bloqueada=3,
+        paginas_de_anuncio_lidas=20,
+        paginas_de_anuncio_sem_origem=15,
+    )
+
+    assert "Vagas descartadas por virem do emprego.pt: 3" in texto
+    assert "⚠️ Páginas da Adzuna lidas sem origem identificada: 15 de 20" in texto
+
+
 def test_resumo_avisa_quem_recusou_a_mensagem_e_quem_foi_pausado_pelo_trecho_do_id():
     bloqueou = UUID("814c6041-0000-4000-8000-000000000001")
     pausado = UUID("9f2a11bc-0000-4000-8000-000000000002")
