@@ -349,3 +349,93 @@ def test_ler_a_origem_nao_acrescenta_requisicao_a_pagina(httpx_mock: HTTPXMock):
         enriquecedor.enriquecer([vaga_do_parceiro()])
 
     assert len(httpx_mock.get_requests()) == 1
+
+
+def test_enriquecedor_novo_nao_tem_pagina_nao_lida():
+    with httpx.Client() as cliente:
+        assert EnriquecedorDeDescricoes(cliente).paginas_nao_lidas == 0
+
+
+@pytest.mark.parametrize("status", [403, 404, 503])
+def test_conta_a_pagina_que_respondeu_com_erro_http(httpx_mock: HTTPXMock, status: int):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=status)
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecedor.enriquecer([vaga_do_parceiro()])
+
+    assert enriquecedor.paginas_nao_lidas == 1
+
+
+def test_conta_a_pagina_que_falhou_por_erro_de_rede(httpx_mock: HTTPXMock):
+    httpx_mock.add_exception(httpx.ConnectError("conexão recusada"))
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecedor.enriquecer([vaga_do_parceiro()])
+
+    assert enriquecedor.paginas_nao_lidas == 1
+
+
+def test_conta_a_pagina_com_url_que_o_httpx_recusa(httpx_mock: HTTPXMock):
+    sem_porta_valida = vaga_truncada().model_copy(
+        update={"url": "https://www.adzuna.com.br:porta/details/1"}
+    )
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecedor.enriquecer([sem_porta_valida])
+
+    assert httpx_mock.get_requests() == []
+    assert enriquecedor.paginas_nao_lidas == 1
+
+
+def test_nao_conta_como_nao_lida_a_pagina_que_respondeu_mesmo_sem_descricao_nem_origem(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text="<html><body></body></html>")
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5862521726",
+        text=CAMINHO_DA_PAGINA.read_text(encoding="utf-8"),
+    )
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecedor.enriquecer([vaga_do_parceiro(), vaga_truncada()])
+
+    assert enriquecedor.paginas_nao_lidas == 0
+
+
+def test_nao_conta_como_nao_lida_a_vaga_cuja_pagina_o_enriquecimento_nem_pede(
+    httpx_mock: HTTPXMock,
+):
+    curta = vaga_do_parceiro().model_copy(
+        update={"descricao": "Descrição curta que a API já dá inteira", "descricao_completa": True}
+    )
+    land_ad = anuncio_da_adzuna("5880177309", "https://www.adzuna.com.br/land/ad/5880177309?se=x")
+    da_jooble = vaga_truncada().model_copy(
+        update={"fonte": "jooble", "url": "https://br.jooble.org/jdp/1000000000000000001"}
+    )
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecedor.enriquecer([curta, land_ad, da_jooble])
+
+    assert httpx_mock.get_requests() == []
+    assert enriquecedor.paginas_nao_lidas == 0
+
+
+def test_soma_as_paginas_nao_lidas_e_conta_uma_vez_a_mesma_vaga_pedida_de_novo(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=403)
+    httpx_mock.add_response(url="https://www.adzuna.com.br/details/5862521726", status_code=403)
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5880188747",
+        text=CAMINHO_DA_PAGINA.read_text(encoding="utf-8"),
+    )
+    lida = anuncio_da_adzuna("5880188747", "https://www.adzuna.com.br/details/5880188747")
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        primeira = enriquecedor.enriquecer([vaga_do_parceiro(), lida, vaga_truncada()])
+        segunda = enriquecedor.enriquecer([vaga_do_parceiro(), vaga_truncada()])
+
+    assert enriquecedor.paginas_nao_lidas == 2
+    assert len(httpx_mock.get_requests()) == 3
+    assert [vaga.descricao_completa for vaga in primeira] == [False, True, False]
+    assert segunda == [vaga_do_parceiro(), vaga_truncada()]

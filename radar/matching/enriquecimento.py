@@ -40,6 +40,7 @@ class EnriquecedorDeDescricoes:
     def __init__(self, cliente_http: httpx.Client) -> None:
         self._cliente_http = cliente_http
         self._cache: dict[tuple[str, str], Vaga] = {}
+        self.paginas_nao_lidas = 0
 
     def enriquecer(self, vagas: list[Vaga]) -> list[Vaga]:
         sem_pagina_de_detalhe = [
@@ -60,9 +61,11 @@ class EnriquecedorDeDescricoes:
         chave = (vaga.fonte, vaga.id_externo)
         if chave in self._cache:
             return self._cache[chave]
-        enriquecida = ler_pagina_do_anuncio(vaga, self._cliente_http)
-        self._cache[chave] = enriquecida
-        return enriquecida
+        lida = ler_pagina_do_anuncio(vaga, self._cliente_http)
+        if lida is None:
+            self.paginas_nao_lidas += 1
+        self._cache[chave] = lida if lida is not None else vaga
+        return self._cache[chave]
 
 
 def descricao_parece_truncada(vaga: Vaga) -> bool:
@@ -81,7 +84,7 @@ def caminho_da_url(url: str) -> str:
     return BARRAS_REPETIDAS.sub("/", caminho).casefold()
 
 
-def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
+def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga | None:
     try:
         resposta = cliente_http.get(vaga.url, follow_redirects=True)
         resposta.raise_for_status()
@@ -91,7 +94,7 @@ def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
             vaga.id_externo,
             type(erro).__name__,
         )
-        return vaga
+        return None
     com_origem = vaga.model_copy(update={"origem": extrair_origem_da_pagina(resposta.text)})
     descricao = extrair_descricao_da_pagina(resposta.text)
     if not descricao:
