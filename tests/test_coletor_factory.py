@@ -7,6 +7,8 @@ import httpx
 from pytest_httpx import HTTPXMock
 
 from radar.collectors.adzuna import URL_BUSCA as URL_ADZUNA
+from radar.collectors.adzuna import CotaDaAdzuna
+from radar.collectors.cota import CotaDeRequisicoes
 from radar.collectors.factory import (
     areas_de_interesse,
     cidades_de_interesse,
@@ -242,3 +244,29 @@ def test_jooble_busca_so_estagio_mesmo_com_termos_de_area_e_busca_geral(httpx_mo
         }
         for regiao in ["Niterói", ""]
     ]
+
+
+def test_cota_da_jooble_chega_ao_coletor_da_jooble_e_so_a_ele(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_ADZUNA)), json={"results": []}, is_reusable=True
+    )
+    httpx_mock.add_response(
+        url=re.compile(re.escape(URL_JOOBLE)), json={"jobs": []}, is_reusable=True
+    )
+    settings = settings_de_teste("adzuna").model_copy(
+        update={"fontes": "adzuna,jooble", "jooble_api_key": "teste"}
+    )
+    cota_da_adzuna = CotaDaAdzuna(esperar=lambda _: None)
+    cota_da_jooble = CotaDeRequisicoes()
+    with httpx.Client() as cliente:
+        criar_coletor(
+            settings,
+            cliente,
+            AGORA,
+            ["Niterói"],
+            cota=cota_da_adzuna,
+            cota_da_jooble=cota_da_jooble,
+        ).coletar()
+
+    assert cota_da_adzuna.requisicoes == 2
+    assert cota_da_jooble.requisicoes == 2

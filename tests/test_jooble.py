@@ -6,6 +6,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from radar.collectors.cota import CotaDeRequisicoes, CotaEsgotada
 from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.jooble import (
     LIMITE_DE_PAGINAS_POR_REGIAO,
@@ -47,11 +48,20 @@ def corpos_das_buscas(httpx_mock: HTTPXMock) -> list[dict]:
     return [json.loads(requisicao.content) for requisicao in httpx_mock.get_requests()]
 
 
-def coletar(cidades: list[str] | None = None, esperas: list[float] | None = None):
+def coletar(
+    cidades: list[str] | None = None,
+    esperas: list[float] | None = None,
+    cota: CotaDeRequisicoes | None = None,
+):
     registradas = esperas if esperas is not None else []
     with httpx.Client() as cliente_http:
         return ColetorJooble(
-            CHAVE, cliente_http, PUBLICADAS_DESDE, cidades or [], esperar=registradas.append
+            CHAVE,
+            cliente_http,
+            PUBLICADAS_DESDE,
+            cidades or [],
+            esperar=registradas.append,
+            cota=cota,
         ).coletar()
 
 
@@ -330,3 +340,89 @@ def test_texto_com_nul_e_metade_solta_de_emoji_chega_limpo(httpx_mock: HTTPXMock
 
     assert vaga.titulo == "Estágio em TI"
     assert vaga.descricao == "Apoiar o time"
+
+
+def test_cada_requisicao_conta_na_cota_inclusive_a_tentativa_repetida(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=503, text="indisponível")
+    httpx_mock.add_response(json=resposta(item(1)))
+    httpx_mock.add_response(json=resposta(item(2)))
+    cota = CotaDeRequisicoes()
+
+    coletar(["Rio de Janeiro"], cota=cota)
+
+    assert cota.requisicoes == 3
+    assert not cota.esgotada
+
+
+def test_coleta_para_quando_o_saldo_do_dia_acaba_e_devolve_o_que_ja_trouxe(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    httpx_mock.add_response(json=resposta(item(1), item(2)))
+    cota = CotaDeRequisicoes(saldo=1)
+
+    vagas = coletar(["Rio de Janeiro", "Niterói"], cota=cota)
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "2"]
+    assert len(httpx_mock.get_requests()) == 1
+    assert cota.esgotada
+    assert "Cota da Jooble esgotada; a coleta parou com 2 vagas" in caplog.text
+
+
+def test_cota_sem_saldo_antes_da_primeira_vaga_e_erro_de_coleta_e_nao_zero_vagas(
+    httpx_mock: HTTPXMock,
+):
+    cota = CotaDeRequisicoes(saldo=0)
+
+    with pytest.raises(ErroDeColeta, match="Cota da Jooble esgotada"):
+        coletar(["Rio de Janeiro"], cota=cota)
+
+    assert httpx_mock.get_requests() == []
+    assert cota.esgotada
+
+
+def test_limite_diario_excedido_na_jooble_nao_e_tentado_de_novo(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=429, text="Too Many Requests")
+    cota = CotaDeRequisicoes()
+    esperas: list[float] = []
+
+    with pytest.raises(ErroDeColeta, match="Cota da Jooble esgotada"):
+        coletar(["Rio de Janeiro"], esperas=esperas, cota=cota)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert esperas == []
+    assert cota.requisicoes == 1
+    assert cota.esgotada
+
+
+def test_limite_diario_excedido_depois_de_trazer_vagas_para_a_coleta_com_o_que_veio(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(json=resposta(item(1)))
+    httpx_mock.add_response(status_code=429, text="Too Many Requests")
+    cota = CotaDeRequisicoes()
+
+    vagas = coletar(["Rio de Janeiro", "Niterói"], cota=cota)
+
+    assert [vaga.id_externo for vaga in vagas] == ["1"]
+    assert len(httpx_mock.get_requests()) == 2
+    assert cota.requisicoes == 2
+    assert cota.esgotada
+
+
+def test_cota_que_a_fonte_declarou_esgotada_recusa_a_reserva_seguinte():
+    cota = CotaDeRequisicoes(saldo=100)
+    cota.reservar()
+
+    cota.esgotar()
+
+    assert cota.esgotada
+    with pytest.raises(CotaEsgotada):
+        cota.reservar()
+    assert cota.requisicoes == 1
+
+
+def test_sem_cota_informada_a_coleta_nao_tem_saldo_que_a_pare(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=resposta(item(1)), is_reusable=True)
+
+    assert len(coletar(["Rio de Janeiro", "Niterói"])) == 1
+    assert len(httpx_mock.get_requests()) == 3

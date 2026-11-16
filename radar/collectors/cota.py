@@ -37,6 +37,10 @@ class CotaDeRequisicoes:
         self._momentos.append(agora)
         self.requisicoes += 1
 
+    def esgotar(self) -> None:
+        self._saldo = self.requisicoes
+        self.esgotada = True
+
     def _recentes(self) -> float:
         agora = self._relogio()
         self._momentos = [

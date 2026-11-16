@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import httpx
 
+from radar.collectors.cota import CotaDeRequisicoes, CotaEsgotada
 from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.gupy import limpar_html
 from radar.collectors.tentativas import requisitar_com_tentativas
@@ -17,6 +18,8 @@ LOCALIZACAO_PADRAO = "Brasil"
 PALAVRA_DA_BUSCA = "estágio"
 RESULTADOS_POR_PAGINA = 100
 LIMITE_DE_PAGINAS_POR_REGIAO = 5
+LIMITE_POR_DIA = 100
+STATUS_DE_LIMITE_DIARIO_EXCEDIDO = 429
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +32,14 @@ class ColetorJooble:
         publicadas_desde: datetime,
         cidades: Iterable[str] = (),
         esperar: Callable[[float], None] = time.sleep,
+        cota: CotaDeRequisicoes | None = None,
     ) -> None:
         self._api_key = api_key
         self._cliente_http = cliente_http
         self._criadas_desde = publicadas_desde.astimezone(UTC).date()
         self._cidades = tuple(cidades)
         self._esperar = esperar
+        self._cota = cota if cota is not None else CotaDeRequisicoes()
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
@@ -44,6 +49,14 @@ class ColetorJooble:
                     vaga = converter_ou_ignorar(item)
                     if vaga is not None and self._e_recente(vaga):
                         vagas_por_id.setdefault(vaga.id_externo, vaga)
+        except CotaEsgotada:
+            if not vagas_por_id:
+                raise ErroDeColeta(
+                    "Cota da Jooble esgotada antes de trazer a primeira vaga"
+                ) from None
+            logger.warning(
+                "Cota da Jooble esgotada; a coleta parou com %d vagas", len(vagas_por_id)
+            )
         except ErroDeColeta as erro:
             if not vagas_por_id:
                 raise
@@ -76,9 +89,15 @@ class ColetorJooble:
         return itens
 
     def _requisitar(self, cidade: str | None, pagina: int) -> httpx.Response:
-        return self._cliente_http.post(
+        self._cota.reservar()
+        resposta = self._cliente_http.post(
             f"{URL_BUSCA}/{self._api_key}", json=self._corpo_da_busca(cidade, pagina)
         )
+        if resposta.status_code == STATUS_DE_LIMITE_DIARIO_EXCEDIDO:
+            logger.warning("Jooble respondeu HTTP 429: o limite diário da chave foi excedido")
+            self._cota.esgotar()
+            raise CotaEsgotada
+        return resposta
 
     def _corpo_da_busca(self, cidade: str | None, pagina: int) -> dict[str, str | int]:
         return {
