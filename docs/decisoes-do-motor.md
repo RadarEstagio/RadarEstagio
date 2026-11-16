@@ -12,6 +12,7 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
   - [Limites da Adzuna](#limites-da-adzuna-12092026)
   - [Coleta resiliente](#coleta-resiliente-13092026)
   - [Enriquecimento: a descrição completa da Adzuna](#enriquecimento-a-descrição-completa-da-adzuna)
+  - [Anúncios vencidos do emprego.pt](#anúncios-vencidos-do-empregopt-16112026)
   - [Jooble](#jooble-05092026)
   - [Cidades vizinhas: região imediata do IBGE](#cidades-vizinhas-região-imediata-do-ibge-10092026)
 - **Pré-filtro e áreas**
@@ -202,6 +203,84 @@ feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede
 e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
 completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
 medição acima) pode ver outro texto que o lido pela IA.
+
+## Anúncios vencidos do emprego.pt (16/11/2026)
+
+Medido em 16/11/2026: cerca de 3 em cada 4 vagas enviadas vinham de um único parceiro da Adzuna, o
+portal português emprego.pt, que publica como novos anúncios brasileiros já vencidos.
+
+- O dono do projeto se candidatou a 15 vagas recebidas pelo Radar entre 08/10 e 16/11. Todas
+  levavam ao emprego.pt, e em todas o próprio emprego.pt declarava a validade vencida antes da
+  candidatura (`validThrough` do JSON-LD): 5 eram de 2022, 1 de 2023, 1 de 2024, 5 de 2025 e 3 de
+  2026, a mais recente com validade até 17/09/2026. Nenhuma teve resposta.
+- A listagem "Brasil" do emprego.pt mostra, com botão de candidatura ativo, anúncios publicados
+  em 18/03/2022.
+- A Adzuna recebe um lote diário desse parceiro (em novembro, por volta das 22:05 UTC) e carimba
+  `created` com a data do dia, então o filtro `max_days_old` não pega esses anúncios.
+- O mesmo anúncio volta com id novo: "Estágio em Administração" da Fundação Mudes entrou 14
+  vezes entre 30/08 e 15/11.
+- Em 15/11, 20 das 29 vagas enviadas eram do parceiro "Emprego"; em 16/11, 10 das 23
+  classificadas. Pela estimativa do horário do lote, validada só de 12 a 16/11, ele responde por
+  70% a 77% dos envios desde a semana de 07/09 e por 82% a 94% dos envios do perfil de Engenharia
+  de Software.
+
+**Como a origem é lida.** A API da Adzuna não informa o parceiro. A página do anúncio
+(`adzuna.com.br/details/<id>`), que o enriquecimento já baixa para completar a descrição, informa
+de duas formas: o logo do parceiro, um `<img>` cujo `src` contém `/partners/` e cujo `alt` traz o
+nome, e `"source_id"` num script de dados. Nas 113 vagas enviadas de 12 a 16/11 os nomes vistos
+foram Emprego, SourceStack, Buscar Vagas, Divulgar Vagas, Empregos, NUBE, PandaPé, Infojobs,
+SuccessFactors e Recruta Simples. `ler_pagina_do_anuncio` guarda os dois em
+`Vaga.origem_lida_da_pagina` (`OrigemDoAnuncio`), na mesma leitura que já fazia: sem requisição a
+mais na execução, sem coluna no banco e fora do prompt, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+Vale o primeiro logo de parceiro da página; logo sem `alt` deixa só o identificador, e
+`source_id` fora de script não conta. As 30 vagas confirmadas do emprego.pt chegaram da API com a
+descrição cortada em 500 caracteres, então todas já passavam pelo enriquecimento.
+
+**Decisão.** Vaga cuja origem dentro da Adzuna é o emprego.pt não chega à extração nem a nenhum
+estudante. `origem_bloqueada` (`filtering/origem.py`) bloqueia pelo identificador `79986` ou pelo
+nome "Emprego", sem diferenciar caixa nem espaços nas pontas. São os dois porque a Adzuna pode
+trocar um deles. O nome é comparado inteiro: "Empregos" (empregos.com.br) é outro parceiro e
+segue. Em `executar`, depois de `enriquecer`, a vaga bloqueada sai das candidatas e das únicas,
+antes de `obter_extracoes`: não vai à IA, não é pontuada, não é gravada em `vagas` e não conta
+como vaga sem extração, então não segura a mensagem de ninguém. Num dia em que só ela era
+candidata, a pessoa recebe "nenhuma vaga nova compatível". O comando `avaliar` aplica o mesmo
+corte às até três vagas que enriquece e não lê página a mais para repor as que saem.
+
+**Falha aberta.** Vaga sem origem identificada segue no fluxo como antes: página que não foi
+baixada (403, 404, erro de rede), anúncio `/land/ad/`, descrição curta que não passa pelo
+enriquecimento e página sem logo de parceiro e sem `source_id`. O motivo é que uma queda do
+enriquecimento não pode virar "nenhuma vaga". Para a falha não ficar muda, o resumo de operação
+ganhou duas linhas. "Vagas descartadas por virem do emprego.pt: N" aparece só quando alguma saiu.
+"⚠️ Páginas da Adzuna lidas sem origem identificada: X de Y (o corte do emprego.pt pode não
+estar funcionando)" aparece quando mais da metade das páginas lidas na execução veio sem logo e
+sem `source_id` (`PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM`, 0,5; metade exata não avisa).
+Página lida é a que respondeu com sucesso, tenha ou não a descrição. `ResumoDaExecucao` guarda os
+três números (`vagas_de_origem_bloqueada`, `paginas_de_anuncio_lidas`,
+`paginas_de_anuncio_sem_origem`), e o print do diário os repete.
+
+**Limites conhecidos.**
+
+- Vaga do emprego.pt que a API entregar com descrição curta, ou com endereço `/land/ad/`, não tem
+  a página lida e não é identificada.
+- O alerta só olha páginas lidas. Se a Adzuna recusar todas as páginas, o corte para de valer e o
+  resumo não ganha linha; o que resta é o aviso de cada página não lida no log.
+- O alerta não tem mínimo de páginas: uma execução com uma página lida, sem origem, avisa "1 de
+  1".
+- A medição histórica (70% a 77% dos envios) é estimativa pelo horário do lote, validada só de 12
+  a 16/11.
+- O volume diário da Adzuna cai. No perfil de Engenharia de Software sobram cerca de 1 a 2 vagas
+  por dia, até fontes novas entrarem.
+- Vagas do emprego.pt já enviadas continuam valendo para o bloqueio de republicação por 30 dias:
+  nesse prazo, o mesmo anúncio vindo de outro parceiro ainda é tratado como repetido para quem o
+  recebeu.
+- A origem não é gravada. A vaga bloqueada continua candidata enquanto a API a devolver (janela de
+  `DIAS_RECENTES`, 3 por padrão) e tem a página relida a cada execução; antes, depois de enviada,
+  ela saía das candidatas de quem a recebeu. Quantas leituras isso soma por dia não foi medido.
+- A deduplicação roda antes de a origem ser conhecida. Quando duas cópias do mesmo anúncio chegam
+  no mesmo dia e a que fica é a do emprego.pt, a outra já saiu e não volta naquela execução. Não
+  foi medido quantas vezes isso acontece.
+- O corte depende da página do anúncio. Se a Adzuna negar a leitura e o enriquecimento sair, o
+  corte sai junto.
 
 ## Jooble (05/09/2026)
 

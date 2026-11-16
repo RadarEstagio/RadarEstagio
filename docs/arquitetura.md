@@ -12,9 +12,14 @@ Edge Functions recebem vínculo/feedback e redirecionam links de vagas. Não há
 ## O fluxo
 
 ```text
-fontes → dedupe/pré-filtro → enriquecimento → extração compartilhada
+fontes → dedupe/pré-filtro → enriquecimento → corte por origem → extração compartilhada
   → trava e histórico por perfil → pontuação → revalidação → Telegram → registro de envio
 ```
+
+O enriquecimento lê, na mesma página que completa a descrição, de qual parceiro da Adzuna o
+anúncio veio. A vaga de parceiro bloqueado (em 16/11/2026, só o emprego.pt) sai antes da extração
+e de todos os perfis; a vaga sem origem identificada segue. A regra fica em `filtering/origem.py`,
+e a medição e os limites, nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 
 A extração é reaproveitada entre usuários; pontuação e seleção são individuais. Ela guarda se
 leu a descrição completa, e a nota limitada a 60 segue o que ela leu, não a vaga do dia; a extração

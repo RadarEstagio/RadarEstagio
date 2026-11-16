@@ -25,6 +25,13 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
   mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
   quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
   vira erro de coleta, nunca "nenhuma vaga".
+- **Página do anúncio da Adzuna (16/11/2026).** O corte dos anúncios que a Adzuna recebe do
+  emprego.pt usa a mesma página que o enriquecimento já lia para completar a descrição: a origem é
+  tirada da resposta já baixada, sem requisição a mais na execução. Como a origem não é gravada, a
+  página da vaga cortada é lida de novo nas execuções seguintes enquanto a API a devolver. A
+  permissão para ler essa página segue sem resposta da Adzuna; se for negada, o enriquecimento e o
+  corte saem juntos
+  ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
@@ -62,9 +69,15 @@ Anúncio sem descrição completa, alias ausente ou erro técnico fica identific
 | a definir | Adzuna | engenharia | a definir | a definir | não medido | não medido | não medido | não medido | não medido | acesso de coleta pendente | a definir |
 | a definir | Adzuna | computação — controle | a definir | a definir | não medido | não medido | não medido | não medido | não medido | acesso de coleta pendente | a definir |
 
-As fixtures `tests/fixtures/adzuna_resposta.json` e `adzuna_detalhe.html` só documentam o
-procedimento e não entram em afirmação de cobertura. Linhas reais precisam de janela e paginação
-antes de serem somadas.
+As fixtures `tests/fixtures/adzuna_resposta.json`, `adzuna_detalhe.html` e
+`adzuna_detalhe_com_parceiro.html` só documentam o procedimento e não entram em afirmação de
+cobertura. Linhas reais precisam de janela e paginação antes de serem somadas.
+
+**Origem dentro da Adzuna (16/11/2026).** A matriz acima segue sem linha real, mas há uma medição
+de origem: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Adzuna, o emprego.pt,
+que republica anúncios vencidos. Essas vagas passaram a ser cortadas antes da extração, e o volume
+diário cai até fontes novas entrarem. Os números, a decisão e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 
 ### Casos de qualidade
 

@@ -172,7 +172,7 @@ documento indicado.
 | E04 — custos | Reunir faturas, uso e horas de suporte numa janela comum; custo desconhecido não é zero | [Frentes externas](frentes-externas.md#e04--custos-da-operação) |
 | E05 — oferta | Depois de cobertura e custos, decidir oferta, pagador, preço e provedor; checkout é tarefa posterior | [Frentes externas](frentes-externas.md#e05--hipótese-comercial) |
 | D01 — formação | Usar os casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
-| Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
+| Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai, e com ele o corte do emprego.pt (16/11) | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
 
 Nenhuma dessas frentes cria meta formal nem impede o piloto informal depois da conferência
 operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
@@ -201,6 +201,11 @@ Continuam abertos:
   `motivo_pausa` vazio: as métricas não separam essa pausa da que a pessoa fez no site, e o site
   mostra a mesma frase para as duas
   ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
+- **Corte do emprego.pt (16/11).** A vaga desse parceiro da Adzuna sai antes da extração, mas
+  ficou aberto: a que a API entrega com descrição curta ou em `/land/ad/` não é identificada; o
+  resumo não avisa quando as páginas deixam de ser lidas; a página da vaga bloqueada é relida a
+  cada execução enquanto a API a devolve; e o volume diário cai até fontes novas entrarem
+  ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
   três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar
   no desbloqueio; prioridade baixa enquanto houver um caso em dois meses.
