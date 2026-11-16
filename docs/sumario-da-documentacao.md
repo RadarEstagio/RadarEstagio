@@ -54,8 +54,8 @@ que estudantes de fora do grupo o acham útil.
   `vaga_irrelevante` real; falha nova se procura com o teste que a reproduz antes de mexer; o juiz
   automático mede, não ranqueia.
 - **Fontes:** só a Adzuna. A Gupy saiu em 12/09 pelos termos. Desde 16/11 a vaga que a Adzuna
-  recebe do emprego.pt, que republica anúncios vencidos, é cortada antes da extração: em 15/11
-  eram 20 das 29 enviadas. A Jooble está pronta e desligada: a chave dá 100 requisições por dia
+  recebe do emprego.pt, que mantém com candidatura ativa anúncios brasileiros vencidos, é cortada
+  antes da extração: em 15/11 eram 20 das 29 enviadas. A Jooble está pronta e desligada: a chave dá 100 requisições por dia
   (o limite de 500 no total saiu dos textos dela), a busca é só "estágio" por região, a vaga com
   origem na Gupy ou no LinkedIn é descartada no coletor, e a fonte liga pela variável `FONTES` do
   repositório.
@@ -95,7 +95,8 @@ G03 e G04 foram fechados em 21/10: reexecutar o diário pula quem já recebeu a 
 vigia avisa se o diário não terminou bem. Seguem abertos G02 (duração de cada lote) e, com
 prioridade baixa, G05, G08, G09 e G10. Do bot bloqueado (15/11) ficaram a pausa automática sem
 motivo e o webhook sem `my_chat_member`. Do corte do emprego.pt (16/11) ficaram a vaga de descrição
-curta ou `/land/ad/`, que não é identificada, e a queda do volume diário até fontes novas entrarem.
+curta ou `/land/ad/`, que não é identificada, e o volume diário, que deve cair; quanto, e se a
+Jooble repõe, não foi medido.
 Da Jooble (16/11) ficaram a busca no país com `location` vazio, não sondada, e a fonte que falha
 por inteiro só com aviso no log. O token do cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
 automático não está validado (precisa de 75% ou mais de concordância).

@@ -317,9 +317,10 @@ inclusive depois de rótulo como "Cursos aceitos:" ou "Formação acadêmica:".
 #### 06. Enriquecimento e corte por origem
 
 Tenta obter descrição mais completa antes da extração e lê, na mesma página, de qual parceiro da
-Adzuna o anúncio veio. Vaga que a Adzuna recebe do emprego.pt, que republica anúncios vencidos,
-sai antes da extração e não chega a ninguém (16/11/2026). O resumo de operação diz quantas saíram
-e avisa quando mais da metade das páginas lidas veio sem origem identificada.
+Adzuna o anúncio veio. Vaga que a Adzuna recebe do emprego.pt, que mantém com candidatura ativa
+anúncios brasileiros vencidos, sai antes da extração e não chega a ninguém (16/11/2026). O resumo
+de operação diz quantas saíram, avisa quando mais da metade das páginas lidas veio sem origem
+identificada e mostra quantas páginas da Adzuna não puderam ser lidas.
 
 **Condições e limites:** Vaga sem origem identificada segue no fluxo: página não lida, anúncio
 `/land/ad/` ou descrição curta que a API já dá inteira. A origem não é gravada no banco. Os

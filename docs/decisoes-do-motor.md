@@ -206,13 +206,17 @@ medição acima) pode ver outro texto que o lido pela IA.
 
 ## Anúncios vencidos do emprego.pt (16/11/2026)
 
-Medido em 16/11/2026: cerca de 3 em cada 4 vagas enviadas vinham de um único parceiro da Adzuna, o
-portal português emprego.pt, que publica como novos anúncios brasileiros já vencidos.
+Contado em 16/11/2026: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Adzuna,
+o portal português emprego.pt, e em 16/11, 10 das 23 classificadas. A proporção de 70% a 77% dos
+envios desde a semana de 07/09 é estimativa pelo horário do lote, validada só de 12 a 16/11. O
+que foi medido sobre o parceiro é que o emprego.pt mantém com candidatura ativa anúncios
+brasileiros vencidos, que chegam à Adzuna em lote diário com a data do dia.
 
 - O dono do projeto se candidatou a 15 vagas recebidas pelo Radar entre 08/10 e 16/11. Todas
   levavam ao emprego.pt, e em todas o próprio emprego.pt declarava a validade vencida antes da
   candidatura (`validThrough` do JSON-LD): 5 eram de 2022, 1 de 2023, 1 de 2024, 5 de 2025 e 3 de
-  2026, a mais recente com validade até 17/09/2026. Nenhuma teve resposta.
+  2026, a mais recente com validade até 17/09/2026. Segundo o dono do projeto, nenhuma teve
+  resposta.
 - A listagem "Brasil" do emprego.pt mostra, com botão de candidatura ativo, anúncios publicados
   em 18/03/2022.
 - A Adzuna recebe um lote diário desse parceiro (em novembro, por volta das 22:05 UTC) e carimba
@@ -223,6 +227,10 @@ portal português emprego.pt, que publica como novos anúncios brasileiros já v
   classificadas. Pela estimativa do horário do lote, validada só de 12 a 16/11, ele responde por
   70% a 77% dos envios desde a semana de 07/09 e por 82% a 94% dos envios do perfil de Engenharia
   de Software.
+
+**Medição de base (16/11/2026).** No diário de 16/11, antes do corte, foram 1.109 vagas
+coletadas e 156 candidatas de algum perfil, e nenhuma página da Adzuna deixou de ser lida. É
+contra esse zero que se lê a linha "⚠️ Páginas da Adzuna não lidas" do resumo de operação.
 
 **Como a origem é lida.** A API da Adzuna não informa o parceiro. A página do anúncio
 (`adzuna.com.br/details/<id>`), que o enriquecimento já baixa para completar a descrição, informa
@@ -250,32 +258,44 @@ corte às até três vagas que enriquece e não lê página a mais para repor as
 baixada (403, 404, erro de rede), anúncio `/land/ad/`, descrição curta que não passa pelo
 enriquecimento e página sem logo de parceiro e sem `source_id`. O motivo é que uma queda do
 enriquecimento não pode virar "nenhuma vaga". Para a falha não ficar muda, o resumo de operação
-ganhou duas linhas. "Vagas descartadas por virem do emprego.pt: N" aparece só quando alguma saiu.
+ganhou três linhas. "Vagas descartadas por virem do emprego.pt: N" aparece só quando alguma saiu.
 "⚠️ Páginas da Adzuna lidas sem origem identificada: X de Y (o corte do emprego.pt pode não
 estar funcionando)" aparece quando mais da metade das páginas lidas na execução veio sem logo e
 sem `source_id` (`PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM`, 0,5; metade exata não avisa).
 Página lida é a que respondeu com sucesso, tenha ou não a descrição. `ResumoDaExecucao` guarda os
 três números (`vagas_de_origem_bloqueada`, `paginas_de_anuncio_lidas`,
 `paginas_de_anuncio_sem_origem`), e o print do diário os repete.
+"⚠️ Páginas da Adzuna não lidas: N (o corte do emprego.pt não vale para elas)" aparece só quando
+N é maior que zero. Conta a página que o enriquecimento pediu e não conseguiu ler, por erro HTTP,
+de rede ou URL inválida, uma vez por vaga na execução; não conta o anúncio `/land/ad/` nem a
+descrição que a API já dá inteira, que ele não pede. O número fica em
+`EnriquecedorDeDescricoes.paginas_nao_lidas`, e o `__main__` o leva ao resumo e ao print do
+diário; `enriquecer(vagas)` continua devolvendo só as vagas. A linha não segura mensagem nem muda
+o código de saída.
 
 **Limites conhecidos.**
 
 - Vaga do emprego.pt que a API entregar com descrição curta, ou com endereço `/land/ad/`, não tem
   a página lida e não é identificada.
-- O alerta só olha páginas lidas. Se a Adzuna recusar todas as páginas, o corte para de valer e o
-  resumo não ganha linha; o que resta é o aviso de cada página não lida no log.
+- O alerta de origem só olha páginas lidas. Se a Adzuna recusar as páginas, o corte para de valer
+  para elas e as vagas seguem no fluxo; o resumo mostra quantas não foram lidas, e quem opera
+  precisa ler a linha, porque a execução segue verde.
 - O alerta não tem mínimo de páginas: uma execução com uma página lida, sem origem, avisa "1 de
   1".
 - A medição histórica (70% a 77% dos envios) é estimativa pelo horário do lote, validada só de 12
   a 16/11.
-- O volume diário da Adzuna cai. No perfil de Engenharia de Software sobram cerca de 1 a 2 vagas
-  por dia, até fontes novas entrarem.
+- O volume diário da Adzuna deve cair; quanto, e se a Jooble repõe, não foi medido. Nas vagas
+  enviadas ao perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22
+  eram do emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras
+  14 já tinham expirado na Adzuna sem mostrar o parceiro. Quantas vagas por dia sobram depois do
+  corte não foi medido.
 - Vagas do emprego.pt já enviadas continuam valendo para o bloqueio de republicação por 30 dias:
   nesse prazo, o mesmo anúncio vindo de outro parceiro ainda é tratado como repetido para quem o
   recebeu.
 - A origem não é gravada. A vaga bloqueada continua candidata enquanto a API a devolver (janela de
-  `DIAS_RECENTES`, 3 por padrão) e tem a página relida a cada execução; antes, depois de enviada,
-  ela saía das candidatas de quem a recebeu. Quantas leituras isso soma por dia não foi medido.
+  `DIAS_RECENTES`, 3 por padrão, 5 no workflow) e tem a página relida a cada execução; antes,
+  depois de enviada, ela saía das candidatas de quem a recebeu. Quantas leituras isso soma por
+  dia não foi medido.
 - A deduplicação roda antes de a origem ser conhecida. Quando duas cópias do mesmo anúncio chegam
   no mesmo dia e a que fica é a do emprego.pt, a outra já saiu e não volta naquela execução. Não
   foi medido quantas vezes isso acontece.
@@ -290,9 +310,12 @@ variável do repositório, sem commit
 variável não existe e a fonte não está ligada. A leitura dos termos está nas
 [frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026).
 
-**Por que agora.** Com o corte do emprego.pt, a Adzuna deixa cerca de 1 a 2 vagas por dia no
-perfil de Engenharia de Software. A Jooble é a fonte que pode repor volume: API oficial e gratuita
-de `br.jooble.org` (a chave é por país; a do site global só devolve vaga dos EUA).
+**Por que agora.** Com o corte do emprego.pt, o volume da Adzuna deve cair. Nas vagas enviadas ao
+perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22 eram do
+emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras 14 já
+tinham expirado na Adzuna sem mostrar o parceiro; quantas vagas por dia sobram depois do corte
+não foi medido. A Jooble é a fonte que pode repor volume: API oficial e gratuita de
+`br.jooble.org` (a chave é por país; a do site global só devolve vaga dos EUA).
 
 **Registro de 05/09.** A primeira sondagem, no Rio, baixou 368 vagas com a busca por termo de
 área: 33 passavam no pré-filtro e 19 eram inéditas frente a Adzuna e Gupy. Em 12/09 a fonte ficou

@@ -204,9 +204,10 @@ Continuam abertos:
   mostra a mesma frase para as duas
   ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
 - **Corte do emprego.pt (16/11).** A vaga desse parceiro da Adzuna sai antes da extração, mas
-  ficou aberto: a que a API entrega com descrição curta ou em `/land/ad/` não é identificada; o
-  resumo não avisa quando as páginas deixam de ser lidas; a página da vaga bloqueada é relida a
-  cada execução enquanto a API a devolve; e o volume diário cai até fontes novas entrarem
+  ficou aberto: a que a API entrega com descrição curta ou em `/land/ad/` não é identificada; a
+  página da vaga bloqueada é relida a cada execução enquanto a API a devolve; e o volume diário
+  deve cair; quanto, e se a Jooble repõe, não foi medido. A página que a Adzuna não deixa ler
+  passou a aparecer no resumo de operação, sem segurar mensagem
   ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio, que
   não foi sondado nessa data; fonte que falha por inteiro fica de fora só com aviso no log,
@@ -252,9 +253,11 @@ ler os resultados sem escolher o critério depois, não metas.
 
 Também do pré-PRD, e ainda sem dono: as listas de subáreas e habilidades sugeridas de cada área
 foram escritas pela equipe e precisam ser lidas por alguém da área; e ligar a Jooble só faz
-sentido se H3 falhar em alguma área. Em 16/11 o corte do emprego.pt deixou a Adzuna com cerca de
-1 a 2 vagas por dia no perfil de Engenharia de Software, e a Jooble foi preparada para ligar
-(seção 4).
+sentido se H3 falhar em alguma área. Em 16/11 entrou o corte do emprego.pt: nas vagas enviadas ao
+perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22 eram do
+emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras 14 já
+tinham expirado na Adzuna sem mostrar o parceiro; quantas vagas por dia sobram depois do corte
+não foi medido. A Jooble foi preparada para ligar (seção 4).
 
 Antes de aprovar uma característica nova, responder: ela reforça a promessa de achar vagas
 relevantes mais cedo? Reduz uma incerteza deste plano? Existe teste manual ou menor que dê a mesma

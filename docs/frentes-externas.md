@@ -136,8 +136,11 @@ cobertura. Linhas reais precisam de janela e paginação antes de serem somadas.
 
 **Origem dentro da Adzuna (16/11/2026).** A matriz acima segue sem linha real, mas há uma medição
 de origem: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Adzuna, o emprego.pt,
-que republica anúncios vencidos. Essas vagas passaram a ser cortadas antes da extração, e o volume
-diário cai até fontes novas entrarem. Os números, a decisão e os limites estão nas
+que mantém com candidatura ativa anúncios brasileiros vencidos; eles chegam à Adzuna em lote
+diário com a data do dia. Essas vagas passaram a ser cortadas antes da extração, e o volume
+diário deve cair; quanto, e se a Jooble repõe, não foi medido. No diário de 16/11, antes do corte,
+foram 1.109 vagas coletadas e 156 candidatas de algum perfil, sem falha de leitura de página da
+Adzuna. Os números, a decisão e os limites estão nas
 [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 
 **Jooble sobre o pré-filtro (16/11/2026).** Também sem linha real na matriz, porque a fonte está
