@@ -24,6 +24,7 @@ from radar.avaliacao.gabarito import (
 from radar.avaliacao.julgar import julgar_entregas
 from radar.collectors.adzuna import LIMITE_POR_MES, CotaDaAdzuna
 from radar.collectors.composto import ColetorComposto
+from radar.collectors.cota import CotaDeRequisicoes
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import (
     cidades_de_interesse,
@@ -31,12 +32,18 @@ from radar.collectors.factory import (
     ha_curso_desconhecido,
     termos_de_interesse,
 )
+from radar.collectors.jooble import LIMITE_POR_DIA as LIMITE_DIARIO_DA_JOOBLE
 from radar.cota import (
+    FONTE_ADZUNA,
+    FONTE_JOOBLE,
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
+    abrir_cota_da_jooble,
     registrar_diario_da_adzuna,
     reserva_do_diario,
+    reserva_do_diario_na_jooble,
     uso_da_adzuna,
+    uso_da_jooble,
 )
 from radar.domain.datas import data_local
 from radar.domain.identificadores import trecho_do_id
@@ -45,6 +52,7 @@ from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
 from radar.entrega_imediata import repositorio_da_execucao, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
+from radar.filtering.origem import separar_as_de_origem_bloqueada
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.enriquecimento import EnriquecedorDeDescricoes
@@ -145,9 +153,12 @@ def avaliar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
         vagas = filtrar(remover_duplicatas(coletadas), perfil)
-        selecionadas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
+        enriquecidas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
             vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
         )
+        selecionadas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+        if de_origem_bloqueada:
+            print(f"{len(de_origem_bloqueada)} vagas descartadas por virem do emprego.pt")
         print(
             f"{len(vagas)} vagas após o pré-filtro; "
             f"extraindo {len(selecionadas)} com {settings.avaliador}"
@@ -246,13 +257,38 @@ def montar_coletor(
     cliente_http: httpx.Client,
     usuarios: list[Usuario],
     cota: CotaDaAdzuna | None = None,
+    cota_da_jooble: CotaDeRequisicoes | None = None,
 ) -> ColetorComposto:
     cidades = cidades_de_interesse(usuarios)
     termos = termos_de_interesse(usuarios)
     busca_geral = ha_curso_desconhecido(usuarios)
     return criar_coletor(
-        settings, cliente_http, datetime.now(UTC), cidades, termos, busca_geral, cota
+        settings,
+        cliente_http,
+        datetime.now(UTC),
+        cidades,
+        termos,
+        busca_geral,
+        cota,
+        cota_da_jooble,
     )
+
+
+def jooble_ligada(settings: Settings) -> bool:
+    return FONTE_JOOBLE in settings.fontes_selecionadas()
+
+
+def cota_da_jooble_da_execucao(
+    settings: Settings,
+    repositorio: Repositorio,
+    agora: datetime,
+    ativos: list[Usuario],
+    apenas_o_perfil: UUID | None,
+) -> CotaDeRequisicoes:
+    if not jooble_ligada(settings):
+        return CotaDeRequisicoes()
+    reserva = reserva_do_diario_na_jooble(ativos) if apenas_o_perfil is not None else 0
+    return abrir_cota_da_jooble(repositorio, agora, reserva)
 
 
 def montar_extrator(settings: Settings) -> ExtratorEmLotes:
@@ -278,6 +314,7 @@ def executar_fluxo(
 ) -> None:
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
+    enriquecedor = EnriquecedorDeDescricoes(cliente_http)
     agora = datetime.now(UTC)
     try:
         ativos = repositorio.listar_ativos()
@@ -297,9 +334,14 @@ def executar_fluxo(
             return
         reserva = reserva_do_diario(ativos) if apenas_o_perfil is not None else 0
         cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
-        coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota)
+        cota_da_jooble = cota_da_jooble_da_execucao(
+            settings, repositorio, agora, ativos, apenas_o_perfil
+        )
+        coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota, cota_da_jooble)
         resumo = executar(
-            ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
+            ColetorComRegistroDeUso(
+                coletor, repositorio, {FONTE_ADZUNA: cota, FONTE_JOOBLE: cota_da_jooble}, agora
+            ),
             extrator,
             notificador,
             repositorio_da_execucao(repositorio, usuarios_da_coleta, apenas_o_perfil),
@@ -313,8 +355,10 @@ def executar_fluxo(
                 url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,
-            enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
-            coleta_incompleta=lambda: bool(coletor.incompletas) or cota.esgotada,
+            enriquecer=enriquecedor.enriquecer,
+            coleta_incompleta=lambda: (
+                bool(coletor.incompletas) or cota.esgotada or cota_da_jooble.esgotada
+            ),
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora, str(erro)))
@@ -328,6 +372,7 @@ def executar_fluxo(
     if apenas_o_perfil is None:
         registrar_diario_da_adzuna(repositorio, cota.requisicoes, agora)
     uso = uso_da_adzuna(repositorio, agora)
+    uso_na_jooble = uso_da_jooble(repositorio, agora) if jooble_ligada(settings) else None
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
         f"em {extrator.requisicoes} requisições ao avaliador; "
@@ -340,9 +385,14 @@ def executar_fluxo(
         f"{resumo.perguntas_do_dia_seguinte} perguntas do dia seguinte, "
         f"{resumo.perguntas_do_dia_seguinte_com_falha} com falha; "
         f"{cota.requisicoes} requisições à Adzuna; "
+        f"{cota_da_jooble.requisicoes} requisições à Jooble; "
         f"{ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje} já atendidos hoje; "
         f"{len(resumo.usuarios_que_recusaram_a_mensagem)} recusaram a mensagem, "
-        f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa"
+        f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa; "
+        f"{resumo.vagas_de_origem_bloqueada} vagas descartadas por virem do emprego.pt, "
+        f"{resumo.paginas_de_anuncio_sem_origem} de {resumo.paginas_de_anuncio_lidas} "
+        "páginas de anúncio lidas sem origem identificada, "
+        f"{enriquecedor.paginas_nao_lidas} páginas de anúncio não lidas"
     )
     resumo_entregue = avisar_operacao(
         settings,
@@ -382,6 +432,13 @@ def executar_fluxo(
             ja_atendidos_hoje=ja_atendidos_hoje + resumo.usuarios_ja_atendidos_hoje,
             recusaram_a_mensagem=resumo.usuarios_que_recusaram_a_mensagem,
             pausados_por_recusa=resumo.usuarios_pausados_por_recusa,
+            vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
+            paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
+            paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
+            paginas_de_anuncio_nao_lidas=enriquecedor.paginas_nao_lidas,
+            jooble_hoje=uso_na_jooble,
+            jooble_limite=LIMITE_DIARIO_DA_JOOBLE,
+            jooble_esgotada=cota_da_jooble.esgotada,
         ),
     )
     if resumo.ninguem_foi_atendido_por_falha():

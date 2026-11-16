@@ -41,6 +41,7 @@ FONTE_ADZUNA = "adzuna"
 URL_DA_ADZUNA = "https://www.adzuna.com.br"
 PROPORCAO_DE_ALERTA_DA_COTA = 0.8
 PROPORCAO_DE_ALERTA_DO_BANCO = 0.7
+PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM = 0.5
 BYTES_POR_MEGABYTE = 1024 * 1024
 ATRIBUICAO_DA_ADZUNA = f'<a href="{URL_DA_ADZUNA}">Jobs</a> by <a href="{URL_DA_ADZUNA}">Adzuna</a>'
 TEXTO_DA_PERGUNTA = "Deixe seu feedback 👇"
@@ -174,6 +175,13 @@ def formatar_resumo_da_execucao(
     ja_atendidos_hoje: int = 0,
     recusaram_a_mensagem: list[UUID] | None = None,
     pausados_por_recusa: list[UUID] | None = None,
+    vagas_de_origem_bloqueada: int = 0,
+    paginas_de_anuncio_lidas: int = 0,
+    paginas_de_anuncio_sem_origem: int = 0,
+    paginas_de_anuncio_nao_lidas: int = 0,
+    jooble_hoje: int | None = None,
+    jooble_limite: int | None = None,
+    jooble_esgotada: bool = False,
 ) -> str:
     linhas = [
         f"🛠️ <b>Radar — execução de {data_local(momento):%d/%m/%Y}</b>",
@@ -188,6 +196,21 @@ def formatar_resumo_da_execucao(
     ]
     if ja_atendidos_hoje:
         linhas.append(f"Já atendidos hoje, fora desta execução: {ja_atendidos_hoje}")
+    if vagas_de_origem_bloqueada:
+        linhas.append(f"Vagas descartadas por virem do emprego.pt: {vagas_de_origem_bloqueada}")
+    if paginas_de_anuncio_sem_origem > (
+        PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM * paginas_de_anuncio_lidas
+    ):
+        linhas.append(
+            "⚠️ Páginas da Adzuna lidas sem origem identificada: "
+            f"{paginas_de_anuncio_sem_origem} de {paginas_de_anuncio_lidas} "
+            "(o corte do emprego.pt pode não estar funcionando)"
+        )
+    if paginas_de_anuncio_nao_lidas:
+        linhas.append(
+            f"⚠️ Páginas da Adzuna não lidas: {paginas_de_anuncio_nao_lidas} "
+            "(o corte do emprego.pt não vale para elas)"
+        )
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
     if usuarios_sem_mensagem_por_falha:
@@ -238,6 +261,15 @@ def formatar_resumo_da_execucao(
             linhas.append(f"⚠️ Adzuna passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite mensal")
     if adzuna_esgotada:
         linhas.append("⚠️ Cota da Adzuna esgotada: a coleta parou antes do fim")
+    if jooble_hoje is not None and jooble_limite:
+        linhas.append(
+            f"Requisições à Jooble: {formatar_milhar(jooble_hoje)} de "
+            f"{formatar_milhar(jooble_limite)} hoje ({round(100 * jooble_hoje / jooble_limite)}%)"
+        )
+        if jooble_hoje >= PROPORCAO_DE_ALERTA_DA_COTA * jooble_limite:
+            linhas.append(f"⚠️ Jooble passou de {PROPORCAO_DE_ALERTA_DA_COTA:.0%} do limite diário")
+    if jooble_esgotada:
+        linhas.append("⚠️ Cota da Jooble esgotada: a coleta parou antes do fim")
     for fonte, motivo in (coletas_incompletas or {}).items():
         linhas.append(f"⚠️ Coleta da {escape(rotulo_fonte(fonte))} incompleta: {escape(motivo)}")
     if eventos_do_site is not None:

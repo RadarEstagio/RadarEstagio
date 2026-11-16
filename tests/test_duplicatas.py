@@ -61,6 +61,71 @@ def test_mais_completa_desempata_pela_descricao_mais_longa():
     assert mais_completa(longa, curta) is longa
 
 
+TRECHO_DA_JOOBLE = "...apoiar o time de desenvolvimento web nas rotinas do produto " * 5
+
+
+def trecho_da_jooble(descricao: str = TRECHO_DA_JOOBLE, numero: int = 9) -> Vaga:
+    return vaga(fonte="jooble", descricao=descricao, numero=numero).model_copy(
+        update={"descricao_completa": False}
+    )
+
+
+def test_mais_completa_prefere_a_copia_curta_e_completa_da_adzuna_ao_trecho_mais_longo_da_jooble():
+    da_adzuna = vaga(descricao="Estágio em desenvolvimento web com Python e Django.")
+    da_jooble = trecho_da_jooble()
+
+    assert len(da_jooble.descricao) > len(da_adzuna.descricao)
+    assert mais_completa(da_adzuna, da_jooble) is da_adzuna
+    assert mais_completa(da_jooble, da_adzuna) is da_adzuna
+
+
+def test_mais_completa_prefere_a_copia_cortada_da_adzuna_ao_trecho_da_jooble():
+    cortada = vaga(descricao="Estágio em desenvolvimento web. " * 4).model_copy(
+        update={"descricao_completa": False}
+    )
+    da_jooble = trecho_da_jooble()
+
+    assert len(da_jooble.descricao) > len(cortada.descricao)
+    assert mais_completa(cortada, da_jooble) is cortada
+    assert mais_completa(da_jooble, cortada) is cortada
+
+
+def test_mais_completa_entre_dois_trechos_da_jooble_segue_pela_descricao_mais_longa():
+    curto = trecho_da_jooble("...apoiar o time de desenvolvimento web...", numero=8)
+    longo = trecho_da_jooble()
+
+    assert mais_completa(curto, longo) is longo
+    assert mais_completa(longo, curto) is longo
+
+
+def test_mais_completa_entre_duas_copias_da_adzuna_segue_preferindo_a_cortada_mais_longa():
+    curta_e_completa = vaga(descricao="Estágio em desenvolvimento web com Python e Django.")
+    cortada_em_500 = vaga(descricao="x" * 500, numero=2).model_copy(
+        update={"descricao_completa": False}
+    )
+
+    assert mais_completa(curta_e_completa, cortada_em_500) is cortada_em_500
+    assert mais_completa(cortada_em_500, curta_e_completa) is cortada_em_500
+
+
+def test_mais_completa_olha_a_modalidade_antes_de_olhar_a_fonte_que_so_entrega_trecho():
+    da_adzuna = vaga(descricao="Estágio em desenvolvimento web com Python e Django.")
+    da_jooble_com_modalidade = trecho_da_jooble().model_copy(
+        update={"modalidade": Modalidade.REMOTO}
+    )
+
+    assert mais_completa(da_adzuna, da_jooble_com_modalidade) is da_jooble_com_modalidade
+    assert mais_completa(da_jooble_com_modalidade, da_adzuna) is da_jooble_com_modalidade
+
+
+def test_remover_duplicatas_fica_com_a_copia_da_adzuna_quando_a_jooble_traz_o_mesmo_anuncio():
+    da_adzuna = vaga(descricao="Estágio em desenvolvimento web com Python e Django.")
+    da_jooble = trecho_da_jooble()
+
+    assert remover_duplicatas([da_adzuna, da_jooble]) == [da_adzuna]
+    assert remover_duplicatas([da_jooble, da_adzuna]) == [da_adzuna]
+
+
 def test_mais_completa_em_empate_total_mantem_a_primeira():
     primeira = vaga(numero=1)
     segunda = vaga(numero=2)
@@ -119,6 +184,17 @@ def test_remover_duplicatas_une_o_mesmo_anuncio_republicado_por_agregadores():
     )
 
     assert remover_duplicatas([original, republicada, com_salario]) == [original]
+
+
+def test_remover_duplicatas_une_a_republicacao_da_jooble_na_copia_da_adzuna():
+    da_adzuna = vaga("Estágio em Programação", "BuscarVagas", descricao=ANUNCIO)
+    da_jooble = trecho_da_jooble(f"{ANUNCIO} Bolsa e benefícios a combinar.").model_copy(
+        update={"titulo": "Estágio em Programação", "empresa": "Divulga Vagas"}
+    )
+
+    assert len(da_jooble.descricao) > len(da_adzuna.descricao)
+    assert remover_duplicatas([da_adzuna, da_jooble]) == [da_adzuna]
+    assert remover_duplicatas([da_jooble, da_adzuna]) == [da_adzuna]
 
 
 def test_descricao_truncada_pela_fonte_com_final_diferente_ainda_e_semelhante():

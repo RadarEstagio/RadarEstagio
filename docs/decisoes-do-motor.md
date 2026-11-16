@@ -12,7 +12,8 @@ das revisões de 08 a 10/09, e a regra que cada uma deixou já vale nas seções
   - [Limites da Adzuna](#limites-da-adzuna-12092026)
   - [Coleta resiliente](#coleta-resiliente-13092026)
   - [Enriquecimento: a descrição completa da Adzuna](#enriquecimento-a-descrição-completa-da-adzuna)
-  - [Jooble](#jooble-05092026)
+  - [Anúncios vencidos do emprego.pt](#anúncios-vencidos-do-empregopt-16112026)
+  - [Jooble](#jooble-16112026)
   - [Cidades vizinhas: região imediata do IBGE](#cidades-vizinhas-região-imediata-do-ibge-10092026)
 - **Pré-filtro e áreas**
   - [Áreas: uma fonte só para curso, vaga, banco e site](#áreas-uma-fonte-só-para-curso-vaga-banco-e-site-08092026)
@@ -69,7 +70,9 @@ primeiras palavras da descrição coincidam em 80% — só o início conta porqu
 descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias (04/09/2026): a
 candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
 repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
-modalidade e, em empate, a de descrição mais longa.
+modalidade e, em empate, a de descrição mais longa; desde 16/11, antes do tamanho, a cópia de
+fonte que só entrega trecho (a Jooble) perde para a de outra fonte
+([Jooble](#jooble-16112026)).
 
 **Duplicata que não era a mesma vaga (16/09/2026).** A deduplicação juntava vagas diferentes em
 três casos, e a pessoa perdia uma delas sem aviso:
@@ -155,6 +158,18 @@ nacional: com saldo curto, a entrega imediata gasta na cidade da pessoa, e quem 
 remoto, que depende da nacional e fica com a mensagem segurada. Com saldo sobrando, o conjunto
 de vagas é o mesmo. Falha ao ler os usuários também gera aviso de operação.
 
+**Fonte que falha inteira com outra respondendo (16/11/2026).** Com mais de uma fonte ligada, a
+que levantava `ErroDeColeta` sem vaga nenhuma ficava só no log do `ColetorComposto` enquanto
+outra respondesse. Reproduzido com `FONTES=adzuna,jooble`: a Adzuna responde 503 em todas as
+tentativas, a Jooble não traz vaga para o perfil, e o estudante recebia "Nenhuma vaga nova
+compatível", era marcado como atendido e o resumo de operação não avisava; com só a Adzuna, o
+mesmo dia sai com código 1 e ninguém recebe mensagem. O sentido inverso, a Jooble com 403, também
+passava calado. O composto registra agora essa falha em `incompletas`, como já fazia com a
+`ColetaIncompleta`: o resumo mostra "⚠️ Coleta da <fonte> incompleta: <motivo>" e quem fica sem
+vaga selecionada tem a mensagem segurada, sem ser marcado como atendido. Quem tem vaga da fonte
+que respondeu recebe a mensagem. Com nenhuma fonte respondendo continua `ErroDeColeta` ("Nenhuma
+fonte respondeu"), aviso de falha no chat de operação e código 1; com uma fonte só nada mudou.
+
 ## Enriquecimento: a descrição completa da Adzuna
 
 Pendente de resposta da Adzuna. O enriquecimento lê a página do anúncio no site da Adzuna
@@ -203,17 +218,308 @@ e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a
 completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
 medição acima) pode ver outro texto que o lido pela IA.
 
-## Jooble (05/09/2026)
+## Anúncios vencidos do emprego.pt (16/11/2026)
 
-Coletor pronto e **desligado por padrão**. API oficial gratuita de
-`br.jooble.org` (a chave é regional: a do site global só devolve vaga dos EUA) que enxerga
-InfoJobs, Empregos.com.br, Pandape e Sólides. Sondagem de 05/09 no Rio: 368 vagas baixadas,
-33 passam no pré-filtro, **19 inéditas** frente a Adzuna+Gupy (HStern, FI Group, v(dev)) —
-~+35% de cobertura. O snippet de ~290 caracteres marca `descricao_completa=False`, então a
-vaga respeita o teto de 60: preenche dia fraco sem roubar o topo. **Não ligar em produção sem
-parceria**: a chave gratuita tem 500 requisições no total, não por mês, e cada execução faz
-várias (12/09/2026). Upgrade futuro se a fonte se provar: enriquecedor específico do InfoJobs
-(40% das vagas dela) destrava a descrição completa.
+Contado em 16/11/2026: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Adzuna,
+o portal português emprego.pt, e em 16/11, 10 das 23 classificadas. A proporção de 70% a 77% dos
+envios desde a semana de 07/09 é estimativa pelo horário do lote, validada só de 12 a 16/11. O
+que foi medido sobre o parceiro é que o emprego.pt mantém com candidatura ativa anúncios
+brasileiros vencidos, que chegam à Adzuna em lote diário com a data do dia.
+
+- O dono do projeto se candidatou a 15 vagas recebidas pelo Radar entre 08/10 e 16/11. Todas
+  levavam ao emprego.pt, e em todas o próprio emprego.pt declarava a validade vencida antes da
+  candidatura (`validThrough` do JSON-LD): 5 eram de 2022, 1 de 2023, 1 de 2024, 5 de 2025 e 3 de
+  2026, a mais recente com validade até 17/09/2026. Segundo o dono do projeto, nenhuma teve
+  resposta.
+- A listagem "Brasil" do emprego.pt mostra, com botão de candidatura ativo, anúncios publicados
+  em 18/03/2022.
+- A Adzuna recebe um lote diário desse parceiro (em novembro, por volta das 22:05 UTC) e carimba
+  `created` com a data do dia, então o filtro `max_days_old` não pega esses anúncios.
+- O mesmo anúncio volta com id novo: "Estágio em Administração" da Fundação Mudes entrou 14
+  vezes entre 30/08 e 15/11.
+- Em 15/11, 20 das 29 vagas enviadas eram do parceiro "Emprego"; em 16/11, 10 das 23
+  classificadas. Pela estimativa do horário do lote, validada só de 12 a 16/11, ele responde por
+  70% a 77% dos envios desde a semana de 07/09 e por 82% a 94% dos envios do perfil de Engenharia
+  de Software.
+
+**Medição de base (16/11/2026).** No diário de 16/11, antes do corte, foram 1.109 vagas
+coletadas e 156 candidatas de algum perfil, e nenhuma página da Adzuna deixou de ser lida. É
+contra esse zero que se lê a linha "⚠️ Páginas da Adzuna não lidas" do resumo de operação.
+
+**Como a origem é lida.** A API da Adzuna não informa o parceiro. A página do anúncio
+(`adzuna.com.br/details/<id>`), que o enriquecimento já baixa para completar a descrição, informa
+de duas formas: o logo do parceiro, um `<img>` cujo `src` contém `/partners/` e cujo `alt` traz o
+nome, e `"source_id"` num script de dados. Nas 113 vagas enviadas de 12 a 16/11 os nomes vistos
+foram Emprego, SourceStack, Buscar Vagas, Divulgar Vagas, Empregos, NUBE, PandaPé, Infojobs,
+SuccessFactors e Recruta Simples. `ler_pagina_do_anuncio` guarda os dois em `Vaga.origem`
+(`OrigemDoAnuncio`), na mesma leitura que já fazia: sem requisição a mais na execução, sem coluna
+no banco e fora do prompt, e `VERSAO_DA_EXTRACAO` segue `7efdbc95`.
+Vale o primeiro logo de parceiro da página; logo sem `alt` deixa só o identificador, e
+`source_id` fora de script não conta. As 30 vagas confirmadas do emprego.pt chegaram da API com a
+descrição cortada em 500 caracteres, então todas já passavam pelo enriquecimento.
+
+**Decisão.** Vaga cuja origem dentro da Adzuna é o emprego.pt não chega à extração nem a nenhum
+estudante. `origem_bloqueada` (`filtering/origem.py`) bloqueia pelo identificador `79986` ou pelo
+nome "Emprego", sem diferenciar caixa nem espaços nas pontas. São os dois porque a Adzuna pode
+trocar um deles. O nome é comparado inteiro: "Empregos" (empregos.com.br) é outro parceiro e
+segue. Em `executar`, depois de `enriquecer`, a vaga bloqueada sai das candidatas e das únicas,
+antes de `obter_extracoes`: não vai à IA, não é pontuada, não é gravada em `vagas` e não conta
+como vaga sem extração, então não segura a mensagem de ninguém. Num dia em que só ela era
+candidata, a pessoa recebe "nenhuma vaga nova compatível". O comando `avaliar` aplica o mesmo
+corte às até três vagas que enriquece e não lê página a mais para repor as que saem.
+
+**Falha aberta.** Vaga sem origem identificada segue no fluxo como antes: página que não foi
+baixada (403, 404, erro de rede), anúncio `/land/ad/`, descrição curta que não passa pelo
+enriquecimento e página sem logo de parceiro e sem `source_id`. O motivo é que uma queda do
+enriquecimento não pode virar "nenhuma vaga". Para a falha não ficar muda, o resumo de operação
+ganhou três linhas. "Vagas descartadas por virem do emprego.pt: N" aparece só quando alguma saiu.
+"⚠️ Páginas da Adzuna lidas sem origem identificada: X de Y (o corte do emprego.pt pode não
+estar funcionando)" aparece quando mais da metade das páginas lidas na execução veio sem logo e
+sem `source_id` (`PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM`, 0,5; metade exata não avisa).
+Página lida é a que respondeu com sucesso, tenha ou não a descrição. `ResumoDaExecucao` guarda os
+três números (`vagas_de_origem_bloqueada`, `paginas_de_anuncio_lidas`,
+`paginas_de_anuncio_sem_origem`), e o print do diário os repete.
+"⚠️ Páginas da Adzuna não lidas: N (o corte do emprego.pt não vale para elas)" aparece só quando
+N é maior que zero. Conta a página que o enriquecimento pediu e não conseguiu ler, por erro HTTP,
+de rede ou URL inválida, uma vez por vaga na execução; não conta o anúncio `/land/ad/` nem a
+descrição que a API já dá inteira, que ele não pede. O número fica em
+`EnriquecedorDeDescricoes.paginas_nao_lidas`, e o `__main__` o leva ao resumo e ao print do
+diário; `enriquecer(vagas)` continua devolvendo só as vagas. A linha não segura mensagem nem muda
+o código de saída.
+
+**Limites conhecidos.**
+
+- Vaga do emprego.pt que a API entregar com descrição curta, ou com endereço `/land/ad/`, não tem
+  a página lida e não é identificada.
+- O alerta de origem só olha páginas lidas. Se a Adzuna recusar as páginas, o corte para de valer
+  para elas e as vagas seguem no fluxo; o resumo mostra quantas não foram lidas, e quem opera
+  precisa ler a linha, porque a execução segue verde.
+- O alerta não tem mínimo de páginas: uma execução com uma página lida, sem origem, avisa "1 de
+  1".
+- A medição histórica (70% a 77% dos envios) é estimativa pelo horário do lote, validada só de 12
+  a 16/11.
+- O volume diário da Adzuna deve cair; quanto, e se a Jooble repõe, não foi medido. Nas vagas
+  enviadas ao perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22
+  eram do emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras
+  14 já tinham expirado na Adzuna sem mostrar o parceiro. Quantas vagas por dia sobram depois do
+  corte não foi medido.
+- Vagas do emprego.pt já enviadas continuam valendo para o bloqueio de republicação por 30 dias:
+  nesse prazo, o mesmo anúncio vindo de outro parceiro ainda é tratado como repetido para quem o
+  recebeu.
+- A origem não é gravada. A vaga bloqueada continua candidata enquanto a API a devolver (janela de
+  `DIAS_RECENTES`, 3 por padrão, 5 no workflow) e tem a página relida a cada execução; antes,
+  depois de enviada, ela saía das candidatas de quem a recebeu. Quantas leituras isso soma por
+  dia não foi medido.
+- A deduplicação roda antes de a origem ser conhecida. Quando duas cópias do mesmo anúncio chegam
+  no mesmo dia e a que fica é a do emprego.pt, a outra já saiu e não volta naquela execução. Não
+  foi medido quantas vezes isso acontece.
+- O corte depende da página do anúncio. Se a Adzuna negar a leitura e o enriquecimento sair, o
+  corte sai junto.
+
+## Jooble (16/11/2026)
+
+Coletor pronto e **desligado por padrão** (`FONTES` padrão `adzuna`). Em produção ele liga por uma
+variável do repositório, sem commit
+([guia, seção 12](guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github)); em 16/11 a
+variável não existe e a fonte não está ligada. A leitura dos termos está nas
+[frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026).
+
+**Por que agora.** Com o corte do emprego.pt, o volume da Adzuna deve cair. Nas vagas enviadas ao
+perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22 eram do
+emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras 14 já
+tinham expirado na Adzuna sem mostrar o parceiro; quantas vagas por dia sobram depois do corte
+não foi medido. A Jooble é a fonte que pode repor volume: API oficial e gratuita de
+`br.jooble.org` (a chave é por país; a do site global só devolve vaga dos EUA).
+
+**Registro de 05/09.** A primeira sondagem, no Rio, baixou 368 vagas com a busca por termo de
+área: 33 passavam no pré-filtro e 19 eram inéditas frente a Adzuna e Gupy. Em 12/09 a fonte ficou
+desligada porque o limite lido era de 500 requisições no total por chave. Esse limite não aparece
+na documentação da API modificada em 11/11/2026, que dá 100 requisições por dia.
+
+**Sondagens de 16/11.** Sete chamadas com a chave do projeto, todas com `location: "Rio de
+Janeiro"`. As respostas não estão no repositório, que é público; a fixture
+`tests/fixtures/jooble_resposta.json` é sintética, com a mesma forma.
+
+- `datecreatedfrom: "2026-11-11"`, campo que a documentação atual não lista, restringe às vagas
+  daquela data em diante. `ResultOnPage: 100` devolve 100 por página; sem ele vêm 30.
+- Nas sondagens, acrescentar palavras alargou a busca. Em 5 dias, `"estágio"` tem `totalCount`
+  137; `"estágio direito"`, 202; `"estágio administração"`, 1.000; e `"estágio desenvolvimento
+  software TI dados programação"`, 1.723. Na primeira página de 100, o título traz "estag" em 71
+  anúncios da busca enxuta e em 49 a 62 das outras.
+- `type` vem "Efetivo" em 38 a 51 de cada 100, "Estágio" em 10 a 15 e vazio no resto: não serve
+  de filtro de estágio.
+- `source` é o domínio de onde a Jooble tirou o anúncio, presente nos 430 anúncios lidos. Foram 26
+  domínios, entre eles empregos.com.br (34 a 46 de cada 100), infojobs.com.br, pandape.com.br,
+  nube.com.br, vagas.com.br, jobs.solides.com, boards.greenhouse.io e **gupy.io (6 a 11 de cada
+  100)**. linkedin.com e emprego.pt não apareceram.
+- Nos anúncios lidos, `link` veio como `https://br.jooble.org/...`, `location` vem como "Rio de
+  Janeiro, RJ", `id` é inteiro e pode ser negativo, e `updated` é ISO com sete casas decimais; de
+  44 a 58 de cada 100 trazem só a data, com a hora zerada.
+- `snippet` tem mediana de 295 caracteres e máximo de 391; de 2 a 7 em cada 100 têm menos de 200.
+- Mesmo com `datecreatedfrom`, a busca de seis palavras devolveu 2 anúncios em 100 com `updated`
+  anterior à data pedida.
+
+**Busca enxuta.** `ColetorJooble` faz uma busca só, `keywords: "estágio"`, em cada cidade de
+interesse e depois no país (`location` vazio), com `ResultOnPage` 100 e `datecreatedfrom` no dia,
+em UTC, de `DIAS_RECENTES` atrás. Quem separa por área é o pré-filtro: a busca por termo de área
+traz menos estágio por página e custava até 15 termos × 3 regiões × 3 páginas, 135 requisições por
+execução com os perfis de 16/11, acima das 100 do dia. Os parâmetros `termos` e `busca_geral`
+saíram do construtor, e o que as correções de 08/09 dizem da busca geral vale agora só para a
+Adzuna. A região para na página que vem com menos de 100 anúncios ou em
+`LIMITE_DE_PAGINAS_POR_REGIAO`, 5, os mesmos 500 anúncios por região da Adzuna. As cidades vêm
+antes do país, como na Adzuna: com saldo curto a coleta gasta na cidade da pessoa, e uma falha na
+busca do país não joga fora o que as cidades trouxeram. O filtro de recência continua no cliente
+como segunda barreira e compara o dia, não a hora: metade dos anúncios traz só a data, e comparar
+com a hora da execução cortaria os do primeiro dia da janela, que o filtro da própria Jooble
+aceita. Anúncio sem `updated` legível ou sem o campo `title` é pulado com aviso. O mesmo vale
+para a data que não cabe em UTC (ano 1 com deslocamento positivo, ano 9999 com negativo): a
+comparação com o dia de corte rodava fora da conversão e um anúncio assim derrubava a execução
+com `OverflowError`; a data agora é levada a UTC na conversão.
+
+**Falha não é zero vagas.** Corpo que não é JSON, sem `jobs` ou com `jobs` fora de lista vira
+`ErroDeColeta`. Com pelo menos uma vaga mantida em mãos, a falha levanta `ColetaIncompleta` com o
+que já veio; sem nenhuma, levanta `ErroDeColeta`, e o `ColetorComposto` registra a fonte como
+incompleta enquanto outra responder. Nos dois casos o resumo mostra "⚠️ Coleta da Jooble
+incompleta: <motivo>" e quem fica sem vaga selecionada tem a mensagem segurada; se nenhuma fonte
+responder, a execução falha. Vale para a busca no país: se ela falhar depois de as cidades
+trazerem vaga, é `ColetaIncompleta`; se as cidades não trouxeram nenhuma, é a falha inteira da
+fonte. É a mesma regra da [coleta resiliente](#coleta-resiliente-13092026).
+
+**Chave da API.** A chave vai no caminho da URL e não entra em mensagem de erro nem em log.
+`Settings` a guarda sem espaços nem quebra de linha nas pontas, o caso do secret colado com uma
+quebra de linha no fim. Chave que ainda assim não cabe na URL (quebra de linha ou tabulação no meio) faz
+o httpx levantar `InvalidURL`, que não é `HTTPError` e atravessava as tentativas e o composto,
+derrubando a execução; `requisitar_com_tentativas` a trata agora como falha da fonte, sem nova
+tentativa e sem a URL na mensagem ("Requisição inválida ao buscar vagas na Jooble
+(InvalidURL)"). A reserva da cota vem antes da requisição, então essa que não saiu conta uma vez
+no uso do dia. O httpx escreveria a URL de cada requisição em nível `INFO`; o `__main__` o põe em
+`WARNING`, e um teste de fluxo falha se essa linha sair.
+
+**Cota de 100 por dia.** A contagem usa `CotaDeRequisicoes` (`collectors/cota.py`), que guarda o
+saldo e também o ritmo por minuto, quando recebe um limite. `CotaDaAdzuna` é a subclasse que
+passa o limite de 25 por minuto; a Jooble usa a classe sem limite por minuto, porque não publica
+um. Cada chamada, tentativa
+repetida incluída, é contada e gravada em `uso_das_fontes` com `fonte = 'jooble'` por
+`ColetorComRegistroDeUso`, assim que a coleta termina, com sucesso ou erro; a tabela já era
+genérica e não houve migration. O saldo é o que falta das 100 no dia em UTC, que é quando a Jooble
+zera o limite. Sem saldo, a coleta para e devolve o que já trouxe; cota zerada antes da primeira
+vaga vira erro de coleta, nunca "nenhuma vaga". Banco fora do ar não derruba a execução: a cota
+segue sem saldo e o log avisa. O HTTP 429 da Jooble quer dizer "Daily request limit exceeded", e
+`requisitar_com_tentativas` o repetiria três vezes, com 12 segundos de espera e três requisições
+contadas; o coletor o trata antes, marca a cota como esgotada e para com uma requisição só. A
+entrega imediata (`rodar --perfil`) desconta do saldo o que o diário ainda vai gastar, 5 páginas ×
+(1 + cidades de busca) calculadas pelos usuários ativos, até o diário do dia UTC rodar. Quem diz
+que ele rodou é a mesma linha `adzuna:diario` da Adzuna, porque o diário é um só. Cota da Jooble
+esgotada, pelo saldo ou pelo 429, conta como coleta incompleta: quem fica sem vaga selecionada
+tem a mensagem segurada, e o resumo mostra "⚠️ Cota da Jooble esgotada: a coleta parou antes do
+fim". Com a fonte ligada o resumo traz "Requisições à Jooble: N de 100 hoje" e avisa a partir de
+80%. Com os perfis de 16/11 (duas cidades de busca) o diário faz no máximo 15 requisições à
+Jooble, e cada cidade de busca nova soma até 5. A entrega imediata de um perfil faz no máximo 15
+(5 por região: a cidade da pessoa, a maior cidade da região dela e o país) e 5 se o perfil é
+remoto; perfil que ficou pendente em outra cidade soma as regiões dele. Os números não contam
+tentativa repetida depois de erro 5xx ou de rede; no `rodar` com banco, o saldo do dia segura o
+excesso.
+
+**Origem e bloqueio.** A vaga guarda o `source` em `Vaga.origem` (`OrigemDoAnuncio.dominio`), a
+mesma estrutura que recebe o parceiro lido da página da Adzuna. Vaga com origem em `gupy.io`,
+`linkedin.com` ou `emprego.pt`, ou em subdomínio deles, não sai do coletor: não chega à
+deduplicação, ao banco, à extração, à mensagem nem aos comandos `coletar`, `avaliar` e
+`descartes`. A Gupy foi desligada porque os termos dela proíbem agregar as vagas, e receber o
+mesmo conteúdo por um intermediário não muda a origem. Pelo mesmo motivo `Settings` recusa `gupy`
+em `FONTES` desde 16/11: enquanto o workflow não passava `FONTES`, a Gupy só voltaria por commit;
+com a variável do repositório, o valor `adzuna,gupy` religaria a fonte sem commit. O coletor da
+Gupy continua no código. A lista e o motivo de cada bloqueio ficam
+num lugar só, `MOTIVO_DE_CADA_DOMINIO_BLOQUEADO` em `filtering/origem.py`, e o corte do pipeline
+depois do enriquecimento usa a mesma regra como segunda barreira. Anúncio sem `source` segue sem
+origem, como no corte do emprego.pt. Um log por coleta conta as vagas mantidas por domínio e as
+cortadas, com o motivo: só domínios e contagens. `paginas_de_anuncio_lidas` passou a contar só a
+origem que o enriquecimento trouxe, para as vagas da Jooble não diluírem o alerta das páginas da
+Adzuna sem origem.
+
+**Mensagem e nota.** O trecho curto deixa a vaga com `descricao_completa=False`, então ela leva a
+trava de 60 e o aviso de descrição incompleta. A trava fica acima da nota mínima de 40, então a
+vaga pode ser entregue, atrás de qualquer vaga completa com 61 ou mais. A mensagem diz "Fonte:
+Jooble" e o link "Ver vaga em br.jooble.org"; a atribuição "Jobs by Adzuna" só sai em vaga da
+Adzuna. O enriquecimento não lê a página da vaga no site da Jooble, e não pode passar a ler: os
+termos do site proíbem robôs.
+
+**Duplicata entre fontes.** Quando o mesmo anúncio chega das duas fontes, `mais_completa`
+(`filtering/duplicatas.py`) decide em três passos: quem informa modalidade vence; depois, quando
+só uma das cópias vem de fonte que só entrega trecho (`FONTES_QUE_SO_ENTREGAM_TRECHO`, hoje a
+Jooble), vence a outra; por fim, a descrição mais longa. O passo do meio entrou em 16/11: o
+trecho da Jooble, que o enriquecimento nunca completa, vencia a cópia mais curta que a Adzuna já
+dá inteira, e a vaga passava a levar a trava de 60 e o link da Jooble (reproduzido com vagas
+sintéticas, hoje teste). A regra não é "prefere `descricao_completa`": entre duas cópias da
+Adzuna, a cortada em 500 caracteres continua vencendo a curta completa, porque o enriquecimento
+a completa depois. Entre duas da Jooble, ou entre duas que não são da Jooble, nada mudou. A
+frequência do caso não foi medida.
+
+**Pré-filtro sobre as sondagens (16/11), medição parcial.** O pré-filtro do projeto, sem extração
+nem nota, rodou sobre os arquivos salvos das sondagens, só a primeira página de cada uma, com três
+perfis sintéticos presenciais do Rio, 4º período. A linha que corresponde à busca do coletor é a
+primeira; ela cobre 100 dos 137 anúncios. Os números da coleta inteira, medidos depois, estão no
+parágrafo seguinte à tabela.
+
+| Busca sondada | Recentes | Cortadas pela origem | Únicas | Computação | Direito | Administração |
+|---|---:|---:|---:|---:|---:|---:|
+| `"estágio"` | 100 | 10 | 87 | 3 | 8 | 14 |
+| `"estágio direito"` | 100 | 9 | 88 | 3 | 9 | 12 |
+| `"estágio administração"` | 100 | 6 | 87 | 2 | 4 | 15 |
+| seis palavras de TI | 98 | 11 | 87 | 3 | 4 | 9 |
+| `"estágio desenvolvimento"`, 30 por página, sem data | 12 | 3 | 9 | 1 | 0 | 1 |
+
+Em 5 dias no Rio, a primeira página da busca enxuta deixa 3 candidatas para computação, o mesmo
+que a busca de seis palavras de TI. As 3 vêm de empregos.com.br.
+
+**Coletor contra a API real (16/11).** Depois de o texto acima ser escrito, o coletor novo rodou
+uma vez contra a API real, com Rio de Janeiro e o país como regiões. Foram 7 requisições e a
+coleta veio completa: a busca com `location` vazio foi aceita. Ficaram 606 vagas mantidas, 10
+cortadas pela origem (todas de gupy.io) e 578 únicas depois da deduplicação. As origens mais
+frequentes foram empregos.com.br (359), cadernonacional.com.br (73), infojobs.com.br (47) e
+pandape.com.br (44). Passaram no pré-filtro, com perfis sintéticos do Rio no 4º período:
+
+| Perfil | Presencial | Remoto |
+|---|---:|---:|
+| Engenharia de Software | 6 | 5 |
+| Direito | 9 | 9 |
+| Administração | 17 | 15 |
+
+É uma execução só. Ela não mede extração, nota, repetição com a Adzuna nem produção.
+
+**Limites conhecidos e o que não foi medido.**
+
+- A busca no país usa `location` vazio. A documentação diz que o campo é obrigatório; o valor
+  vazio foi aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a
+  recusar. Se recusar, a falha aparece como coleta incompleta no resumo e segura a mensagem de
+  quem ficou sem vaga, todo dia, até a variável ser desligada.
+- O volume da busca no país e do Rio inteiro foi contado nessa única execução; outras cidades e
+  a variação de um dia para outro não foram medidas.
+- Não foi medido quantas vagas da Jooble repetem as da Adzuna, nem quantas recebem nota acima do
+  corte: a medição acima para no pré-filtro. A cobertura real só sai depois de ligar.
+- O bloqueio de republicação entre dias compara as 40 primeiras palavras da descrição. Nas
+  sondagens, de 69 a 86 de cada 100 trechos da Jooble começam com reticências, no meio do
+  anúncio, e um trecho assim não é reconhecido como a vaga já enviada pela Adzuna (reproduzido
+  com texto sintético). Quantas vagas voltariam por isso não foi medido.
+- A resposta da Jooble para uma busca sem resultado não foi sondada. `jobs` vazio é coleta vazia;
+  resposta sem `jobs` é falha da fonte.
+- `datecreatedfrom` está fora da documentação e pode deixar de funcionar; a barreira que sobra é
+  o filtro de recência no cliente, e a busca passaria a gastar páginas com anúncio antigo.
+- A origem é a que a Jooble declara. Anúncio da Gupy ou do LinkedIn que chegue por outro
+  agregador (jobleads.com, por exemplo) não é reconhecido, e isso não foi medido.
+- `coletar`, `avaliar`, `descartes`, `testar-local` e `rodar` sem banco consultam a Jooble sem
+  gravar o uso em `uso_das_fontes`, como já fazem com a Adzuna: os três primeiros não passam
+  pelo registro, e os dois últimos gravam num repositório em memória, que acaba com o processo.
+  Só `rodar` com banco grava ([desenvolvimento](desenvolvimento.md)). O que os outros gastam o
+  diário só descobre quando a Jooble responde 429.
+- A retenção por coleta incompleta vale para todos os perfis: com a Jooble falhando inteira todo
+  dia, quem fica sem vaga selecionada da Adzuna tem a mensagem segurada todo dia, até a fonte
+  voltar ou a variável ser desligada.
+- A reserva do diário não conta tentativa repetida, e um segundo diário no mesmo dia, para quem
+  ficou sem mensagem, coleta de novo.
+- A vaga cortada pela origem volta em toda coleta enquanto a Jooble a devolver, sem custo de
+  requisição a mais.
+- Os termos da API não estão publicados, e a pergunta à Jooble está pendente
+  ([frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026)).
 
 ## Cidades vizinhas: região imediata do IBGE (10/09/2026)
 

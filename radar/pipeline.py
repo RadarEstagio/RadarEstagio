@@ -12,6 +12,7 @@ from radar.domain.models import (
     AberturaSemResposta,
     ChaveDaVaga,
     ExtracaoDaVaga,
+    OrigemDoAnuncio,
     Perfil,
     Recomendacao,
     RecusasDoUsuario,
@@ -25,6 +26,7 @@ from radar.filtering.duplicatas import (
     remover_republicacoes_de,
     republicacao_da_mesma_empresa,
 )
+from radar.filtering.origem import separar_as_de_origem_bloqueada
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
@@ -150,6 +152,9 @@ class ResumoDaExecucao(BaseModel):
     vagas_extraidas_agora: int
     vagas_sem_extracao: int = 0
     extracoes_nao_gravadas: int = 0
+    vagas_de_origem_bloqueada: int = 0
+    paginas_de_anuncio_lidas: int = 0
+    paginas_de_anuncio_sem_origem: int = 0
     perguntas_do_dia_seguinte: int = 0
     perguntas_do_dia_seguinte_com_falha: int = 0
     enviadas_por_usuario: dict[UUID, list[Recomendacao]]
@@ -192,8 +197,16 @@ def executar(
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
-    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
-    unicas = substituir_enriquecidas(unicas, candidatas)
+    a_enriquecer = candidatas_de_algum_perfil(unicas, usuarios, repositorio)
+    enriquecidas = enriquecer(a_enriquecer)
+    origens_lidas = origens_lidas_no_enriquecimento(a_enriquecer, enriquecidas)
+    candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+    unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
+    if de_origem_bloqueada:
+        logger.info(
+            "%d vagas de origem bloqueada ficaram de fora antes da extração",
+            len(de_origem_bloqueada),
+        )
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
         len(coletadas),
@@ -270,6 +283,9 @@ def executar(
         vagas_extraidas_agora=balanco.extraidas_agora,
         vagas_sem_extracao=balanco.sem_extracao,
         extracoes_nao_gravadas=balanco.nao_gravadas,
+        vagas_de_origem_bloqueada=len(de_origem_bloqueada),
+        paginas_de_anuncio_lidas=len(origens_lidas),
+        paginas_de_anuncio_sem_origem=sum(not origem.identificada() for origem in origens_lidas),
         perguntas_do_dia_seguinte=len(perguntas.enviadas),
         perguntas_do_dia_seguinte_com_falha=len(perguntas.com_falha),
         enviadas_por_usuario=enviadas_por_usuario,
@@ -346,6 +362,20 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
     if len(abertas) < len(vagas):
         logger.info("%d vagas marcadas como encerradas ficaram de fora", len(vagas) - len(abertas))
     return abertas
+
+
+def origens_lidas_no_enriquecimento(antes: list[Vaga], depois: list[Vaga]) -> list[OrigemDoAnuncio]:
+    ja_tinham_origem = {vaga.chave() for vaga in antes if vaga.origem is not None}
+    return [
+        vaga.origem
+        for vaga in depois
+        if vaga.origem is not None and vaga.chave() not in ja_tinham_origem
+    ]
+
+
+def sem_as_vagas(vagas: list[Vaga], retiradas: list[Vaga]) -> list[Vaga]:
+    chaves_retiradas = {vaga.chave() for vaga in retiradas}
+    return [vaga for vaga in vagas if vaga.chave() not in chaves_retiradas]
 
 
 def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:

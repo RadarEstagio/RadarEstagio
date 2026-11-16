@@ -25,21 +25,90 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
   mês. `CotaDaAdzuna` segura o ritmo, grava o uso em `uso_das_fontes` (`0020`) e para a coleta
   quando acaba o saldo; a entrega imediata ainda reserva o que o diário vai gastar. Cota zerada
   vira erro de coleta, nunca "nenhuma vaga".
+- **Página do anúncio da Adzuna (16/11/2026).** O corte dos anúncios que a Adzuna recebe do
+  emprego.pt usa a mesma página que o enriquecimento já lia para completar a descrição: a origem é
+  tirada da resposta já baixada, sem requisição a mais na execução. Como a origem não é gravada, a
+  página da vaga cortada é lida de novo nas execuções seguintes enquanto a API a devolver. A
+  permissão para ler essa página segue sem resposta da Adzuna; se for negada, o enriquecimento e o
+  corte saem juntos
+  ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Nunca contatar anunciante que veio da Adzuna**: "Any attempt to contact a third party, even
   where they provide listings content, will be considered a breach".
 - **Se o acordo acabar**, apagar "all insertion codes and data acquired from Adzuna".
 - **Gupy desligada.** Os termos proíbem "aggregate, copy, or duplicate parts of Gupy Recruitment
   and Selection, including expired job opportunities", e o endpoint usado
   (`employability-portal.gupy.io/api/v1/jobs`) é interno. Era 7% dos envios (17 de 252). O
-  coletor fica no código para o caso de autorização; sem ela, não religar.
-- **Jooble não é saída sem parceria**: a chave gratuita tem "a total lifetime limit of 500
-  requests per key" e devolve só um trecho da descrição.
+  coletor fica no código para o caso de autorização; sem ela, não religar. Desde 16/11 `Settings`
+  recusa `gupy` em `FONTES`: religar passou a exigir commit, e não só a variável do repositório.
+- **Jooble (lida em 16/11/2026).** API oficial e gratuita, desligada em produção nessa data. O
+  limite de 12/09, "a total lifetime limit of 500 requests per key", não aparece na documentação
+  da API modificada em 11/11/2026, que dá 100 requisições por dia. O que está escrito:
+  - **Limite.** "The free REST API plan includes a limit of 100 requests per day per key for a
+    specific country. This limit resets at midnight UTC. If you require a higher daily limit, you
+    can contact us to request a custom limit increase for your key." e "429 Too Many Requests:
+    Daily request limit exceeded."
+    ([documentação da API](https://help.jooble.org/en/support/solutions/articles/60001448238-rest-api-documentation),
+    modificada em 11/11/2026).
+  - **Chave por país.** "Each Jooble domain (country) requires its own unique REST API key." A
+    chave do projeto é de br.jooble.org.
+  - **Uso descrito.** "você pode fazer consultas de pesquisa ao Jooble e publicar as respostas em
+    seu site com seu próprio design" ([br.jooble.org/api/about](https://br.jooble.org/api/about)).
+  - **Termos da API.** O
+    [artigo de conexão](https://help.jooble.org/en/support/solutions/articles/60000922689) diz
+    "all API requests must comply with the Jooble API Terms of Use", documento que não está
+    publicado.
+  - **Termos gerais do site** ([jooble.org/info/terms](https://jooble.org/info/terms), vigentes
+    desde 08/01/2019). 4(i): "Our Site content may not be copied for republication, either online
+    or on paper, without our prior express written permission". 4(m) proíbe "web spiders, bots,
+    indexers, robots, crawlers, harvesters" sobre o site. Não mencionam a API.
+  - **Não escrito.** Guardar em banco, enviar por Telegram e mandar o texto a um serviço de IA não
+    aparecem em nenhum texto da Jooble, nem como permitidos nem como proibidos. Não há exigência
+    escrita de atribuição; a mensagem do Radar diz "Fonte: Jooble" e o link leva à página da vaga
+    na Jooble.
+  - **Conclusão.** A API é oficial e gratuita, e o uso em Telegram, banco e IA não está escrito.
+    A pergunta por escrito à Jooble está pendente, e quem a envia é o dono do projeto. **Nunca ler
+    a página da vaga no site da Jooble** para completar a descrição: a cláusula 4(m) proíbe, e o
+    enriquecimento só lê página da Adzuna.
+  - **Conteúdo de terceiros.** A Jooble informa em `source` o domínio de onde tirou cada anúncio,
+    e de 6 a 11 de cada 100 da sondagem de 16/11 vinham de gupy.io. Vaga com origem na Gupy, no
+    LinkedIn ou no emprego.pt é descartada no coletor: receber o mesmo conteúdo por um
+    intermediário não muda a origem. A cota, a busca e as medições estão nas
+    [decisões do motor](decisoes-do-motor.md#jooble-16112026).
 - **LinkedIn** está fora de escopo: bloqueia coleta automatizada.
 - **Alternativas medidas.** Greenhouse, Lever e Ashby têm API pública de vagas sem login, mas a
   documentação trata das vagas da própria empresa e não dá licença a terceiros; em 12/09 havia 36
   estágios em 6 empresas brasileiras nesses boards, quase todos em SP e BH. A Adzuna tem programa
   de parceiros ("a sponsored feed of ads for your site… generate more revenue for you"), o
   caminho para receita sem cobrar do estudante.
+- **Google for Jobs por JSearch (OpenWeb Ninja) ou SerpApi: recusada em 16/11/2026.** Os dois
+  serviços entregam o resultado de uma raspagem da busca do Google, que os termos do Google
+  proíbem, e a responsabilidade pelo uso do dado fica com quem o recebe; além disso, as vagas da
+  Gupy e do LinkedIn voltariam pelo painel do Google. O que foi lido:
+  - Os dois declaram a raspagem: "Our Google Jobs API allows you to scrape results from the Google
+    Jobs search page" ([serpapi.com/google-jobs-api](https://serpapi.com/google-jobs-api)) e
+    "pulled directly from Google for Jobs"
+    ([openwebninja.com/api/jsearch](https://openwebninja.com/api/jsearch)).
+  - Os Termos do Google, vigentes desde 30/07/2026, proíbem "using automated means to access
+    content from any of our services in violation of the machine-readable instructions on our web
+    pages", e o `robots.txt` do Google tem `Disallow: /search`.
+  - Os termos da OpenWeb Ninja (14/10/2026) dão a licença "only to the extent of our rights" e
+    dizem "You are solely responsible for ensuring that your use, storage, and redistribution of
+    API Data complies with ... any terms that apply to the original source of such data".
+  - O Google processa a SerpApi desde 19/12/2025 (Google LLC v. SerpApi, N.D. Cal.,
+    4:25-cv-10826). Em 09/11/2026 a petição foi rejeitada com direito a emenda, sem decisão sobre
+    a licitude da raspagem.
+- **TheirStack: recusada em 16/11/2026.** A base vem de raspagem direta e de agregadores, mais de
+  um quarto do volume brasileiro é de LinkedIn e Gupy, e os termos deixam todo o risco do uso e
+  da redistribuição com o usuário, sem indenização. O que foi lido:
+  - "We scrape some websites directly, while others are accessed indirectly through job board
+    aggregations"
+    ([theirstack.com/en/docs/data/job/sources](https://theirstack.com/en/docs/data/job/sources)).
+  - No Brasil, indeed.com responde por 45,4% do volume, linkedin.com por 17,5% e gupy.io por 9,6%
+    ([theirstack.com/en/job-postings-data/brazil](https://theirstack.com/en/job-postings-data/brazil),
+    novembro de 2026).
+  - Os Termos (§8.4) dizem que o usuário "assumes all risk arising from its use, redistribution,
+    and integration", e o §4.11 exige que cada destinatário esteja vinculado por termos escritos.
+  - O plano gratuito dá 200 créditos por mês, 1 por vaga.
 
 ## E02 · Cobertura de estágios
 
@@ -62,9 +131,32 @@ Anúncio sem descrição completa, alias ausente ou erro técnico fica identific
 | a definir | Adzuna | engenharia | a definir | a definir | não medido | não medido | não medido | não medido | não medido | acesso de coleta pendente | a definir |
 | a definir | Adzuna | computação — controle | a definir | a definir | não medido | não medido | não medido | não medido | não medido | acesso de coleta pendente | a definir |
 
-As fixtures `tests/fixtures/adzuna_resposta.json` e `adzuna_detalhe.html` só documentam o
-procedimento e não entram em afirmação de cobertura. Linhas reais precisam de janela e paginação
-antes de serem somadas.
+As fixtures `tests/fixtures/adzuna_resposta.json`, `adzuna_detalhe.html` e
+`adzuna_detalhe_com_parceiro.html` só documentam o procedimento e não entram em afirmação de
+cobertura. Linhas reais precisam de janela e paginação antes de serem somadas.
+
+**Origem dentro da Adzuna (16/11/2026).** A matriz acima segue sem linha real, mas há uma medição
+de origem: em 15/11, 20 das 29 vagas enviadas vinham de um único parceiro da Adzuna, o emprego.pt,
+que mantém com candidatura ativa anúncios brasileiros vencidos; eles chegam à Adzuna em lote
+diário com a data do dia. Essas vagas passaram a ser cortadas antes da extração, e o volume
+diário deve cair; quanto, e se a Jooble repõe, não foi medido. No diário de 16/11, antes do corte,
+foram 1.109 vagas coletadas e 156 candidatas de algum perfil, sem falha de leitura de página da
+Adzuna. Os números, a decisão e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
+
+**Jooble sobre o pré-filtro (16/11/2026).** Também sem linha real na matriz, porque a fonte está
+desligada. Sobre as respostas das sondagens desse dia, a primeira página da busca "estágio" no Rio
+em 5 dias (100 dos 137 anúncios) deixou 87 vagas únicas depois do corte por origem, e o pré-filtro
+aprovou 3 para um perfil de computação, 8 para um de Direito e 14 para um de Administração. É
+medição parcial, sobre os arquivos salvos. Depois dela, no mesmo dia, o coletor rodou uma vez
+contra a API real, com Rio de Janeiro e o país: 7 requisições, coleta completa, 606 vagas
+mantidas, 10 cortadas pela origem (todas de gupy.io) e 578 únicas depois da deduplicação. As
+origens mais frequentes foram empregos.com.br (359), cadernonacional.com.br (73), infojobs.com.br
+(47) e pandape.com.br (44). Com perfis sintéticos do Rio no 4º período, passaram no pré-filtro 6
+vagas para Engenharia de Software presencial e 5 para remoto, 9 e 9 para Direito e 17 e 15 para
+Administração. É uma execução só e não mede extração, nota, repetição com a Adzuna nem produção.
+As tabelas e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#jooble-16112026).
 
 ### Casos de qualidade
 
@@ -149,6 +241,7 @@ repositório não guarda faturas.
 | GitHub Actions | franquia | não medido | job de até 30 min; de 7,6 a 13,7 min entre 30/08 e 11/09 ([auditoria do agendamento](auditorias/2026-09-10-agendamento-diario.md)) | billing, a consultar | a definir |
 | cron-job.org | fixo | não medido | um disparo diário às 07:23 | conta, a consultar | a definir |
 | Adzuna | franquia | não medido | até 2.500 requisições por mês, pelos termos | conta/API, a consultar | a definir |
+| Jooble | franquia | não medido | desligada em 16/11; até 100 requisições por dia, pela documentação da API | chave do projeto, uso em `uso_das_fontes` depois de ligar | a definir |
 | Gemini | variável | não medido | R$ 0,066 por lote de 10 vagas em raciocínio `low` (11/09); ~R$ 14 em 30 dias por estimativa ([acompanhamento RCD](auditorias/2026-10-05-revenue-centric-design.md)) | billing, a consultar | a definir |
 | Telegram | — | não medido | envio pelo bot; tarifa não inferida | termos, a consultar | a definir |
 | Resend/SMTP | variável | não medido | confirmação e recuperação | conta, a consultar | a definir |

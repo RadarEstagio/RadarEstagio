@@ -67,11 +67,11 @@ radar/
 ├── __main__.py         CLI: monta as peças reais e chama o pipeline
 ├── pipeline.py         orquestra coleta → dedupe → pré-filtro → extração → nota → entrega
 ├── entrega_imediata.py primeira entrega de quem acabou de vincular o Telegram
-├── cota.py             limites de requisição da Adzuna
+├── cota.py             limites de requisição da Adzuna e da Jooble
 ├── settings.py         variáveis de ambiente
 ├── domain/             entidades, interfaces, catálogo de áreas (areas.py), regiões do IBGE e público da vaga
 ├── collectors/         Adzuna, Jooble e Gupy (desligadas) e o composto que soma as fontes
-├── filtering/          deduplicação e pré-filtro antes da IA
+├── filtering/          deduplicação, pré-filtro e corte por origem do anúncio antes da IA
 ├── matching/           extração em lotes (Gemini ou agy), enriquecimento, compatibilidade e nota
 ├── notification/       formatação e envio ao Telegram
 ├── storage/            Postgres, modo em memória e as consultas SQL de métricas

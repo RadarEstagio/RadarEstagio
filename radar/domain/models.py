@@ -32,6 +32,15 @@ type ChaveDaVaga = tuple[str, str]
 type ChaveDaEntrega = tuple[UUID, str, str]
 
 
+class OrigemDoAnuncio(BaseModel):
+    parceiro: str | None = None
+    id_do_parceiro: str | None = None
+    dominio: str | None = None
+
+    def identificada(self) -> bool:
+        return bool(self.parceiro or self.id_do_parceiro or self.dominio)
+
+
 class Vaga(BaseModel):
     id_externo: str
     fonte: str
@@ -43,6 +52,7 @@ class Vaga(BaseModel):
     publicada_em: datetime
     modalidade: Modalidade | None = None
     descricao_completa: bool = True
+    origem: OrigemDoAnuncio | None = None
 
     @field_validator("id_externo", "fonte", "titulo", "empresa", "localizacao", "descricao", "url")
     @classmethod

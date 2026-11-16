@@ -249,6 +249,49 @@ def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     assert "Publicada em 25/08/2026" in texto
 
 
+def vaga_da_jooble(numero: int = 2) -> Vaga:
+    return vaga(numero=numero).model_copy(
+        update={
+            "fonte": "jooble",
+            "url": f"https://br.jooble.org/jdp/{numero}",
+            "descricao_completa": False,
+        }
+    )
+
+
+def test_vaga_da_jooble_sai_com_a_fonte_dela_e_sem_a_atribuicao_da_adzuna():
+    da_jooble = resultado(60, numero=2).model_copy(update={"vaga": vaga_da_jooble()})
+
+    texto = mensagem([da_jooble], MOMENTO_DE_TESTE)
+
+    assert "🏷️ Fonte: Jooble · Publicada em 25/08/2026" in texto
+    assert "Ver vaga em br.jooble.org</a>" in texto
+    assert "Adzuna" not in texto
+    assert "adzuna" not in texto
+    assert "Jobs" not in texto
+
+
+def test_mensagem_com_as_duas_fontes_atribui_a_adzuna_so_a_vaga_dela():
+    da_adzuna = resultado(85, numero=1)
+    da_jooble = resultado(60, numero=2).model_copy(update={"vaga": vaga_da_jooble()})
+
+    bloco_da_adzuna, bloco_da_jooble = mensagem([da_adzuna, da_jooble], MOMENTO_DE_TESTE).split(
+        SEPARADOR_ENTRE_VAGAS
+    )
+
+    assert ATRIBUICAO in bloco_da_adzuna
+    assert "Adzuna" not in bloco_da_jooble
+    assert "🏷️ Fonte: Jooble" in bloco_da_jooble
+
+
+def test_vaga_da_jooble_presa_na_trava_nao_diz_que_a_descricao_nao_informa_requisitos():
+    sem_requisitos = resultado(60, numero=2, requisitos_analisados=True).model_copy(
+        update={"vaga": vaga_da_jooble()}
+    )
+
+    assert "não informados na descrição" not in mensagem([sem_requisitos], MOMENTO_DE_TESTE)
+
+
 def test_modalidade_nao_informada_aparece_explicitamente():
     texto = mensagem([resultado(85)], MOMENTO_DE_TESTE)
 
@@ -373,6 +416,113 @@ def test_resumo_mostra_quem_ja_tinha_sido_atendido_hoje_so_quando_ha():
 
     assert "Já atendidos hoje, fora desta execução: 3" in com
     assert "Já atendidos hoje" not in sem
+
+
+def test_resumo_mostra_as_vagas_descartadas_por_virem_do_emprego_pt_so_quando_ha():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_de_origem_bloqueada=20
+    )
+    sem = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 480, 2)
+
+    assert "Vagas descartadas por virem do emprego.pt: 20" in com
+    assert "⚠️" not in com
+    assert "emprego.pt" not in sem
+
+
+def resumo_com_paginas(lidas: int, sem_origem: int) -> str:
+    return formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        28,
+        480,
+        2,
+        paginas_de_anuncio_lidas=lidas,
+        paginas_de_anuncio_sem_origem=sem_origem,
+    )
+
+
+@pytest.mark.parametrize(("lidas", "sem_origem"), [(10, 6), (10, 10), (1, 1), (3, 2), (21, 11)])
+def test_resumo_avisa_quando_a_maioria_das_paginas_lidas_veio_sem_origem(
+    lidas: int, sem_origem: int
+):
+    texto = resumo_com_paginas(lidas, sem_origem)
+
+    assert (
+        f"⚠️ Páginas da Adzuna lidas sem origem identificada: {sem_origem} de {lidas} "
+        "(o corte do emprego.pt pode não estar funcionando)"
+    ) in texto
+
+
+@pytest.mark.parametrize(
+    ("lidas", "sem_origem"), [(10, 5), (10, 0), (2, 1), (20, 10), (21, 10), (0, 0)]
+)
+def test_resumo_nao_avisa_enquanto_as_paginas_sem_origem_nao_sao_a_maioria(
+    lidas: int, sem_origem: int
+):
+    texto = resumo_com_paginas(lidas, sem_origem)
+
+    assert "sem origem identificada" not in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_mostra_o_descarte_e_o_alerta_de_origem_no_mesmo_dia():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        9,
+        480,
+        2,
+        vagas_de_origem_bloqueada=3,
+        paginas_de_anuncio_lidas=20,
+        paginas_de_anuncio_sem_origem=15,
+    )
+
+    assert "Vagas descartadas por virem do emprego.pt: 3" in texto
+    assert "⚠️ Páginas da Adzuna lidas sem origem identificada: 15 de 20" in texto
+
+
+def test_resumo_avisa_quantas_paginas_da_adzuna_nao_foram_lidas():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, paginas_de_anuncio_nao_lidas=156
+    )
+
+    assert (
+        "⚠️ Páginas da Adzuna não lidas: 156 (o corte do emprego.pt não vale para elas)"
+        in texto.splitlines()
+    )
+
+
+def test_resumo_sem_pagina_nao_lida_nao_ganha_a_linha():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, paginas_de_anuncio_nao_lidas=0
+    )
+
+    assert "não lidas" not in texto
+    assert "⚠️" not in texto
+
+
+def test_resumo_mostra_as_paginas_nao_lidas_ao_lado_do_alerta_das_lidas_sem_origem():
+    linhas = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        9,
+        480,
+        2,
+        paginas_de_anuncio_lidas=4,
+        paginas_de_anuncio_sem_origem=3,
+        paginas_de_anuncio_nao_lidas=16,
+    ).splitlines()
+
+    posicao = linhas.index(
+        "⚠️ Páginas da Adzuna lidas sem origem identificada: 3 de 4 "
+        "(o corte do emprego.pt pode não estar funcionando)"
+    )
+    assert linhas[posicao + 1] == (
+        "⚠️ Páginas da Adzuna não lidas: 16 (o corte do emprego.pt não vale para elas)"
+    )
 
 
 def test_resumo_avisa_quem_recusou_a_mensagem_e_quem_foi_pausado_pelo_trecho_do_id():
@@ -805,6 +955,59 @@ def test_resumo_avisa_coleta_incompleta_de_cada_fonte():
     assert (
         "⚠️ Coleta da Adzuna incompleta: Adzuna respondeu HTTP 429 &lt;ao&gt; buscar vagas"
     ) in texto
+
+
+def test_resumo_mostra_o_uso_da_jooble_no_dia_e_avisa_perto_do_limite():
+    tranquilo = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=12, jooble_limite=100
+    )
+    perto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=80, jooble_limite=100
+    )
+
+    assert "Requisições à Jooble: 12 de 100 hoje (12%)" in tranquilo
+    assert "⚠️" not in tranquilo
+    assert "Requisições à Jooble: 80 de 100 hoje (80%)" in perto
+    assert "⚠️ Jooble passou de 80% do limite diário" in perto
+
+
+def test_resumo_com_a_jooble_ligada_e_sem_uso_no_dia_mostra_zero():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=0, jooble_limite=100
+    )
+
+    assert "Requisições à Jooble: 0 de 100 hoje (0%)" in texto
+
+
+def test_resumo_sem_a_jooble_ligada_nao_fala_dela():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, adzuna_hoje=18, adzuna_no_mes=540, adzuna_limite=2500
+    )
+
+    assert "Jooble" not in texto
+
+
+def test_resumo_avisa_quando_a_cota_da_jooble_esgotou():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 2, 2, 13, 830, 7, jooble_hoje=100, jooble_limite=100, jooble_esgotada=True
+    )
+
+    assert "⚠️ Cota da Jooble esgotada: a coleta parou antes do fim" in texto
+    assert "Cota da Adzuna esgotada" not in texto
+
+
+def test_resumo_avisa_coleta_incompleta_da_jooble_com_o_nome_dela():
+    texto = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        2,
+        2,
+        13,
+        830,
+        7,
+        coletas_incompletas={"jooble": "Jooble respondeu HTTP 400 ao buscar vagas"},
+    )
+
+    assert "⚠️ Coleta da Jooble incompleta: Jooble respondeu HTTP 400 ao buscar vagas" in texto
 
 
 def test_resumo_sem_uso_da_adzuna_conhecido_nao_mostra_a_linha():

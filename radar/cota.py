@@ -1,7 +1,9 @@
 import logging
 from datetime import UTC, date, datetime, time, timedelta
 
+from radar.collectors import jooble
 from radar.collectors.adzuna import LIMITE_DE_PAGINAS_POR_REGIAO, CotaDaAdzuna, saldo_da_adzuna
+from radar.collectors.cota import CotaDeRequisicoes
 from radar.collectors.factory import (
     cidades_de_interesse,
     ha_curso_desconhecido,
@@ -12,6 +14,7 @@ from radar.domain.ports import ColetorDeVagas, RepositorioDeAvaliacoes
 from radar.storage.errors import ErroDeArmazenamento
 
 FONTE_ADZUNA = "adzuna"
+FONTE_JOOBLE = jooble.FONTE
 FONTE_DO_DIARIO = "adzuna:diario"
 INICIO_DA_JANELA_DO_DIARIO_UTC = time(9, 23)
 DIAS_DA_JANELA_SEMANAL = 7
@@ -42,6 +45,23 @@ def abrir_cota_da_adzuna(
     )
 
 
+def abrir_cota_da_jooble(
+    repositorio: RepositorioDeAvaliacoes, agora: datetime, reserva: int = 0
+) -> CotaDeRequisicoes:
+    hoje = dia_em_utc(agora)
+    try:
+        usado_hoje = repositorio.requisicoes_da_fonte_desde(FONTE_JOOBLE, hoje)
+    except ErroDeArmazenamento as erro:
+        logger.warning("Uso da Jooble não pôde ser lido; a coleta segue sem saldo: %s", erro)
+        return CotaDeRequisicoes()
+    reserva_do_dia = 0 if not reserva or diario_ja_rodou(repositorio, hoje) else reserva
+    return CotaDeRequisicoes(saldo=jooble.saldo_da_jooble(usado_hoje + reserva_do_dia))
+
+
+def dia_em_utc(momento: datetime) -> date:
+    return momento.astimezone(UTC).date()
+
+
 def diario_ja_rodou(repositorio: RepositorioDeAvaliacoes, dia: date) -> bool:
     try:
         return repositorio.fonte_tem_registro_no_dia(FONTE_DO_DIARIO, dia)
@@ -56,15 +76,22 @@ def reserva_do_diario(usuarios: list[Usuario]) -> int:
     return LIMITE_DE_PAGINAS_POR_REGIAO * regioes * buscas
 
 
-def registrar_uso_da_adzuna(
-    repositorio: RepositorioDeAvaliacoes, requisicoes: int, agora: datetime
+def reserva_do_diario_na_jooble(usuarios: list[Usuario]) -> int:
+    regioes = 1 + len(cidades_de_interesse(usuarios))
+    return jooble.LIMITE_DE_PAGINAS_POR_REGIAO * regioes
+
+
+def registrar_uso_da_fonte(
+    repositorio: RepositorioDeAvaliacoes, fonte: str, requisicoes: int, agora: datetime
 ) -> None:
     if not requisicoes:
         return
     try:
-        repositorio.registrar_requisicoes_da_fonte(FONTE_ADZUNA, agora.date(), requisicoes)
+        repositorio.registrar_requisicoes_da_fonte(fonte, dia_em_utc(agora), requisicoes)
     except ErroDeArmazenamento as erro:
-        logger.warning("Uso da Adzuna não foi gravado (%d requisições): %s", requisicoes, erro)
+        logger.warning(
+            "Uso da fonte %s não foi gravado (%d requisições): %s", fonte, requisicoes, erro
+        )
 
 
 def registrar_diario_da_adzuna(
@@ -85,20 +112,23 @@ class ColetorComRegistroDeUso:
         self,
         coletor: ColetorDeVagas,
         repositorio: RepositorioDeAvaliacoes,
-        cota: CotaDaAdzuna,
+        cota_de_cada_fonte: dict[str, CotaDeRequisicoes],
         agora: datetime,
     ) -> None:
         self._coletor = coletor
         self._repositorio = repositorio
-        self._cota = cota
+        self._cota_de_cada_fonte = cota_de_cada_fonte
         self._agora = agora
 
     def coletar(self) -> list[Vaga]:
-        antes = self._cota.requisicoes
+        antes = {fonte: cota.requisicoes for fonte, cota in self._cota_de_cada_fonte.items()}
         try:
             return self._coletor.coletar()
         finally:
-            registrar_uso_da_adzuna(self._repositorio, self._cota.requisicoes - antes, self._agora)
+            for fonte, cota in self._cota_de_cada_fonte.items():
+                registrar_uso_da_fonte(
+                    self._repositorio, fonte, cota.requisicoes - antes[fonte], self._agora
+                )
 
 
 def uso_da_adzuna(repositorio: RepositorioDeAvaliacoes, agora: datetime) -> tuple[int, int] | None:
@@ -110,4 +140,12 @@ def uso_da_adzuna(repositorio: RepositorioDeAvaliacoes, agora: datetime) -> tupl
         )
     except ErroDeArmazenamento as erro:
         logger.warning("Uso da Adzuna não pôde ser lido para o resumo: %s", erro)
+        return None
+
+
+def uso_da_jooble(repositorio: RepositorioDeAvaliacoes, agora: datetime) -> int | None:
+    try:
+        return repositorio.requisicoes_da_fonte_desde(FONTE_JOOBLE, dia_em_utc(agora))
+    except ErroDeArmazenamento as erro:
+        logger.warning("Uso da Jooble não pôde ser lido para o resumo: %s", erro)
         return None

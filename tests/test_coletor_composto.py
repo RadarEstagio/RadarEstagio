@@ -33,6 +33,18 @@ class ColetorQueFalha:
         raise ErroDeColeta("HTTP 500")
 
 
+class ColetorQueFalhaSoNaPrimeiraVez:
+    def __init__(self, vagas: list[Vaga]) -> None:
+        self._vagas = vagas
+        self._ja_falhou = False
+
+    def coletar(self) -> list[Vaga]:
+        if not self._ja_falhou:
+            self._ja_falhou = True
+            raise ErroDeColeta("HTTP 500")
+        return self._vagas
+
+
 def test_soma_as_vagas_de_todas_as_fontes_na_ordem_configurada():
     composto = ColetorComposto(
         {
@@ -63,11 +75,33 @@ def test_fonte_que_falha_e_ignorada_e_as_outras_continuam(caplog: pytest.LogCapt
     assert "HTTP 500" in caplog.text
 
 
+def test_fonte_que_falha_inteira_fica_registrada_como_incompleta_quando_outra_responde():
+    composto = ColetorComposto({"adzuna": ColetorQueFalha(), "jooble": ColetorFalso([])})
+
+    vagas = composto.coletar()
+
+    assert vagas == []
+    assert composto.incompletas == {"adzuna": "HTTP 500"}
+
+
+def test_falha_inteira_de_uma_coleta_nao_fica_registrada_na_coleta_seguinte():
+    instavel = ColetorQueFalhaSoNaPrimeiraVez([vaga("adzuna", 1)])
+    composto = ColetorComposto({"adzuna": instavel, "jooble": ColetorFalso([])})
+    composto.coletar()
+
+    vagas = composto.coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1"]
+    assert composto.incompletas == {}
+
+
 def test_todas_as_fontes_falhando_levanta_erro_de_coleta():
     composto = ColetorComposto({"adzuna": ColetorQueFalha(), "gupy": ColetorQueFalha()})
 
     with pytest.raises(ErroDeColeta, match="Nenhuma fonte respondeu"):
         composto.coletar()
+
+    assert composto.incompletas == {}
 
 
 class ColetorQueParaNoMeio:
