@@ -844,7 +844,7 @@ def vagas_com_descricao_cortada_pela_api(quantidade: int) -> dict:
 
 
 def responder_com_as_paginas_dos_anuncios(
-    httpx_mock: HTTPXMock, pagina_de_cada_anuncio: dict[str, str]
+    httpx_mock: HTTPXMock, pagina_de_cada_anuncio: dict[str, str | None]
 ) -> list[str]:
     ids_pedidos_ao_gemini: list[str] = []
 
@@ -859,7 +859,10 @@ def responder_com_as_paginas_dos_anuncios(
         )
 
     def pagina_do_anuncio(requisicao: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text=pagina_de_cada_anuncio[requisicao.url.path.split("/")[-1]])
+        pagina = pagina_de_cada_anuncio[requisicao.url.path.split("/")[-1]]
+        if pagina is None:
+            return httpx.Response(403, text="Forbidden")
+        return httpx.Response(200, text=pagina)
 
     httpx_mock.add_response(
         url=re.compile(re.escape(URL_BUSCA)),
@@ -872,7 +875,9 @@ def responder_com_as_paginas_dos_anuncios(
 
 
 def rodar_com_as_paginas_dos_anuncios(
-    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    pagina_de_cada_anuncio: dict[str, str | None],
 ) -> list[str]:
     ids_pedidos_ao_gemini = responder_com_as_paginas_dos_anuncios(
         httpx_mock, pagina_de_cada_anuncio
@@ -909,6 +914,8 @@ def test_diario_corta_a_vaga_do_emprego_pt_antes_da_ia_e_relata_no_resumo(
     saida = capsys.readouterr().out
     assert "1 vagas descartadas por virem do emprego.pt" in saida
     assert "0 de 3 páginas de anúncio lidas sem origem identificada" in saida
+    assert "não lidas" not in resumo
+    assert "0 páginas de anúncio não lidas" in saida
 
 
 def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_nada(
@@ -932,6 +939,29 @@ def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_n
     saida = capsys.readouterr().out
     assert "0 vagas descartadas por virem do emprego.pt" in saida
     assert "2 de 3 páginas de anúncio lidas sem origem identificada" in saida
+
+
+def test_diario_relata_as_paginas_que_a_adzuna_recusou_e_segue_sem_cortar_essas_vagas(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {"9101": None, "9102": None, "9103": pagina_do_sourcestack()},
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102", "adzuna:9103"]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" in mensagem
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert (
+        "⚠️ Páginas da Adzuna não lidas: 2 (o corte do emprego.pt não vale para elas)"
+        in resumo.splitlines()
+    )
+    assert "sem origem identificada" not in resumo
+    saida = capsys.readouterr().out
+    assert "0 de 1 páginas de anúncio lidas sem origem identificada" in saida
+    assert "2 páginas de anúncio não lidas" in saida
 
 
 def avaliar_com_as_paginas_dos_anuncios(

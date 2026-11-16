@@ -314,6 +314,7 @@ def executar_fluxo(
 ) -> None:
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
+    enriquecedor = EnriquecedorDeDescricoes(cliente_http)
     agora = datetime.now(UTC)
     try:
         ativos = repositorio.listar_ativos()
@@ -354,7 +355,7 @@ def executar_fluxo(
                 url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,
-            enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
+            enriquecer=enriquecedor.enriquecer,
             coleta_incompleta=lambda: (
                 bool(coletor.incompletas) or cota.esgotada or cota_da_jooble.esgotada
             ),
@@ -390,7 +391,8 @@ def executar_fluxo(
         f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa; "
         f"{resumo.vagas_de_origem_bloqueada} vagas descartadas por virem do emprego.pt, "
         f"{resumo.paginas_de_anuncio_sem_origem} de {resumo.paginas_de_anuncio_lidas} "
-        "páginas de anúncio lidas sem origem identificada"
+        "páginas de anúncio lidas sem origem identificada, "
+        f"{enriquecedor.paginas_nao_lidas} páginas de anúncio não lidas"
     )
     resumo_entregue = avisar_operacao(
         settings,
@@ -433,6 +435,7 @@ def executar_fluxo(
             vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
             paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
             paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
+            paginas_de_anuncio_nao_lidas=enriquecedor.paginas_nao_lidas,
             jooble_hoje=uso_na_jooble,
             jooble_limite=LIMITE_DIARIO_DA_JOOBLE,
             jooble_esgotada=cota_da_jooble.esgotada,
