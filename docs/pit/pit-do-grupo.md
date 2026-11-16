@@ -295,6 +295,10 @@ porque os termos de uso dela proíbem agregar vagas, e a Jooble tem limite de 50
 chave na versão gratuita. Com fonte única, uma mudança de termos, de preço ou de disponibilidade
 atinge o serviço inteiro.
 
+> Atualização de 16/11/2026: o limite de 500 requisições por chave não aparece na documentação
+> da API da Jooble modificada em 11/11/2026, que dá 100 requisições por dia. A Jooble segue
+> desligada em produção nessa data, e a Adzuna continua respondendo por toda a coleta.
+
 **Qualidade dos dados.** Descrição truncada, vaga encerrada que continua listada e cidade informada
 por região são limitações da fonte, não do nosso código, e afetam direto a qualidade da
 recomendação.
