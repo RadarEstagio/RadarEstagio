@@ -51,6 +51,11 @@ class Settings(BaseSettings):
             )
         return valor
 
+    @field_validator("jooble_api_key")
+    @classmethod
+    def tirar_espacos_das_pontas_da_chave(cls, valor: str) -> str:
+        return valor.strip()
+
     def fontes_selecionadas(self) -> list[str]:
         return separar_fontes(self.fontes)
 
@@ -59,7 +64,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def exigir_chave_da_fonte_jooble(self) -> Self:
-        if "jooble" in self.fontes_selecionadas() and not self.jooble_api_key.strip():
+        if "jooble" in self.fontes_selecionadas() and not self.jooble_api_key:
             raise ValueError("JOOBLE_API_KEY é obrigatória quando a fonte jooble está ativa")
         return self
 

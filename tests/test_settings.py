@@ -95,6 +95,24 @@ def test_variavel_e_secret_da_jooble_ligam_as_duas_fontes(monkeypatch: pytest.Mo
     assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna", "jooble"]
 
 
+@pytest.mark.parametrize("colada", ["chave\n", "chave\r\n", "\tchave ", "  chave"])
+def test_chave_da_jooble_colada_com_espaco_ou_quebra_de_linha_e_guardada_limpa(
+    monkeypatch: pytest.MonkeyPatch, colada: str
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble=colada)
+
+    assert Settings(_env_file=None).jooble_api_key == "chave"
+
+
+def test_chave_da_jooble_so_com_espacos_continua_valendo_como_ausente(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble=" \n")
+
+    with pytest.raises(ValidationError, match="JOOBLE_API_KEY é obrigatória"):
+        Settings(_env_file=None)
+
+
 def test_fontes_aceitam_espacos_e_maiusculas():
     settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Gupy "))
 
