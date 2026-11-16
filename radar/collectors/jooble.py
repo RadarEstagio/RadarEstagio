@@ -1,5 +1,6 @@
 import logging
 import time
+from collections import Counter
 from collections.abc import Callable, Iterable, Iterator
 from datetime import UTC, datetime
 
@@ -9,7 +10,8 @@ from radar.collectors.cota import CotaDeRequisicoes, CotaEsgotada
 from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.gupy import limpar_html
 from radar.collectors.tentativas import requisitar_com_tentativas
-from radar.domain.models import Vaga
+from radar.domain.models import OrigemDoAnuncio, Vaga
+from radar.filtering.origem import motivo_do_bloqueio, origem_bloqueada
 
 URL_BUSCA = "https://br.jooble.org/api"
 FONTE = "jooble"
@@ -20,6 +22,8 @@ RESULTADOS_POR_PAGINA = 100
 LIMITE_DE_PAGINAS_POR_REGIAO = 5
 LIMITE_POR_DIA = 100
 STATUS_DE_LIMITE_DIARIO_EXCEDIDO = 429
+ROTULO_SEM_ORIGEM = "sem origem"
+NENHUMA = "nenhuma"
 
 logger = logging.getLogger(__name__)
 
@@ -42,29 +46,30 @@ class ColetorJooble:
         self._cota = cota if cota is not None else CotaDeRequisicoes()
 
     def coletar(self) -> list[Vaga]:
-        vagas_por_id: dict[str, Vaga] = {}
+        mantidas: dict[str, Vaga] = {}
+        cortadas: dict[str, Vaga] = {}
         try:
             for cidade in (*self._cidades, None):
                 for item in self._buscar_regiao(cidade):
                     vaga = converter_ou_ignorar(item)
-                    if vaga is not None and self._e_recente(vaga):
-                        vagas_por_id.setdefault(vaga.id_externo, vaga)
+                    if vaga is None or not self._e_recente(vaga):
+                        continue
+                    destino = cortadas if origem_bloqueada(vaga.origem) else mantidas
+                    destino.setdefault(vaga.id_externo, vaga)
         except CotaEsgotada:
-            if not vagas_por_id:
+            if not mantidas:
                 raise ErroDeColeta(
                     "Cota da Jooble esgotada antes de trazer a primeira vaga"
                 ) from None
-            logger.warning(
-                "Cota da Jooble esgotada; a coleta parou com %d vagas", len(vagas_por_id)
-            )
+            logger.warning("Cota da Jooble esgotada; a coleta parou com %d vagas", len(mantidas))
         except ErroDeColeta as erro:
-            if not vagas_por_id:
+            if not mantidas:
                 raise
-            logger.warning(
-                "Coleta da Jooble interrompida com %d vagas: %s", len(vagas_por_id), erro
-            )
-            raise ColetaIncompleta(str(erro), list(vagas_por_id.values())) from erro
-        return list(vagas_por_id.values())
+            logger.warning("Coleta da Jooble interrompida com %d vagas: %s", len(mantidas), erro)
+            raise ColetaIncompleta(str(erro), list(mantidas.values())) from erro
+        finally:
+            registrar_origens(list(mantidas.values()), list(cortadas.values()))
+        return list(mantidas.values())
 
     def _buscar_regiao(self, cidade: str | None) -> Iterator[dict]:
         for pagina in range(1, LIMITE_DE_PAGINAS_POR_REGIAO + 1):
@@ -143,4 +148,42 @@ def converter_em_vaga(item: dict) -> Vaga:
         url=item["link"],
         publicada_em=interpretar_data_de_publicacao(item["updated"]),
         descricao_completa=False,
+        origem=origem_informada(item.get("source")),
+    )
+
+
+def origem_informada(source: object) -> OrigemDoAnuncio | None:
+    dominio = source.strip().casefold() if isinstance(source, str) else ""
+    return OrigemDoAnuncio(dominio=dominio) if dominio else None
+
+
+def registrar_origens(mantidas: list[Vaga], cortadas: list[Vaga]) -> None:
+    if not mantidas and not cortadas:
+        return
+    logger.info(
+        "Jooble: %d vagas mantidas por origem (%s); %d cortadas por origem bloqueada (%s)",
+        len(mantidas),
+        contagem_por_dominio(mantidas),
+        len(cortadas),
+        contagem_com_o_motivo_do_bloqueio(cortadas),
+    )
+
+
+def dominio_de_origem(vaga: Vaga) -> str:
+    return (vaga.origem.dominio if vaga.origem else None) or ROTULO_SEM_ORIGEM
+
+
+def contagem_por_dominio(vagas: list[Vaga]) -> str:
+    contagem = Counter(dominio_de_origem(vaga) for vaga in vagas)
+    return ", ".join(f"{dominio} {total}" for dominio, total in contagem.most_common()) or NENHUMA
+
+
+def contagem_com_o_motivo_do_bloqueio(cortadas: list[Vaga]) -> str:
+    contagem = Counter(dominio_de_origem(vaga) for vaga in cortadas)
+    motivos = {dominio_de_origem(vaga): motivo_do_bloqueio(vaga.origem) for vaga in cortadas}
+    return (
+        "; ".join(
+            f"{dominio} {total}: {motivos[dominio]}" for dominio, total in contagem.most_common()
+        )
+        or NENHUMA
     )

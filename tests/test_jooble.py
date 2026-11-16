@@ -14,6 +14,8 @@ from radar.collectors.jooble import (
     URL_BUSCA,
     ColetorJooble,
 )
+from radar.domain.models import OrigemDoAnuncio
+from radar.filtering.origem import MOTIVO_DE_CADA_DOMINIO_BLOQUEADO
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "jooble_resposta.json"
 PUBLICADAS_DESDE = datetime(2026, 11, 11, 10, 23, tzinfo=UTC)
@@ -426,3 +428,157 @@ def test_sem_cota_informada_a_coleta_nao_tem_saldo_que_a_pare(httpx_mock: HTTPXM
 
     assert len(coletar(["Rio de Janeiro", "Niterói"])) == 1
     assert len(httpx_mock.get_requests()) == 3
+
+
+def test_guarda_na_vaga_o_dominio_de_origem_que_a_jooble_informa(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=json.loads(CAMINHO_DO_FIXTURE.read_text(encoding="utf-8")))
+
+    origens = {vaga.id_externo: vaga.origem for vaga in coletar()}
+
+    assert origens == {
+        "1000000000000000001": OrigemDoAnuncio(dominio="empregos.com.br"),
+        "-2000000000000000002": OrigemDoAnuncio(dominio="infojobs.com.br"),
+        "3000000000000000003": OrigemDoAnuncio(dominio="pandape.com.br"),
+        "5000000000000000005": OrigemDoAnuncio(dominio="nube.com.br"),
+    }
+
+
+@pytest.mark.parametrize(
+    "source",
+    ["gupy.io", "empresa.gupy.io", "GUPY.IO", " gupy.io ", "linkedin.com", "br.linkedin.com"],
+)
+def test_vaga_com_origem_na_gupy_ou_no_linkedin_nao_sai_do_coletor(
+    httpx_mock: HTTPXMock, source: str
+):
+    httpx_mock.add_response(json=resposta(item(1, source=source)))
+
+    assert coletar() == []
+
+
+def test_vaga_do_emprego_pt_tambem_nao_sai_do_coletor(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=resposta(item(1, source="emprego.pt")))
+
+    assert coletar() == []
+
+
+def test_empregos_com_br_e_infojobs_passam_e_so_as_de_origem_bloqueada_saem(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(
+        json=resposta(
+            item(1, source="empregos.com.br"),
+            item(2, source="gupy.io"),
+            item(3, source="infojobs.com.br"),
+            item(4, source="linkedin.com"),
+            item(5, source="boards.greenhouse.io"),
+        )
+    )
+
+    vagas = coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "3", "5"]
+    assert [vaga.origem.dominio for vaga in vagas] == [
+        "empregos.com.br",
+        "infojobs.com.br",
+        "boards.greenhouse.io",
+    ]
+
+
+@pytest.mark.parametrize("source", ["", "   ", None, 7])
+def test_vaga_sem_origem_informada_segue_sem_origem(httpx_mock: HTTPXMock, source: object):
+    sem_origem = item(1)
+    sem_origem["source"] = source
+    sem_o_campo = item(2)
+    del sem_o_campo["source"]
+    httpx_mock.add_response(json=resposta(sem_origem, sem_o_campo))
+
+    assert [vaga.origem for vaga in coletar()] == [None, None]
+
+
+def test_coleta_incompleta_devolve_o_que_veio_sem_as_de_origem_bloqueada(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json=resposta(item(1), item(2, source="gupy.io")))
+    httpx_mock.add_response(status_code=400, text="pedido inválido")
+
+    with pytest.raises(ColetaIncompleta) as incompleta:
+        coletar(["Rio de Janeiro"])
+
+    assert [vaga.id_externo for vaga in incompleta.value.vagas] == ["1"]
+
+
+def test_cota_que_acaba_so_com_vaga_de_origem_bloqueada_em_maos_e_erro_de_coleta(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(json=resposta(item(1, source="gupy.io")))
+
+    with pytest.raises(ErroDeColeta, match="Cota da Jooble esgotada"):
+        coletar(["Rio de Janeiro"], cota=CotaDeRequisicoes(saldo=1))
+
+
+def test_log_da_coleta_conta_as_vagas_por_origem_e_as_cortadas_com_o_motivo(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level("INFO", logger="radar.collectors.jooble")
+    httpx_mock.add_response(
+        json=resposta(
+            item(1, source="empregos.com.br"),
+            item(2, source="gupy.io"),
+            item(3, source="infojobs.com.br"),
+            item(4, source="empregos.com.br"),
+            item(5, source="empresa.gupy.io"),
+            item(6, source=""),
+            item(7, source="linkedin.com"),
+        )
+    )
+    httpx_mock.add_response(json=resposta(item(2, source="gupy.io"), item(8, source="gupy.io")))
+
+    coletar(["Rio de Janeiro"])
+
+    registros = [
+        registro.getMessage() for registro in caplog.records if "por origem" in registro.message
+    ]
+    assert registros == [
+        "Jooble: 4 vagas mantidas por origem (empregos.com.br 2, infojobs.com.br 1, sem origem 1); "
+        "4 cortadas por origem bloqueada ("
+        f"gupy.io 2: {MOTIVO_DE_CADA_DOMINIO_BLOQUEADO['gupy.io']}; "
+        f"empresa.gupy.io 1: {MOTIVO_DE_CADA_DOMINIO_BLOQUEADO['gupy.io']}; "
+        f"linkedin.com 1: {MOTIVO_DE_CADA_DOMINIO_BLOQUEADO['linkedin.com']})"
+    ]
+
+
+def test_log_das_origens_traz_so_dominios_e_contagens(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level("INFO", logger="radar.collectors.jooble")
+    httpx_mock.add_response(json=json.loads(CAMINHO_DO_FIXTURE.read_text(encoding="utf-8")))
+
+    coletar()
+
+    assert "4 vagas mantidas por origem" in caplog.text
+    assert "1 cortadas por origem bloqueada (gupy.io 1" in caplog.text
+    assert "Exemplo" not in caplog.text
+    assert "Estágio" not in caplog.text
+    assert "jooble.org" not in caplog.text
+
+
+def test_log_das_origens_sai_tambem_quando_a_coleta_para_no_meio(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level("INFO", logger="radar.collectors.jooble")
+    httpx_mock.add_response(json=resposta(item(1), item(2, source="gupy.io")))
+    httpx_mock.add_response(status_code=400, text="pedido inválido")
+
+    with pytest.raises(ColetaIncompleta):
+        coletar(["Rio de Janeiro"])
+
+    assert "Jooble: 1 vagas mantidas por origem (infojobs.com.br 1); 1 cortadas" in caplog.text
+
+
+def test_coleta_sem_vaga_nenhuma_nao_registra_origens(
+    httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level("INFO", logger="radar.collectors.jooble")
+    httpx_mock.add_response(json=resposta())
+
+    coletar()
+
+    assert "por origem" not in caplog.text
