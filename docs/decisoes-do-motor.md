@@ -334,7 +334,7 @@ não foi medido. A Jooble é a fonte que pode repor volume: API oficial e gratui
 **Registro de 05/09.** A primeira sondagem, no Rio, baixou 368 vagas com a busca por termo de
 área: 33 passavam no pré-filtro e 19 eram inéditas frente a Adzuna e Gupy. Em 12/09 a fonte ficou
 desligada porque o limite lido era de 500 requisições no total por chave. Esse limite não aparece
-mais em texto da Jooble: a documentação modificada em 11/11/2026 dá 100 requisições por dia.
+na documentação da API modificada em 11/11/2026, que dá 100 requisições por dia.
 
 **Sondagens de 16/11.** Sete chamadas com a chave do projeto, todas com `location: "Rio de
 Janeiro"`. As respostas não estão no repositório, que é público; a fixture
@@ -342,19 +342,19 @@ Janeiro"`. As respostas não estão no repositório, que é público; a fixture
 
 - `datecreatedfrom: "2026-11-11"`, campo que a documentação atual não lista, restringe às vagas
   daquela data em diante. `ResultOnPage: 100` devolve 100 por página; sem ele vêm 30.
-- Acrescentar palavras alarga a busca. Em 5 dias, `"estágio"` tem `totalCount` 137; `"estágio
-  direito"`, 202; `"estágio administração"`, 1.000; e `"estágio desenvolvimento software TI dados
-  programação"`, 1.723. Na primeira página de 100, o título traz "estag" em 71 anúncios da busca
-  enxuta e em 49 a 62 das outras.
+- Nas sondagens, acrescentar palavras alargou a busca. Em 5 dias, `"estágio"` tem `totalCount`
+  137; `"estágio direito"`, 202; `"estágio administração"`, 1.000; e `"estágio desenvolvimento
+  software TI dados programação"`, 1.723. Na primeira página de 100, o título traz "estag" em 71
+  anúncios da busca enxuta e em 49 a 62 das outras.
 - `type` vem "Efetivo" em 38 a 51 de cada 100, "Estágio" em 10 a 15 e vazio no resto: não serve
   de filtro de estágio.
 - `source` é o domínio de onde a Jooble tirou o anúncio, presente nos 430 anúncios lidos. Foram 26
   domínios, entre eles empregos.com.br (34 a 46 de cada 100), infojobs.com.br, pandape.com.br,
   nube.com.br, vagas.com.br, jobs.solides.com, boards.greenhouse.io e **gupy.io (6 a 11 de cada
   100)**. linkedin.com e emprego.pt não apareceram.
-- `link` é sempre `https://br.jooble.org/...`, `location` vem como "Rio de Janeiro, RJ", `id` é
-  inteiro e pode ser negativo, e `updated` é ISO com sete casas decimais; de 44 a 58 de cada 100
-  trazem só a data, com a hora zerada.
+- Nos anúncios lidos, `link` veio como `https://br.jooble.org/...`, `location` vem como "Rio de
+  Janeiro, RJ", `id` é inteiro e pode ser negativo, e `updated` é ISO com sete casas decimais; de
+  44 a 58 de cada 100 trazem só a data, com a hora zerada.
 - `snippet` tem mediana de 295 caracteres e máximo de 391; de 2 a 7 em cada 100 têm menos de 200.
 - Mesmo com `datecreatedfrom`, a busca de seis palavras devolveu 2 anúncios em 100 com `updated`
   anterior à data pedida.
@@ -386,8 +386,8 @@ trazerem vaga, é `ColetaIncompleta`; se as cidades não trouxeram nenhuma, é a
 fonte. É a mesma regra da [coleta resiliente](#coleta-resiliente-13092026).
 
 **Chave da API.** A chave vai no caminho da URL e não entra em mensagem de erro nem em log.
-`Settings` a guarda sem espaços nem quebra de linha nas pontas, que é como um secret colado
-costuma chegar. Chave que ainda assim não cabe na URL (quebra de linha ou tabulação no meio) faz
+`Settings` a guarda sem espaços nem quebra de linha nas pontas, o caso do secret colado com uma
+quebra de linha no fim. Chave que ainda assim não cabe na URL (quebra de linha ou tabulação no meio) faz
 o httpx levantar `InvalidURL`, que não é `HTTPError` e atravessava as tentativas e o composto,
 derrubando a execução; `requisitar_com_tentativas` a trata agora como falha da fonte, sem nova
 tentativa e sem a URL na mensagem ("Requisição inválida ao buscar vagas na Jooble
@@ -395,8 +395,10 @@ tentativa e sem a URL na mensagem ("Requisição inválida ao buscar vagas na Jo
 no uso do dia. O httpx escreveria a URL de cada requisição em nível `INFO`; o `__main__` o põe em
 `WARNING`, e um teste de fluxo falha se essa linha sair.
 
-**Cota de 100 por dia.** A contagem usa `CotaDeRequisicoes`, a parte de `CotaDaAdzuna` que não
-depende do ritmo por minuto (a Jooble não publica limite por minuto). Cada chamada, tentativa
+**Cota de 100 por dia.** A contagem usa `CotaDeRequisicoes` (`collectors/cota.py`), que guarda o
+saldo e também o ritmo por minuto, quando recebe um limite. `CotaDaAdzuna` é a subclasse que
+passa o limite de 25 por minuto; a Jooble usa a classe sem limite por minuto, porque não publica
+um. Cada chamada, tentativa
 repetida incluída, é contada e gravada em `uso_das_fontes` com `fonte = 'jooble'` por
 `ColetorComRegistroDeUso`, assim que a coleta termina, com sucesso ou erro; a tabela já era
 genérica e não houve migration. O saldo é o que falta das 100 no dia em UTC, que é quando a Jooble
@@ -415,7 +417,8 @@ fim". Com a fonte ligada o resumo traz "Requisições à Jooble: N de 100 hoje" 
 Jooble, e cada cidade de busca nova soma até 5. A entrega imediata de um perfil faz no máximo 15
 (5 por região: a cidade da pessoa, a maior cidade da região dela e o país) e 5 se o perfil é
 remoto; perfil que ficou pendente em outra cidade soma as regiões dele. Os números não contam
-tentativa repetida depois de erro 5xx ou de rede, e o saldo do dia segura qualquer excesso.
+tentativa repetida depois de erro 5xx ou de rede; no `rodar` com banco, o saldo do dia segura o
+excesso.
 
 **Origem e bloqueio.** A vaga guarda o `source` em `Vaga.origem` (`OrigemDoAnuncio.dominio`), a
 mesma estrutura que recebe o parceiro lido da página da Adzuna. Vaga com origem em `gupy.io`,
@@ -500,8 +503,11 @@ pandape.com.br (44). Passaram no pré-filtro, com perfis sintéticos do Rio no 4
   o filtro de recência no cliente, e a busca passaria a gastar páginas com anúncio antigo.
 - A origem é a que a Jooble declara. Anúncio da Gupy ou do LinkedIn que chegue por outro
   agregador (jobleads.com, por exemplo) não é reconhecido, e isso não foi medido.
-- `coletar`, `avaliar` e `descartes` consultam a Jooble sem gravar o uso, como já fazem com a
-  Adzuna. O que eles gastam só aparece quando a Jooble responde 429.
+- `coletar`, `avaliar`, `descartes`, `testar-local` e `rodar` sem banco consultam a Jooble sem
+  gravar o uso em `uso_das_fontes`, como já fazem com a Adzuna: os três primeiros não passam
+  pelo registro, e os dois últimos gravam num repositório em memória, que acaba com o processo.
+  Só `rodar` com banco grava ([desenvolvimento](desenvolvimento.md)). O que os outros gastam o
+  diário só descobre quando a Jooble responde 429.
 - A retenção por coleta incompleta vale para todos os perfis: com a Jooble falhando inteira todo
   dia, quem fica sem vaga selecionada da Adzuna tem a mensagem segurada todo dia, até a fonte
   voltar ou a variável ser desligada.

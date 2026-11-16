@@ -211,13 +211,14 @@ Continuam abertos:
   ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio,
   aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a recusar;
-  `coletar`, `avaliar` e `descartes` gastam a cota da Jooble sem gravar o uso; o trecho que começa
-  no meio do anúncio não é reconhecido como vaga já enviada pela Adzuna; e a repetição com a
-  Adzuna e as notas das vagas dela não foram medidas. Fechados no mesmo dia, com o teste que
-  reproduz cada um: a fonte que falha por inteiro com outra respondendo aparece no resumo como
-  coleta incompleta e segura a mensagem; o trecho da Jooble não vence mais a cópia de outra fonte
-  na deduplicação; a chave com espaço ou quebra de linha e a data extrema num anúncio não
-  derrubam a execução ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
+  `coletar`, `avaliar`, `descartes`, `testar-local` e `rodar` sem banco gastam a cota da Jooble
+  sem gravar o uso; o trecho que começa no meio do anúncio não é reconhecido como vaga já enviada
+  pela Adzuna; e a repetição com a Adzuna e as notas das vagas dela não foram medidas. Fechados
+  no mesmo dia, com o teste que reproduz cada um: a fonte que falha por inteiro com outra
+  respondendo aparece no resumo como coleta incompleta e segura a mensagem; o trecho da Jooble
+  não vence mais a cópia de outra fonte na deduplicação; a chave com espaço ou quebra de linha e
+  a data extrema num anúncio não derrubam a execução
+  ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
 - **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
   três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar
   no desbloqueio; prioridade baixa enquanto houver um caso em dois meses.

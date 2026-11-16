@@ -40,8 +40,8 @@ regras. As medições da cota, da coleta resiliente e do enriquecimento estão n
   (`employability-portal.gupy.io/api/v1/jobs`) é interno. Era 7% dos envios (17 de 252). O
   coletor fica no código para o caso de autorização; sem ela, não religar.
 - **Jooble (lida em 16/11/2026).** API oficial e gratuita, desligada em produção nessa data. O
-  limite de 12/09, "a total lifetime limit of 500 requests per key", não aparece mais em texto da
-  Jooble. O que está escrito:
+  limite de 12/09, "a total lifetime limit of 500 requests per key", não aparece na documentação
+  da API modificada em 11/11/2026, que dá 100 requisições por dia. O que está escrito:
   - **Limite.** "The free REST API plan includes a limit of 100 requests per day per key for a
     specific country. This limit resets at midnight UTC. If you require a higher daily limit, you
     can contact us to request a custom limit increase for your key." e "429 Too Many Requests:

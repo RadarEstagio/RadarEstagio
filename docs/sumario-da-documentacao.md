@@ -55,10 +55,10 @@ que estudantes de fora do grupo o acham útil.
   automático mede, não ranqueia.
 - **Fontes:** só a Adzuna. A Gupy saiu em 12/09 pelos termos. Desde 16/11 a vaga que a Adzuna
   recebe do emprego.pt, que mantém com candidatura ativa anúncios brasileiros vencidos, é cortada
-  antes da extração: em 15/11 eram 20 das 29 enviadas. A Jooble está pronta e desligada: a chave dá 100 requisições por dia
-  (o limite de 500 no total saiu dos textos dela), a busca é só "estágio" por região, a vaga com
-  origem na Gupy ou no LinkedIn é descartada no coletor, e a fonte liga pela variável `FONTES` do
-  repositório.
+  antes da extração: em 15/11 eram 20 das 29 enviadas. A Jooble está pronta e desligada: o limite
+  de 500 requisições no total não aparece na documentação da API modificada em 11/11/2026, que dá
+  100 requisições por dia; a busca é só "estágio" por região, a vaga com origem na Gupy ou no
+  LinkedIn é descartada no coletor, e a fonte liga pela variável `FONTES` do repositório.
 
 ## Números registrados
 
