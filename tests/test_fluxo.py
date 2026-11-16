@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import sys
 from contextlib import nullcontext
@@ -1144,6 +1145,39 @@ def test_diario_com_a_jooble_nunca_le_a_pagina_da_vaga_no_site_da_jooble(
         ("POST", f"/api/{CHAVE_DA_JOOBLE}"),
         ("POST", f"/api/{CHAVE_DA_JOOBLE}"),
     ]
+
+
+@pytest.fixture
+def httpx_sem_nivel_de_log_proprio():
+    registrador = logging.getLogger("httpx")
+    nivel_anterior = registrador.level
+    registrador.setLevel(logging.NOTSET)
+    yield
+    registrador.setLevel(nivel_anterior)
+
+
+def test_diario_nao_deixa_o_httpx_escrever_no_log_a_url_com_a_chave_da_jooble(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    httpx_sem_nivel_de_log_proprio: None,
+):
+    caplog.set_level(logging.INFO)
+    adzuna_sem_vagas(httpx_mock)
+    responder_a_jooble(httpx_mock, {"Rio de Janeiro": [vaga_da_jooble(1, "empregos.com.br")]})
+    responder_o_gemini(httpx_mock)
+    aceitar_mensagens_do_telegram(httpx_mock)
+    repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
+    settings = settings_com_a_jooble()
+
+    assert codigo_de_saida_do_rodar(monkeypatch, repositorio, settings) == 0
+
+    assert len(httpx_mock.get_requests(url=URL_DA_JOOBLE)) == 2
+    assert "1 vagas coletadas em jooble" in caplog.text
+    assert CHAVE_DA_JOOBLE not in caplog.text
+    assert settings.adzuna_app_key not in caplog.text
+    assert settings.telegram_bot_token not in caplog.text
+    assert "HTTP Request" not in caplog.text
 
 
 def test_diario_sem_a_jooble_ligada_nao_a_consulta_nem_fala_dela(

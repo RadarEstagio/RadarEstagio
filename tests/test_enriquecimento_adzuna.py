@@ -299,6 +299,62 @@ def test_imagem_fora_da_pasta_de_parceiros_nao_e_lida_como_parceiro(httpx_mock: 
     assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio()
 
 
+LOGO_DO_EMPREGO_PT = (
+    '<img src="//zunastatic-abf.kxcdn.com/images/br/jobs/partners/logo_emprego.png" alt="Emprego">'
+)
+LOGO_DO_SOURCESTACK = (
+    '<img src="//zunastatic-abf.kxcdn.com/images/BR/partners/logo.png" alt="SourceStack">'
+)
+LOGO_SEM_NOME = '<img src="//zunastatic-abf.kxcdn.com/images/BR/partners/logo.png">'
+DADOS_DO_EMPREGO_PT = '<script>{"source_id" : "79986"}</script>'
+DADOS_DO_SOURCESTACK = '<script>{"source_id" : "506674"}</script>'
+CORPO_DO_ANUNCIO = '<section class="adp-body">Vaga</section>'
+
+
+def test_com_dois_logos_e_dois_identificadores_vale_o_primeiro_de_cada(httpx_mock: HTTPXMock):
+    pagina = (
+        LOGO_DO_SOURCESTACK
+        + DADOS_DO_SOURCESTACK
+        + CORPO_DO_ANUNCIO
+        + LOGO_DO_EMPREGO_PT
+        + DADOS_DO_EMPREGO_PT
+    )
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(
+        parceiro="SourceStack", id_do_parceiro="506674"
+    )
+
+
+def test_anuncio_do_emprego_pt_seguido_de_outro_parceiro_continua_sendo_do_emprego_pt(
+    httpx_mock: HTTPXMock,
+):
+    pagina = (
+        LOGO_DO_EMPREGO_PT
+        + DADOS_DO_EMPREGO_PT
+        + CORPO_DO_ANUNCIO
+        + LOGO_DO_SOURCESTACK
+        + DADOS_DO_SOURCESTACK
+    )
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(
+        parceiro="Emprego", id_do_parceiro="79986"
+    )
+
+
+def test_primeiro_logo_sem_nome_nao_cede_o_lugar_ao_logo_seguinte(httpx_mock: HTTPXMock):
+    pagina = LOGO_SEM_NOME + CORPO_DO_ANUNCIO + LOGO_DO_EMPREGO_PT
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio()
+
+
+def test_dois_identificadores_no_mesmo_script_vale_o_primeiro(httpx_mock: HTTPXMock):
+    pagina = CORPO_DO_ANUNCIO + (
+        '<script>{"source_id" : "506674", "parecidos": [{"source_id" : "79986"}]}</script>'
+    )
+
+    assert origem_lida_de(pagina, httpx_mock) == OrigemDoAnuncio(id_do_parceiro="506674")
+
+
 def test_identificador_escrito_no_texto_do_anuncio_nao_e_lido_como_origem(httpx_mock: HTTPXMock):
     pagina = '<section class="adp-body">Vaga com "source_id" : "79986" no texto</section>'
 
