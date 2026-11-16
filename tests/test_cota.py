@@ -14,7 +14,7 @@ from radar.cota import (
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
     registrar_diario_da_adzuna,
-    registrar_uso_da_adzuna,
+    registrar_uso_da_fonte,
     reserva_do_diario,
     uso_da_adzuna,
 )
@@ -61,7 +61,7 @@ def test_uso_da_execucao_e_somado_ao_do_dia():
     for _ in range(5):
         cota.reservar()
 
-    registrar_uso_da_adzuna(repositorio, cota.requisicoes, AGORA)
+    registrar_uso_da_fonte(repositorio, "adzuna", cota.requisicoes, AGORA)
 
     assert uso_da_adzuna(repositorio, AGORA) == (23, 23)
 
@@ -71,7 +71,7 @@ def test_banco_sem_a_tabela_nao_derruba_a_execucao(caplog):
 
     cota = abrir_cota_da_adzuna(repositorio, AGORA)
     cota.reservar()
-    registrar_uso_da_adzuna(repositorio, cota.requisicoes, AGORA)
+    registrar_uso_da_fonte(repositorio, "adzuna", cota.requisicoes, AGORA)
 
     assert uso_da_adzuna(repositorio, AGORA) is None
     assert "uso_das_fontes" in caplog.text
@@ -97,7 +97,9 @@ def test_uso_e_gravado_assim_que_a_coleta_termina():
     repositorio = RepositorioEmMemoria([])
     cota = abrir_cota_da_adzuna(repositorio, AGORA)
 
-    ColetorComRegistroDeUso(ColetorQueGasta(cota, 7), repositorio, cota, AGORA).coletar()
+    ColetorComRegistroDeUso(
+        ColetorQueGasta(cota, 7), repositorio, {"adzuna": cota}, AGORA
+    ).coletar()
 
     assert uso_da_adzuna(repositorio, AGORA) == (7, 7)
 
@@ -106,7 +108,7 @@ def test_uso_e_gravado_mesmo_quando_a_coleta_falha():
     repositorio = RepositorioEmMemoria([])
     cota = abrir_cota_da_adzuna(repositorio, AGORA)
     coletor = ColetorComRegistroDeUso(
-        ColetorQueGasta(cota, 3, ErroDeColeta("HTTP 500")), repositorio, cota, AGORA
+        ColetorQueGasta(cota, 3, ErroDeColeta("HTTP 500")), repositorio, {"adzuna": cota}, AGORA
     )
 
     with pytest.raises(ErroDeColeta):
@@ -118,7 +120,9 @@ def test_uso_e_gravado_mesmo_quando_a_coleta_falha():
 def test_coletas_seguidas_gravam_so_o_que_cada_uma_gastou():
     repositorio = RepositorioEmMemoria([])
     cota = abrir_cota_da_adzuna(repositorio, AGORA)
-    coletor = ColetorComRegistroDeUso(ColetorQueGasta(cota, 4), repositorio, cota, AGORA)
+    coletor = ColetorComRegistroDeUso(
+        ColetorQueGasta(cota, 4), repositorio, {"adzuna": cota}, AGORA
+    )
 
     coletor.coletar()
     coletor.coletar()

@@ -32,6 +32,7 @@ from radar.collectors.factory import (
     termos_de_interesse,
 )
 from radar.cota import (
+    FONTE_ADZUNA,
     ColetorComRegistroDeUso,
     abrir_cota_da_adzuna,
     registrar_diario_da_adzuna,
@@ -303,7 +304,7 @@ def executar_fluxo(
         cota = abrir_cota_da_adzuna(repositorio, agora, reserva)
         coletor = montar_coletor(settings, cliente_http, usuarios_da_coleta, cota)
         resumo = executar(
-            ColetorComRegistroDeUso(coletor, repositorio, cota, agora),
+            ColetorComRegistroDeUso(coletor, repositorio, {FONTE_ADZUNA: cota}, agora),
             extrator,
             notificador,
             repositorio_da_execucao(repositorio, usuarios_da_coleta, apenas_o_perfil),
