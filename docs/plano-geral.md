@@ -174,7 +174,7 @@ documento indicado.
 | E05 — oferta | Depois de cobertura e custos, decidir oferta, pagador, preço e provedor; checkout é tarefa posterior | [Frentes externas](frentes-externas.md#e05--hipótese-comercial) |
 | D01 — formação | Usar os casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
 | Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai, e com ele o corte do emprego.pt (16/11) | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
-| Jooble | Desligada em 16/11. Faltam, nesta ordem: (1) o dono do projeto enviar por escrito à Jooble a pergunta sobre guardar as vagas em banco, enviá-las por Telegram e mandar o texto a um serviço de IA, usos que nenhum texto dela permite nem proíbe; (2) criar no GitHub o secret `JOOBLE_API_KEY` e só depois a variável `FONTES` com `adzuna,jooble`; (3) com a fonte ligada, medir a cobertura real: vagas inéditas frente à Adzuna, notas, a busca no país com `location` vazio e o uso diário das 100 requisições | [Frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026), [guia, seção 12](guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github) e [decisões do motor](decisoes-do-motor.md#jooble-16112026) |
+| Jooble | Desligada em 16/11. Faltam, nesta ordem: (1) o dono do projeto enviar por escrito à Jooble a pergunta sobre guardar as vagas em banco, enviá-las por Telegram e mandar o texto a um serviço de IA, usos que nenhum texto dela permite nem proíbe; (2) criar no GitHub o secret `JOOBLE_API_KEY` e só depois a variável `FONTES` com `adzuna,jooble`; (3) com a fonte ligada, medir a cobertura real: vagas inéditas frente à Adzuna, notas, se a busca no país com `location` vazio continua aceita (foi numa única execução de 16/11, fora da documentação) e o uso diário das 100 requisições | [Frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026), [guia, seção 12](guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github) e [decisões do motor](decisoes-do-motor.md#jooble-16112026) |
 
 Nenhuma dessas frentes cria meta formal nem impede o piloto informal depois da conferência
 operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
@@ -209,8 +209,9 @@ Continuam abertos:
   deve cair; quanto, e se a Jooble repõe, não foi medido. A página que a Adzuna não deixa ler
   passou a aparecer no resumo de operação, sem segurar mensagem
   ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
-- **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio, que
-  não foi sondado nessa data; fonte que falha por inteiro fica de fora só com aviso no log,
+- **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio,
+  aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a recusar;
+  fonte que falha por inteiro fica de fora só com aviso no log,
   enquanto outra responder; `coletar`, `avaliar` e `descartes` gastam a cota da Jooble sem gravar
   o uso; a cópia curta e completa de um anúncio na Adzuna perde na deduplicação para um trecho
   mais longo da Jooble e passa a levar a trava de 60; o trecho que começa no meio do anúncio não

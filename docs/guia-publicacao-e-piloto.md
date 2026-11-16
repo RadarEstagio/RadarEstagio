@@ -353,8 +353,8 @@ falha. `tests/test_settings.py` e `tests/test_workflow_radar_diario.py` guardam 
 
 Para desligar, apagar a variável `FONTES` ou voltar o valor para `adzuna`; o secret pode ficar. Se
 o resumo trouxer "Coleta da Jooble incompleta" com erro HTTP todo dia, desligar: a busca no país
-manda `location` vazio, que não foi sondado em 16/11, e enquanto ela falhar quem fica sem vaga tem
-a mensagem segurada. Em 16/11 criar o secret e a variável segue pendente
+manda `location` vazio, aceito numa única execução de 16/11, fora da documentação; a Jooble pode
+passar a recusar, e enquanto a busca falhar quem fica sem vaga tem a mensagem segurada. Em 16/11 criar o secret e a variável segue pendente
 ([plano geral](plano-geral.md#4-pendências-externas)), e a pergunta à Jooble sobre o uso também
 ([frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026)); ligar antes da
 resposta é decisão do dono do projeto. A cota e os limites estão nas

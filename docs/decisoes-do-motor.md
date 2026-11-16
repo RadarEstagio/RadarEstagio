@@ -408,10 +408,11 @@ Jooble" e o link "Ver vaga em br.jooble.org"; a atribuição "Jobs by Adzuna" s�
 Adzuna. O enriquecimento não lê a página da vaga no site da Jooble, e não pode passar a ler: os
 termos do site proíbem robôs.
 
-**Pré-filtro sobre as sondagens (16/11).** O pré-filtro do projeto, sem extração nem nota, rodou
-sobre as respostas salvas com três perfis sintéticos presenciais do Rio, 4º período. A linha que
-corresponde à busca do coletor é a primeira; ela cobre só a primeira página, 100 dos 137
-anúncios.
+**Pré-filtro sobre as sondagens (16/11), medição parcial.** O pré-filtro do projeto, sem extração
+nem nota, rodou sobre os arquivos salvos das sondagens, só a primeira página de cada uma, com três
+perfis sintéticos presenciais do Rio, 4º período. A linha que corresponde à busca do coletor é a
+primeira; ela cobre 100 dos 137 anúncios. Os números da coleta inteira, medidos depois, estão no
+parágrafo seguinte à tabela.
 
 | Busca sondada | Recentes | Cortadas pela origem | Únicas | Computação | Direito | Administração |
 |---|---:|---:|---:|---:|---:|---:|
@@ -424,13 +425,29 @@ anúncios.
 Em 5 dias no Rio, a primeira página da busca enxuta deixa 3 candidatas para computação, o mesmo
 que a busca de seis palavras de TI. As 3 vêm de empregos.com.br.
 
+**Coletor contra a API real (16/11).** Depois de o texto acima ser escrito, o coletor novo rodou
+uma vez contra a API real, com Rio de Janeiro e o país como regiões. Foram 7 requisições e a
+coleta veio completa: a busca com `location` vazio foi aceita. Ficaram 606 vagas mantidas, 10
+cortadas pela origem (todas de gupy.io) e 578 únicas depois da deduplicação. As origens mais
+frequentes foram empregos.com.br (359), cadernonacional.com.br (73), infojobs.com.br (47) e
+pandape.com.br (44). Passaram no pré-filtro, com perfis sintéticos do Rio no 4º período:
+
+| Perfil | Presencial | Remoto |
+|---|---:|---:|
+| Engenharia de Software | 6 | 5 |
+| Direito | 9 | 9 |
+| Administração | 17 | 15 |
+
+É uma execução só. Ela não mede extração, nota, repetição com a Adzuna nem produção.
+
 **Limites conhecidos e o que não foi medido.**
 
-- A busca no país usa `location` vazio. A documentação diz que o campo é obrigatório, e ele não
-  foi sondado vazio em 16/11. Se a Jooble recusar, a falha aparece como coleta incompleta no
-  resumo e segura a mensagem de quem ficou sem vaga, todo dia, até a variável ser desligada.
-- O volume da busca no país, a segunda página do Rio (37 anúncios) e outras cidades não foram
-  medidos.
+- A busca no país usa `location` vazio. A documentação diz que o campo é obrigatório; o valor
+  vazio foi aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a
+  recusar. Se recusar, a falha aparece como coleta incompleta no resumo e segura a mensagem de
+  quem ficou sem vaga, todo dia, até a variável ser desligada.
+- O volume da busca no país e do Rio inteiro foi contado nessa única execução; outras cidades e
+  a variação de um dia para outro não foram medidas.
 - Não foi medido quantas vagas da Jooble repetem as da Adzuna, nem quantas recebem nota acima do
   corte: a medição acima para no pré-filtro. A cobertura real só sai depois de ligar.
 - Quando o mesmo anúncio chega das duas fontes com título, empresa e cidade iguais, a

@@ -97,7 +97,8 @@ prioridade baixa, G05, G08, G09 e G10. Do bot bloqueado (15/11) ficaram a pausa 
 motivo e o webhook sem `my_chat_member`. Do corte do emprego.pt (16/11) ficaram a vaga de descrição
 curta ou `/land/ad/`, que não é identificada, e o volume diário, que deve cair; quanto, e se a
 Jooble repõe, não foi medido.
-Da Jooble (16/11) ficaram a busca no país com `location` vazio, não sondada, e a fonte que falha
+Da Jooble (16/11) ficaram a busca no país com `location` vazio, aceita numa única execução de
+16/11, fora da documentação, e a fonte que falha
 por inteiro só com aviso no log. O token do cron vence em 09/09/2027. O gabarito humano (20 entregas) segue sem rótulo, então o juiz
 automático não está validado (precisa de 75% ou mais de concordância).
 
@@ -124,7 +125,10 @@ automático não está validado (precisa de 75% ou mais de concordância).
   que os textos dela não permitem nem proíbem; o secret `JOOBLE_API_KEY` e depois a variável
   `FONTES` no GitHub; e, com a fonte ligada, a medição da cobertura real. Sobre as sondagens de
   16/11, o pré-filtro aprovou 3 vagas de computação, 8 de Direito e 14 de Administração na
-  primeira página do Rio em 5 dias.
+  primeira página do Rio em 5 dias, medição parcial. Numa única execução do coletor contra a API
+  real, no mesmo dia, com Rio de Janeiro e país, foram 578 vagas únicas, e passaram no pré-filtro,
+  para perfis presenciais sintéticos, 6 de Engenharia de Software, 9 de Direito e 17 de
+  Administração.
 
 ## Riscos que os documentos destacam
 

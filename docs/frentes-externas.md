@@ -146,8 +146,15 @@ Adzuna. Os números, a decisão e os limites estão nas
 **Jooble sobre o pré-filtro (16/11/2026).** Também sem linha real na matriz, porque a fonte está
 desligada. Sobre as respostas das sondagens desse dia, a primeira página da busca "estágio" no Rio
 em 5 dias (100 dos 137 anúncios) deixou 87 vagas únicas depois do corte por origem, e o pré-filtro
-aprovou 3 para um perfil de computação, 8 para um de Direito e 14 para um de Administração. Não
-mede extração, nota nem repetição com a Adzuna. A tabela e os limites estão nas
+aprovou 3 para um perfil de computação, 8 para um de Direito e 14 para um de Administração. É
+medição parcial, sobre os arquivos salvos. Depois dela, no mesmo dia, o coletor rodou uma vez
+contra a API real, com Rio de Janeiro e o país: 7 requisições, coleta completa, 606 vagas
+mantidas, 10 cortadas pela origem (todas de gupy.io) e 578 únicas depois da deduplicação. As
+origens mais frequentes foram empregos.com.br (359), cadernonacional.com.br (73), infojobs.com.br
+(47) e pandape.com.br (44). Com perfis sintéticos do Rio no 4º período, passaram no pré-filtro 6
+vagas para Engenharia de Software presencial e 5 para remoto, 9 e 9 para Direito e 17 e 15 para
+Administração. É uma execução só e não mede extração, nota, repetição com a Adzuna nem produção.
+As tabelas e os limites estão nas
 [decisões do motor](decisoes-do-motor.md#jooble-16112026).
 
 ### Casos de qualidade
