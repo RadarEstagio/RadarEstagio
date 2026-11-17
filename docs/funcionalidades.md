@@ -328,7 +328,8 @@ de operação diz quantas saíram por cada motivo, avisa quando mais da metade d
 sem origem e mostra quantas páginas da Adzuna não puderam ser lidas.
 
 **Condições e limites:** Se a maioria das candidatas da Adzuna sair sem origem, a coleta conta
-como incompleta e segura a mensagem de quem ficou sem vaga. A origem não é gravada no banco. Os
+como incompleta e segura a mensagem de quem ficou sem vaga; quem perdeu uma candidata por página
+não lida e ficou sem vaga também tem a mensagem segurada. A origem não é gravada no banco. Os
 demais limites estão nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 
 **Código de referência:** `radar/matching/enriquecimento.py`, `radar/filtering/origem.py`.

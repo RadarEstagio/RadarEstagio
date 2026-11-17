@@ -176,7 +176,10 @@ Pendente de resposta da Adzuna. O enriquecimento lê a página do anúncio no si
 (`adzuna.com.br/details/...`), fora da API. Os termos da API mandam seguir os termos gerais do
 site, que bloqueia robôs e não pôde ser lido (403). 88% das vagas da Adzuna enviadas entre 05 e
 12/09 usaram esse texto. A pergunta foi para o e-mail; se a resposta for não, o enriquecimento
-sai e a extração passa a ler só os 500 caracteres da API.
+sai e a extração passa a ler só os 500 caracteres da API. Desde 17/11 o descarte da vaga sem
+origem depende dessa página: tirar o enriquecimento sem tirar o descarte deixa toda vaga da
+Adzuna sem origem, e nenhuma é enviada
+([corte do emprego.pt](#anúncios-vencidos-do-empregopt-16112026)).
 **Anúncio `/land/ad/` não é pedido (14/09/2026; substituído em 17/11, ver
 [o corte do emprego.pt](#anúncios-vencidos-do-empregopt-16112026)).** Parte das vagas vem com
 `redirect_url` `/land/ad/<id>`, que dá 403 sempre, e a mesma vaga em `/details/` também: são 41 no banco desde
@@ -213,8 +216,8 @@ só no legado, que sai com as vagas vencendo ou na próxima troca de versão. Da
 reextração quase não roda: fora do `/land/ad/`, 3 das 550 extrações de 10 a 16/09 ficaram com o
 texto cortado. O caso que ela cobre é uma queda do enriquecimento, que antes deixaria a coorte
 do dia sem trava para sempre e agora a devolve à IA no dia seguinte (22 a 94 vagas por dia com
-a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair, as extrações
-feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
+a página guardada no período, de 3 a 10 lotes). Limites: se o enriquecimento sair (e com ele, desde
+17/11, o descarte da vaga sem origem), as extrações feitas sobre a página seguem sem trava até a vaga vencer, e descartá-las pede trocar a versão;
 e 2 vagas com o texto cortado guardado foram pontuadas sem trava, sinal de que a descrição
 completa do dia era mais curta que a da API, então quem lê `vagas.descricao` (o `julgar`, a
 medição acima) pode ver outro texto que o lido pela IA.
@@ -289,11 +292,11 @@ descrição que a API já dá inteira, que ele não pede. O número fica em
 diário; `enriquecer(vagas)` continua devolvendo só as vagas. A linha não segura mensagem nem muda
 o código de saída.
 
-**Limites conhecidos.**
+**Limites conhecidos (de 16/11; os três marcados com † deixaram de valer em 17/11).**
 
-- Vaga do emprego.pt que a API entregar com descrição curta, ou com endereço `/land/ad/`, não tem
+- † Vaga do emprego.pt que a API entregar com descrição curta, ou com endereço `/land/ad/`, não tem
   a página lida e não é identificada.
-- O alerta de origem só olha páginas lidas. Se a Adzuna recusar as páginas, o corte para de valer
+- † O alerta de origem só olha páginas lidas. Se a Adzuna recusar as páginas, o corte para de valer
   para elas e as vagas seguem no fluxo; o resumo mostra quantas não foram lidas, e quem opera
   precisa ler a linha, porque a execução segue verde.
 - O alerta não tem mínimo de páginas: uma execução com uma página lida, sem origem, avisa "1 de
@@ -315,7 +318,7 @@ o código de saída.
 - A deduplicação roda antes de a origem ser conhecida. Quando duas cópias do mesmo anúncio chegam
   no mesmo dia e a que fica é a do emprego.pt, a outra já saiu e não volta naquela execução. Não
   foi medido quantas vezes isso acontece.
-- O corte depende da página do anúncio. Se a Adzuna negar a leitura e o enriquecimento sair, o
+- † O corte depende da página do anúncio. Se a Adzuna negar a leitura e o enriquecimento sair, o
   corte sai junto.
 
 **Toda vaga da Adzuna passa pela página, e a sem origem sai (17/11/2026).** No primeiro diário
@@ -337,8 +340,13 @@ Jooble não entra nessa regra: a origem dela vem do campo `source`, e a página 
 Quando mais da metade das candidatas que exigem origem sai sem ela
 (`PROPORCAO_DO_DESCARTE_GENERALIZADO`, 0,5; metade exata não conta), a execução conta como coleta
 incompleta: quem ficou sem vaga não recebe "nenhuma vaga nova compatível", e a mensagem fica
-segurada. O resumo de operação ganhou "Vagas descartadas sem origem identificada: N", e os dois
-avisos de página passaram a dizer que as vagas delas ficaram de fora. O comando `avaliar` aplica o
+segurada. Abaixo disso, a regra vale por perfil: quem perdeu uma candidata cuja página não foi
+lida (`origem` vazia, `perdeu_vaga_de_pagina_nao_lida`) e ficou sem vaga também tem a mensagem
+segurada, e o segundo disparo das 07:58 tenta de novo. A página lida sem logo nem `source_id` não
+segura: a análise terminou, e a origem é que não existe. O resumo de operação ganhou "Vagas
+descartadas sem origem identificada: N" e, quando a maioria saiu, "⚠️ A maioria das vagas da
+Adzuna saiu sem origem identificada: a coleta contou como incompleta"; os dois avisos de página
+passaram a dizer que as vagas delas ficaram de fora. O comando `avaliar` aplica o
 mesmo descarte. Isso substitui a falha aberta e o pulo do `/land/ad/` de 14/09.
 
 **Limites conhecidos.**
@@ -352,6 +360,11 @@ mesmo descarte. Isso substitui a falha aberta e o pulo do `/land/ad/` de 14/09.
   17/11 todas tinham logo e `source_id`; quantos anúncios assim existem não foi medido.
 - A vaga encerrada no site de origem continua sem detecção: a de 17/11 que o usuário achou
   encerrada era do empregos.com.br, publicada na véspera, e não do emprego.pt.
+- A deduplicação continua antes da origem. Se a cópia que fica tiver a página não lida, as duas
+  cópias saem naquela execução, inclusive a da Jooble, que perde para a da Adzuna na duplicata.
+  Não foi medido quantas vezes isso acontece.
+- Sem a página da Adzuna (resposta "não" ao pedido de leitura), o descarte tira todas as vagas
+  dela; ele precisa sair junto com o enriquecimento.
 
 ## Jooble (16/11/2026)
 
