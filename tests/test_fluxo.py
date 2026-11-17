@@ -521,6 +521,7 @@ def test_corpo_do_gemini_que_nao_e_json_nao_derruba_o_job_nem_perde_o_que_ja_ext
         json=vagas_de_desenvolvimento_no_rio(4),
         is_reusable=True,
     )
+    responder_as_paginas_de_parceiro_permitido(httpx_mock)
     httpx_mock.add_callback(gemini, url=URL_DO_GEMINI, is_reusable=True)
     aceitar_mensagens_do_telegram(httpx_mock)
     repositorio = RepositorioQueGuardaExtracoes([estudante_de_computacao_no_rio()])
@@ -834,6 +835,12 @@ def pagina_do_sourcestack() -> str:
         .replace("/images/br/jobs/partners/logo_emprego.png", "/images/BR/partners/logo.png")
         .replace('alt="Emprego"', 'alt="SourceStack"')
         .replace('"source_id" : "79986"', '"source_id" : "506674"')
+    )
+
+
+def responder_as_paginas_de_parceiro_permitido(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=URL_DA_PAGINA_DO_ANUNCIO, text=pagina_do_sourcestack(), is_reusable=True
     )
 
 
@@ -1222,6 +1229,7 @@ def test_jooble_sem_saldo_no_dia_fica_fora_da_execucao_e_a_adzuna_entrega(
         json=vagas_de_desenvolvimento_no_rio(2),
         is_reusable=True,
     )
+    responder_as_paginas_de_parceiro_permitido(httpx_mock)
     responder_o_gemini(httpx_mock)
     aceitar_mensagens_do_telegram(httpx_mock)
     repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])
@@ -1374,6 +1382,7 @@ def test_fonte_que_falha_inteira_nao_segura_a_mensagem_de_quem_tem_vaga_da_outra
         json=vagas_de_desenvolvimento_no_rio(2),
         is_reusable=True,
     )
+    responder_as_paginas_de_parceiro_permitido(httpx_mock)
     httpx_mock.add_response(
         url=URL_DA_JOOBLE, status_code=403, text="Access Denied", is_reusable=True
     )
@@ -1420,6 +1429,7 @@ def test_chave_da_jooble_que_nao_cabe_na_url_nao_derruba_a_execucao_nem_aparece_
         json=vagas_de_desenvolvimento_no_rio(2),
         is_reusable=True,
     )
+    responder_as_paginas_de_parceiro_permitido(httpx_mock)
     responder_o_gemini(httpx_mock)
     aceitar_mensagens_do_telegram(httpx_mock)
     repositorio = RepositorioEmMemoria([estudante_de_computacao_no_rio()])

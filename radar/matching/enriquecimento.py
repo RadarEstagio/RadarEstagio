@@ -1,7 +1,7 @@
 import logging
 import re
 from html.parser import HTMLParser
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 import httpx
 
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 FONTE_ADZUNA = "adzuna"
 CAMINHO_DO_ANUNCIO_LAND_AD = "/land/ad/"
+CAMINHO_DA_PAGINA_DE_DETALHE = "/details/"
 BARRAS_REPETIDAS = re.compile(r"/{2,}")
 CLASSE_DA_DESCRICAO = "adp-body"
 PASTA_DOS_LOGOS_DE_PARCEIRO = "/partners/"
@@ -43,20 +44,10 @@ class EnriquecedorDeDescricoes:
         self.paginas_nao_lidas = 0
 
     def enriquecer(self, vagas: list[Vaga]) -> list[Vaga]:
-        sem_pagina_de_detalhe = [
-            vaga
-            for vaga in vagas
-            if descricao_parece_truncada(vaga) and aponta_para_anuncio_land_ad(vaga.url)
-        ]
-        if sem_pagina_de_detalhe:
-            logger.info(
-                "%d vagas da Adzuna com anúncio /land/ad/ ficaram com a descrição da API",
-                len(sem_pagina_de_detalhe),
-            )
         return [self._enriquecer(vaga) for vaga in vagas]
 
     def _enriquecer(self, vaga: Vaga) -> Vaga:
-        if not descricao_parece_truncada(vaga) or aponta_para_anuncio_land_ad(vaga.url):
+        if vaga.fonte != FONTE_ADZUNA:
             return vaga
         chave = (vaga.fonte, vaga.id_externo)
         if chave in self._cache:
@@ -66,10 +57,6 @@ class EnriquecedorDeDescricoes:
             self.paginas_nao_lidas += 1
         self._cache[chave] = lida if lida is not None else vaga
         return self._cache[chave]
-
-
-def descricao_parece_truncada(vaga: Vaga) -> bool:
-    return vaga.fonte == FONTE_ADZUNA and not vaga.descricao_completa
 
 
 def aponta_para_anuncio_land_ad(url: str) -> bool:
@@ -84,9 +71,17 @@ def caminho_da_url(url: str) -> str:
     return BARRAS_REPETIDAS.sub("/", caminho).casefold()
 
 
+def endereco_da_pagina_do_anuncio(vaga: Vaga) -> str:
+    if not aponta_para_anuncio_land_ad(vaga.url):
+        return vaga.url
+    partes = urlsplit(vaga.url)
+    identificador = quote(vaga.id_externo, safe="")
+    return f"{partes.scheme}://{partes.netloc}{CAMINHO_DA_PAGINA_DE_DETALHE}{identificador}"
+
+
 def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga | None:
     try:
-        resposta = cliente_http.get(vaga.url, follow_redirects=True)
+        resposta = cliente_http.get(endereco_da_pagina_do_anuncio(vaga), follow_redirects=True)
         resposta.raise_for_status()
     except (httpx.HTTPError, httpx.InvalidURL) as erro:
         logger.warning(

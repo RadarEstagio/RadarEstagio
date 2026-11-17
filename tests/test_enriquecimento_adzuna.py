@@ -62,7 +62,7 @@ def test_busca_a_pagina_da_mesma_vaga_uma_vez_por_execucao(httpx_mock: HTTPXMock
     assert len(httpx_mock.get_requests()) == 1
 
 
-def test_nao_abre_pagina_de_vaga_que_nao_e_resumo_truncado(httpx_mock: HTTPXMock):
+def test_nao_abre_pagina_de_vaga_que_nao_veio_da_adzuna(httpx_mock: HTTPXMock):
     completa = vaga_truncada().model_copy(
         update={"fonte": "gupy", "descricao": "Descrição completa da vaga"}
     )
@@ -94,54 +94,49 @@ def anuncio_da_adzuna(id_externo: str, url: str) -> Vaga:
     return vaga_truncada().model_copy(update={"id_externo": id_externo, "url": url})
 
 
-def test_nao_pede_a_pagina_de_anuncio_land_ad_que_a_adzuna_sempre_recusa(
-    httpx_mock: HTTPXMock, caplog
-):
-    anuncio = anuncio_da_adzuna(
-        "5880177309",
-        "https://www.adzuna.com.br/land/ad/5880177309?se=abc&utm_medium=api&v=1",
+def test_anuncio_land_ad_e_lido_na_pagina_de_detalhe_da_mesma_vaga(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5967239538", text=pagina_com_parceiro()
     )
-    caplog.set_level(logging.INFO, logger="radar.matching.enriquecimento")
+    anuncio = anuncio_da_adzuna(
+        "5967239538",
+        "https://www.adzuna.com.br/land/ad/5967239538?se=abc&utm_medium=api&v=1",
+    )
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([anuncio, anuncio])
 
-    assert httpx_mock.get_requests() == []
-    assert enriquecidas == [anuncio, anuncio]
-    assert not enriquecidas[0].descricao_completa
-    assert not [registro for registro in caplog.records if registro.levelno >= logging.WARNING]
+    assert [str(pedido.url) for pedido in httpx_mock.get_requests()] == [
+        "https://www.adzuna.com.br/details/5967239538"
+    ]
+    assert enriquecidas[0].descricao_completa
+    assert "Python e SQL" in enriquecidas[0].descricao
+    assert enriquecidas[0].origem == OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
+    assert enriquecidas[0].url == anuncio.url
 
 
-def test_pula_so_o_anuncio_land_ad_e_informa_quantos_ficaram_de_fora(httpx_mock: HTTPXMock, caplog):
+def test_so_o_anuncio_land_ad_troca_de_endereco(httpx_mock: HTTPXMock):
     pagina = CAMINHO_DA_PAGINA.read_text(encoding="utf-8")
-    httpx_mock.add_response(url="https://www.adzuna.com.br/details/5862521726", text=pagina)
-    httpx_mock.add_response(
-        url="https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747", text=pagina
-    )
-    detalhe = vaga_truncada()
+    for endereco in (
+        "https://www.adzuna.com.br/details/5880177309",
+        "https://www.adzuna.com.br/details/5862521726",
+        "https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747",
+    ):
+        httpx_mock.add_response(url=endereco, text=pagina)
     detalhe_com_land_ad_na_consulta = anuncio_da_adzuna(
         "5880188747", "https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747"
     )
-    anuncios = [
-        anuncio_da_adzuna(numero, f"https://www.adzuna.com.br/land/ad/{numero}?se=x")
-        for numero in ("5880177309", "5880176423")
-    ]
-    caplog.set_level(logging.INFO, logger="radar.matching.enriquecimento")
+    land_ad = anuncio_da_adzuna("5880177309", "https://www.adzuna.com.br/land/ad/5880177309?se=x")
     with httpx.Client() as cliente:
         enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(
-            [anuncios[0], detalhe, anuncios[1], detalhe_com_land_ad_na_consulta]
+            [land_ad, vaga_truncada(), detalhe_com_land_ad_na_consulta]
         )
 
     assert [str(pedido.url) for pedido in httpx_mock.get_requests()] == [
+        "https://www.adzuna.com.br/details/5880177309",
         "https://www.adzuna.com.br/details/5862521726",
         "https://www.adzuna.com.br/details/5880188747?ref=/land/ad/5880188747",
     ]
-    assert [vaga.descricao_completa for vaga in enriquecidas] == [False, True, False, True]
-    informativos = [
-        registro.getMessage() for registro in caplog.records if registro.levelno == logging.INFO
-    ]
-    assert informativos == [
-        "2 vagas da Adzuna com anúncio /land/ad/ ficaram com a descrição da API"
-    ]
+    assert all(vaga.descricao_completa for vaga in enriquecidas)
 
 
 def test_reconhece_land_ad_sem_diferenciar_caixa_nem_barra_dupla(httpx_mock: HTTPXMock):
@@ -153,11 +148,26 @@ def test_reconhece_land_ad_sem_diferenciar_caixa_nem_barra_dupla(httpx_mock: HTT
             ("5880188747", "https://www.adzuna.com.br/Land//Ad/5880188747"),
         ]
     ]
+    httpx_mock.add_response(text=CAMINHO_DA_PAGINA.read_text(encoding="utf-8"), is_reusable=True)
     with httpx.Client() as cliente:
-        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(variantes)
+        EnriquecedorDeDescricoes(cliente).enriquecer(variantes)
 
-    assert httpx_mock.get_requests() == []
-    assert enriquecidas == variantes
+    assert [str(pedido.url) for pedido in httpx_mock.get_requests()] == [
+        "https://www.adzuna.com.br/details/5880177309",
+        "https://www.adzuna.com.br/details/5880176423",
+        "https://www.adzuna.com.br/details/5880188747",
+    ]
+
+
+def test_identificador_do_anuncio_land_ad_entra_escapado_no_endereco(httpx_mock: HTTPXMock):
+    estranho = anuncio_da_adzuna("../1?x=2", "https://www.adzuna.com.br/land/ad/1")
+    httpx_mock.add_response(text="<html></html>")
+    with httpx.Client() as cliente:
+        EnriquecedorDeDescricoes(cliente).enriquecer([estranho])
+
+    assert [pedido.url.raw_path for pedido in httpx_mock.get_requests()] == [
+        b"/details/..%2F1%3Fx%3D2"
+    ]
 
 
 def test_mantem_descricao_marcada_como_incompleta_quando_pagina_falha(
@@ -384,16 +394,32 @@ def test_pagina_que_nao_foi_lida_deixa_a_vaga_sem_origem(httpx_mock: HTTPXMock, 
     assert enriquecidas[0].origem is None
 
 
-def test_vaga_que_nao_passa_pela_pagina_segue_sem_origem(httpx_mock: HTTPXMock):
+def test_vaga_com_descricao_curta_tambem_tem_a_pagina_lida_para_achar_a_origem(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, text=pagina_com_parceiro())
     curta = vaga_do_parceiro().model_copy(
         update={"descricao": "Descrição curta que a API já dá inteira", "descricao_completa": True}
     )
-    land_ad = anuncio_da_adzuna("5880177309", "https://www.adzuna.com.br/land/ad/5880177309?se=x")
     with httpx.Client() as cliente:
-        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([curta, land_ad])
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer([curta])
 
-    assert httpx_mock.get_requests() == []
-    assert [vaga.origem for vaga in enriquecidas] == [None, None]
+    assert enriquecidas[0].origem == OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
+    assert enriquecidas[0].descricao_completa
+    assert "Python e SQL" in enriquecidas[0].descricao
+
+
+def test_vaga_com_descricao_curta_cuja_pagina_falha_fica_como_veio(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=403)
+    curta = vaga_do_parceiro().model_copy(
+        update={"descricao": "Descrição curta que a API já dá inteira", "descricao_completa": True}
+    )
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecidas = enriquecedor.enriquecer([curta])
+
+    assert enriquecidas == [curta]
+    assert enriquecedor.paginas_nao_lidas == 1
 
 
 def test_ler_a_origem_nao_acrescenta_requisicao_a_pagina(httpx_mock: HTTPXMock):
@@ -458,19 +484,13 @@ def test_nao_conta_como_nao_lida_a_pagina_que_respondeu_mesmo_sem_descricao_nem_
     assert enriquecedor.paginas_nao_lidas == 0
 
 
-def test_nao_conta_como_nao_lida_a_vaga_cuja_pagina_o_enriquecimento_nem_pede(
-    httpx_mock: HTTPXMock,
-):
-    curta = vaga_do_parceiro().model_copy(
-        update={"descricao": "Descrição curta que a API já dá inteira", "descricao_completa": True}
-    )
-    land_ad = anuncio_da_adzuna("5880177309", "https://www.adzuna.com.br/land/ad/5880177309?se=x")
+def test_nao_conta_como_nao_lida_a_vaga_de_outra_fonte(httpx_mock: HTTPXMock):
     da_jooble = vaga_truncada().model_copy(
         update={"fonte": "jooble", "url": "https://br.jooble.org/jdp/1000000000000000001"}
     )
     with httpx.Client() as cliente:
         enriquecedor = EnriquecedorDeDescricoes(cliente)
-        enriquecedor.enriquecer([curta, land_ad, da_jooble])
+        enriquecedor.enriquecer([da_jooble])
 
     assert httpx_mock.get_requests() == []
     assert enriquecedor.paginas_nao_lidas == 0
