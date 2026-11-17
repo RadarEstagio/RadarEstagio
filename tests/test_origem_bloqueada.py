@@ -203,7 +203,15 @@ def test_separa_as_vagas_da_adzuna_sem_origem_e_mantem_a_ordem():
 
 @pytest.mark.parametrize(
     ("sem_origem", "com_origem", "generalizado"),
-    [(0, 0, False), (0, 3, False), (1, 1, False), (1, 0, True), (2, 1, True), (2, 2, False)],
+    [
+        (0, 0, False),
+        (0, 3, False),
+        (1, 1, False),
+        (1, 0, True),
+        (2, 1, True),
+        (2, 2, False),
+        (3, 2, True),
+    ],
 )
 def test_descarte_generalizado_e_mais_da_metade_das_que_exigem_origem(
     sem_origem: int, com_origem: int, generalizado: bool
