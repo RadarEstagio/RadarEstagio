@@ -52,7 +52,10 @@ from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio
 from radar.entrega_imediata import repositorio_da_execucao, usuarios_a_atender
 from radar.filtering.duplicatas import remover_duplicatas
-from radar.filtering.origem import separar_as_de_origem_bloqueada
+from radar.filtering.origem import (
+    separar_as_de_origem_bloqueada,
+    separar_as_sem_origem_identificada,
+)
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.enriquecimento import EnriquecedorDeDescricoes
@@ -157,8 +160,11 @@ def avaliar(settings: Settings) -> None:
             vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
         )
         selecionadas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+        selecionadas, sem_origem_identificada = separar_as_sem_origem_identificada(selecionadas)
         if de_origem_bloqueada:
             print(f"{len(de_origem_bloqueada)} vagas descartadas por virem do emprego.pt")
+        if sem_origem_identificada:
+            print(f"{len(sem_origem_identificada)} vagas descartadas sem origem identificada")
         print(
             f"{len(vagas)} vagas após o pré-filtro; "
             f"extraindo {len(selecionadas)} com {settings.avaliador}"
@@ -390,6 +396,7 @@ def executar_fluxo(
         f"{len(resumo.usuarios_que_recusaram_a_mensagem)} recusaram a mensagem, "
         f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa; "
         f"{resumo.vagas_de_origem_bloqueada} vagas descartadas por virem do emprego.pt, "
+        f"{resumo.vagas_sem_origem_identificada} descartadas sem origem identificada, "
         f"{resumo.paginas_de_anuncio_sem_origem} de {resumo.paginas_de_anuncio_lidas} "
         "páginas de anúncio lidas sem origem identificada, "
         f"{enriquecedor.paginas_nao_lidas} páginas de anúncio não lidas"
@@ -433,6 +440,8 @@ def executar_fluxo(
             recusaram_a_mensagem=resumo.usuarios_que_recusaram_a_mensagem,
             pausados_por_recusa=resumo.usuarios_pausados_por_recusa,
             vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
+            vagas_sem_origem_identificada=resumo.vagas_sem_origem_identificada,
+            coleta_incompleta_pela_origem=resumo.coleta_incompleta_pela_origem,
             paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
             paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
             paginas_de_anuncio_nao_lidas=enriquecedor.paginas_nao_lidas,

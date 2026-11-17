@@ -5,9 +5,12 @@ import pytest
 from radar.domain.models import OrigemDoAnuncio, Vaga
 from radar.filtering.origem import (
     MOTIVO_DE_CADA_DOMINIO_BLOQUEADO,
+    descarte_sem_origem_generalizado,
     motivo_do_bloqueio,
     origem_bloqueada,
+    origem_desconhecida,
     separar_as_de_origem_bloqueada,
+    separar_as_sem_origem_identificada,
 )
 
 
@@ -153,3 +156,74 @@ def test_separa_pelo_dominio_e_mantem_as_de_dominio_permitido():
 
     assert seguem == [do_empregos, do_infojobs]
     assert bloqueadas == [da_gupy, do_linkedin]
+
+
+ORIGEM_PERMITIDA = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
+
+
+def da_jooble(numero: int, origem: OrigemDoAnuncio | None) -> Vaga:
+    return vaga(numero, origem).model_copy(update={"fonte": "jooble"})
+
+
+@pytest.mark.parametrize("origem", [None, OrigemDoAnuncio()])
+def test_vaga_da_adzuna_sem_parceiro_nem_identificador_tem_origem_desconhecida(origem):
+    assert origem_desconhecida(vaga(1, origem))
+
+
+@pytest.mark.parametrize(
+    "origem",
+    [
+        ORIGEM_PERMITIDA,
+        OrigemDoAnuncio(parceiro="Empregos"),
+        OrigemDoAnuncio(id_do_parceiro="516421"),
+    ],
+)
+def test_vaga_da_adzuna_com_parceiro_ou_identificador_tem_origem_conhecida(origem):
+    assert not origem_desconhecida(vaga(1, origem))
+
+
+def test_vaga_de_fonte_que_nao_exige_origem_nunca_tem_origem_desconhecida():
+    assert not origem_desconhecida(da_jooble(1, None))
+    assert not origem_desconhecida(da_jooble(2, OrigemDoAnuncio()))
+
+
+def test_separa_as_vagas_da_adzuna_sem_origem_e_mantem_a_ordem():
+    sem_pagina = vaga(1, None)
+    permitida = vaga(2, ORIGEM_PERMITIDA)
+    sem_logo = vaga(3, OrigemDoAnuncio())
+    jooble = da_jooble(4, None)
+
+    seguem, sem_origem = separar_as_sem_origem_identificada(
+        [sem_pagina, permitida, sem_logo, jooble]
+    )
+
+    assert seguem == [permitida, jooble]
+    assert sem_origem == [sem_pagina, sem_logo]
+
+
+@pytest.mark.parametrize(
+    ("sem_origem", "com_origem", "generalizado"),
+    [
+        (0, 0, False),
+        (0, 3, False),
+        (1, 1, False),
+        (1, 0, True),
+        (2, 1, True),
+        (2, 2, False),
+        (3, 2, True),
+    ],
+)
+def test_descarte_generalizado_e_mais_da_metade_das_que_exigem_origem(
+    sem_origem: int, com_origem: int, generalizado: bool
+):
+    descartadas = [vaga(numero, None) for numero in range(sem_origem)]
+    vagas = descartadas + [vaga(100 + numero, ORIGEM_PERMITIDA) for numero in range(com_origem)]
+
+    assert descarte_sem_origem_generalizado(descartadas, vagas) is generalizado
+
+
+def test_vaga_de_fonte_que_nao_exige_origem_nao_dilui_o_descarte_generalizado():
+    descartada = vaga(1, None)
+    vagas = [descartada, *(da_jooble(numero, None) for numero in range(2, 6))]
+
+    assert descarte_sem_origem_generalizado([descartada], vagas)

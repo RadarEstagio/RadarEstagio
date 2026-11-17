@@ -38,6 +38,7 @@ AGORA_DE_TESTE = datetime(2026, 8, 26, 10, 23, tzinfo=UTC)
 URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
 ID_USUARIO = UUID(int=1)
 ID_OUTRO_USUARIO = UUID(int=2)
+ORIGEM_LIDA_NA_PAGINA_DA_ADZUNA = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
 
 
 def vaga(numero: int, titulo: str = "Estágio Python", fonte: str = "adzuna") -> Vaga:
@@ -51,6 +52,7 @@ def vaga(numero: int, titulo: str = "Estágio Python", fonte: str = "adzuna") ->
         url=f"https://exemplo.com/vaga/{numero}",
         publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
         modalidade=Modalidade.REMOTO,
+        origem=ORIGEM_LIDA_NA_PAGINA_DA_ADZUNA if fonte == "adzuna" else None,
     )
 
 
@@ -2536,6 +2538,10 @@ ORIGEM_EMPREGOS = OrigemDoAnuncio(parceiro="Empregos")
 ORIGEM_SOURCESTACK = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
 
 
+def vaga_da_adzuna_antes_da_pagina(numero: int) -> Vaga:
+    return vaga(numero).model_copy(update={"origem": None})
+
+
 class EnriquecedorComOrigens:
     def __init__(self, origens: dict[str, OrigemDoAnuncio | None]) -> None:
         self._origens = origens
@@ -2553,7 +2559,7 @@ def executar_com_origens(
     notificador = NotificadorFalso()
     repositorio = RepositorioFalso(usuarios or [usuario()])
     resumo = executar(
-        ColetorFalso([vaga(int(numero)) for numero in origens]),
+        ColetorFalso([vaga_da_adzuna_antes_da_pagina(int(numero)) for numero in origens]),
         extrator,
         notificador,
         repositorio,
@@ -2617,11 +2623,76 @@ def test_vaga_do_emprego_pt_e_reconhecida_so_pelo_identificador_ou_so_pelo_nome(
     assert extrator.extraidas == ["3"]
 
 
-def test_vaga_sem_origem_identificada_segue_no_fluxo():
-    resumo, extrator, _, _ = executar_com_origens({"1": None, "2": OrigemDoAnuncio()})
+def test_vaga_da_adzuna_sem_origem_identificada_sai_antes_da_extracao():
+    resumo, extrator, _, _ = executar_com_origens(
+        {"1": None, "2": OrigemDoAnuncio(), "3": ORIGEM_SOURCESTACK}
+    )
 
-    assert extrator.extraidas == ["1", "2"]
-    assert ids_enviados(resumo) == ["1", "2"]
+    assert extrator.extraidas == ["3"]
+    assert ids_enviados(resumo) == ["3"]
+    assert resumo.vagas_sem_origem_identificada == 2
+    assert resumo.vagas_unicas == 1
+
+
+def test_minoria_sem_origem_sai_sem_tornar_a_coleta_incompleta(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": ORIGEM_EMPREGO_PT, "3": ORIGEM_EMPREGO_PT}
+    )
+
+    assert "1 vagas sem origem identificada ficaram de fora antes da extração" in caplog.text
+    assert "a coleta conta como incompleta" not in caplog.text
+    assert not resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert len(notificador.textos) == 1
+
+
+def test_metade_sem_origem_ainda_nao_torna_a_coleta_incompleta():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": ORIGEM_EMPREGO_PT}
+    )
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert not resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert len(notificador.textos) == 1
+
+
+def test_maioria_sem_origem_segura_a_mensagem_de_quem_ficou_sem_vaga(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, extrator, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": OrigemDoAnuncio()}
+    )
+
+    assert extrator.extraidas == []
+    assert notificador.textos == []
+    assert resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+    assert "a coleta conta como incompleta" in caplog.text
+
+
+def test_maioria_sem_origem_nao_segura_quem_ainda_tem_vaga():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": None, "2": OrigemDoAnuncio(), "3": ORIGEM_SOURCESTACK}
+    )
+
+    assert ids_enviados(resumo) == ["3"]
+    assert len(notificador.textos) == 1
+
+
+def test_vaga_de_fonte_que_nao_exige_origem_segue_sem_ela():
+    da_jooble = vaga(1, fonte="jooble")
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem([da_jooble], {})
+
+    assert da_jooble.origem is None
+    assert extrator.extraidas == ["1"]
+    assert resumo.vagas_sem_origem_identificada == 0
 
 
 def test_vaga_do_empregos_de_nome_parecido_segue_no_fluxo():
@@ -2662,12 +2733,13 @@ def test_resumo_conta_as_vagas_que_sairam_pela_origem_e_as_paginas_sem_origem():
     )
 
     assert resumo.vagas_de_origem_bloqueada == 2
+    assert resumo.vagas_sem_origem_identificada == 2
     assert resumo.paginas_de_anuncio_lidas == 4
     assert resumo.paginas_de_anuncio_sem_origem == 1
     assert resumo.vagas_coletadas == 5
-    assert resumo.vagas_unicas == 3
-    assert resumo.vagas_candidatas == 3
-    assert resumo.vagas_extraidas_agora == 3
+    assert resumo.vagas_unicas == 1
+    assert resumo.vagas_candidatas == 1
+    assert resumo.vagas_extraidas_agora == 1
 
 
 def test_resumo_sem_pagina_lida_nao_conta_origem_nenhuma():
@@ -2723,17 +2795,17 @@ def executar_com_vagas_que_ja_trazem_a_origem(
 def test_origem_que_a_fonte_ja_informou_nao_conta_como_pagina_de_anuncio_lida():
     resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem(
         [
-            vaga(1),
+            vaga_da_adzuna_antes_da_pagina(1),
             vaga_com_origem_informada_pela_fonte(2, "empregos.com.br"),
             vaga_com_origem_informada_pela_fonte(3, "infojobs.com.br"),
             vaga_com_origem_informada_pela_fonte(4, "nube.com.br"),
         ],
-        {"1": OrigemDoAnuncio()},
+        {"1": ORIGEM_SOURCESTACK},
     )
 
     assert extrator.extraidas == ["1", "2", "3", "4"]
     assert resumo.paginas_de_anuncio_lidas == 1
-    assert resumo.paginas_de_anuncio_sem_origem == 1
+    assert resumo.paginas_de_anuncio_sem_origem == 0
 
 
 def test_vaga_que_chega_da_coleta_com_dominio_bloqueado_tambem_sai_antes_da_extracao():
@@ -2794,3 +2866,55 @@ def test_mesmo_anuncio_nas_duas_fontes_sai_com_a_copia_da_adzuna_e_sem_a_trava_d
     assert "Adzuna" in notificador.textos[0]
     assert "Jooble" not in notificador.textos[0]
     assert "nota limitada a 60" not in notificador.textos[0]
+
+
+def estudante_de_direito() -> Usuario:
+    return usuario(ID_OUTRO_USUARIO, chat_id="456").model_copy(
+        update={"perfil": perfil_exemplo().model_copy(update={"curso": "Direito"})}
+    )
+
+
+def executar_com_a_vaga_de_direito_lida_como(
+    origem_da_vaga_de_direito: OrigemDoAnuncio | None,
+    origem_das_vagas_de_computacao: OrigemDoAnuncio = ORIGEM_SOURCESTACK,
+) -> tuple[ResumoDaExecucao, NotificadorFalso]:
+    vaga_de_direito = vaga(4, titulo="Estágio em Direito").model_copy(update={"origem": None})
+    vagas = [vaga_da_adzuna_antes_da_pagina(numero) for numero in (1, 2, 3)] + [vaga_de_direito]
+    origens = {numero: origem_das_vagas_de_computacao for numero in ("1", "2", "3")}
+    notificador = NotificadorFalso()
+    resumo = executar(
+        ColetorFalso(vagas),
+        ExtratorFalso({}),
+        notificador,
+        RepositorioFalso([usuario(), estudante_de_direito()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({str(numero): 80 for numero in range(1, 5)}),
+        enriquecer=EnriquecedorComOrigens(origens | {"4": origem_da_vaga_de_direito}),
+    )
+    return resumo, notificador
+
+
+def test_pagina_nao_lida_da_unica_vaga_de_um_perfil_segura_a_mensagem_dele():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(None)
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert notificador.chats == ["123"]
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+
+
+def test_pagina_lida_sem_parceiro_da_unica_vaga_de_um_perfil_nao_segura_a_mensagem():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(OrigemDoAnuncio())
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert "456" in notificador.chats
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+
+
+def test_pagina_nao_lida_de_vaga_de_outro_perfil_nao_segura_quem_ficou_sem_vaga():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(None, ORIGEM_EMPREGO_PT)
+
+    assert resumo.vagas_de_origem_bloqueada == 3
+    assert notificador.chats == ["123"]
+    assert "Nenhuma vaga nova" in notificador.textos[0]
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1

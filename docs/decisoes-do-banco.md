@@ -586,7 +586,7 @@ da IA quebravam as gravações. O surrogate solto, metade de um emoji (o resumo 
 da API cortado no meio do par chega escapado no JSON), não se codifica em UTF-8: o psycopg
 levanta `UnicodeEncodeError`, que não é `psycopg.Error`, e o job caía na primeira gravação,
 antes de qualquer envio e sem resumo de operação, todo dia enquanto a vaga estivesse na janela
-(a `/land/ad/` nunca é enriquecida e guarda sempre o trecho da API); o `httpx` do Telegram
+(até 17/11 a `/land/ad/` nunca era enriquecida e guardava sempre o trecho da API); o `httpx` do Telegram
 levanta o mesmo erro. O NUL o Postgres recusa em `text` e em `jsonb` com `DataError`, e como
 extrações, dias sem extração, avaliações e envios de um usuário vão cada um numa transação, uma
 vaga assim fazia nenhuma extração do run ser gravada (todas pagas de novo no dia seguinte), a

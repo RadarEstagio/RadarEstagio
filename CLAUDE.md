@@ -21,8 +21,9 @@ Actions.
 
 - **Fontes**: só a Adzuna (`FONTES`, padrão `adzuna`), somada por `ColetorComposto`. Gupy (não
   volta sem autorização) e LinkedIn estão fora, também por intermediário: `filtering/origem.py`
-  corta a origem. A Jooble está pronta e desligada: 100 requisições por dia, liga pela variável
-  `FONTES` do repositório (secret antes) e a página da vaga no site dela nunca é lida
+  corta a origem, e vaga da Adzuna sem origem identificada também sai. A Jooble está pronta e
+  desligada: 100 requisições por dia, liga pela variável `FONTES` do repositório (secret antes) e
+  a página da vaga no site dela nunca é lida
   ([termos](docs/frentes-externas.md)). Fonte nova só entra com cobertura insuficiente comprovada.
 - **A IA só extrai fatos da vaga** (Gemini Flash; `AVALIADOR=gemini_api`, o padrão e o do Actions,
   ou `agy` local). Quem compara com o perfil e calcula a nota é Python, sem IA.
