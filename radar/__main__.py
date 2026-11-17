@@ -441,6 +441,7 @@ def executar_fluxo(
             pausados_por_recusa=resumo.usuarios_pausados_por_recusa,
             vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
             vagas_sem_origem_identificada=resumo.vagas_sem_origem_identificada,
+            coleta_incompleta_pela_origem=resumo.coleta_incompleta_pela_origem,
             paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
             paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
             paginas_de_anuncio_nao_lidas=enriquecedor.paginas_nao_lidas,

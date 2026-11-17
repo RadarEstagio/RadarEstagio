@@ -177,6 +177,7 @@ def formatar_resumo_da_execucao(
     pausados_por_recusa: list[UUID] | None = None,
     vagas_de_origem_bloqueada: int = 0,
     vagas_sem_origem_identificada: int = 0,
+    coleta_incompleta_pela_origem: bool = False,
     paginas_de_anuncio_lidas: int = 0,
     paginas_de_anuncio_sem_origem: int = 0,
     paginas_de_anuncio_nao_lidas: int = 0,
@@ -201,6 +202,11 @@ def formatar_resumo_da_execucao(
         linhas.append(f"Vagas descartadas por virem do emprego.pt: {vagas_de_origem_bloqueada}")
     if vagas_sem_origem_identificada:
         linhas.append(f"Vagas descartadas sem origem identificada: {vagas_sem_origem_identificada}")
+    if coleta_incompleta_pela_origem:
+        linhas.append(
+            "⚠️ A maioria das vagas da Adzuna saiu sem origem identificada: "
+            "a coleta contou como incompleta"
+        )
     if paginas_de_anuncio_sem_origem > (
         PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM * paginas_de_anuncio_lidas
     ):

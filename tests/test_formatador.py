@@ -440,6 +440,28 @@ def test_resumo_mostra_as_vagas_descartadas_sem_origem_identificada_so_quando_ha
     assert "sem origem identificada" not in sem
 
 
+def test_resumo_explica_a_coleta_que_contou_como_incompleta_pela_origem():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        0,
+        480,
+        2,
+        vagas_sem_origem_identificada=30,
+        coleta_incompleta_pela_origem=True,
+    )
+    sem = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_sem_origem_identificada=3
+    )
+
+    assert (
+        "⚠️ A maioria das vagas da Adzuna saiu sem origem identificada: "
+        "a coleta contou como incompleta"
+    ) in com.splitlines()
+    assert "contou como incompleta" not in sem
+
+
 def resumo_com_paginas(lidas: int, sem_origem: int) -> str:
     return formatar_resumo_da_execucao(
         MOMENTO_DE_TESTE,

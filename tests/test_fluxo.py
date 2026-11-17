@@ -991,6 +991,10 @@ def test_diario_com_a_adzuna_recusando_quase_toda_pagina_segura_quem_ficou_sem_v
     assert "Vagas descartadas sem origem identificada: 3" in resumo.splitlines()
     assert "⚠️ Páginas da Adzuna não lidas: 3 (as vagas delas ficaram de fora)" in resumo
     assert "Mensagens seguradas pela coleta incompleta: 1" in resumo
+    assert (
+        "⚠️ A maioria das vagas da Adzuna saiu sem origem identificada: "
+        "a coleta contou como incompleta"
+    ) in resumo.splitlines()
 
 
 def avaliar_com_as_paginas_dos_anuncios(
