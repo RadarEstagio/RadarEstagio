@@ -203,11 +203,12 @@ Continuam abertos:
   `motivo_pausa` vazio: as métricas não separam essa pausa da que a pessoa fez no site, e o site
   mostra a mesma frase para as duas
   ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
-- **Corte do emprego.pt (16/11).** A vaga desse parceiro da Adzuna sai antes da extração, mas
-  ficou aberto: a que a API entrega com descrição curta ou em `/land/ad/` não é identificada; a
-  página da vaga bloqueada é relida a cada execução enquanto a API a devolve; e o volume diário
-  deve cair; quanto, e se a Jooble repõe, não foi medido. A página que a Adzuna não deixa ler
-  passou a aparecer no resumo de operação, sem segurar mensagem
+- **Corte do emprego.pt (16/11, revisto em 17/11).** A vaga desse parceiro da Adzuna sai antes da
+  extração, e desde 17/11 toda vaga da Adzuna tem a página lida (a `/land/ad/` em `/details/`) e a
+  sem origem identificada sai também. Ficou aberto: se o runner consegue ler `/details/` das vagas
+  `/land/ad/` (em 14/09 não conseguia); quanto o diário demora com mais páginas; a página da vaga
+  bloqueada é relida a cada execução enquanto a API a devolve; e o volume diário deve cair;
+  quanto, e se a Jooble repõe, não foi medido
   ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
 - **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio,
   aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a recusar;
