@@ -24,6 +24,7 @@ from radar.entrega_imediata import (
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
+from tests.test_fluxo import pagina_do_sourcestack
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"
 URL_DO_TELEGRAM = re.compile(r"https://api\.telegram\.org/.*")
@@ -175,7 +176,9 @@ def vagas_da_adzuna() -> dict:
 
 def responder_com_as_vagas(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=URL_DA_ADZUNA, json=vagas_da_adzuna(), is_reusable=True)
-    httpx_mock.add_response(url=URL_DO_ANUNCIO, status_code=404, is_reusable=True, is_optional=True)
+    httpx_mock.add_response(
+        url=URL_DO_ANUNCIO, text=pagina_do_sourcestack(), is_reusable=True, is_optional=True
+    )
 
 
 def mensagens_para(httpx_mock: HTTPXMock, destinatario: Usuario) -> list[str]:

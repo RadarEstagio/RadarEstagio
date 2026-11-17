@@ -26,7 +26,11 @@ from radar.filtering.duplicatas import (
     remover_republicacoes_de,
     republicacao_da_mesma_empresa,
 )
-from radar.filtering.origem import separar_as_de_origem_bloqueada
+from radar.filtering.origem import (
+    descarte_sem_origem_generalizado,
+    separar_as_de_origem_bloqueada,
+    separar_as_sem_origem_identificada,
+)
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
@@ -153,6 +157,7 @@ class ResumoDaExecucao(BaseModel):
     vagas_sem_extracao: int = 0
     extracoes_nao_gravadas: int = 0
     vagas_de_origem_bloqueada: int = 0
+    vagas_sem_origem_identificada: int = 0
     paginas_de_anuncio_lidas: int = 0
     paginas_de_anuncio_sem_origem: int = 0
     perguntas_do_dia_seguinte: int = 0
@@ -201,12 +206,27 @@ def executar(
     enriquecidas = enriquecer(a_enriquecer)
     origens_lidas = origens_lidas_no_enriquecimento(a_enriquecer, enriquecidas)
     candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
-    unicas = substituir_enriquecidas(sem_as_vagas(unicas, de_origem_bloqueada), candidatas)
+    candidatas, sem_origem_identificada = separar_as_sem_origem_identificada(candidatas)
+    unicas = substituir_enriquecidas(
+        sem_as_vagas(unicas, de_origem_bloqueada + sem_origem_identificada), candidatas
+    )
     if de_origem_bloqueada:
         logger.info(
             "%d vagas de origem bloqueada ficaram de fora antes da extração",
             len(de_origem_bloqueada),
         )
+    if sem_origem_identificada:
+        logger.info(
+            "%d vagas sem origem identificada ficaram de fora antes da extração",
+            len(sem_origem_identificada),
+        )
+    if descarte_sem_origem_generalizado(sem_origem_identificada, enriquecidas):
+        logger.warning(
+            "A maioria das vagas que exigem origem ficou sem ela (%d); "
+            "a coleta conta como incompleta",
+            len(sem_origem_identificada),
+        )
+        incompleta = True
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
         len(coletadas),
@@ -284,6 +304,7 @@ def executar(
         vagas_sem_extracao=balanco.sem_extracao,
         extracoes_nao_gravadas=balanco.nao_gravadas,
         vagas_de_origem_bloqueada=len(de_origem_bloqueada),
+        vagas_sem_origem_identificada=len(sem_origem_identificada),
         paginas_de_anuncio_lidas=len(origens_lidas),
         paginas_de_anuncio_sem_origem=sum(not origem.identificada() for origem in origens_lidas),
         perguntas_do_dia_seguinte=len(perguntas.enviadas),

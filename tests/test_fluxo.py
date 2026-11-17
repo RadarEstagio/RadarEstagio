@@ -926,7 +926,7 @@ def test_diario_corta_a_vaga_do_emprego_pt_antes_da_ia_e_relata_no_resumo(
     assert "0 páginas de anúncio não lidas" in saida
 
 
-def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_nada(
+def test_diario_descarta_as_vagas_cuja_pagina_nao_informa_a_origem_e_avisa(
     httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ):
     sem_parceiro = CAMINHO_DA_PAGINA_SEM_PARCEIRO.read_text(encoding="utf-8")
@@ -937,39 +937,60 @@ def test_diario_avisa_quando_as_paginas_param_de_informar_a_origem_e_nao_corta_n
         {"9101": sem_parceiro, "9102": sem_parceiro, "9103": pagina_do_sourcestack()},
     )
 
-    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102", "adzuna:9103"]
+    assert ids_pedidos_ao_gemini == ["adzuna:9103"]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" not in mensagem
+    assert "Desenvolvimento de Software 3</b>" in mensagem
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas descartadas sem origem identificada: 2" in resumo.splitlines()
     assert (
         "⚠️ Páginas da Adzuna lidas sem origem identificada: 2 de 3 "
-        "(o corte do emprego.pt pode não estar funcionando)"
+        "(as vagas delas ficaram de fora; a leitura da origem pode ter quebrado)"
     ) in resumo
     assert "Vagas descartadas por virem do emprego.pt" not in resumo
     saida = capsys.readouterr().out
     assert "0 vagas descartadas por virem do emprego.pt" in saida
+    assert "2 descartadas sem origem identificada" in saida
     assert "2 de 3 páginas de anúncio lidas sem origem identificada" in saida
 
 
-def test_diario_relata_as_paginas_que_a_adzuna_recusou_e_segue_sem_cortar_essas_vagas(
+def test_diario_descarta_as_vagas_cuja_pagina_a_adzuna_recusou_e_relata(
     httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ):
     ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
         httpx_mock,
         monkeypatch,
-        {"9101": None, "9102": None, "9103": pagina_do_sourcestack()},
+        {"9101": None, "9102": pagina_do_sourcestack(), "9103": pagina_do_sourcestack()},
     )
 
-    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102", "adzuna:9103"]
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9102", "adzuna:9103"]
     [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
-    assert "Desenvolvimento de Software 1</b>" in mensagem
+    assert "Desenvolvimento de Software 1</b>" not in mensagem
     resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas descartadas sem origem identificada: 1" in resumo.splitlines()
     assert (
-        "⚠️ Páginas da Adzuna não lidas: 2 (o corte do emprego.pt não vale para elas)"
-        in resumo.splitlines()
+        "⚠️ Páginas da Adzuna não lidas: 1 (as vagas delas ficaram de fora)" in resumo.splitlines()
     )
-    assert "sem origem identificada" not in resumo
+    assert "lidas sem origem identificada" not in resumo
+    assert "Mensagens seguradas pela coleta incompleta" not in resumo
     saida = capsys.readouterr().out
-    assert "0 de 1 páginas de anúncio lidas sem origem identificada" in saida
-    assert "2 páginas de anúncio não lidas" in saida
+    assert "0 de 2 páginas de anúncio lidas sem origem identificada" in saida
+    assert "1 páginas de anúncio não lidas" in saida
+
+
+def test_diario_com_a_adzuna_recusando_quase_toda_pagina_segura_quem_ficou_sem_vaga(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock, monkeypatch, {"9101": None, "9102": None, "9103": None}
+    )
+
+    assert ids_pedidos_ao_gemini == []
+    assert mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas descartadas sem origem identificada: 3" in resumo.splitlines()
+    assert "⚠️ Páginas da Adzuna não lidas: 3 (as vagas delas ficaram de fora)" in resumo
+    assert "Mensagens seguradas pela coleta incompleta: 1" in resumo
 
 
 def avaliar_com_as_paginas_dos_anuncios(
@@ -1024,7 +1045,7 @@ def test_avaliacao_manual_so_com_vaga_do_emprego_pt_nao_chama_a_ia(
     assert "extraindo 0 com" in saida
 
 
-def test_avaliacao_manual_segue_com_a_vaga_sem_origem_identificada(
+def test_avaliacao_manual_descarta_a_vaga_sem_origem_identificada(
     httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ):
     sem_parceiro = CAMINHO_DA_PAGINA_SEM_PARCEIRO.read_text(encoding="utf-8")
@@ -1033,8 +1054,11 @@ def test_avaliacao_manual_segue_com_a_vaga_sem_origem_identificada(
         httpx_mock, monkeypatch, {"9101": sem_parceiro, "9102": pagina_do_sourcestack()}
     )
 
-    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9101", "adzuna:9102"]
-    assert "emprego.pt" not in capsys.readouterr().out
+    assert ids_pedidos_ao_gemini == ["adzuna:9102"]
+    saida = capsys.readouterr().out
+    assert "emprego.pt" not in saida
+    assert "1 vagas descartadas sem origem identificada" in saida
+    assert "extraindo 1 com" in saida
 
 
 URL_DA_JOOBLE = re.compile(r"https://br\.jooble\.org/.*")

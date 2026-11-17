@@ -429,6 +429,17 @@ def test_resumo_mostra_as_vagas_descartadas_por_virem_do_emprego_pt_so_quando_ha
     assert "emprego.pt" not in sem
 
 
+def test_resumo_mostra_as_vagas_descartadas_sem_origem_identificada_so_quando_ha():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_sem_origem_identificada=3
+    )
+    sem = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 480, 2)
+
+    assert "Vagas descartadas sem origem identificada: 3" in com.splitlines()
+    assert "⚠️" not in com
+    assert "sem origem identificada" not in sem
+
+
 def resumo_com_paginas(lidas: int, sem_origem: int) -> str:
     return formatar_resumo_da_execucao(
         MOMENTO_DE_TESTE,
@@ -450,7 +461,7 @@ def test_resumo_avisa_quando_a_maioria_das_paginas_lidas_veio_sem_origem(
 
     assert (
         f"⚠️ Páginas da Adzuna lidas sem origem identificada: {sem_origem} de {lidas} "
-        "(o corte do emprego.pt pode não estar funcionando)"
+        "(as vagas delas ficaram de fora; a leitura da origem pode ter quebrado)"
     ) in texto
 
 
@@ -489,8 +500,7 @@ def test_resumo_avisa_quantas_paginas_da_adzuna_nao_foram_lidas():
     )
 
     assert (
-        "⚠️ Páginas da Adzuna não lidas: 156 (o corte do emprego.pt não vale para elas)"
-        in texto.splitlines()
+        "⚠️ Páginas da Adzuna não lidas: 156 (as vagas delas ficaram de fora)" in texto.splitlines()
     )
 
 
@@ -518,10 +528,10 @@ def test_resumo_mostra_as_paginas_nao_lidas_ao_lado_do_alerta_das_lidas_sem_orig
 
     posicao = linhas.index(
         "⚠️ Páginas da Adzuna lidas sem origem identificada: 3 de 4 "
-        "(o corte do emprego.pt pode não estar funcionando)"
+        "(as vagas delas ficaram de fora; a leitura da origem pode ter quebrado)"
     )
     assert linhas[posicao + 1] == (
-        "⚠️ Páginas da Adzuna não lidas: 16 (o corte do emprego.pt não vale para elas)"
+        "⚠️ Páginas da Adzuna não lidas: 16 (as vagas delas ficaram de fora)"
     )
 
 

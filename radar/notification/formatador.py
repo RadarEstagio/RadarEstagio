@@ -176,6 +176,7 @@ def formatar_resumo_da_execucao(
     recusaram_a_mensagem: list[UUID] | None = None,
     pausados_por_recusa: list[UUID] | None = None,
     vagas_de_origem_bloqueada: int = 0,
+    vagas_sem_origem_identificada: int = 0,
     paginas_de_anuncio_lidas: int = 0,
     paginas_de_anuncio_sem_origem: int = 0,
     paginas_de_anuncio_nao_lidas: int = 0,
@@ -198,18 +199,20 @@ def formatar_resumo_da_execucao(
         linhas.append(f"Já atendidos hoje, fora desta execução: {ja_atendidos_hoje}")
     if vagas_de_origem_bloqueada:
         linhas.append(f"Vagas descartadas por virem do emprego.pt: {vagas_de_origem_bloqueada}")
+    if vagas_sem_origem_identificada:
+        linhas.append(f"Vagas descartadas sem origem identificada: {vagas_sem_origem_identificada}")
     if paginas_de_anuncio_sem_origem > (
         PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM * paginas_de_anuncio_lidas
     ):
         linhas.append(
             "⚠️ Páginas da Adzuna lidas sem origem identificada: "
             f"{paginas_de_anuncio_sem_origem} de {paginas_de_anuncio_lidas} "
-            "(o corte do emprego.pt pode não estar funcionando)"
+            "(as vagas delas ficaram de fora; a leitura da origem pode ter quebrado)"
         )
     if paginas_de_anuncio_nao_lidas:
         linhas.append(
             f"⚠️ Páginas da Adzuna não lidas: {paginas_de_anuncio_nao_lidas} "
-            "(o corte do emprego.pt não vale para elas)"
+            "(as vagas delas ficaram de fora)"
         )
     if perfis_ilegiveis:
         linhas.append(f"⚠️ Perfis com dados inválidos, fora da execução: {perfis_ilegiveis}")
