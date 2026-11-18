@@ -325,11 +325,15 @@ anúncios brasileiros vencidos, sai antes da extração e não chega a ninguém 
 17/11 a página é lida para toda vaga da Adzuna candidata, inclusive a de descrição curta e a
 `/land/ad/` (lida em `/details/`), e a vaga da Adzuna sem origem identificada também sai. O resumo
 de operação diz quantas saíram por cada motivo, avisa quando mais da metade das páginas lidas veio
-sem origem e mostra quantas páginas da Adzuna não puderam ser lidas.
+sem origem e mostra quantas páginas da Adzuna não puderam ser lidas. Desde 18/11 a vaga cujo
+anúncio a Adzuna retirou (página com 404 ou 410) sai sem contar como página não lida e aparece
+numa linha própria do resumo.
 
 **Condições e limites:** Se a maioria das candidatas da Adzuna sair sem origem, a coleta conta
 como incompleta e segura a mensagem de quem ficou sem vaga; quem perdeu uma candidata por página
-não lida e ficou sem vaga também tem a mensagem segurada. A origem não é gravada no banco. Os
+não lida e ficou sem vaga também tem a mensagem segurada; quem perdeu a vaga por anúncio retirado
+recebe a mensagem normal, salvo quando a maioria das candidatas da Adzuna veio retirada, que conta
+como coleta incompleta. A origem não é gravada no banco. Os
 demais limites estão nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 
 **Código de referência:** `radar/matching/enriquecimento.py`, `radar/filtering/origem.py`.

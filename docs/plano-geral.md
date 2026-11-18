@@ -205,7 +205,8 @@ Continuam abertos:
   ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
 - **Corte do emprego.pt (16/11, revisto em 17/11).** A vaga desse parceiro da Adzuna sai antes da
   extração, e desde 17/11 toda vaga da Adzuna tem a página lida (a `/land/ad/` em `/details/`) e a
-  sem origem identificada sai também. Ficou aberto: se o runner consegue ler `/details/` das vagas
+  sem origem identificada sai também; desde 18/11, a de anúncio retirado (404 ou 410) sai sem
+  contar como página não lida nem segurar a mensagem. Ficou aberto: se o runner consegue ler `/details/` das vagas
   `/land/ad/` (em 14/09 não conseguia); quanto o diário demora com mais páginas; a página da vaga
   bloqueada é relida a cada execução enquanto a API a devolve; e o volume diário deve cair;
   quanto, e se a Jooble repõe, não foi medido

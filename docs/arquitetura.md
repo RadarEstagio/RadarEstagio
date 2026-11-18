@@ -18,7 +18,8 @@ fontes → dedupe/pré-filtro → enriquecimento → corte por origem → extra�
 
 O enriquecimento lê, na mesma página que completa a descrição, de qual parceiro da Adzuna o
 anúncio veio. A vaga de parceiro bloqueado (em 16/11/2026, só o emprego.pt) sai antes da extração
-e de todos os perfis, e a vaga da Adzuna sem origem identificada sai junto (17/11/2026). A regra fica em `filtering/origem.py`,
+e de todos os perfis, e a vaga da Adzuna sem origem identificada sai junto (17/11/2026), como a de
+anúncio que a Adzuna retirou (18/11/2026). A regra fica em `filtering/origem.py`,
 e a medição e os limites, nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
 A mesma regra bloqueia pelo domínio a origem que a fonte informa na coleta: a vaga que a Jooble
 tira de gupy.io, linkedin.com ou emprego.pt não sai do coletor

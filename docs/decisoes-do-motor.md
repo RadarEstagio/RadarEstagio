@@ -358,13 +358,39 @@ mesmo descarte. Isso substitui a falha aberta e o pulo do `/land/ad/` de 14/09.
   cortada (134 candidatas em 17/11). Quanto isso pesa no tempo do diário não foi medido.
 - Anúncio publicado direto na Adzuna, sem parceiro, sairia por falta de origem. Nas 25 páginas de
   17/11 todas tinham logo e `source_id`; quantos anúncios assim existem não foi medido.
-- A vaga encerrada no site de origem continua sem detecção: a de 17/11 que o usuário achou
-  encerrada era do empregos.com.br, publicada na véspera, e não do emprego.pt.
+- A vaga encerrada no site de origem continua sem detecção enquanto a Adzuna mantém o anúncio: a
+  de 17/11 que o usuário achou encerrada era do empregos.com.br, publicada na véspera, e não do
+  emprego.pt. O anúncio que a própria Adzuna retirou é detectado desde 18/11 (abaixo).
 - A deduplicação continua antes da origem. Se a cópia que fica tiver a página não lida, as duas
   cópias saem naquela execução, inclusive a da Jooble, que perde para a da Adzuna na duplicata.
   Não foi medido quantas vezes isso acontece.
 - Sem a página da Adzuna (resposta "não" ao pedido de leitura), o descarte tira todas as vagas
   dela; ele precisa sair junto com o enriquecimento.
+
+**Anúncio retirado (18/11/2026).** Até 17/11, a página `/details/` que respondia 404 ou 410 contava
+como página não lida: a vaga saía, entrava no alerta "⚠️ Páginas da Adzuna não lidas" e, se era a
+única candidata de um perfil, segurava a mensagem dele. Em 18/11, das vagas remotas de computação
+fora do Rio guardadas desde 14/11, 22 de 26 já respondiam 404 ou 410 na página; das 50 primeiras
+que a API devolveu no mesmo dia para o Rio, nenhuma (41 responderam 200 e 9 levaram 429). A página
+de um anúncio retirado traz o título dele com 404 ou 410; um identificador que nunca existiu dá 404
+com "Página não encontrada". Os dois são tratados igual.
+
+**Decisão.** Resposta 404 ou 410 (`STATUS_DE_ANUNCIO_RETIRADO`) quer dizer anúncio retirado: o
+enriquecimento tira a vaga da lista e não a conta como página não lida, e o pipeline a deixa de
+fora antes da extração, sem segurar a mensagem de ninguém (`retiradas`). O resumo de operação
+ganhou "Vagas com anúncio retirado da Adzuna: N". Como 404 também é o que um bloqueio ou uma
+mudança de endereço da Adzuna poderia devolver, vale a mesma trava da origem
+(`descarte_generalizado`, antes `descarte_sem_origem_generalizado`): quando mais da metade das
+candidatas da Adzuna vem retirada, a coleta conta como incompleta, quem ficou sem vaga tem a
+mensagem segurada, e o resumo diz "⚠️ A maioria dos anúncios da Adzuna veio retirada: a coleta
+contou como incompleta (pode ser bloqueio da Adzuna)". As vagas da Jooble não entram na conta. O
+`avaliar` aplica o mesmo descarte. O 429 continua sendo página não lida.
+
+**Limites conhecidos.**
+
+- A vaga retirada não é marcada no banco; volta a ser pedida enquanto a API a devolver.
+- Se o 404 vier de algo que não seja anúncio retirado e atingir menos da metade das candidatas,
+  essas vagas saem sem alarme, só contadas na linha do resumo.
 
 ## Jooble (16/11/2026)
 
