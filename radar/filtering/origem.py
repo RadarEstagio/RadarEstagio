@@ -61,6 +61,6 @@ def separar_as_sem_origem_identificada(vagas: list[Vaga]) -> tuple[list[Vaga], l
     return seguem, sem_origem
 
 
-def descarte_sem_origem_generalizado(sem_origem: list[Vaga], vagas: list[Vaga]) -> bool:
+def descarte_generalizado(descartadas: list[Vaga], vagas: list[Vaga]) -> bool:
     que_exigem = sum(exige_origem_identificada(vaga) for vaga in vagas)
-    return len(sem_origem) > PROPORCAO_DO_DESCARTE_GENERALIZADO * que_exigem
+    return len(descartadas) > PROPORCAO_DO_DESCARTE_GENERALIZADO * que_exigem

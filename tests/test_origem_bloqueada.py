@@ -5,7 +5,7 @@ import pytest
 from radar.domain.models import OrigemDoAnuncio, Vaga
 from radar.filtering.origem import (
     MOTIVO_DE_CADA_DOMINIO_BLOQUEADO,
-    descarte_sem_origem_generalizado,
+    descarte_generalizado,
     motivo_do_bloqueio,
     origem_bloqueada,
     origem_desconhecida,
@@ -219,11 +219,11 @@ def test_descarte_generalizado_e_mais_da_metade_das_que_exigem_origem(
     descartadas = [vaga(numero, None) for numero in range(sem_origem)]
     vagas = descartadas + [vaga(100 + numero, ORIGEM_PERMITIDA) for numero in range(com_origem)]
 
-    assert descarte_sem_origem_generalizado(descartadas, vagas) is generalizado
+    assert descarte_generalizado(descartadas, vagas) is generalizado
 
 
 def test_vaga_de_fonte_que_nao_exige_origem_nao_dilui_o_descarte_generalizado():
     descartada = vaga(1, None)
     vagas = [descartada, *(da_jooble(numero, None) for numero in range(2, 6))]
 
-    assert descarte_sem_origem_generalizado([descartada], vagas)
+    assert descarte_generalizado([descartada], vagas)

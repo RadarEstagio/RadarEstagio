@@ -27,7 +27,7 @@ from radar.filtering.duplicatas import (
     republicacao_da_mesma_empresa,
 )
 from radar.filtering.origem import (
-    descarte_sem_origem_generalizado,
+    descarte_generalizado,
     separar_as_de_origem_bloqueada,
     separar_as_sem_origem_identificada,
 )
@@ -221,7 +221,7 @@ def executar(
             "%d vagas sem origem identificada ficaram de fora antes da extração",
             len(sem_origem_identificada),
         )
-    incompleta_pela_origem = descarte_sem_origem_generalizado(sem_origem_identificada, enriquecidas)
+    incompleta_pela_origem = descarte_generalizado(sem_origem_identificada, enriquecidas)
     if incompleta_pela_origem:
         logger.warning(
             "A maioria das vagas que exigem origem ficou sem ela (%d); "
