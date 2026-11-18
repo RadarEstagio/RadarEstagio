@@ -385,7 +385,7 @@ def test_pagina_lida_sem_descricao_ainda_guarda_a_origem(httpx_mock: HTTPXMock):
     assert enriquecidas[0].descricao == vaga_do_parceiro().descricao
 
 
-@pytest.mark.parametrize("status", [403, 404, 410, 503])
+@pytest.mark.parametrize("status", [403, 429, 503])
 def test_pagina_que_nao_foi_lida_deixa_a_vaga_sem_origem(httpx_mock: HTTPXMock, status: int):
     httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=status)
     with httpx.Client() as cliente:
@@ -438,7 +438,7 @@ def test_enriquecedor_novo_nao_tem_pagina_nao_lida():
         assert EnriquecedorDeDescricoes(cliente).paginas_nao_lidas == 0
 
 
-@pytest.mark.parametrize("status", [403, 404, 503])
+@pytest.mark.parametrize("status", [403, 429, 503])
 def test_conta_a_pagina_que_respondeu_com_erro_http(httpx_mock: HTTPXMock, status: int):
     httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=status)
     with httpx.Client() as cliente:
@@ -515,3 +515,44 @@ def test_soma_as_paginas_nao_lidas_e_conta_uma_vez_a_mesma_vaga_pedida_de_novo(
     assert len(httpx_mock.get_requests()) == 3
     assert [vaga.descricao_completa for vaga in primeira] == [False, True, False]
     assert segunda == [vaga_do_parceiro(), vaga_truncada()]
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_vaga_cujo_anuncio_a_adzuna_retirou_sai_da_lista(httpx_mock: HTTPXMock, status: int):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=status)
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+        enriquecidas = enriquecedor.enriquecer([vaga_do_parceiro()])
+
+    assert enriquecidas == []
+    assert enriquecedor.paginas_nao_lidas == 0
+
+
+def test_anuncio_retirado_sai_sem_levar_as_outras_vagas(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=410)
+    httpx_mock.add_response(
+        url="https://www.adzuna.com.br/details/5862521726",
+        text=CAMINHO_DA_PAGINA.read_text(encoding="utf-8"),
+    )
+    da_jooble = vaga_truncada().model_copy(update={"id_externo": "7", "fonte": "jooble"})
+    with httpx.Client() as cliente:
+        enriquecidas = EnriquecedorDeDescricoes(cliente).enriquecer(
+            [vaga_truncada(), vaga_do_parceiro(), da_jooble]
+        )
+
+    assert [(vaga.fonte, vaga.id_externo) for vaga in enriquecidas] == [
+        ("adzuna", "5862521726"),
+        ("jooble", "7"),
+    ]
+
+
+def test_anuncio_retirado_e_pedido_uma_vez_e_continua_fora(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=URL_DA_PAGINA_COM_PARCEIRO, status_code=410)
+    with httpx.Client() as cliente:
+        enriquecedor = EnriquecedorDeDescricoes(cliente)
+
+        enriquecedor.enriquecer([vaga_do_parceiro()])
+        segunda = enriquecedor.enriquecer([vaga_do_parceiro()])
+
+    assert segunda == []
+    assert len(httpx_mock.get_requests()) == 1

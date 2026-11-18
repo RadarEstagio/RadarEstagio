@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 FONTE_ADZUNA = "adzuna"
 CAMINHO_DO_ANUNCIO_LAND_AD = "/land/ad/"
 CAMINHO_DA_PAGINA_DE_DETALHE = "/details/"
+STATUS_DE_ANUNCIO_RETIRADO = frozenset({404, 410})
 BARRAS_REPETIDAS = re.compile(r"/{2,}")
 CLASSE_DA_DESCRICAO = "adp-body"
 PASTA_DOS_LOGOS_DE_PARCEIRO = "/partners/"
@@ -37,22 +38,31 @@ TAGS_SEM_FECHAMENTO = frozenset(
 )
 
 
+class AnuncioRetirado(Exception):
+    pass
+
+
 class EnriquecedorDeDescricoes:
     def __init__(self, cliente_http: httpx.Client) -> None:
         self._cliente_http = cliente_http
-        self._cache: dict[tuple[str, str], Vaga] = {}
+        self._cache: dict[tuple[str, str], Vaga | None] = {}
         self.paginas_nao_lidas = 0
 
     def enriquecer(self, vagas: list[Vaga]) -> list[Vaga]:
-        return [self._enriquecer(vaga) for vaga in vagas]
+        enriquecidas = (self._enriquecer(vaga) for vaga in vagas)
+        return [vaga for vaga in enriquecidas if vaga is not None]
 
-    def _enriquecer(self, vaga: Vaga) -> Vaga:
+    def _enriquecer(self, vaga: Vaga) -> Vaga | None:
         if vaga.fonte != FONTE_ADZUNA:
             return vaga
         chave = (vaga.fonte, vaga.id_externo)
         if chave in self._cache:
             return self._cache[chave]
-        lida = ler_pagina_do_anuncio(vaga, self._cliente_http)
+        try:
+            lida = ler_pagina_do_anuncio(vaga, self._cliente_http)
+        except AnuncioRetirado:
+            self._cache[chave] = None
+            return None
         if lida is None:
             self.paginas_nao_lidas += 1
         self._cache[chave] = lida if lida is not None else vaga
@@ -82,6 +92,9 @@ def endereco_da_pagina_do_anuncio(vaga: Vaga) -> str:
 def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga | None:
     try:
         resposta = cliente_http.get(endereco_da_pagina_do_anuncio(vaga), follow_redirects=True)
+        if resposta.status_code in STATUS_DE_ANUNCIO_RETIRADO:
+            logger.info("A Adzuna retirou o anúncio da vaga %s", vaga.id_externo)
+            raise AnuncioRetirado(vaga.id_externo)
         resposta.raise_for_status()
     except (httpx.HTTPError, httpx.InvalidURL) as erro:
         logger.warning(
