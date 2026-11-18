@@ -159,6 +159,8 @@ class ResumoDaExecucao(BaseModel):
     vagas_de_origem_bloqueada: int = 0
     vagas_sem_origem_identificada: int = 0
     coleta_incompleta_pela_origem: bool = False
+    vagas_de_anuncio_retirado: int = 0
+    coleta_incompleta_por_anuncios_retirados: bool = False
     paginas_de_anuncio_lidas: int = 0
     paginas_de_anuncio_sem_origem: int = 0
     perguntas_do_dia_seguinte: int = 0
@@ -205,12 +207,18 @@ def executar(
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
     a_enriquecer = candidatas_de_algum_perfil(unicas, usuarios, repositorio)
     enriquecidas = enriquecer(a_enriquecer)
+    retiradas = sem_as_vagas(a_enriquecer, enriquecidas)
     origens_lidas = origens_lidas_no_enriquecimento(a_enriquecer, enriquecidas)
     candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
     candidatas, sem_origem_identificada = separar_as_sem_origem_identificada(candidatas)
     unicas = substituir_enriquecidas(
-        sem_as_vagas(unicas, de_origem_bloqueada + sem_origem_identificada), candidatas
+        sem_as_vagas(unicas, retiradas + de_origem_bloqueada + sem_origem_identificada),
+        candidatas,
     )
+    if retiradas:
+        logger.info(
+            "%d vagas com anúncio retirado ficaram de fora antes da extração", len(retiradas)
+        )
     if de_origem_bloqueada:
         logger.info(
             "%d vagas de origem bloqueada ficaram de fora antes da extração",
@@ -227,6 +235,13 @@ def executar(
             "A maioria das vagas que exigem origem ficou sem ela (%d); "
             "a coleta conta como incompleta",
             len(sem_origem_identificada),
+        )
+        incompleta = True
+    incompleta_pelos_retirados = descarte_generalizado(retiradas, a_enriquecer)
+    if incompleta_pelos_retirados:
+        logger.warning(
+            "A maioria dos anúncios da Adzuna veio retirada (%d); a coleta conta como incompleta",
+            len(retiradas),
         )
         incompleta = True
     de_pagina_nao_lida = [vaga for vaga in sem_origem_identificada if vaga.origem is None]
@@ -310,6 +325,8 @@ def executar(
         vagas_de_origem_bloqueada=len(de_origem_bloqueada),
         vagas_sem_origem_identificada=len(sem_origem_identificada),
         coleta_incompleta_pela_origem=incompleta_pela_origem,
+        vagas_de_anuncio_retirado=len(retiradas),
+        coleta_incompleta_por_anuncios_retirados=incompleta_pelos_retirados,
         paginas_de_anuncio_lidas=len(origens_lidas),
         paginas_de_anuncio_sem_origem=sum(not origem.identificada() for origem in origens_lidas),
         perguntas_do_dia_seguinte=len(perguntas.enviadas),

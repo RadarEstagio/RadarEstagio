@@ -2543,30 +2543,40 @@ def vaga_da_adzuna_antes_da_pagina(numero: int) -> Vaga:
 
 
 class EnriquecedorComOrigens:
-    def __init__(self, origens: dict[str, OrigemDoAnuncio | None]) -> None:
+    def __init__(
+        self,
+        origens: dict[str, OrigemDoAnuncio | None],
+        retirados: frozenset[str] = frozenset(),
+    ) -> None:
         self._origens = origens
+        self._retirados = retirados
 
     def __call__(self, vagas: list[Vaga]) -> list[Vaga]:
         return [
-            item.model_copy(update={"origem": self._origens.get(item.id_externo)}) for item in vagas
+            item.model_copy(update={"origem": self._origens.get(item.id_externo)})
+            for item in vagas
+            if item.id_externo not in self._retirados
         ]
 
 
 def executar_com_origens(
-    origens: dict[str, OrigemDoAnuncio | None], usuarios: list[Usuario] | None = None
+    origens: dict[str, OrigemDoAnuncio | None],
+    usuarios: list[Usuario] | None = None,
+    retirados: frozenset[str] = frozenset(),
 ) -> tuple[ResumoDaExecucao, ExtratorFalso, NotificadorFalso, RepositorioFalso]:
+    numeros = sorted([*origens, *retirados], key=int)
     extrator = ExtratorFalso({})
     notificador = NotificadorFalso()
     repositorio = RepositorioFalso(usuarios or [usuario()])
     resumo = executar(
-        ColetorFalso([vaga_da_adzuna_antes_da_pagina(int(numero)) for numero in origens]),
+        ColetorFalso([vaga_da_adzuna_antes_da_pagina(int(numero)) for numero in numeros]),
         extrator,
         notificador,
         repositorio,
         parametros(),
         AGORA_DE_TESTE,
-        PontuadorFalso({numero: 90 - int(numero) for numero in origens}),
-        enriquecer=EnriquecedorComOrigens(origens),
+        PontuadorFalso({numero: 90 - int(numero) for numero in numeros}),
+        enriquecer=EnriquecedorComOrigens(origens, retirados),
     )
     return resumo, extrator, notificador, repositorio
 
@@ -2877,6 +2887,7 @@ def estudante_de_direito() -> Usuario:
 def executar_com_a_vaga_de_direito_lida_como(
     origem_da_vaga_de_direito: OrigemDoAnuncio | None,
     origem_das_vagas_de_computacao: OrigemDoAnuncio = ORIGEM_SOURCESTACK,
+    retirados: frozenset[str] = frozenset(),
 ) -> tuple[ResumoDaExecucao, NotificadorFalso]:
     vaga_de_direito = vaga(4, titulo="Estágio em Direito").model_copy(update={"origem": None})
     vagas = [vaga_da_adzuna_antes_da_pagina(numero) for numero in (1, 2, 3)] + [vaga_de_direito]
@@ -2890,7 +2901,7 @@ def executar_com_a_vaga_de_direito_lida_como(
         parametros(),
         AGORA_DE_TESTE,
         PontuadorFalso({str(numero): 80 for numero in range(1, 5)}),
-        enriquecer=EnriquecedorComOrigens(origens | {"4": origem_da_vaga_de_direito}),
+        enriquecer=EnriquecedorComOrigens(origens | {"4": origem_da_vaga_de_direito}, retirados),
     )
     return resumo, notificador
 
@@ -2918,3 +2929,102 @@ def test_pagina_nao_lida_de_vaga_de_outro_perfil_nao_segura_quem_ficou_sem_vaga(
     assert notificador.chats == ["123"]
     assert "Nenhuma vaga nova" in notificador.textos[0]
     assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+
+
+def test_vaga_de_anuncio_retirado_nao_chega_a_extracao_nem_ao_estudante():
+    resumo, extrator, notificador, repositorio = executar_com_origens(
+        {"2": ORIGEM_SOURCESTACK}, retirados=frozenset({"1"})
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert ids_enviados(resumo) == ["2"]
+    assert "Empresa 1" not in notificador.textos[0]
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["2"])]
+    assert resumo.vagas_de_anuncio_retirado == 1
+    assert resumo.vagas_sem_origem_identificada == 0
+    assert resumo.vagas_unicas == 1
+
+
+def test_metade_de_anuncios_retirados_nao_torna_a_coleta_incompleta():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"2": ORIGEM_SOURCESTACK}, retirados=frozenset({"1"})
+    )
+
+    assert not resumo.coleta_incompleta_por_anuncios_retirados
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert len(notificador.textos) == 1
+
+
+def test_anuncio_retirado_da_unica_vaga_de_um_perfil_nao_segura_a_mensagem_dele():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(None, retirados=frozenset({"4"}))
+
+    assert resumo.vagas_de_anuncio_retirado == 1
+    assert resumo.vagas_sem_origem_identificada == 0
+    assert (
+        "Nenhuma vaga nova" in dict(zip(notificador.chats, notificador.textos, strict=True))["456"]
+    )
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+
+
+def test_maioria_de_anuncios_retirados_segura_a_mensagem_de_quem_ficou_sem_vaga(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, extrator, notificador, _ = executar_com_origens(
+        {"3": ORIGEM_EMPREGO_PT}, retirados=frozenset({"1", "2"})
+    )
+
+    assert extrator.extraidas == []
+    assert notificador.textos == []
+    assert resumo.vagas_de_anuncio_retirado == 2
+    assert resumo.coleta_incompleta_por_anuncios_retirados
+    assert not resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+    assert "A maioria dos anúncios da Adzuna veio retirada (2)" in caplog.text
+
+
+def test_maioria_de_anuncios_retirados_nao_segura_quem_ainda_tem_vaga():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"3": ORIGEM_SOURCESTACK}, retirados=frozenset({"1", "2"})
+    )
+
+    assert resumo.coleta_incompleta_por_anuncios_retirados
+    assert ids_enviados(resumo) == ["3"]
+    assert len(notificador.textos) == 1
+
+
+def test_vagas_da_jooble_nao_diluem_a_proporcao_de_anuncios_retirados():
+    vagas = [vaga_da_adzuna_antes_da_pagina(1), vaga(2, fonte="jooble"), vaga(3, fonte="jooble")]
+    resumo = executar(
+        ColetorFalso(vagas),
+        ExtratorFalso({}),
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"2": 80, "3": 70}),
+        enriquecer=EnriquecedorComOrigens({}, frozenset({"1"})),
+    )
+
+    assert resumo.coleta_incompleta_por_anuncios_retirados
+    assert ids_enviados(resumo) == ["2", "3"]
+
+
+def test_informa_no_log_quantas_vagas_sairam_por_anuncio_retirado(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    executar_com_origens({"3": ORIGEM_SOURCESTACK}, retirados=frozenset({"1"}))
+
+    assert "1 vagas com anúncio retirado ficaram de fora antes da extração" in caplog.text
+
+
+def test_execucao_sem_anuncio_retirado_nao_fala_dele_no_log(caplog: pytest.LogCaptureFixture):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, _, _, _ = executar_com_origens({"1": ORIGEM_SOURCESTACK})
+
+    assert "retirad" not in caplog.text
+    assert resumo.vagas_de_anuncio_retirado == 0
