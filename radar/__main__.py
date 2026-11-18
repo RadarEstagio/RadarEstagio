@@ -156,9 +156,13 @@ def avaliar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
         vagas = filtrar(remover_duplicatas(coletadas), perfil)
-        enriquecidas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
-            vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
-        )
+        a_enriquecer = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
+        enriquecidas = EnriquecedorDeDescricoes(cliente_http).enriquecer(a_enriquecer)
+        if len(enriquecidas) < len(a_enriquecer):
+            print(
+                f"{len(a_enriquecer) - len(enriquecidas)} vagas descartadas "
+                "com anúncio retirado da Adzuna"
+            )
         selecionadas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
         selecionadas, sem_origem_identificada = separar_as_sem_origem_identificada(selecionadas)
         if de_origem_bloqueada:
@@ -397,6 +401,7 @@ def executar_fluxo(
         f"{len(resumo.usuarios_pausados_por_recusa)} pausados por recusa; "
         f"{resumo.vagas_de_origem_bloqueada} vagas descartadas por virem do emprego.pt, "
         f"{resumo.vagas_sem_origem_identificada} descartadas sem origem identificada, "
+        f"{resumo.vagas_de_anuncio_retirado} com anúncio retirado, "
         f"{resumo.paginas_de_anuncio_sem_origem} de {resumo.paginas_de_anuncio_lidas} "
         "páginas de anúncio lidas sem origem identificada, "
         f"{enriquecedor.paginas_nao_lidas} páginas de anúncio não lidas"
@@ -442,6 +447,10 @@ def executar_fluxo(
             vagas_de_origem_bloqueada=resumo.vagas_de_origem_bloqueada,
             vagas_sem_origem_identificada=resumo.vagas_sem_origem_identificada,
             coleta_incompleta_pela_origem=resumo.coleta_incompleta_pela_origem,
+            vagas_de_anuncio_retirado=resumo.vagas_de_anuncio_retirado,
+            coleta_incompleta_por_anuncios_retirados=(
+                resumo.coleta_incompleta_por_anuncios_retirados
+            ),
             paginas_de_anuncio_lidas=resumo.paginas_de_anuncio_lidas,
             paginas_de_anuncio_sem_origem=resumo.paginas_de_anuncio_sem_origem,
             paginas_de_anuncio_nao_lidas=enriquecedor.paginas_nao_lidas,

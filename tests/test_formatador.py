@@ -1198,3 +1198,36 @@ def test_resumo_conta_as_perguntas_do_dia_seguinte_e_avisa_das_que_falharam():
     assert "Perguntas do dia seguinte enviadas: 3" in sem_falha
     assert "⚠️ Perguntas do dia seguinte com falha" not in sem_falha
     assert "⚠️ Perguntas do dia seguinte com falha: 2" in com_falha
+
+
+def test_resumo_mostra_as_vagas_de_anuncio_retirado_so_quando_ha():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_de_anuncio_retirado=2
+    )
+    sem = formatar_resumo_da_execucao(MOMENTO_DE_TESTE, 4, 4, 28, 480, 2)
+
+    assert "Vagas com anúncio retirado da Adzuna: 2" in com.splitlines()
+    assert "⚠️" not in com
+    assert "retirad" not in sem
+
+
+def test_resumo_explica_a_coleta_que_contou_como_incompleta_pelos_anuncios_retirados():
+    com = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE,
+        4,
+        4,
+        0,
+        480,
+        2,
+        vagas_de_anuncio_retirado=30,
+        coleta_incompleta_por_anuncios_retirados=True,
+    )
+    sem = formatar_resumo_da_execucao(
+        MOMENTO_DE_TESTE, 4, 4, 9, 480, 2, vagas_de_anuncio_retirado=3
+    )
+
+    assert (
+        "⚠️ A maioria dos anúncios da Adzuna veio retirada: a coleta contou como incompleta "
+        "(pode ser bloqueio da Adzuna)"
+    ) in com.splitlines()
+    assert "contou como incompleta" not in sem

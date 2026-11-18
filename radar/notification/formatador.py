@@ -178,6 +178,8 @@ def formatar_resumo_da_execucao(
     vagas_de_origem_bloqueada: int = 0,
     vagas_sem_origem_identificada: int = 0,
     coleta_incompleta_pela_origem: bool = False,
+    vagas_de_anuncio_retirado: int = 0,
+    coleta_incompleta_por_anuncios_retirados: bool = False,
     paginas_de_anuncio_lidas: int = 0,
     paginas_de_anuncio_sem_origem: int = 0,
     paginas_de_anuncio_nao_lidas: int = 0,
@@ -206,6 +208,13 @@ def formatar_resumo_da_execucao(
         linhas.append(
             "⚠️ A maioria das vagas da Adzuna saiu sem origem identificada: "
             "a coleta contou como incompleta"
+        )
+    if vagas_de_anuncio_retirado:
+        linhas.append(f"Vagas com anúncio retirado da Adzuna: {vagas_de_anuncio_retirado}")
+    if coleta_incompleta_por_anuncios_retirados:
+        linhas.append(
+            "⚠️ A maioria dos anúncios da Adzuna veio retirada: a coleta contou como incompleta "
+            "(pode ser bloqueio da Adzuna)"
         )
     if paginas_de_anuncio_sem_origem > (
         PROPORCAO_DE_ALERTA_DAS_PAGINAS_SEM_ORIGEM * paginas_de_anuncio_lidas

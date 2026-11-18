@@ -852,7 +852,7 @@ def vagas_com_descricao_cortada_pela_api(quantidade: int) -> dict:
 
 
 def responder_com_as_paginas_dos_anuncios(
-    httpx_mock: HTTPXMock, pagina_de_cada_anuncio: dict[str, str | None]
+    httpx_mock: HTTPXMock, pagina_de_cada_anuncio: dict[str, str | int | None]
 ) -> list[str]:
     ids_pedidos_ao_gemini: list[str] = []
 
@@ -870,6 +870,8 @@ def responder_com_as_paginas_dos_anuncios(
         pagina = pagina_de_cada_anuncio[requisicao.url.path.split("/")[-1]]
         if pagina is None:
             return httpx.Response(403, text="Forbidden")
+        if isinstance(pagina, int):
+            return httpx.Response(pagina, text="Anúncio retirado")
         return httpx.Response(200, text=pagina)
 
     httpx_mock.add_response(
@@ -885,7 +887,7 @@ def responder_com_as_paginas_dos_anuncios(
 def rodar_com_as_paginas_dos_anuncios(
     httpx_mock: HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
-    pagina_de_cada_anuncio: dict[str, str | None],
+    pagina_de_cada_anuncio: dict[str, str | int | None],
 ) -> list[str]:
     ids_pedidos_ao_gemini = responder_com_as_paginas_dos_anuncios(
         httpx_mock, pagina_de_cada_anuncio
@@ -997,8 +999,55 @@ def test_diario_com_a_adzuna_recusando_quase_toda_pagina_segura_quem_ficou_sem_v
     ) in resumo.splitlines()
 
 
+@pytest.mark.parametrize("status", [404, 410])
+def test_diario_descarta_a_vaga_cujo_anuncio_a_adzuna_retirou_sem_alarme_de_pagina_nao_lida(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+    status: int,
+):
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock,
+        monkeypatch,
+        {"9101": status, "9102": pagina_do_sourcestack(), "9103": pagina_do_sourcestack()},
+    )
+
+    assert sorted(ids_pedidos_ao_gemini) == ["adzuna:9102", "adzuna:9103"]
+    [mensagem] = mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO)
+    assert "Desenvolvimento de Software 1</b>" not in mensagem
+    assert "Desenvolvimento de Software 2</b>" in mensagem
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas com anúncio retirado da Adzuna: 1" in resumo.splitlines()
+    assert "não lidas" not in resumo
+    assert "sem origem identificada" not in resumo
+    assert "contou como incompleta" not in resumo
+    saida = capsys.readouterr().out
+    assert "1 com anúncio retirado" in saida
+    assert "0 páginas de anúncio não lidas" in saida
+
+
+def test_diario_com_toda_vaga_de_anuncio_retirado_segura_quem_ficou_sem_vaga(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch
+):
+    ids_pedidos_ao_gemini = rodar_com_as_paginas_dos_anuncios(
+        httpx_mock, monkeypatch, {"9101": 410, "9102": 404, "9103": 410}
+    )
+
+    assert ids_pedidos_ao_gemini == []
+    assert mensagens_para(httpx_mock, CHAT_DA_ESTUDANTE_DE_COMPUTACAO) == []
+    resumo = mensagens_para(httpx_mock, CHAT_DE_OPERACAO)[-1]
+    assert "Vagas com anúncio retirado da Adzuna: 3" in resumo.splitlines()
+    assert "Mensagens seguradas pela coleta incompleta: 1" in resumo
+    assert (
+        "⚠️ A maioria dos anúncios da Adzuna veio retirada: a coleta contou como incompleta "
+        "(pode ser bloqueio da Adzuna)"
+    ) in resumo.splitlines()
+
+
 def avaliar_com_as_paginas_dos_anuncios(
-    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, pagina_de_cada_anuncio: dict[str, str]
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    pagina_de_cada_anuncio: dict[str, str | int | None],
 ) -> list[str]:
     ids_pedidos_ao_gemini = responder_com_as_paginas_dos_anuncios(
         httpx_mock, pagina_de_cada_anuncio
@@ -1479,3 +1528,16 @@ def test_chave_da_jooble_que_nao_cabe_na_url_nao_derruba_a_execucao_nem_aparece_
     for texto in (resumo, mensagem, caplog.text, saida.out, saida.err):
         assert "chave-secreta" not in texto
         assert "colada" not in texto
+
+
+def test_avaliacao_manual_nao_pede_a_ia_a_vaga_de_anuncio_retirado(
+    httpx_mock: HTTPXMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+):
+    ids_pedidos_ao_gemini = avaliar_com_as_paginas_dos_anuncios(
+        httpx_mock, monkeypatch, {"9101": 410, "9102": pagina_do_sourcestack()}
+    )
+
+    assert ids_pedidos_ao_gemini == ["adzuna:9102"]
+    saida = capsys.readouterr().out
+    assert "1 vagas descartadas com anúncio retirado da Adzuna" in saida
+    assert "extraindo 1 com" in saida
