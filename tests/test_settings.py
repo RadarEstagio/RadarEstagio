@@ -48,16 +48,99 @@ def test_jooble_nao_entra_nas_fontes_padrao_e_exige_chave():
         Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes="jooble"))
 
 
-def test_fontes_aceitam_espacos_e_maiusculas():
-    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Gupy "))
+def configurar_o_ambiente_do_workflow(
+    monkeypatch: pytest.MonkeyPatch, fontes: str, chave_da_jooble: str
+) -> None:
+    ambiente = {
+        "ADZUNA_APP_ID": "adzuna-id",
+        "ADZUNA_APP_KEY": "adzuna-chave",
+        "GEMINI_API_KEY": "gemini-chave",
+        "TELEGRAM_BOT_TOKEN": "telegram-token",
+        "TELEGRAM_CHAT_ID": "123",
+        "FONTES": fontes,
+        "JOOBLE_API_KEY": chave_da_jooble,
+    }
+    for nome, valor in ambiente.items():
+        monkeypatch.setenv(nome, valor)
 
-    assert settings.fontes_selecionadas() == ["gupy"]
+
+def test_workflow_sem_a_variavel_e_sem_o_secret_da_jooble_roda_so_com_a_adzuna(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna", chave_da_jooble="")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna"]
+
+
+def test_variavel_ligada_sem_o_secret_da_jooble_invalida_a_configuracao_inteira(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble="")
+
+    with pytest.raises(ValidationError, match="JOOBLE_API_KEY é obrigatória"):
+        Settings(_env_file=None)
+
+
+def test_secret_da_jooble_sem_a_variavel_ligada_nao_liga_a_fonte(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna", chave_da_jooble="chave")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna"]
+
+
+def test_variavel_e_secret_da_jooble_ligam_as_duas_fontes(monkeypatch: pytest.MonkeyPatch):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble="chave")
+
+    assert Settings(_env_file=None).fontes_selecionadas() == ["adzuna", "jooble"]
+
+
+@pytest.mark.parametrize("colada", ["chave\n", "chave\r\n", "\tchave ", "  chave"])
+def test_chave_da_jooble_colada_com_espaco_ou_quebra_de_linha_e_guardada_limpa(
+    monkeypatch: pytest.MonkeyPatch, colada: str
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble=colada)
+
+    assert Settings(_env_file=None).jooble_api_key == "chave"
+
+
+def test_chave_da_jooble_so_com_espacos_continua_valendo_como_ausente(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,jooble", chave_da_jooble=" \n")
+
+    with pytest.raises(ValidationError, match="JOOBLE_API_KEY é obrigatória"):
+        Settings(_env_file=None)
+
+
+def test_fontes_aceitam_espacos_e_maiusculas():
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=" Adzuna "))
+
+    assert settings.fontes_selecionadas() == ["adzuna"]
 
 
 @pytest.mark.parametrize("fontes", ["", "linkedin", "adzuna,linkedin"])
 def test_fontes_desconhecidas_ou_vazias_sao_rejeitadas(fontes: str):
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="ao menos uma entre adzuna, jooble"):
         Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=fontes))
+
+
+@pytest.mark.parametrize("fontes", ["gupy", "adzuna,gupy", "adzuna, Gupy ", "gupy,linkedin"])
+def test_gupy_e_recusada_em_fontes_com_o_motivo_e_onde_ler(fontes: str):
+    with pytest.raises(ValidationError) as erro:
+        Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=fontes))
+
+    assert "gupy está desligada pelos termos de uso" in str(erro.value)
+    assert "docs/frentes-externas.md" in str(erro.value)
+
+
+def test_variavel_do_repositorio_com_a_gupy_invalida_a_configuracao_inteira(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    configurar_o_ambiente_do_workflow(monkeypatch, fontes="adzuna,gupy", chave_da_jooble="")
+
+    with pytest.raises(ValidationError, match="gupy está desligada pelos termos de uso"):
+        Settings(_env_file=None)
 
 
 def test_sem_banco_exige_chat_id_do_telegram():

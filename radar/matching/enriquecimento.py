@@ -1,19 +1,22 @@
 import logging
 import re
 from html.parser import HTMLParser
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 import httpx
 
-from radar.domain.models import Vaga
+from radar.domain.models import OrigemDoAnuncio, Vaga
 from radar.domain.texto import sem_caracteres_invalidos
 
 logger = logging.getLogger(__name__)
 
 FONTE_ADZUNA = "adzuna"
 CAMINHO_DO_ANUNCIO_LAND_AD = "/land/ad/"
+CAMINHO_DA_PAGINA_DE_DETALHE = "/details/"
 BARRAS_REPETIDAS = re.compile(r"/{2,}")
 CLASSE_DA_DESCRICAO = "adp-body"
+PASTA_DOS_LOGOS_DE_PARCEIRO = "/partners/"
+PADRAO_DO_ID_DO_PARCEIRO = re.compile(r'"source_id"\s*:\s*"([^"]+)"')
 TAGS_DE_QUEBRA = frozenset({"br", "div", "li", "p"})
 TAGS_SEM_FECHAMENTO = frozenset(
     {
@@ -38,33 +41,22 @@ class EnriquecedorDeDescricoes:
     def __init__(self, cliente_http: httpx.Client) -> None:
         self._cliente_http = cliente_http
         self._cache: dict[tuple[str, str], Vaga] = {}
+        self.paginas_nao_lidas = 0
 
     def enriquecer(self, vagas: list[Vaga]) -> list[Vaga]:
-        sem_pagina_de_detalhe = [
-            vaga
-            for vaga in vagas
-            if descricao_parece_truncada(vaga) and aponta_para_anuncio_land_ad(vaga.url)
-        ]
-        if sem_pagina_de_detalhe:
-            logger.info(
-                "%d vagas da Adzuna com anúncio /land/ad/ ficaram com a descrição da API",
-                len(sem_pagina_de_detalhe),
-            )
         return [self._enriquecer(vaga) for vaga in vagas]
 
     def _enriquecer(self, vaga: Vaga) -> Vaga:
-        if not descricao_parece_truncada(vaga) or aponta_para_anuncio_land_ad(vaga.url):
+        if vaga.fonte != FONTE_ADZUNA:
             return vaga
         chave = (vaga.fonte, vaga.id_externo)
         if chave in self._cache:
             return self._cache[chave]
-        enriquecida = buscar_descricao_completa(vaga, self._cliente_http)
-        self._cache[chave] = enriquecida
-        return enriquecida
-
-
-def descricao_parece_truncada(vaga: Vaga) -> bool:
-    return vaga.fonte == FONTE_ADZUNA and not vaga.descricao_completa
+        lida = ler_pagina_do_anuncio(vaga, self._cliente_http)
+        if lida is None:
+            self.paginas_nao_lidas += 1
+        self._cache[chave] = lida if lida is not None else vaga
+        return self._cache[chave]
 
 
 def aponta_para_anuncio_land_ad(url: str) -> bool:
@@ -79,9 +71,17 @@ def caminho_da_url(url: str) -> str:
     return BARRAS_REPETIDAS.sub("/", caminho).casefold()
 
 
-def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
+def endereco_da_pagina_do_anuncio(vaga: Vaga) -> str:
+    if not aponta_para_anuncio_land_ad(vaga.url):
+        return vaga.url
+    partes = urlsplit(vaga.url)
+    identificador = quote(vaga.id_externo, safe="")
+    return f"{partes.scheme}://{partes.netloc}{CAMINHO_DA_PAGINA_DE_DETALHE}{identificador}"
+
+
+def ler_pagina_do_anuncio(vaga: Vaga, cliente_http: httpx.Client) -> Vaga | None:
     try:
-        resposta = cliente_http.get(vaga.url, follow_redirects=True)
+        resposta = cliente_http.get(endereco_da_pagina_do_anuncio(vaga), follow_redirects=True)
         resposta.raise_for_status()
     except (httpx.HTTPError, httpx.InvalidURL) as erro:
         logger.warning(
@@ -89,12 +89,19 @@ def buscar_descricao_completa(vaga: Vaga, cliente_http: httpx.Client) -> Vaga:
             vaga.id_externo,
             type(erro).__name__,
         )
-        return vaga
+        return None
+    com_origem = vaga.model_copy(update={"origem": extrair_origem_da_pagina(resposta.text)})
     descricao = extrair_descricao_da_pagina(resposta.text)
     if not descricao:
         logger.warning("Página da vaga %s da Adzuna não contém a descrição", vaga.id_externo)
-        return vaga
-    return vaga.model_copy(update={"descricao": descricao, "descricao_completa": True})
+        return com_origem
+    return com_origem.model_copy(update={"descricao": descricao, "descricao_completa": True})
+
+
+def extrair_origem_da_pagina(pagina: str) -> OrigemDoAnuncio:
+    extrator = ExtratorDaOrigem()
+    extrator.feed(pagina)
+    return OrigemDoAnuncio(parceiro=extrator.parceiro, id_do_parceiro=extrator.id_do_parceiro)
 
 
 def extrair_descricao_da_pagina(pagina: str) -> str:
@@ -129,3 +136,35 @@ class ExtratorDaDescricao(HTMLParser):
     def handle_data(self, dados: str) -> None:
         if self._profundidade:
             self.partes.append(dados)
+
+
+class ExtratorDaOrigem(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parceiro: str | None = None
+        self.id_do_parceiro: str | None = None
+        self._logo_encontrado = False
+        self._dentro_de_script = False
+
+    def handle_starttag(self, tag: str, atributos: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            self._dentro_de_script = True
+            return
+        if tag != "img" or self._logo_encontrado:
+            return
+        campos = dict(atributos)
+        if PASTA_DOS_LOGOS_DE_PARCEIRO not in (campos.get("src") or "").casefold():
+            return
+        self._logo_encontrado = True
+        self.parceiro = (campos.get("alt") or "").strip() or None
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "script":
+            self._dentro_de_script = False
+
+    def handle_data(self, dados: str) -> None:
+        if not self._dentro_de_script or self.id_do_parceiro is not None:
+            return
+        encontrado = PADRAO_DO_ID_DO_PARCEIRO.search(dados)
+        if encontrado:
+            self.id_do_parceiro = encontrado.group(1).strip() or None

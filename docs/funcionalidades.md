@@ -266,7 +266,8 @@ os seis motivos negativos em "Não serviu" e grava `candidatura_iniciada` em "Me
 
 #### 01. Coleta por múltiplas fontes
 
-Adzuna por padrão (a Gupy saiu em 12/09 pelos termos de uso), no máximo 25 requisições por
+Adzuna por padrão (a Gupy saiu em 12/09 pelos termos de uso, e desde 16/11 `gupy` em `FONTES` é
+recusada na configuração), no máximo 25 requisições por
 minuto e parada no limite do dia, da semana ou do mês; buscas consideram a cidade de cada perfil presencial, híbrido ou
 indiferente e a maior cidade da região imediata dela. Perfil remoto não acrescenta cidade à busca.
 
@@ -274,9 +275,22 @@ indiferente e a maior cidade da região imediata dela. Perfil remoto não acresc
 
 #### 02. Jooble opcional
 
-Coletor pronto; exige chave e inclusão em `FONTES`.
+Coletor pronto e desligado por padrão; exige `JOOBLE_API_KEY` e inclusão em `FONTES`, que em
+produção é uma variável do repositório. Busca só "estágio" em cada cidade de busca e no país, com
+até 5 páginas de 100 por região, e para no saldo das 100 requisições diárias da chave; a entrega
+imediata guarda o que o diário ainda vai gastar. Cada vaga traz o domínio de origem que a Jooble
+informa, e a que vem de gupy.io, linkedin.com ou emprego.pt é descartada no coletor. Com a fonte
+ligada, o resumo de operação mostra as requisições do dia e avisa quando a cota esgota ou quando
+a fonte falha, inteira ou no meio (16/11/2026). O mesmo anúncio vindo também da Adzuna fica com a
+cópia da Adzuna.
 
-**Código de referência:** `radar/collectors/jooble.py`, `radar/settings.py`.
+**Condições e limites:** A Jooble só dá um trecho da descrição, então a vaga leva a nota limitada
+a 60, e a página da vaga no site da Jooble nunca é lida. Os termos da API não estão publicados e
+a pergunta à Jooble está pendente. O que não foi medido está nas
+[decisões do motor](decisoes-do-motor.md#jooble-16112026).
+
+**Código de referência:** `radar/collectors/jooble.py`, `radar/collectors/cota.py`,
+`radar/cota.py`, `radar/filtering/origem.py`, `radar/settings.py`.
 
 #### 03. Tolerância a fonte indisponível
 
@@ -303,11 +317,22 @@ inclusive depois de rótulo como "Cursos aceitos:" ou "Formação acadêmica:".
 
 **Código de referência:** `radar/filtering/prefiltro.py`.
 
-#### 06. Enriquecimento
+#### 06. Enriquecimento e corte por origem
 
-Tenta obter descrição mais completa antes da extração.
+Tenta obter descrição mais completa antes da extração e lê, na mesma página, de qual parceiro da
+Adzuna o anúncio veio. Vaga que a Adzuna recebe do emprego.pt, que mantém com candidatura ativa
+anúncios brasileiros vencidos, sai antes da extração e não chega a ninguém (16/11/2026). Desde
+17/11 a página é lida para toda vaga da Adzuna candidata, inclusive a de descrição curta e a
+`/land/ad/` (lida em `/details/`), e a vaga da Adzuna sem origem identificada também sai. O resumo
+de operação diz quantas saíram por cada motivo, avisa quando mais da metade das páginas lidas veio
+sem origem e mostra quantas páginas da Adzuna não puderam ser lidas.
 
-**Código de referência:** `radar/matching/enriquecimento.py`.
+**Condições e limites:** Se a maioria das candidatas da Adzuna sair sem origem, a coleta conta
+como incompleta e segura a mensagem de quem ficou sem vaga; quem perdeu uma candidata por página
+não lida e ficou sem vaga também tem a mensagem segurada. A origem não é gravada no banco. Os
+demais limites estão nas [decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026).
+
+**Código de referência:** `radar/matching/enriquecimento.py`, `radar/filtering/origem.py`.
 
 ### Extração e personalização
 
@@ -397,9 +422,12 @@ Job remove contas após carência e dados associados, incluindo sessões anônim
 
 #### 19. Falhas de entrega
 
-Contagem e pausa após falhas seguidas; resumo de operação.
+Contagem e pausa após recusas seguidas do destinatário (bot bloqueado ou conversa inexistente);
+a mensagem do dia entregue zera a contagem. O resumo de operação diz quem recusou a mensagem do
+dia e quem foi pausado.
 
-**Condições e limites:** Limiar configurável.
+**Condições e limites:** Limiar configurável. O bloqueio só é percebido no envio seguinte, a
+pausa automática não grava motivo e a retomada é pelo site.
 
 #### 20. Agendamento
 
@@ -457,7 +485,8 @@ Os passos concretos e as evidências remotas estão no [guia](guia-publicacao-e-
 - Pagamentos, assinatura e campanhas de marketing por e-mail.
 - Login social na interface, múltiplas cidades/modalidades por perfil ou cadastro pelo diálogo do bot.
 - Ajustes automáticos de pesos por todo feedback ou garantia de processamento único dos callbacks.
-- Ativação automática do Jooble ou enriquecimento específico de todas as fontes que ele agrega.
+- Jooble ligada em produção (em 16/11 a variável `FONTES` do repositório não existe) e
+  enriquecimento da descrição das vagas que ela agrega.
 
 As métricas deduplicam respostas, mas eventos brutos podem repetir; só abertura repetida do
 mesmo envio e pausa ou vínculo do mesmo perfil a menos de um dia do anterior não são gravados.

@@ -1,0 +1,77 @@
+{
+  "totalCount": 6,
+  "jobs": [
+    {
+      "title": "Estágio em Desenvolvimento de <b>Software</b>",
+      "location": "Rio de Janeiro, RJ",
+      "snippet": "&nbsp;...Apoiar o time de <b>desenvolvimento</b> web;\r\n Participar das cerimônias ágeis \r\n Requisitos: cursando Ciência da Computação ou áreas afins&nbsp;...",
+      "salary": "R$ 1.500",
+      "source": "empregos.com.br",
+      "type": "Efetivo",
+      "link": "https://br.jooble.org/jdp/1000000000000000001",
+      "company": "Empresa Exemplo de Tecnologia",
+      "updated": "2026-11-14T11:32:43.5430000",
+      "id": 1000000000000000001
+    },
+    {
+      "title": "ESTÁGIO ADMINISTRATIVO",
+      "location": "Rio de Janeiro, RJ",
+      "snippet": "Auxiliar nas rotinas administrativas, no controle de planilhas e no atendimento a fornecedores.",
+      "salary": "",
+      "source": "infojobs.com.br",
+      "type": "",
+      "link": "https://br.jooble.org/away/-2000000000000000002",
+      "company": "",
+      "updated": "2026-11-11T00:00:00.0000000",
+      "id": -2000000000000000002
+    },
+    {
+      "title": "Estágio em Direito",
+      "location": "Niterói, RJ",
+      "snippet": "&nbsp;...Acompanhar prazos processuais e elaborar minutas de <b>petições</b> sob supervisão...",
+      "salary": "",
+      "source": "pandape.com.br",
+      "type": "Estágio",
+      "link": "https://br.jooble.org/jdp/3000000000000000003",
+      "company": "Escritório Exemplo Advogados",
+      "updated": "2026-11-16T08:49:26.7281474+00:00",
+      "id": 3000000000000000003
+    },
+    {
+      "title": "Estágio em Dados",
+      "location": "Rio de Janeiro, RJ",
+      "snippet": "&nbsp;...Então, olha essa oportunidade de <b>estágio </b>em análise de dados com SQL e Python...",
+      "salary": "",
+      "source": "gupy.io",
+      "type": "",
+      "link": "https://br.jooble.org/jdp/-4000000000000000004",
+      "company": "Oportunidades Exemplo",
+      "updated": "2026-11-13T00:00:00.0000000",
+      "id": -4000000000000000004
+    },
+    {
+      "title": "Estágio em Marketing",
+      "location": "Rio de Janeiro, RJ",
+      "snippet": "Apoiar a produção de conteúdo para redes sociais e o acompanhamento de campanhas.",
+      "salary": "R$ 1.200",
+      "source": "nube.com.br",
+      "type": "Estágio",
+      "link": "https://br.jooble.org/jdp/5000000000000000005",
+      "company": "Agência Exemplo",
+      "updated": "2026-11-12T17:24:54.4230000",
+      "id": 5000000000000000005
+    },
+    {
+      "title": "Assistente Financeiro",
+      "location": "Rio de Janeiro, RJ",
+      "snippet": "Conciliação bancária e contas a pagar. Vaga antiga que a data de corte deixa de fora.",
+      "salary": "",
+      "source": "riovagas.com.br",
+      "type": "Efetivo",
+      "link": "https://br.jooble.org/jdp/6000000000000000006",
+      "company": "Comércio Exemplo",
+      "updated": "2026-10-20T00:00:00.0000000",
+      "id": 6000000000000000006
+    }
+  ]
+}

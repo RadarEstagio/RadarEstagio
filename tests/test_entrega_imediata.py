@@ -10,8 +10,9 @@ from pytest_httpx import HTTPXMock
 
 import radar.__main__ as cli
 from radar.collectors.adzuna import LIMITE_POR_DIA, URL_BUSCA, CotaDaAdzuna
+from radar.collectors.cota import CotaDeRequisicoes
 from radar.collectors.errors import ErroDeColeta
-from radar.cota import reserva_do_diario
+from radar.cota import reserva_do_diario, reserva_do_diario_na_jooble
 from radar.domain.identificadores import trecho_do_id
 from radar.domain.models import ExtracaoDaVaga, Perfil, Usuario, Vaga
 from radar.domain.perfil_fixo import perfil_de_exemplo
@@ -23,6 +24,7 @@ from radar.entrega_imediata import (
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
+from tests.test_fluxo import pagina_do_sourcestack
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"
 URL_DO_TELEGRAM = re.compile(r"https://api\.telegram\.org/.*")
@@ -120,6 +122,12 @@ def settings_de_teste() -> Settings:
     )
 
 
+def settings_com_a_jooble() -> Settings:
+    return settings_de_teste().model_copy(
+        update={"fontes": "adzuna,jooble", "jooble_api_key": "chave-jooble"}
+    )
+
+
 def cliente_sem_rede() -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(lambda requisicao: httpx.Response(500)))
 
@@ -127,13 +135,17 @@ def cliente_sem_rede() -> httpx.Client:
 def interceptar_execucao(monkeypatch: pytest.MonkeyPatch) -> dict:
     capturado: dict = {}
 
-    def montar_coletor(settings, cliente_http, usuarios, cota):
+    def montar_coletor(settings, cliente_http, usuarios, cota, cota_da_jooble):
         capturado["coleta"] = usuarios
         return object()
 
     def abrir_cota(repositorio, agora, reserva=0):
         capturado["reserva"] = reserva
         return CotaDaAdzuna()
+
+    def abrir_cota_da_jooble(repositorio, agora, reserva=0):
+        capturado["reserva_na_jooble"] = reserva
+        return CotaDeRequisicoes()
 
     def executar(coletor, extrator, notificador, repositorio, parametros, agora, **opcoes):
         capturado["atendidos"] = repositorio.listar_ativos()
@@ -143,6 +155,7 @@ def interceptar_execucao(monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(cli, "montar_extrator", lambda settings: object())
     monkeypatch.setattr(cli, "montar_coletor", montar_coletor)
     monkeypatch.setattr(cli, "abrir_cota_da_adzuna", abrir_cota)
+    monkeypatch.setattr(cli, "abrir_cota_da_jooble", abrir_cota_da_jooble)
     monkeypatch.setattr(cli, "executar", executar)
     return capturado
 
@@ -163,7 +176,9 @@ def vagas_da_adzuna() -> dict:
 
 def responder_com_as_vagas(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=URL_DA_ADZUNA, json=vagas_da_adzuna(), is_reusable=True)
-    httpx_mock.add_response(url=URL_DO_ANUNCIO, status_code=404, is_reusable=True, is_optional=True)
+    httpx_mock.add_response(
+        url=URL_DO_ANUNCIO, text=pagina_do_sourcestack(), is_reusable=True, is_optional=True
+    )
 
 
 def mensagens_para(httpx_mock: HTTPXMock, destinatario: Usuario) -> list[str]:
@@ -285,6 +300,45 @@ def test_diario_interrompido_coleta_e_atende_todos_sem_reserva_e_sem_marcar_ning
     assert capturado["atendidos"] == TODOS
     assert capturado["reserva"] == 0
     assert repositorio.atendidos == set()
+
+
+def test_entrega_imediata_com_a_jooble_ligada_guarda_para_o_diario_a_reserva_de_todos(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    repositorio = RepositorioComMarcas(
+        TODOS, pendentes=[PENDENTE.id], atendidos=[ANTIGO.id, NOVO.id]
+    )
+    capturado = interceptar_execucao(monkeypatch)
+
+    with cliente_sem_rede() as cliente, pytest.raises(ExecucaoInterrompida):
+        cli.executar_fluxo(settings_com_a_jooble(), cliente, repositorio, VINCULADO.id)
+
+    assert capturado["reserva_na_jooble"] == reserva_do_diario_na_jooble(TODOS)
+    assert capturado["reserva_na_jooble"] > reserva_do_diario_na_jooble([VINCULADO, PENDENTE])
+    assert capturado["reserva"] == reserva_do_diario(TODOS)
+
+
+def test_diario_com_a_jooble_ligada_abre_a_cota_dela_sem_reserva(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    repositorio = RepositorioComMarcas(TODOS)
+    capturado = interceptar_execucao(monkeypatch)
+
+    with cliente_sem_rede() as cliente, pytest.raises(ExecucaoInterrompida):
+        cli.executar_fluxo(settings_com_a_jooble(), cliente, repositorio, None)
+
+    assert capturado["reserva_na_jooble"] == 0
+
+
+def test_sem_a_jooble_ligada_a_cota_dela_nem_e_aberta(monkeypatch: pytest.MonkeyPatch):
+    repositorio = RepositorioComMarcas(TODOS, pendentes=[PENDENTE.id])
+    capturado = interceptar_execucao(monkeypatch)
+
+    with cliente_sem_rede() as cliente, pytest.raises(ExecucaoInterrompida):
+        cli.executar_fluxo(settings_de_teste(), cliente, repositorio, VINCULADO.id)
+
+    assert "reserva_na_jooble" not in capturado
+    assert "reserva" in capturado
 
 
 def test_entrega_imediata_sem_ninguem_a_atender_nem_abre_a_cota(

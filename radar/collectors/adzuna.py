@@ -5,6 +5,7 @@ from collections.abc import Callable, Iterable, Iterator
 
 import httpx
 
+from radar.collectors.cota import CotaDeRequisicoes, CotaEsgotada
 from radar.collectors.errors import ColetaIncompleta, ErroDeColeta
 from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Vaga
@@ -24,50 +25,18 @@ LIMITE_POR_MINUTO = 25
 LIMITE_POR_DIA = 250
 LIMITE_POR_SEMANA = 1000
 LIMITE_POR_MES = 2500
-JANELA_DE_UM_MINUTO_EM_SEGUNDOS = 60
 
 logger = logging.getLogger(__name__)
 
 
-class CotaDaAdzunaEsgotada(Exception):
-    pass
-
-
-class CotaDaAdzuna:
+class CotaDaAdzuna(CotaDeRequisicoes):
     def __init__(
         self,
         saldo: float = math.inf,
         relogio: Callable[[], float] = time.monotonic,
         esperar: Callable[[float], None] = time.sleep,
     ) -> None:
-        self._saldo = saldo
-        self._relogio = relogio
-        self._esperar = esperar
-        self._momentos: list[float] = []
-        self.requisicoes = 0
-        self.esgotada = False
-
-    def reservar(self) -> None:
-        if self.requisicoes >= self._saldo:
-            self.esgotada = True
-            raise CotaDaAdzunaEsgotada
-        agora = self._recentes()
-        if len(self._momentos) >= LIMITE_POR_MINUTO:
-            self._esperar(
-                JANELA_DE_UM_MINUTO_EM_SEGUNDOS - (agora - self._momentos[-LIMITE_POR_MINUTO])
-            )
-            agora = self._recentes()
-        self._momentos.append(agora)
-        self.requisicoes += 1
-
-    def _recentes(self) -> float:
-        agora = self._relogio()
-        self._momentos = [
-            momento
-            for momento in self._momentos
-            if agora - momento < JANELA_DE_UM_MINUTO_EM_SEGUNDOS
-        ]
-        return agora
+        super().__init__(saldo, LIMITE_POR_MINUTO, relogio, esperar)
 
 
 def saldo_da_adzuna(hoje: int, semana: int, mes: int) -> int:
@@ -104,7 +73,7 @@ class ColetorAdzuna:
                         vaga = converter_ou_ignorar(item)
                         if vaga is not None:
                             vagas_por_id.setdefault(vaga.id_externo, vaga)
-        except CotaDaAdzunaEsgotada:
+        except CotaEsgotada:
             if not vagas_por_id:
                 raise ErroDeColeta("Cota da Adzuna esgotada antes da primeira busca") from None
             logger.warning(

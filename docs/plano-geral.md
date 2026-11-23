@@ -20,8 +20,9 @@ uma coorte, fazer cinco entrevistas, calcular D7 ou cumprir metas de pesquisa an
   opções e, desde 05/10, a pergunta do dia seguinte e a mensagem livre encaminhada à equipe.
 - **Primeira entrega:** disparo por perfil ao vincular, exceto entre 06:23 e 07:23 de Brasília;
   a marca de atendido só é gravada depois da mensagem.
-- **Coleta e ranking:** Adzuna (Gupy desligada pelos termos em 12/09, Jooble pronto e desligado),
-  extração compartilhada por vaga, nota em Python e personalização v1 por recusas.
+- **Coleta e ranking:** Adzuna (Gupy desligada pelos termos em 12/09; Jooble pronta, desligada e
+  ligável pela variável `FONTES` do repositório desde 16/11), extração compartilhada por vaga,
+  nota em Python e personalização v1 por recusas.
 - **Confiabilidade:** as falhas que derrubavam o diário inteiro ou escondiam vagas, de 08 a
   18/09 e da auditoria de 07/10, foram fechadas com o teste que as reproduz; o porquê de cada uma
   está nas [decisões do motor](decisoes-do-motor.md) e nas [do banco](decisoes-do-banco.md).
@@ -172,7 +173,8 @@ documento indicado.
 | E04 — custos | Reunir faturas, uso e horas de suporte numa janela comum; custo desconhecido não é zero | [Frentes externas](frentes-externas.md#e04--custos-da-operação) |
 | E05 — oferta | Depois de cobertura e custos, decidir oferta, pagador, preço e provedor; checkout é tarefa posterior | [Frentes externas](frentes-externas.md#e05--hipótese-comercial) |
 | D01 — formação | Usar os casos de cobertura para decidir escala acadêmica, correlatos, aliases e cursos fora do catálogo | [Contrato](contrato-front.md#elegibilidade-acadêmica--decisão-d01-em-aberto) |
-| Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
+| Adzuna | Sem resposta registrada ao e-mail que pede confirmação do uso 1, aprovação da atribuição em texto e permissão para ler a página do anúncio, que alimentou 88% das vagas enviadas de 05 a 12/09. Se a leitura for recusada, o enriquecimento sai, e com ele o corte do emprego.pt (16/11) e o descarte da vaga sem origem (17/11), que sem a página tiraria todas as vagas da Adzuna | [Decisões do motor](decisoes-do-motor.md#enriquecimento-a-descrição-completa-da-adzuna) |
+| Jooble | Desligada em 16/11. Faltam, nesta ordem: (1) o dono do projeto enviar por escrito à Jooble a pergunta sobre guardar as vagas em banco, enviá-las por Telegram e mandar o texto a um serviço de IA, usos que nenhum texto dela permite nem proíbe; (2) criar no GitHub o secret `JOOBLE_API_KEY` e só depois a variável `FONTES` com `adzuna,jooble`; (3) com a fonte ligada, medir a cobertura real: vagas inéditas frente à Adzuna, notas, se a busca no país com `location` vazio continua aceita (foi numa única execução de 16/11, fora da documentação) e o uso diário das 100 requisições | [Frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026), [guia, seção 12](guia-publicacao-e-piloto.md#12-agendamento-tokens-e-ci-do-github) e [decisões do motor](decisoes-do-motor.md#jooble-16112026) |
 
 Nenhuma dessas frentes cria meta formal nem impede o piloto informal depois da conferência
 operacional. Não há autorização de cobrança ou disparo de mensagens implícita nesta fila.
@@ -197,6 +199,30 @@ Continuam abertos:
   não quanto tempo levou; falta isso para medir o raciocínio `low` e a margem do prazo.
 - **G05, G08, G09 e G10**, prioridade baixa. O G10 é o mais visível: falha do disparo da
   primeira busca só aparece no log da Edge Function.
+- **Pausa automática sem motivo (15/11).** Quem é pausado por bloquear o bot fica com
+  `motivo_pausa` vazio: as métricas não separam essa pausa da que a pessoa fez no site, e o site
+  mostra a mesma frase para as duas
+  ([decisões do motor](decisoes-do-motor.md#bot-bloqueado-e-pausa-por-recusa-15112026)).
+- **Corte do emprego.pt (16/11, revisto em 17/11).** A vaga desse parceiro da Adzuna sai antes da
+  extração, e desde 17/11 toda vaga da Adzuna tem a página lida (a `/land/ad/` em `/details/`) e a
+  sem origem identificada sai também. Ficou aberto: se o runner consegue ler `/details/` das vagas
+  `/land/ad/` (em 14/09 não conseguia); quanto o diário demora com mais páginas; a página da vaga
+  bloqueada é relida a cada execução enquanto a API a devolve; e o volume diário deve cair;
+  quanto, e se a Jooble repõe, não foi medido
+  ([decisões do motor](decisoes-do-motor.md#anúncios-vencidos-do-empregopt-16112026)).
+- **Jooble pronta para ligar (16/11).** Ficou aberto: a busca no país manda `location` vazio,
+  aceito numa única execução de 16/11, fora da documentação, e a Jooble pode passar a recusar;
+  `coletar`, `avaliar`, `descartes`, `testar-local` e `rodar` sem banco gastam a cota da Jooble
+  sem gravar o uso; o trecho que começa no meio do anúncio não é reconhecido como vaga já enviada
+  pela Adzuna; e a repetição com a Adzuna e as notas das vagas dela não foram medidas. Fechados
+  no mesmo dia, com o teste que reproduz cada um: a fonte que falha por inteiro com outra
+  respondendo aparece no resumo como coleta incompleta e segura a mensagem; o trecho da Jooble
+  não vence mais a cópia de outra fonte na deduplicação; a chave com espaço ou quebra de linha e
+  a data extrema num anúncio não derrubam a execução; e `gupy` em `FONTES` é recusada
+  ([decisões do motor](decisoes-do-motor.md#jooble-16112026)).
+- **Webhook sem `my_chat_member` (15/11).** O bloqueio só é percebido no envio seguinte, e são
+  três dias de coleta e extração até a pausa. Com a inscrição daria para pausar na hora e retomar
+  no desbloqueio; prioridade baixa enquanto houver um caso em dois meses.
 
 Qualidade das recomendações:
 
@@ -231,7 +257,11 @@ ler os resultados sem escolher o critério depois, não metas.
 
 Também do pré-PRD, e ainda sem dono: as listas de subáreas e habilidades sugeridas de cada área
 foram escritas pela equipe e precisam ser lidas por alguém da área; e ligar a Jooble só faz
-sentido se H3 falhar em alguma área.
+sentido se H3 falhar em alguma área. Em 16/11 entrou o corte do emprego.pt: nas vagas enviadas ao
+perfil de Engenharia de Software de 12 a 16/11 com parceiro identificado, 14 de 22 eram do
+emprego.pt e 8 de outros parceiros (6 SourceStack, 1 Buscar Vagas, 1 Empregos); outras 14 já
+tinham expirado na Adzuna sem mostrar o parceiro; quantas vagas por dia sobram depois do corte
+não foi medido. A Jooble foi preparada para ligar (seção 4).
 
 Antes de aprovar uma característica nova, responder: ela reforça a promessa de achar vagas
 relevantes mais cedo? Reduz uma incerteza deste plano? Existe teste manual ou menor que dê a mesma
@@ -283,6 +313,7 @@ precisa de dashboard para começar a conversa com os colegas.
   e o custo era real: 156 KB de JavaScript e CSS com gzip contra 84 KB, uma pilha Node/npm e cada
   correção do `app.js` em dobro. Retomar só com telas interativas grandes, como um painel web de
   métricas.
-- **Jooble:** opcional, com chave e configuração próprias; não bloqueia a divulgação.
+- **Jooble:** opcional, com chave e configuração próprias; liga pela variável `FONTES` do
+  repositório e não bloqueia a divulgação.
 - **Histórico Git e skills:** permanecem conforme decisões de 05/09. Não há autorização para
   reescrever histórico ou remover recursos de terceiros.

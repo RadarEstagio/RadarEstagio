@@ -44,6 +44,7 @@ def test_nao_guarda_nada_entre_chamadas():
     assert repositorio.travar_atendimento(usuario) is None
     assert repositorio.liberar_atendimento(usuario) is None
     assert repositorio.registrar_falha_de_envio(usuario) == 0
+    assert repositorio.zerar_falhas_de_envio(usuario) is None
 
 
 def test_entrega_imediata_sem_banco_atende_so_o_perfil_pedido():

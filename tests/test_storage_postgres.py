@@ -10,6 +10,7 @@ from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
     Modalidade,
+    OrigemDoAnuncio,
     Perfil,
     Recomendacao,
     ResultadoMatch,
@@ -206,6 +207,24 @@ def test_falhas_seguidas_sao_contadas_e_zeradas_pelo_envio(
     )
 
 
+def test_falhas_seguidas_sao_zeradas_a_pedido_sem_envio_nenhum(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    repositorio.registrar_falha_de_envio(usuario)
+    repositorio.registrar_falha_de_envio(usuario)
+
+    repositorio.zerar_falhas_de_envio(usuario)
+
+    assert (
+        conexao.execute(
+            "select falhas_de_envio from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        == 0
+    )
+    assert repositorio.registrar_falha_de_envio(usuario) == 1
+
+
 def test_pausar_desativa_o_perfil_e_registra_o_evento(
     conexao: psycopg.Connection, usuario: Usuario
 ):
@@ -276,6 +295,21 @@ def test_abertura_de_ontem_sem_resposta_vira_pergunta_reservada_e_liberada(
     assert repositorio.abertura_sem_resposta(usuario, amanha) is None
     repositorio.liberar_pergunta_do_dia_seguinte(usuario, abertura)
     assert repositorio.abertura_sem_resposta(usuario, amanha) == abertura
+
+
+def test_vaga_com_origem_e_guardada_sem_coluna_para_a_origem(
+    conexao: psycopg.Connection,
+):
+    com_origem = vaga(1).model_copy(
+        update={"origem": OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")}
+    )
+
+    guardar_vaga(conexao.cursor(), com_origem)
+
+    guardadas = conexao.execute(
+        "select titulo from vagas where fonte = 'adzuna' and id_externo = 'teste-1'"
+    ).fetchall()
+    assert guardadas == [("Estágio 1",)]
 
 
 def test_extracao_em_formato_antigo_e_ignorada_em_vez_de_quebrar(conexao: psycopg.Connection):
