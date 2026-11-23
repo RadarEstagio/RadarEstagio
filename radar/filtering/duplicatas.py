@@ -10,6 +10,7 @@ PADRAO_SUFIXO_DE_AGREGADOR = re.compile(r"\s*-\s*(?:vaga(?: aberta)?|recrutament
 SEMELHANCA_MINIMA_ENTRE_DESCRICOES = 0.8
 MINIMO_DE_PALAVRAS_PARA_COMPARAR = 20
 PALAVRAS_COMPARADAS_DA_DESCRICAO = 40
+FONTES_QUE_SO_ENTREGAM_TRECHO = frozenset({"jooble"})
 EMPRESAS_NAO_IDENTIFICADAS = frozenset(
     {"", "empresa nao informada", "confidencial", "empresa confidencial"}
 )
@@ -60,6 +61,14 @@ def mais_completa(primeira: Vaga, segunda: Vaga) -> Vaga:
     if informa_modalidade == (False, True):
         return segunda
     if informa_modalidade == (True, False):
+        return primeira
+    so_entrega_trecho = (
+        primeira.fonte in FONTES_QUE_SO_ENTREGAM_TRECHO,
+        segunda.fonte in FONTES_QUE_SO_ENTREGAM_TRECHO,
+    )
+    if so_entrega_trecho == (True, False):
+        return segunda
+    if so_entrega_trecho == (False, True):
         return primeira
     return segunda if len(segunda.descricao) > len(primeira.descricao) else primeira
 

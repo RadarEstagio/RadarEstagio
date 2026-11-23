@@ -16,7 +16,7 @@ class ColetorComposto:
 
     def coletar(self) -> list[Vaga]:
         vagas: list[Vaga] = []
-        falhas: list[str] = []
+        falhas: dict[str, str] = {}
         self.incompletas = {}
         for fonte, coletor in self._coletores.items():
             try:
@@ -26,10 +26,14 @@ class ColetorComposto:
                 coletadas = incompleta.vagas
             except ErroDeColeta as erro:
                 logger.warning("Fonte %s ignorada nesta execução: %s", fonte, erro)
-                falhas.append(f"{fonte}: {erro}")
+                falhas[fonte] = str(erro)
                 continue
             logger.info("%d vagas coletadas em %s", len(coletadas), fonte)
             vagas.extend(coletadas)
         if len(falhas) == len(self._coletores):
-            raise ErroDeColeta("Nenhuma fonte respondeu: " + "; ".join(falhas))
+            raise ErroDeColeta(
+                "Nenhuma fonte respondeu: "
+                + "; ".join(f"{fonte}: {motivo}" for fonte, motivo in falhas.items())
+            )
+        self.incompletas.update(falhas)
         return vagas

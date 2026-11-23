@@ -33,6 +33,10 @@ def requisitar_com_tentativas(
                 raise ErroDeColeta(
                     f"Falha de rede ao buscar vagas na {fonte} ({type(erro).__name__})"
                 ) from erro
+        except httpx.InvalidURL as erro:
+            raise ErroDeColeta(
+                f"Requisição inválida ao buscar vagas na {fonte} ({type(erro).__name__})"
+            ) from None
         espera = ESPERAS_ENTRE_TENTATIVAS_EM_SEGUNDOS[tentativa - 1]
         logger.info("%s indisponível; nova tentativa em %d s", fonte, espera)
         esperar(espera)

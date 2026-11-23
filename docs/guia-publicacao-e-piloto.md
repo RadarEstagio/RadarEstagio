@@ -333,6 +333,45 @@ atividade, e o cron-job.org continuaria disparando sem vigia; reative em Actions
 parar. Motivo: em 21/10/2026 o cron-job.org deu timeout no disparo, nenhum run nasceu e o
 único aviso foi o e-mail dele na caixa pessoal de quem tem a conta.
 
+**Ligar e desligar a Jooble sem commit (16/11/2026).** O diário e a entrega imediata leem as
+fontes da variável do repositório (`FONTES: ${{ vars.FONTES || 'adzuna' }}`) e a chave do secret
+`JOOBLE_API_KEY`. Sem a variável vale `adzuna`, e nada muda em produção. A ordem importa, como no
+Turnstile:
+
+1. Criar o **secret** `JOOBLE_API_KEY` (Settings → Secrets and variables → Actions → Secrets) com
+   a chave de `br.jooble.org`.
+2. Só depois criar a **variável** `FONTES` (aba Variables) com `adzuna,jooble`.
+3. No primeiro diário, conferir o resumo de operação e o log do run. No resumo, "Requisições à
+   Jooble: N de 100 hoje" aparece, e "⚠️ Coleta da Jooble incompleta: <motivo>" e "⚠️ Cota da
+   Jooble esgotada: a coleta parou antes do fim" não. A linha das requisições sozinha não prova
+   que a fonte entregou, porque conta também a requisição que falhou. Desde 16/11 a fonte que
+   falha inteira (chave recusada, 403, rede) aparece no resumo como "⚠️ Coleta da Jooble
+   incompleta: <motivo>", com o mesmo texto da coleta que para no meio, e segura a mensagem de
+   quem ficou sem vaga. No log, conferir "N vagas coletadas em jooble" com N maior que zero e a
+   linha "Jooble: N vagas mantidas por origem (...)", que conta as vagas por domínio e as
+   cortadas.
+
+Variável com `jooble` e secret vazio: `Settings` recusa a configuração ("JOOBLE_API_KEY é
+obrigatória quando a fonte jooble está ativa") e o `rodar` sai com código 1 antes de coletar. O
+diário inteiro e toda entrega imediata param, ninguém recebe mensagem, e o que chega ao chat de
+operação é o aviso "o job diário não terminou". Nome de fonte desconhecido na variável dá a mesma
+falha, e `gupy` também: a fonte está desligada pelos termos de uso, e `Settings` a recusa dizendo
+isso e apontando para as [frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026).
+O valor da variável é a lista inteira das fontes, não um acréscimo: sem `adzuna` nela, a Adzuna
+desliga. A chave colada com espaço ou quebra de linha nas pontas é guardada limpa.
+`tests/test_settings.py` e `tests/test_workflow_radar_diario.py` guardam as duas pontas, que são
+a leitura das variáveis de ambiente por `Settings` e o texto do workflow. O comportamento da
+variável `FONTES` no Actions não foi conferido em execução real em 16/11.
+
+Para desligar, apagar a variável `FONTES` ou voltar o valor para `adzuna`; o secret pode ficar. Se
+o resumo trouxer "Coleta da Jooble incompleta" com erro HTTP todo dia, desligar: a busca no país
+manda `location` vazio, aceito numa única execução de 16/11, fora da documentação; a Jooble pode
+passar a recusar, e enquanto a busca falhar quem fica sem vaga tem a mensagem segurada. Em 16/11 criar o secret e a variável segue pendente
+([plano geral](plano-geral.md#4-pendências-externas)), e a pergunta à Jooble sobre o uso também
+([frentes externas](frentes-externas.md#termos-de-uso-das-fontes-12092026)); ligar antes da
+resposta é decisão do dono do projeto. A cota e os limites estão nas
+[decisões do motor](decisoes-do-motor.md#jooble-16112026).
+
 Na transferência de `babue0/RadarEstagio` para `RadarEstagio/RadarEstagio` (08/09/2026), commits,
 autores, issues e PRs foram preservados e o GitHub redireciona o endereço antigo; o que quebrou foi
 a ligação das automações, porque cada uma guardava o dono no nome:

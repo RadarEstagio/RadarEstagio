@@ -12,6 +12,7 @@ from radar.domain.models import (
     AberturaSemResposta,
     ChaveDaVaga,
     ExtracaoDaVaga,
+    OrigemDoAnuncio,
     Perfil,
     Recomendacao,
     RecusasDoUsuario,
@@ -24,6 +25,11 @@ from radar.filtering.duplicatas import (
     remover_duplicatas,
     remover_republicacoes_de,
     republicacao_da_mesma_empresa,
+)
+from radar.filtering.origem import (
+    descarte_sem_origem_generalizado,
+    separar_as_de_origem_bloqueada,
+    separar_as_sem_origem_identificada,
 )
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
@@ -96,6 +102,8 @@ class RegistroDasEntregas:
         self.seguradas_pela_coleta_incompleta: set[UUID] = set()
         self.com_envio_nao_gravado: set[UUID] = set()
         self.ja_atendidos_hoje: set[UUID] = set()
+        self.recusaram_a_mensagem: set[UUID] = set()
+        self.pausados_por_recusa: set[UUID] = set()
 
     def mensagem_entregue(self, usuario: Usuario) -> None:
         self.com_mensagem.add(usuario.id)
@@ -115,6 +123,12 @@ class RegistroDasEntregas:
     def ja_atendido_hoje(self, usuario: Usuario) -> None:
         self.ja_atendidos_hoje.add(usuario.id)
 
+    def destinatario_recusou(self, usuario: Usuario) -> None:
+        self.recusaram_a_mensagem.add(usuario.id)
+
+    def pausado_por_recusa(self, usuario: Usuario) -> None:
+        self.pausados_por_recusa.add(usuario.id)
+
 
 class RegistroDasPerguntas:
     def __init__(self) -> None:
@@ -133,6 +147,8 @@ class ResumoDaExecucao(BaseModel):
     mensagens_seguradas_pela_coleta_incompleta: int = 0
     usuarios_com_envio_nao_gravado: int = 0
     usuarios_ja_atendidos_hoje: int = 0
+    usuarios_que_recusaram_a_mensagem: list[UUID] = []
+    usuarios_pausados_por_recusa: list[UUID] = []
     falhas_de_limpeza: list[str] = []
     vagas_coletadas: int
     vagas_unicas: int
@@ -140,6 +156,11 @@ class ResumoDaExecucao(BaseModel):
     vagas_extraidas_agora: int
     vagas_sem_extracao: int = 0
     extracoes_nao_gravadas: int = 0
+    vagas_de_origem_bloqueada: int = 0
+    vagas_sem_origem_identificada: int = 0
+    coleta_incompleta_pela_origem: bool = False
+    paginas_de_anuncio_lidas: int = 0
+    paginas_de_anuncio_sem_origem: int = 0
     perguntas_do_dia_seguinte: int = 0
     perguntas_do_dia_seguinte_com_falha: int = 0
     enviadas_por_usuario: dict[UUID, list[Recomendacao]]
@@ -182,8 +203,33 @@ def executar(
     coletadas = coletor.coletar()
     incompleta = coleta_incompleta()
     unicas = remover_duplicatas(sem_vagas_encerradas(coletadas, repositorio))
-    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios, repositorio))
-    unicas = substituir_enriquecidas(unicas, candidatas)
+    a_enriquecer = candidatas_de_algum_perfil(unicas, usuarios, repositorio)
+    enriquecidas = enriquecer(a_enriquecer)
+    origens_lidas = origens_lidas_no_enriquecimento(a_enriquecer, enriquecidas)
+    candidatas, de_origem_bloqueada = separar_as_de_origem_bloqueada(enriquecidas)
+    candidatas, sem_origem_identificada = separar_as_sem_origem_identificada(candidatas)
+    unicas = substituir_enriquecidas(
+        sem_as_vagas(unicas, de_origem_bloqueada + sem_origem_identificada), candidatas
+    )
+    if de_origem_bloqueada:
+        logger.info(
+            "%d vagas de origem bloqueada ficaram de fora antes da extração",
+            len(de_origem_bloqueada),
+        )
+    if sem_origem_identificada:
+        logger.info(
+            "%d vagas sem origem identificada ficaram de fora antes da extração",
+            len(sem_origem_identificada),
+        )
+    incompleta_pela_origem = descarte_sem_origem_generalizado(sem_origem_identificada, enriquecidas)
+    if incompleta_pela_origem:
+        logger.warning(
+            "A maioria das vagas que exigem origem ficou sem ela (%d); "
+            "a coleta conta como incompleta",
+            len(sem_origem_identificada),
+        )
+        incompleta = True
+    de_pagina_nao_lida = [vaga for vaga in sem_origem_identificada if vaga.origem is None]
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
         len(coletadas),
@@ -212,7 +258,8 @@ def executar(
                 pontuador,
                 revalidacao,
                 registro,
-                incompleta,
+                incompleta
+                or perdeu_vaga_de_pagina_nao_lida(usuario, de_pagina_nao_lida, repositorio),
             )
         except Exception:
             erros_inesperados.add(usuario.id)
@@ -227,7 +274,10 @@ def executar(
         [
             usuario
             for usuario in usuarios
-            if usuario.id not in registro.sem_mensagem_por_falha | revalidacao.falhas
+            if usuario.id
+            not in registro.sem_mensagem_por_falha
+            | registro.recusaram_a_mensagem
+            | revalidacao.falhas
         ],
         notificador,
         repositorio,
@@ -248,6 +298,8 @@ def executar(
         mensagens_seguradas_pela_coleta_incompleta=len(registro.seguradas_pela_coleta_incompleta),
         usuarios_com_envio_nao_gravado=len(registro.com_envio_nao_gravado),
         usuarios_ja_atendidos_hoje=len(registro.ja_atendidos_hoje),
+        usuarios_que_recusaram_a_mensagem=sorted(registro.recusaram_a_mensagem),
+        usuarios_pausados_por_recusa=sorted(registro.pausados_por_recusa),
         falhas_de_limpeza=falhas_de_limpeza,
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
@@ -255,6 +307,11 @@ def executar(
         vagas_extraidas_agora=balanco.extraidas_agora,
         vagas_sem_extracao=balanco.sem_extracao,
         extracoes_nao_gravadas=balanco.nao_gravadas,
+        vagas_de_origem_bloqueada=len(de_origem_bloqueada),
+        vagas_sem_origem_identificada=len(sem_origem_identificada),
+        coleta_incompleta_pela_origem=incompleta_pela_origem,
+        paginas_de_anuncio_lidas=len(origens_lidas),
+        paginas_de_anuncio_sem_origem=sum(not origem.identificada() for origem in origens_lidas),
         perguntas_do_dia_seguinte=len(perguntas.enviadas),
         perguntas_do_dia_seguinte_com_falha=len(perguntas.com_falha),
         enviadas_por_usuario=enviadas_por_usuario,
@@ -333,6 +390,20 @@ def sem_vagas_encerradas(vagas: list[Vaga], repositorio: Repositorio) -> list[Va
     return abertas
 
 
+def origens_lidas_no_enriquecimento(antes: list[Vaga], depois: list[Vaga]) -> list[OrigemDoAnuncio]:
+    ja_tinham_origem = {vaga.chave() for vaga in antes if vaga.origem is not None}
+    return [
+        vaga.origem
+        for vaga in depois
+        if vaga.origem is not None and vaga.chave() not in ja_tinham_origem
+    ]
+
+
+def sem_as_vagas(vagas: list[Vaga], retiradas: list[Vaga]) -> list[Vaga]:
+    chaves_retiradas = {vaga.chave() for vaga in retiradas}
+    return [vaga for vaga in vagas if vaga.chave() not in chaves_retiradas]
+
+
 def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:
     por_chave = {vaga.chave(): vaga for vaga in candidatas}
     return [por_chave.get(vaga.chave(), vaga) for vaga in unicas]
@@ -404,6 +475,14 @@ def candidatas_do_usuario(
 ) -> list[Vaga]:
     ja_enviadas = ids_ja_enviadas_ou_nenhum(repositorio, usuario)
     return [vaga for vaga in filtrar(vagas, usuario.perfil) if vaga.chave() not in ja_enviadas]
+
+
+def perdeu_vaga_de_pagina_nao_lida(
+    usuario: Usuario, de_pagina_nao_lida: list[Vaga], repositorio: Repositorio
+) -> bool:
+    return bool(de_pagina_nao_lida) and bool(
+        candidatas_do_usuario(de_pagina_nao_lida, usuario, repositorio)
+    )
 
 
 def ids_ja_enviadas_ou_nenhum(repositorio: Repositorio, usuario: Usuario) -> set[tuple[str, str]]:
@@ -623,7 +702,9 @@ def atender_usuario_travado(
             len(selecionadas),
             erro,
         )
-        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(
+            repositorio, usuario, erro, parametros.falhas_ate_pausar, registro
+        )
         if not entregues:
             if isinstance(erro, DestinatarioRecusouAMensagem):
                 registrar_atendimento(repositorio, usuario, data_local(agora))
@@ -726,15 +807,27 @@ def avisar_que_nao_houve_vaga(
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora, dias))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem a mensagem do dia: %s", trecho_do_id(usuario.id), erro)
-        pausar_se_o_destinatario_recusou(repositorio, usuario, erro, parametros.falhas_ate_pausar)
+        pausar_se_o_destinatario_recusou(
+            repositorio, usuario, erro, parametros.falhas_ate_pausar, registro
+        )
         if not isinstance(erro, DestinatarioRecusouAMensagem):
             registro.mensagem_perdida(usuario)
             return False
         return True
     registro.mensagem_entregue(usuario)
+    zerar_falhas_de_envio(repositorio, usuario)
     if dias is not None:
         registrar_silencio_avisado(repositorio, usuario, dias)
     return True
+
+
+def zerar_falhas_de_envio(repositorio: Repositorio, usuario: Usuario) -> None:
+    try:
+        repositorio.zerar_falhas_de_envio(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning(
+            "usuário %s: as falhas de envio não foram zeradas: %s", trecho_do_id(usuario.id), erro
+        )
 
 
 def registrar_silencio_avisado(repositorio: Repositorio, usuario: Usuario, dias: int) -> None:
@@ -767,6 +860,7 @@ def pausar_se_o_destinatario_recusou(
     usuario: Usuario,
     erro: ErroDeNotificacao,
     falhas_ate_pausar: int,
+    registro: RegistroDasEntregas,
 ) -> None:
     if not isinstance(erro, DestinatarioRecusouAMensagem):
         logger.info(
@@ -774,11 +868,15 @@ def pausar_se_o_destinatario_recusou(
             trecho_do_id(usuario.id),
         )
         return
-    pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
+    registro.destinatario_recusou(usuario)
+    pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar, registro)
 
 
 def pausar_apos_falhas_seguidas(
-    repositorio: Repositorio, usuario: Usuario, falhas_ate_pausar: int
+    repositorio: Repositorio,
+    usuario: Usuario,
+    falhas_ate_pausar: int,
+    registro: RegistroDasEntregas,
 ) -> None:
     try:
         falhas = repositorio.registrar_falha_de_envio(usuario)
@@ -790,6 +888,7 @@ def pausar_apos_falhas_seguidas(
             "usuário %s: falha de envio não registrada: %s", trecho_do_id(usuario.id), erro
         )
         return
+    registro.pausado_por_recusa(usuario)
     logger.warning(
         "usuário %s pausado após %d falhas seguidas de envio", trecho_do_id(usuario.id), falhas
     )

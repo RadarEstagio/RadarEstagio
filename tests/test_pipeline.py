@@ -10,6 +10,7 @@ from radar.domain.models import (
     ChaveDaVaga,
     ExtracaoDaVaga,
     Modalidade,
+    OrigemDoAnuncio,
     Perfil,
     PerguntaDeFeedback,
     RecusasDoUsuario,
@@ -19,7 +20,7 @@ from radar.domain.models import (
 )
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.lotes import ExtratorEmLotes
-from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA
+from radar.matching.regras import AVISO_DESCRICAO_INCOMPLETA, LIMITE_DESCRICAO_INCOMPLETA
 from radar.notification.telegram import DestinatarioRecusouAMensagem, ErroDeNotificacao
 from radar.pipeline import (
     ParametrosDaExecucao,
@@ -29,6 +30,7 @@ from radar.pipeline import (
     executar,
     manter_descricoes_como_estao,
 )
+from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioDoModoLocal, RepositorioEmMemoria
 
@@ -36,6 +38,7 @@ AGORA_DE_TESTE = datetime(2026, 8, 26, 10, 23, tzinfo=UTC)
 URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
 ID_USUARIO = UUID(int=1)
 ID_OUTRO_USUARIO = UUID(int=2)
+ORIGEM_LIDA_NA_PAGINA_DA_ADZUNA = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
 
 
 def vaga(numero: int, titulo: str = "Estágio Python", fonte: str = "adzuna") -> Vaga:
@@ -49,6 +52,7 @@ def vaga(numero: int, titulo: str = "Estágio Python", fonte: str = "adzuna") ->
         url=f"https://exemplo.com/vaga/{numero}",
         publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
         modalidade=Modalidade.REMOTO,
+        origem=ORIGEM_LIDA_NA_PAGINA_DA_ADZUNA if fonte == "adzuna" else None,
     )
 
 
@@ -235,6 +239,12 @@ class RepositorioFalso(RepositorioEmMemoria):
             raise ErroDeArmazenamento("banco caiu")
         self.falhas_por_usuario[usuario.id] = self.falhas_por_usuario.get(usuario.id, 0) + 1
         return self.falhas_por_usuario[usuario.id]
+
+    def zerar_falhas_de_envio(self, usuario) -> None:
+        if self._falha_ao_gravar:
+            raise ErroDeArmazenamento("banco caiu")
+        if usuario.id in self.falhas_por_usuario:
+            self.falhas_por_usuario[usuario.id] = 0
 
     def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
         self.carencias_aplicadas.append(dias_de_carencia)
@@ -913,6 +923,70 @@ def test_falhas_seguidas_de_envio_pausam_o_perfil():
     assert repositorio.pausados == [ID_USUARIO]
 
 
+def resumo_com_o_chat_recusando(
+    repositorio: RepositorioFalso, nota: int, dia: int = 0, falhas_ate_pausar: int = 3
+) -> ResumoDaExecucao:
+    return executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": nota}),
+        NotificadorFalso(chats_com_erro={"123"}),
+        repositorio,
+        parametros(nota_minima=40, falhas_ate_pausar=falhas_ate_pausar),
+        AGORA_DE_TESTE + timedelta(days=dia),
+        PontuadorFalso({"1": nota}),
+    )
+
+
+@pytest.mark.parametrize("nota", [90, 10], ids=["com-vagas", "sem-vagas"])
+def test_resumo_nomeia_quem_recusou_a_mensagem_do_dia(nota: int):
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, "456")])
+
+    resumo = resumo_com_o_chat_recusando(repositorio, nota)
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert resumo.usuarios_pausados_por_recusa == []
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+
+
+def test_resumo_nomeia_quem_foi_pausado_pela_recusa_que_completa_o_limite():
+    repositorio = RepositorioFalso([usuario()])
+
+    primeiro, segundo, terceiro = (
+        resumo_com_o_chat_recusando(repositorio, 90, dia) for dia in range(3)
+    )
+
+    assert primeiro.usuarios_pausados_por_recusa == []
+    assert segundo.usuarios_pausados_por_recusa == []
+    assert terceiro.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert terceiro.usuarios_pausados_por_recusa == [ID_USUARIO]
+
+
+def test_recusa_que_o_banco_nao_conta_aparece_no_resumo_sem_pausa():
+    repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
+
+    resumo = resumo_com_o_chat_recusando(repositorio, 90, falhas_ate_pausar=1)
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == [ID_USUARIO]
+    assert resumo.usuarios_pausados_por_recusa == []
+
+
+def test_falha_temporaria_do_telegram_nao_entra_no_resumo_como_recusa():
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(chats_com_falha_temporaria={"123"}),
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+
+    assert resumo.usuarios_que_recusaram_a_mensagem == []
+    assert resumo.usuarios_sem_mensagem_por_falha == 1
+
+
 def test_envio_bem_sucedido_zera_as_falhas_acumuladas():
     repositorio = RepositorioFalso([usuario()])
     repositorio.falhas_por_usuario[ID_USUARIO] = 2
@@ -921,6 +995,56 @@ def test_envio_bem_sucedido_zera_as_falhas_acumuladas():
 
     assert repositorio.falhas_por_usuario == {ID_USUARIO: 0}
     assert repositorio.pausados == []
+
+
+def test_mensagem_sem_vagas_entregue_zera_as_falhas_acumuladas():
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.falhas_por_usuario[ID_USUARIO] = 2
+
+    _, notificador, _ = rodar([vaga(1)], {"1": 10}, nota_minima=40, repositorio=repositorio)
+
+    assert len(notificador.textos) == 1
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 0}
+    assert repositorio.pausados == []
+
+
+def test_recusas_separadas_por_mensagens_sem_vagas_entregues_nao_pausam_o_perfil():
+    repositorio = RepositorioFalso([usuario()])
+    recusa_em_cada_dia = [True, True, False, False, True]
+
+    for dia, recusa in enumerate(recusa_em_cada_dia):
+        rodar(
+            [vaga(dia + 1)],
+            {str(dia + 1): 10},
+            nota_minima=40,
+            repositorio=repositorio,
+            notificador=NotificadorFalso(chats_com_erro={"123"} if recusa else frozenset()),
+            falhas_ate_pausar=3,
+            agora=AGORA_DE_TESTE + timedelta(days=dia),
+        )
+
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 1}
+    assert repositorio.pausados == []
+
+
+def test_falha_ao_zerar_as_falhas_vira_aviso_e_a_mensagem_sem_vagas_conta_como_entregue(
+    caplog: pytest.LogCaptureFixture,
+):
+    repositorio = RepositorioFalso([usuario()], falha_ao_gravar=True)
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 10}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(nota_minima=40),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 10}),
+    )
+
+    assert resumo.usuarios_com_mensagem == 1
+    assert resumo.usuarios_sem_mensagem_por_falha == 0
+    assert "as falhas de envio não foram zeradas" in caplog.text
 
 
 def test_falha_ao_gravar_nao_derruba_o_envio():
@@ -2407,3 +2531,390 @@ def test_texto_invalido_da_fonte_e_da_ia_nao_impede_gravar_extracao_e_envio():
     assert set(repositorio.extracoes_guardadas) == {("adzuna", "1"), ("adzuna", "2")}
     assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
     assert NUL not in notificador.textos[0]
+
+
+ORIGEM_EMPREGO_PT = OrigemDoAnuncio(parceiro="Emprego", id_do_parceiro="79986")
+ORIGEM_EMPREGOS = OrigemDoAnuncio(parceiro="Empregos")
+ORIGEM_SOURCESTACK = OrigemDoAnuncio(parceiro="SourceStack", id_do_parceiro="506674")
+
+
+def vaga_da_adzuna_antes_da_pagina(numero: int) -> Vaga:
+    return vaga(numero).model_copy(update={"origem": None})
+
+
+class EnriquecedorComOrigens:
+    def __init__(self, origens: dict[str, OrigemDoAnuncio | None]) -> None:
+        self._origens = origens
+
+    def __call__(self, vagas: list[Vaga]) -> list[Vaga]:
+        return [
+            item.model_copy(update={"origem": self._origens.get(item.id_externo)}) for item in vagas
+        ]
+
+
+def executar_com_origens(
+    origens: dict[str, OrigemDoAnuncio | None], usuarios: list[Usuario] | None = None
+) -> tuple[ResumoDaExecucao, ExtratorFalso, NotificadorFalso, RepositorioFalso]:
+    extrator = ExtratorFalso({})
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso(usuarios or [usuario()])
+    resumo = executar(
+        ColetorFalso([vaga_da_adzuna_antes_da_pagina(int(numero)) for numero in origens]),
+        extrator,
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({numero: 90 - int(numero) for numero in origens}),
+        enriquecer=EnriquecedorComOrigens(origens),
+    )
+    return resumo, extrator, notificador, repositorio
+
+
+def ids_enviados(resumo: ResumoDaExecucao, id_usuario: UUID = ID_USUARIO) -> list[str]:
+    return [item.resultado.vaga.id_externo for item in resumo.enviadas_por_usuario[id_usuario]]
+
+
+def test_vaga_do_emprego_pt_nao_chega_a_extracao_nem_ao_estudante():
+    resumo, extrator, notificador, repositorio = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_SOURCESTACK}
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert ids_enviados(resumo) == ["2"]
+    assert "Empresa 2" in notificador.textos[0]
+    assert "Empresa 1" not in notificador.textos[0]
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["2"])]
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
+    assert set(repositorio.extracoes_guardadas) == {("adzuna", "2")}
+
+
+def test_vaga_do_emprego_pt_sai_para_todos_os_perfis_que_a_tinham_como_candidata():
+    resumo, extrator, notificador, _ = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_SOURCESTACK},
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert ids_enviados(resumo) == ["2"]
+    assert ids_enviados(resumo, ID_OUTRO_USUARIO) == ["2"]
+    assert all("Empresa 1" not in texto for texto in notificador.textos)
+
+
+def test_dia_so_com_vaga_do_emprego_pt_vira_mensagem_sem_vagas_e_nao_mensagem_segurada():
+    resumo, extrator, notificador, _ = executar_com_origens({"1": ORIGEM_EMPREGO_PT})
+
+    assert extrator.extraidas == []
+    assert resumo.enviadas_por_usuario == {}
+    assert resumo.mensagens_seguradas_por_falta_de_extracao == 0
+    assert resumo.vagas_sem_extracao == 0
+    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+
+
+def test_vaga_do_emprego_pt_e_reconhecida_so_pelo_identificador_ou_so_pelo_nome():
+    _, extrator, _, _ = executar_com_origens(
+        {
+            "1": OrigemDoAnuncio(id_do_parceiro="79986"),
+            "2": OrigemDoAnuncio(parceiro=" emprego "),
+            "3": ORIGEM_SOURCESTACK,
+        }
+    )
+
+    assert extrator.extraidas == ["3"]
+
+
+def test_vaga_da_adzuna_sem_origem_identificada_sai_antes_da_extracao():
+    resumo, extrator, _, _ = executar_com_origens(
+        {"1": None, "2": OrigemDoAnuncio(), "3": ORIGEM_SOURCESTACK}
+    )
+
+    assert extrator.extraidas == ["3"]
+    assert ids_enviados(resumo) == ["3"]
+    assert resumo.vagas_sem_origem_identificada == 2
+    assert resumo.vagas_unicas == 1
+
+
+def test_minoria_sem_origem_sai_sem_tornar_a_coleta_incompleta(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": ORIGEM_EMPREGO_PT, "3": ORIGEM_EMPREGO_PT}
+    )
+
+    assert "1 vagas sem origem identificada ficaram de fora antes da extração" in caplog.text
+    assert "a coleta conta como incompleta" not in caplog.text
+    assert not resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert len(notificador.textos) == 1
+
+
+def test_metade_sem_origem_ainda_nao_torna_a_coleta_incompleta():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": ORIGEM_EMPREGO_PT}
+    )
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert not resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+    assert len(notificador.textos) == 1
+
+
+def test_maioria_sem_origem_segura_a_mensagem_de_quem_ficou_sem_vaga(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    resumo, extrator, notificador, _ = executar_com_origens(
+        {"1": OrigemDoAnuncio(), "2": OrigemDoAnuncio()}
+    )
+
+    assert extrator.extraidas == []
+    assert notificador.textos == []
+    assert resumo.coleta_incompleta_pela_origem
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+    assert "a coleta conta como incompleta" in caplog.text
+
+
+def test_maioria_sem_origem_nao_segura_quem_ainda_tem_vaga():
+    resumo, _, notificador, _ = executar_com_origens(
+        {"1": None, "2": OrigemDoAnuncio(), "3": ORIGEM_SOURCESTACK}
+    )
+
+    assert ids_enviados(resumo) == ["3"]
+    assert len(notificador.textos) == 1
+
+
+def test_vaga_de_fonte_que_nao_exige_origem_segue_sem_ela():
+    da_jooble = vaga(1, fonte="jooble")
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem([da_jooble], {})
+
+    assert da_jooble.origem is None
+    assert extrator.extraidas == ["1"]
+    assert resumo.vagas_sem_origem_identificada == 0
+
+
+def test_vaga_do_empregos_de_nome_parecido_segue_no_fluxo():
+    resumo, extrator, notificador, _ = executar_com_origens({"1": ORIGEM_EMPREGOS})
+
+    assert extrator.extraidas == ["1"]
+    assert ids_enviados(resumo) == ["1"]
+    assert "Empresa 1" in notificador.textos[0]
+
+
+def test_informa_no_log_quantas_vagas_sairam_pela_origem(caplog: pytest.LogCaptureFixture):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    executar_com_origens({"1": ORIGEM_EMPREGO_PT, "2": ORIGEM_EMPREGO_PT, "3": ORIGEM_SOURCESTACK})
+
+    assert "2 vagas de origem bloqueada ficaram de fora antes da extração" in caplog.text
+
+
+def test_execucao_sem_vaga_de_origem_bloqueada_nao_fala_dela_no_log(
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level("INFO", logger="radar.pipeline")
+
+    executar_com_origens({"1": ORIGEM_SOURCESTACK, "2": None})
+
+    assert "origem bloqueada" not in caplog.text
+
+
+def test_resumo_conta_as_vagas_que_sairam_pela_origem_e_as_paginas_sem_origem():
+    resumo, _, _, _ = executar_com_origens(
+        {
+            "1": ORIGEM_EMPREGO_PT,
+            "2": ORIGEM_SOURCESTACK,
+            "3": None,
+            "4": OrigemDoAnuncio(),
+            "5": ORIGEM_EMPREGO_PT,
+        }
+    )
+
+    assert resumo.vagas_de_origem_bloqueada == 2
+    assert resumo.vagas_sem_origem_identificada == 2
+    assert resumo.paginas_de_anuncio_lidas == 4
+    assert resumo.paginas_de_anuncio_sem_origem == 1
+    assert resumo.vagas_coletadas == 5
+    assert resumo.vagas_unicas == 1
+    assert resumo.vagas_candidatas == 1
+    assert resumo.vagas_extraidas_agora == 1
+
+
+def test_resumo_sem_pagina_lida_nao_conta_origem_nenhuma():
+    resumo, _, _, _ = executar_com_origens({"1": None, "2": None})
+
+    assert resumo.vagas_de_origem_bloqueada == 0
+    assert resumo.paginas_de_anuncio_lidas == 0
+    assert resumo.paginas_de_anuncio_sem_origem == 0
+
+
+def test_resumo_conta_a_pagina_de_cada_vaga_uma_vez_mesmo_candidata_de_dois_perfis():
+    resumo, _, _, _ = executar_com_origens(
+        {"1": ORIGEM_EMPREGO_PT, "2": OrigemDoAnuncio()},
+        [usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")],
+    )
+
+    assert resumo.vagas_de_origem_bloqueada == 1
+    assert resumo.paginas_de_anuncio_lidas == 2
+    assert resumo.paginas_de_anuncio_sem_origem == 1
+
+
+def vaga_com_origem_informada_pela_fonte(numero: int, dominio: str) -> Vaga:
+    return vaga(numero, fonte="jooble").model_copy(
+        update={"origem": OrigemDoAnuncio(dominio=dominio)}
+    )
+
+
+def executar_com_vagas_que_ja_trazem_a_origem(
+    vagas: list[Vaga], origens_das_paginas: dict[str, OrigemDoAnuncio | None]
+) -> tuple[ResumoDaExecucao, ExtratorFalso]:
+    def enriquecer(candidatas: list[Vaga]) -> list[Vaga]:
+        return [
+            item.model_copy(update={"origem": origens_das_paginas[item.id_externo]})
+            if item.id_externo in origens_das_paginas
+            else item
+            for item in candidatas
+        ]
+
+    extrator = ExtratorFalso({})
+    resumo = executar(
+        ColetorFalso(vagas),
+        extrator,
+        NotificadorFalso(),
+        RepositorioFalso([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({item.id_externo: 90 - int(item.id_externo) for item in vagas}),
+        enriquecer=enriquecer,
+    )
+    return resumo, extrator
+
+
+def test_origem_que_a_fonte_ja_informou_nao_conta_como_pagina_de_anuncio_lida():
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem(
+        [
+            vaga_da_adzuna_antes_da_pagina(1),
+            vaga_com_origem_informada_pela_fonte(2, "empregos.com.br"),
+            vaga_com_origem_informada_pela_fonte(3, "infojobs.com.br"),
+            vaga_com_origem_informada_pela_fonte(4, "nube.com.br"),
+        ],
+        {"1": ORIGEM_SOURCESTACK},
+    )
+
+    assert extrator.extraidas == ["1", "2", "3", "4"]
+    assert resumo.paginas_de_anuncio_lidas == 1
+    assert resumo.paginas_de_anuncio_sem_origem == 0
+
+
+def test_vaga_que_chega_da_coleta_com_dominio_bloqueado_tambem_sai_antes_da_extracao():
+    resumo, extrator = executar_com_vagas_que_ja_trazem_a_origem(
+        [
+            vaga_com_origem_informada_pela_fonte(1, "empresa.gupy.io"),
+            vaga_com_origem_informada_pela_fonte(2, "empregos.com.br"),
+            vaga_com_origem_informada_pela_fonte(3, "br.linkedin.com"),
+        ],
+        {},
+    )
+
+    assert extrator.extraidas == ["2"]
+    assert resumo.vagas_de_origem_bloqueada == 2
+    assert resumo.paginas_de_anuncio_lidas == 0
+
+
+def test_vaga_da_jooble_presa_na_trava_de_60_entra_na_mensagem_com_a_nota_minima_padrao():
+    nota_minima_padrao = Settings.model_fields["nota_minima"].default
+    da_jooble = vaga(1, fonte="jooble").model_copy(update={"descricao_completa": False})
+
+    selecionadas, notificador, _ = rodar([da_jooble], {"1": 95}, nota_minima=nota_minima_padrao)
+
+    assert nota_minima_padrao <= LIMITE_DESCRICAO_INCOMPLETA
+    assert [resultado.nota for resultado in selecionadas] == [LIMITE_DESCRICAO_INCOMPLETA]
+    assert "Fonte: Jooble" in notificador.textos[0]
+    assert "nota limitada a 60" in notificador.textos[0]
+
+
+def test_vaga_da_jooble_fica_atras_da_vaga_completa_de_nota_maior_que_a_trava():
+    da_jooble = vaga(1, fonte="jooble").model_copy(update={"descricao_completa": False})
+    completa = vaga(2)
+
+    selecionadas, _, _ = rodar([da_jooble, completa], {"1": 95, "2": 61})
+
+    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2", "1"]
+
+
+def test_mesmo_anuncio_nas_duas_fontes_sai_com_a_copia_da_adzuna_e_sem_a_trava_de_60():
+    da_adzuna = vaga(1).model_copy(
+        update={"descricao": "Estágio em Python para apoiar o time de dados.", "modalidade": None}
+    )
+    trecho_da_jooble = da_adzuna.model_copy(
+        update={
+            "id_externo": "2",
+            "fonte": "jooble",
+            "url": "https://br.jooble.org/jdp/2",
+            "descricao": "...apoiar o time de dados nas rotinas de análise com Python " * 5,
+            "descricao_completa": False,
+        }
+    )
+
+    selecionadas, notificador, _ = rodar([trecho_da_jooble, da_adzuna], {"1": 95, "2": 95})
+
+    assert [(resultado.vaga.fonte, resultado.nota) for resultado in selecionadas] == [
+        ("adzuna", 95)
+    ]
+    assert "Adzuna" in notificador.textos[0]
+    assert "Jooble" not in notificador.textos[0]
+    assert "nota limitada a 60" not in notificador.textos[0]
+
+
+def estudante_de_direito() -> Usuario:
+    return usuario(ID_OUTRO_USUARIO, chat_id="456").model_copy(
+        update={"perfil": perfil_exemplo().model_copy(update={"curso": "Direito"})}
+    )
+
+
+def executar_com_a_vaga_de_direito_lida_como(
+    origem_da_vaga_de_direito: OrigemDoAnuncio | None,
+    origem_das_vagas_de_computacao: OrigemDoAnuncio = ORIGEM_SOURCESTACK,
+) -> tuple[ResumoDaExecucao, NotificadorFalso]:
+    vaga_de_direito = vaga(4, titulo="Estágio em Direito").model_copy(update={"origem": None})
+    vagas = [vaga_da_adzuna_antes_da_pagina(numero) for numero in (1, 2, 3)] + [vaga_de_direito]
+    origens = {numero: origem_das_vagas_de_computacao for numero in ("1", "2", "3")}
+    notificador = NotificadorFalso()
+    resumo = executar(
+        ColetorFalso(vagas),
+        ExtratorFalso({}),
+        notificador,
+        RepositorioFalso([usuario(), estudante_de_direito()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({str(numero): 80 for numero in range(1, 5)}),
+        enriquecer=EnriquecedorComOrigens(origens | {"4": origem_da_vaga_de_direito}),
+    )
+    return resumo, notificador
+
+
+def test_pagina_nao_lida_da_unica_vaga_de_um_perfil_segura_a_mensagem_dele():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(None)
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert notificador.chats == ["123"]
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
+
+
+def test_pagina_lida_sem_parceiro_da_unica_vaga_de_um_perfil_nao_segura_a_mensagem():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(OrigemDoAnuncio())
+
+    assert resumo.vagas_sem_origem_identificada == 1
+    assert "456" in notificador.chats
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 0
+
+
+def test_pagina_nao_lida_de_vaga_de_outro_perfil_nao_segura_quem_ficou_sem_vaga():
+    resumo, notificador = executar_com_a_vaga_de_direito_lida_como(None, ORIGEM_EMPREGO_PT)
+
+    assert resumo.vagas_de_origem_bloqueada == 3
+    assert notificador.chats == ["123"]
+    assert "Nenhuma vaga nova" in notificador.textos[0]
+    assert resumo.mensagens_seguradas_pela_coleta_incompleta == 1
