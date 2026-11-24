@@ -719,3 +719,27 @@ sob os botões em todas as etapas da edição, e só nela. Ele passa por `recusa
 perfil do banco com `perfilAtual` e mostra a conta pelo mesmo `mostrarEstadoDoPerfil` do
 salvamento, sem gravar nada. O que foi mudado no formulário se perde, porque "Editar perfil"
 sempre preenche o formulário de novo com o perfil salvo.
+
+### Abas da conta no celular (11/11/2026)
+
+Em 360px, as quatro abas somavam 458px e "Privacidade" ficava cortada. Os rótulos passaram a
+"Perfil", "Entregas", "Dados" e "Privacidade", e até 620px cada aba divide a largura
+(`flex: 1 1 auto`). Elas cabem juntas a partir de 320px, sem a página rolar para o lado. O
+cabeçalho da conta usa a mesma margem de 14px do conteúdo, e "Voltar ao site" não quebra linha. A
+rolagem horizontal continua como reserva, e nenhuma regra esconde aba
+(`test_navegacao_da_conta_segue_visivel_no_celular_com_as_quatro_secoes`).
+
+O título da página é o único nome da aba. Os cartões repetiam esse nome com outra frase: "Seus
+dados / Dados e acesso" e "Privacidade / Ações sensíveis". Esses cabeçalhos saíram, e a frase sob o
+título passou a dizer o que o cartão dizia. O cartão do perfil perdeu o ícone e o "Seu Radar",
+porque a aba agora se chama Perfil. As linhas de privacidade subiram de `h3` para `h2`. O teste
+confere que nenhum `h2`, `h3` ou rótulo de seção do painel repete o título. Um status como
+"Entregas ativas" não conta como repetição.
+
+"Excluir conta" usa o contorno vermelho de "Desvincular". O vermelho cheio fica só no "Confirmar"
+da caixa de confirmação, onde a decisão acontece. O texto corrido e os botões da conta têm no
+mínimo 14px, e os botões vermelhos têm 44px de altura.
+
+Cada aba grava o próprio painel no endereço (`#account-data-panel`). Ao recarregar, o navegador
+rolava até o painel e escondia o título sob o cabeçalho fixo do celular. Por isso, quando a página
+termina de carregar (`load`) com a conta aberta numa aba, ela volta ao topo.

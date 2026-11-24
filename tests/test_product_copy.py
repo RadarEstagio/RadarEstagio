@@ -382,6 +382,50 @@ def test_navegacao_da_conta_no_celular_rola_sozinha_sem_alargar_a_pagina():
     assert all(altura >= 44 for altura in alturas_dos_links)
 
 
+def test_abas_da_conta_dividem_a_largura_do_celular_com_rotulos_curtos():
+    html = (RAIZ / "web/index.html").read_text()
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    navegacao = re.search(r'<nav class="account-nav"[^>]*>(.*?)</nav>', html, re.S).group(1)
+    rotulos = re.findall(r"<a [^>]*>([^<]+)</a>", navegacao)
+    links_no_celular = " ".join(
+        declaracoes
+        for seletores, declaracoes in _regras_das_telas_estreitas(css)
+        if seletores == ".account-nav a"
+    )
+
+    assert rotulos == ["Perfil", "Entregas", "Dados", "Privacidade"]
+    assert "flex: 1 1 auto" in links_no_celular
+    assert "justify-content: center" in links_no_celular
+
+
+def test_excluir_conta_no_painel_e_contorno_e_so_a_confirmacao_e_vermelha_cheia():
+    html = (RAIZ / "web/index.html").read_text()
+    botao = re.search(r'<button [^>]*id="delete-account"[^>]*>', html).group(0)
+    confirmar = re.search(r'<button [^>]*id="account-confirm-yes"[^>]*>', html).group(0)
+
+    assert "button-danger-ghost" in botao
+    assert re.search(r'class="button button-danger"', confirmar)
+
+
+def test_texto_corrido_da_conta_tem_ao_menos_14px():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    textos_corridos = (
+        ".account-section-heading > span",
+        ".account-danger-row p",
+        ".account-email-setting > span",
+        "#account-content .account-schedule",
+        ".account-settings .account-actions .button",
+        ".account-profile-card > .button, .account-delivery-card > .button",
+        ".button-danger, .button-danger-ghost",
+    )
+
+    for seletor in textos_corridos:
+        regra = re.search(rf"\n{re.escape(seletor)} \{{([^}}]*)\}}", css)
+        assert regra, seletor
+        tamanho = int(re.search(r"font-size:\s*(\d+)px", regra.group(1)).group(1))
+        assert tamanho >= 14, seletor
+
+
 def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
     html = (RAIZ / "web/index.html").read_text()
 

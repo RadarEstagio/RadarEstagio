@@ -231,8 +231,8 @@ function ativarSecaoDaConta(linkAtivo) {
 
 const conteudoDasSecoesDaConta = {
   "#account-overview-panel": {
-    titulo: "Conta",
-    descricao: "Confira seu perfil de busca e controle como o Radar entrega suas recomendações.",
+    titulo: "Perfil",
+    descricao: "Curso, cidade e habilidades que o Radar usa para escolher suas vagas.",
   },
   "#account-delivery-panel": {
     titulo: "Entregas",
@@ -244,7 +244,7 @@ const conteudoDasSecoesDaConta = {
   },
   "#account-privacy-panel": {
     titulo: "Privacidade",
-    descricao: "Gerencie o vínculo com o Telegram e as ações permanentes da sua conta.",
+    descricao: "Desvincule o Telegram ou exclua sua conta. As duas ações pedem confirmação antes.",
   },
 };
 
@@ -281,6 +281,12 @@ window.addEventListener("hashchange", () => {
   if (!entrada) return;
   mostrarSecaoDaConta(entrada.link, false);
   document.querySelector("#account-title").focus({ preventScroll: true });
+});
+
+window.addEventListener("load", () => {
+  if (accountPage.hidden || accountState.hidden) return;
+  if (!accountNavEntries.some(({ link }) => link.hash === window.location.hash)) return;
+  window.scrollTo({ top: 0, behavior: "instant" });
 });
 
 function normalizarTexto(texto) {
