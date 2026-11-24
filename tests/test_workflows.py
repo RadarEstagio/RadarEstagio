@@ -9,7 +9,7 @@ PASTA_DAS_FUNCOES_EDGE = Path(__file__).parent.parent / "supabase/functions"
 
 VERSAO_DE_CADA_ACAO = {
     "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": "v7.0.1",
-    "astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884": "v10.3.0",
+    "astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2": "v10.3.3",
     "denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed": "v2.0.5",
 }
 
