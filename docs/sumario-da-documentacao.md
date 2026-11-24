@@ -1,6 +1,6 @@
 # Sumário da documentação
 
-**Retrato de 17/10/2026, atualizado em 22/10.** Visão de conjunto dos documentos do repositório, para não se perder
+**Retrato de 17/10/2026, atualizado em 17/11.** Visão de conjunto dos documentos do repositório, para não se perder
 entre eles. Datas e números são os que cada documento registra. Não é o documento dono de assunto
 algum: o estado vigente está no dono de cada tema, listado no [índice](README.md). Quem muda um
 dono atualiza a linha dele aqui; divergência encontrada entre documentos entra no fim, até ser
@@ -26,7 +26,7 @@ que estudantes de fora do grupo o acham útil.
 | [`arquitetura.md`](arquitetura.md) | Camadas, contratos e 11 decisões técnicas | Estável; as regras do motor são links; o fluxo ganhou o corte por origem em 16/11, também pelo domínio que a Jooble informa; na decisão 9, a fonte que falha inteira entra no resumo, a cópia da Jooble perde na duplicata e `gupy` é recusada em `FONTES`; em 17/11, a vaga da Adzuna sem origem sai junto |
 | [`decisoes-do-motor.md`](decisoes-do-motor.md) | Por que cada regra de coleta, pré-filtro, extração, nota e mensagem existe, com a medição | Índice na ordem do pipeline; 1.984 linhas, com o resumo do raciocínio de 19/10, o bot bloqueado de 15/11 e, de 16/11, os anúncios vencidos do emprego.pt e a Jooble (busca enxuta, cota de 100 por dia, corte da Gupy pela origem). Revisto no mesmo dia: o contado separado do estimado no emprego.pt, a medição de base do diário, as páginas não lidas no resumo, a fonte que falha inteira, a duplicata entre fontes e o coletor rodado uma vez contra a API real. Em 17/11, toda vaga da Adzuna com a página lida (a `/land/ad/` em `/details/`) e a sem origem descartada, substituindo a falha aberta, com a mensagem segurada de quem perdeu vaga por página não lida |
 | [`decisoes-do-banco.md`](decisoes-do-banco.md) | Schema, migrations, webhook, resumo de operação, limites aceitos | Até a `0036` (21/10, dia do atendimento); em 17/11, o trecho da `/land/ad/` passou ao passado |
-| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") |
+| [`contrato-front.md`](contrato-front.md) | Contrato site↔banco, D01 em aberto, pós-mortems do site | Até a `0035`, as ilustrações de 15/10 e a landing de 19/10 (pincelada, cartão único de preço, "fase de testes") e o celular de 11/11 (menu, cadastro, campos de 16px, cancelar edição) |
 | [`metricas.md`](metricas.md) | Eventos, denominadores, utilidade semanal, pergunta do dia seguinte | 05/10 |
 | [`desenvolvimento.md`](desenvolvimento.md) | Instalação, variáveis, comandos da CLI, testes e scripts | Criado em 16/10; Jooble nas variáveis e nos cuidados em 16/11, com `gupy` recusada em `FONTES` |
 | [`guia-publicacao-e-piloto.md`](guia-publicacao-e-piloto.md) | Configuração de cada serviço, tabela do estado conferido, roteiro de teste | Supabase e Telegram conferidos em 17/10, migrations em 22/10; dois disparos do cron e vigia desde 21/10; ligar a Jooble por secret e variável em 16/11 (seção 12), sem conferência no GitHub: o passo de conferência diz o que olhar no resumo e no log, e o comportamento da variável no Actions não foi conferido em execução real |

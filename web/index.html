@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="assets/styles.css?v=20261014-acessibilidade" />
+    <link rel="stylesheet" href="assets/styles.css?v=20261111-cancelar-edicao" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" defer></script>
     <script src="config.js" defer></script>
-    <script src="assets/app.js?v=20261014-acessibilidade" defer></script>
+    <script src="assets/app.js?v=20261111-cancelar-edicao" defer></script>
   </head>
   <body>
     <div id="landing-page">
@@ -52,8 +52,21 @@
               <svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
             </button>
             <button class="header-login js-open-login" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="9" r="3"></circle><path d="M5.8 18.5a6.5 6.5 0 0 1 12.4 0"></path></svg>Entrar</button>
+            <button class="atalho-da-conta" id="atalho-da-conta" type="button" aria-label="Entrar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M5 19.5a7 7 0 0 1 14 0"></path></svg></button>
+            <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-celular"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="menu-linha-de-cima" d="M5 9h14"></path><path class="menu-linha-de-baixo" d="M5 15h14"></path></svg></button>
           </div>
           <button class="button button-small js-open-signup" data-event-origin="cabecalho" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
+        </div>
+      </div>
+      <div class="container menu-celular" id="menu-celular" hidden>
+        <nav aria-label="Seções do site">
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#precos">Preços</a>
+          <a href="#faq">FAQ</a>
+          <a href="#sobre">Sobre</a>
+        </nav>
+        <div class="menu-celular-acoes">
+          <button class="button button-primary js-open-signup" data-event-origin="menu" data-rotulo-conta="Minha conta" type="button">Cadastrar meu perfil</button>
         </div>
       </div>
     </header>
@@ -463,6 +476,7 @@
               <button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button>
               <button class="button button-primary" type="submit" id="submit-profile" aria-busy="false"><span id="submit-label">Criar conta e continuar</span><span class="button-spinner" aria-hidden="true"></span><span class="button-arrow" aria-hidden="true">→</span></button>
             </div>
+            <button class="text-link cancelar-edicao" type="button" id="cancel-edit" hidden>Cancelar edição</button>
           </form>
           <section class="missing-profile-deletion" id="missing-profile-deletion" aria-labelledby="missing-profile-deletion-title" hidden>
             <div><h3 id="missing-profile-deletion-title">Prefere não continuar?</h3><p>Sua conta ainda não tem perfil. Se quiser, exclua a conta agora: o e-mail e o acesso são apagados na hora.</p></div>

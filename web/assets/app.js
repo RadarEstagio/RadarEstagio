@@ -23,6 +23,28 @@ botaoDoTema.addEventListener("click", () => {
   } catch {}
 });
 
+const botaoDoMenu = document.querySelector("#menu-toggle");
+const menuCelular = document.querySelector("#menu-celular");
+
+function mostrarMenuCelular(aberto) {
+  menuCelular.hidden = !aberto;
+  botaoDoMenu.setAttribute("aria-expanded", String(aberto));
+  botaoDoMenu.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+}
+
+botaoDoMenu.addEventListener("click", () => mostrarMenuCelular(menuCelular.hidden));
+menuCelular.addEventListener("click", (event) => {
+  if (event.target.closest("a, button")) mostrarMenuCelular(false);
+});
+document.addEventListener("click", (event) => {
+  if (!menuCelular.hidden && !event.target.closest(".site-header")) mostrarMenuCelular(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || menuCelular.hidden) return;
+  mostrarMenuCelular(false);
+  botaoDoMenu.focus();
+});
+
 const demonstracaoDoChat = document.querySelector("[data-chat-demo]");
 const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const ROLAGEM_MINIMA_ATE_CHAT = 90;
@@ -105,8 +127,11 @@ const pauseReasonMessage = document.querySelector("#pause-reason-message");
 const savePauseReason = document.querySelector("#save-pause-reason");
 const skipPauseReason = document.querySelector("#skip-pause-reason");
 const credenciais = document.querySelector("#credenciais");
+const cancelarEdicao = document.querySelector("#cancel-edit");
 const chamadasDeCadastro = [...document.querySelectorAll(".js-open-signup")];
 const chamadasDeLogin = [...document.querySelectorAll(".js-open-login")];
+const atalhoDaConta = document.querySelector("#atalho-da-conta");
+const acoesDoMenuCelular = document.querySelector(".menu-celular-acoes");
 const rotulosDeCadastro = new Map(
   chamadasDeCadastro.map((botao) => [botao, botao.firstChild.textContent]),
 );
@@ -1072,6 +1097,7 @@ function setAuthMode(mode) {
 
 function sairDoModoEdicao() {
   editandoPerfilExistente = false;
+  cancelarEdicao.hidden = true;
   credenciais.hidden = false;
   document.querySelector(".auth-help").hidden = false;
   atualizarPassosAtivos();
@@ -1085,6 +1111,7 @@ function sairDoModoEdicao() {
 function entrarNoModoEdicao() {
   setAuthMode("signup");
   editandoPerfilExistente = true;
+  cancelarEdicao.hidden = false;
   credenciais.hidden = true;
   document.querySelector(".auth-help").hidden = true;
   accountSwitch.hidden = true;
@@ -1194,6 +1221,8 @@ function mostrarChamadaDeConta(autenticado) {
   chamadasDeLogin.forEach((botao) => {
     botao.hidden = autenticado;
   });
+  atalhoDaConta.setAttribute("aria-label", autenticado ? "Minha conta" : "Entrar");
+  acoesDoMenuCelular.hidden = autenticado;
 }
 
 function rotularDialogo(idDoTitulo) {
@@ -1768,16 +1797,17 @@ function voltarPasso() {
   showStep(passosAtivos[passosAtivos.indexOf(currentStep) - 1]);
 }
 
-chamadasDeLogin.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (usuarioAutenticado) {
-      openSignup();
-      return;
-    }
-    limparRascunhoDoCadastro();
-    abrirLogin();
-  });
-});
+function abrirContaOuLogin() {
+  if (usuarioAutenticado) {
+    openSignup();
+    return;
+  }
+  limparRascunhoDoCadastro();
+  abrirLogin();
+}
+
+chamadasDeLogin.forEach((button) => button.addEventListener("click", abrirContaOuLogin));
+atalhoDaConta.addEventListener("click", abrirContaOuLogin);
 
 async function abrirCadastroPelaArea(nomeDaArea) {
   if (!usuarioAutenticado) void registerEvent("cta_cadastro_aberto", { origem: "faixa_de_areas" });
@@ -1842,6 +1872,17 @@ document.querySelector("#edit-profile").addEventListener("click", async () => {
     showStep(PASSO_MOMENTO);
   } catch (error) {
     setAccountMessage(humanizeError(error));
+  }
+});
+
+cancelarEdicao.addEventListener("click", async () => {
+  try {
+    if (await recusarSeASessaoMudou()) return;
+    const profile = await perfilAtual();
+    setFormMessage();
+    mostrarEstadoDoPerfil(profile);
+  } catch (error) {
+    setFormMessage(humanizeError(error));
   }
 });
 
